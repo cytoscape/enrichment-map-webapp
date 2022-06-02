@@ -2,35 +2,35 @@
 
 ## Required software
 
-- [Node.js](https://nodejs.org/en/) 14.x, >=14.15
-- [CouchDB](http://couchdb.apache.org) ^2.x, >=2.3
+- [Node.js](https://nodejs.org/en/) 16.x, >=16.13
+- [MongoDB](https://www.mongodb.com) ^4.x
 
 ## Getting started
 
 - Windows Cloning
 
   - The `public` directory includes symlinks, which most versions of Windows Git will not correctly clone by default. Make sure to clone using the following command:
-    - `git clone -c core.symlinks=true https://github.com/cytoscape/cytoscape-explore.git`
+    - `git clone -c core.symlinks=true https://github.com/cytoscape/enrichment-map-webapp.git`
 
 - Prerequisites:
   - Node.js
     - Option 1: Install [nvm](https://github.com/nvm-sh/nvm) so you can have multiple versions of node installed.
-      - Install version 12 with `nvm install 12`.
-      - Set version 12 as your default: `nvm alias default 12`.
-      - To use a particular version, do `nvm use 12.0.1` or set up a `.nvmrc` file in the CWD and do `nvm use`.
+      - Install version 16 with `nvm install 16`.
+      - Set version 16 as your default: `nvm alias default 16`.
+      - To use a particular version, do `nvm use 16.0.1` or set up a `.nvmrc` file in the CWD and do `nvm use`.
     - Option 2: Install node manually:
-      - Mac: `brew install node@12`
+      - Mac: `brew install node@16`
       - Linux: Use `dnf`, `zypper`, `apt`, etc.
       - Or use [the installer](https://nodejs.org/en/download/) for Mac or Windows
-  - CouchDB
-    - Mac: `brew install couchdb && brew services start couchdb`
+  - MongoDB
+    - Mac: `brew install mongodb-community && brew services start mongodb-community`
     - Linux: Use `dnf`, `zypper`, `apt`, etc.
     - Or use [the installer](https://downloads.apache.org/couchdb/binary/mac/2.3.1/)
 - Start off by running `npm install`.
 - The main target you will run during development is `npm run watch`.
   - This automatically builds the clientside code in the background. The browser will refresh automatically when the code is rebuilt.
   - The server will automatically reload when you change the server code. That way new HTTP requests from the client will use the updated code right away.
-- If you have CouchDB running locally on the default port, you don't need to configure any environment variables to get things working. The defaults are preset for local development.
+- If you have MongoDB running locally on the default port, you don't need to configure any environment variables to get things working. The defaults are preset for local development.
 - The Chrome debugger can be used for the clientside code (Chrome > View > Developer > Developer Tools) or the serverside code (`npm run inspect` and go to [chrome://inspect](chrome://inspect)). There is also an included launch config file that allows you to debug the client or the server directly in VSC.
 
 ## Editor
@@ -79,17 +79,17 @@ The following environment variables can be used to configure the server:
 
 ## Running via Docker
 
-Build the container. Here, `cytoscape-explore` is used as the container name.
+Build the container. Here, `enrichment-map` is used as the container name.
 
 ```
-cd cytoscape-explore
-docker build -t cytoscape-explore .
+cd enrichment-map
+docker build -t enrichment-map .
 ```
 
 Run the container:
 
 ```
-docker run -it -p 12345:3000 -e "NODE_ENV=production" --name "my-cytoscape-explore" cytoscape-explore
+docker run -it -p 12345:3000 -e "NODE_ENV=production" --name "my-enrichment-map" enrichment-map
 ```
 
 Notes:

@@ -4,12 +4,12 @@
   "description": "WIP",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cytoscape/cytoscape-home.git"
+    "url": "https://github.com/cytoscape/enrichment-map-webapp.git"
   },
   "bugs": {
-    "url": "https://github.com/cytoscape/cytoscape-home/issues"
+    "url": "https://github.com/cytoscape/enrichment-map-webapp/issues"
   },
-  "homepage": "https://github.com/cytoscape/cytoscape-home",
+  "homepage": "https://github.com/cytoscape/enrichment-map-webapp",
   "scripts": {
     "start": "node -r dotenv-defaults/config -r dotenv/config -r esm ./src/server",
     "inspect": "node inspect --inspect-brk -r dotenv-defaults/config -r dotenv/config -r esm ./src/server",
@@ -127,7 +127,7 @@
     "webpack-cli": "^3.3.11"
   },
   "engines": {
-    "node": "14"
+    "node": "16"
   },
   "browserslist": "safari 13"
 }
