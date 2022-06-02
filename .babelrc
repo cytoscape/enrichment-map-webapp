@@ -1,0 +1,12 @@
+{
+  "presets": [
+    [ "@babel/preset-env", 
+      {
+        "modules": "auto",
+        "useBuiltIns": false
+      }
+    ],
+    ["@babel/preset-react"]
+  ],
+  "ignore": ["node_modules/**/*"]
+}

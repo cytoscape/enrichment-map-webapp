@@ -1,0 +1,30 @@
+{
+  "env": {
+    "browser": true,
+    "node": true,
+    "mocha": true,
+    "es2021": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended"
+  ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "plugins": [],
+  "rules": {
+    "semi": "error",
+    "no-unused-vars": "warn",
+    "no-warning-comments": ["warn", { "terms": ["todo", "fixme"], "location": "anywhere" }]
+  }
+}

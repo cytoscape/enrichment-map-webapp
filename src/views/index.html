@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1" />
+    <meta name="description" content="Foo bar" />
+    <meta name="keywords" content="foo, bar" />
+
+    <link type="text/css" rel="stylesheet" href="/deps.css" />
+    <link type="text/css" rel="stylesheet" href="/main.css" />
+
+    <script>
+      (function(){
+        var needPolyfills = !('fetch' in window && 'assign' in Object);
+        if(needPolyfills){
+          var script = document.createElement('script');
+          script.defer = true;
+          script.src = '/polyfills.js';
+          document.head.appendChild(script);
+        }
+      })();
+    </script>
+
+    <script defer src="/deps.js"></script>
+    <script defer src="/main.js"></script>
+
+    <title>Cytoscape Explore</title>
+  </head>
+
+  <body>
+  </body>
+
+</html>

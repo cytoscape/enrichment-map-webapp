@@ -1,0 +1,303 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "elementCount": 1,
+        "name": "attributeDeclarations"
+      },
+      {
+        "elementCount": 1,
+        "name": "networkAttributes"
+      },
+      {
+        "elementCount": 6,
+        "name": "nodes"
+      },
+      {
+        "elementCount": 0,
+        "name": "edges"
+      },
+      {
+        "elementCount": 1,
+        "name": "visualProperties"
+      },
+      {
+        "elementCount": 1,
+        "name": "nodeBypasses"
+      },
+      {
+        "elementCount": 0,
+        "name": "edgeBypasses"
+      },
+      {
+        "elementCount": 0,
+        "name": "cyTableColumn"
+      },
+      {
+        "elementCount": 0,
+        "name": "cyHiddenAttributes"
+      }
+    ]
+  },
+  {
+    "attributeDeclarations": [
+      {
+        "networkAttributes": {
+          "name": {
+            "d": "string",
+            "v": ""
+          },
+          "description": {
+            "d": "string",
+            "v": ""
+          },
+          "version": {
+            "d": "string",
+            "v": ""
+          }
+        },
+        "nodes": {
+          "attr1": {
+            "d": "double"
+          },
+          "attr2": {
+            "d": "double"
+          },
+          "attr3": {
+            "d": "string"
+          }
+        },
+        "edges": {}
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "name": "cyexplore",
+        "description": "description",
+        "version": "1.0"
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 0,
+        "x": 105.00795906765208,
+        "y": 264.09835133598637,
+        "v": {
+          "attr1": 0.4200672403731871,
+          "attr2": 0.3222293131445766,
+          "attr3": "C"
+        }
+      },
+      {
+        "id": 1,
+        "x": 212.05343945423536,
+        "y": 157.04718590108016,
+        "v": {
+          "attr1": 0.35529479243795814,
+          "attr2": 0.49136968003280845,
+          "attr3": "B"
+        }
+      },
+      {
+        "id": 2,
+        "x": 100.01193860147812,
+        "y": 156.03922683342807,
+        "v": {
+          "attr1": 0.5213051597523573,
+          "attr2": -0.43317134750821173,
+          "attr3": "A"
+        }
+      },
+      {
+        "id": 3,
+        "x": 338.1495167708926,
+        "y": 209.07049459920407,
+        "v": {
+          "attr1": 0.7963041882706137,
+          "attr2": -0.14159870630306282,
+          "attr3": "A"
+        }
+      },
+      {
+        "id": 4,
+        "x": 212.05173393973848,
+        "y": 267.0955088118249,
+        "v": {
+          "attr1": 0.8101005105352563,
+          "attr2": -0.7193936384089037,
+          "attr3": "D"
+        }
+      },
+      {
+        "id": 5,
+        "x": 146.01478112563956,
+        "y": 211.07447413303015,
+        "v": {
+          "attr1": 0.507517942272609,
+          "attr2": -0.6887171421929401,
+          "attr3": "E"
+        }
+      }
+    ]
+  },
+  {
+    "edges": []
+  },
+  {
+    "visualProperties": [
+      {
+        "default": {
+          "network": {
+            "NETWORK_BACKGROUND_COLOR": "#FFFFFF"
+          },
+          "node": {
+            "NODE_SHAPE": "ellipse",
+            "NODE_BORDER_WIDTH": 1,
+            "NODE_BORDER_COLOR": "#888888",
+            "NODE_HEIGHT": 30,
+            "NODE_WIDTH": 30,
+            "NODE_BACKGROUND_COLOR": "#888888",
+            "NODE_LABEL_POSITION": {
+              "HORIZONTAL_ALIGN": "center",
+              "HORIZONTAL_ANCHOR": "center",
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "VERTICAL_ALIGN": "center",
+              "VERTICAL_ANCHOR": "top"
+            },
+            "NODE_LABEL_COLOR": "#111111",
+            "NODE_LABEL_FONT_SIZE": 10
+          },
+          "edge": {
+            "EDGE_LINE_STYLE": "solid",
+            "EDGE_TARGET_ARROW_COLOR": "#888888",
+            "EDGE_TARGET_ARROW_SHAPE": "none",
+            "EDGE_SOURCE_ARROW_COLOR": "#888888",
+            "EDGE_SOURCE_ARROW_SHAPE": "none",
+            "EDGE_WIDTH": 2,
+            "EDGE_LINE_COLOR": "#888888"
+          }
+        },
+        "nodeMapping": {
+          "NODE_LABEL": {
+            "type": "PASSTHROUGH",
+            "definition": {
+              "attribute": "attr3",
+              "selector": "data(attr3)"
+            }
+          },
+          "NODE_LABEL_POSITION": {
+            "type": "DISCRETE",
+            "definition": {
+              "attribute": "attr3",
+              "map": [
+                {
+                  "v": "B",
+                  "vp": {
+                    "HORIZONTAL_ALIGN": "center",
+                    "HORIZONTAL_ANCHOR": "right",
+                    "JUSTIFICATION": "center",
+                    "MARGIN_X": 0,
+                    "MARGIN_Y": 0,
+                    "VERTICAL_ALIGN": "center",
+                    "VERTICAL_ANCHOR": "center"
+                  }
+                },
+                {
+                  "v": "C",
+                  "vp": {
+                    "HORIZONTAL_ALIGN": "center",
+                    "HORIZONTAL_ANCHOR": "center",
+                    "JUSTIFICATION": "center",
+                    "MARGIN_X": 0,
+                    "MARGIN_Y": 0,
+                    "VERTICAL_ALIGN": "center",
+                    "VERTICAL_ANCHOR": "bottom"
+                  }
+                },
+                {
+                  "v": "D",
+                  "vp": {
+                    "HORIZONTAL_ALIGN": "center",
+                    "HORIZONTAL_ANCHOR": "left",
+                    "JUSTIFICATION": "center",
+                    "MARGIN_X": 0,
+                    "MARGIN_Y": 0,
+                    "VERTICAL_ALIGN": "center",
+                    "VERTICAL_ANCHOR": "center"
+                  }
+                },
+                {
+                  "v": "E",
+                  "vp": {
+                    "HORIZONTAL_ALIGN": "center",
+                    "HORIZONTAL_ANCHOR": "center",
+                    "JUSTIFICATION": "center",
+                    "MARGIN_X": 0,
+                    "MARGIN_Y": 0,
+                    "VERTICAL_ALIGN": "center",
+                    "VERTICAL_ANCHOR": "center"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "edgeMapping": {}
+      }
+    ]
+  },
+  {
+    "nodeBypasses": [
+      {
+        "id": 3,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "JUSTIFICATION": "center",
+            "MARGIN_X": 0,
+            "MARGIN_Y": 0,
+            "VERTICAL_ALIGN": "center",
+            "VERTICAL_ANCHOR": "center"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "edgeBypasses": []
+  },
+  {
+    "visualEditorProperties": [
+      {
+        "properties": {
+          "nodeSizeLocked": false
+        }
+      }
+    ]
+  },
+  {
+    "cyTableColumn": []
+  },
+  {
+    "cyHiddenAttributes": []
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
+      }
+    ]
+  }
+]

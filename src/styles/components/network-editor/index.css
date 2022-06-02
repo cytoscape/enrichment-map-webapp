@@ -1,0 +1,21 @@
+@import "./cy.css";
+@import "./tool-panel.css";
+@import "./header.css";
+@import "./layout-panel.css";
+@import "./history-panel.css";
+@import "./import-wizard.css";
+@import "./label-position-widget.css";
+
+.network-editor {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.network-editor-content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 50px;
+}

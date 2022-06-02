@@ -1,0 +1,13 @@
+{
+  "ignoreFiles": [
+    "./node_modules/**/*",
+    "./src/styles/vendor/**/*",
+    "./build/**/*",
+    "**/*.js"
+  ],
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "no-descending-specificity": null,
+    "comment-empty-line-before": null
+  }
+}

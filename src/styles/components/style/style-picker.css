@@ -1,0 +1,36 @@
+.style-picker {
+  text-align: center;
+}
+
+.style-picker-heading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 10px;
+  font-weight: bold;
+  font-size: large;
+}
+
+.style-picker-body {
+  padding: 5px;
+  margin: auto;
+}
+
+.style-picker-value {
+  margin: auto;
+  padding: 15px;
+}
+
+.style-picker-attribute {
+  width: 100%;
+  padding-top: 10px;
+}
+
+.style-picker-mapping-box {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: flex-end;
+  margin: 10px;
+  padding-bottom: 10px;
+}
