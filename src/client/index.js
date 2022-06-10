@@ -1,5 +1,3 @@
-import PouchDB from 'pouchdb';
-import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
 import debug from './debug';
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -8,8 +6,6 @@ import { Chart } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import { registerCytoscapeExtensions } from '../model/cy-extensions';
 import { fixOldFashionedScrollStyle } from './scroll';
-
-PouchDB.plugin(PouchDBMemoryAdapter);
 
 if( debug.enabled() ){
   debug.init();

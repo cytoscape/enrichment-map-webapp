@@ -6,32 +6,30 @@ import cookieParser from 'cookie-parser';
 import bodyParser from 'body-parser';
 import debug from 'debug';
 import http from 'http';
-import logger from './logger';
+import logger from './logger.js';
 import fs from 'fs';
-import proxy from 'express-http-proxy';
 import stream from 'stream';
-import btoa from 'btoa';
 import Cytoscape from 'cytoscape';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-import { NODE_ENV, PORT, COUCHDB_URL, UPLOAD_LIMIT, USE_COUCH_AUTH, COUCHDB_USER, COUCHDB_PASSWORD, TESTING } from './env';
-import indexRouter from './routes/index';
-import apiRouter from './routes/api';
-import { registerCytoscapeExtensions } from '../model/cy-extensions';
-import { secrets } from './secrets';
+import { NODE_ENV, PORT, UPLOAD_LIMIT, TESTING } from './env.js';
+import indexRouter from './routes/index.js';
+import apiRouter from './routes/api/index.js';
+import { registerCytoscapeExtensions } from '../model/cy-extensions.js';
 
-import PouchDB from 'pouchdb';
-import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
-import CytoscapeSyncher from '../model/cytoscape-syncher';
-import { createDemo } from './routes/api/document';
+console.info('Starting Express');
+
+import datastore from './datastore.js';
+
+await datastore.connect();
 
 // extensions/plugins
-PouchDB.plugin(PouchDBMemoryAdapter);
 registerCytoscapeExtensions();
 
-// ensure demo doc always exists
-createDemo();
-
-const debugLog = debug('cytoscape-home:server');
+const debugLog = debug('enrichment-map');
 const app = express();
 const server = http.createServer(app);
 
@@ -67,19 +65,6 @@ app.use(bodyParser.json({ limit: UPLOAD_LIMIT }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../..', 'public')));
-
-// proxy requests under /db to the CouchDB server
-app.use('/db', secrets); // apply security before proxy
-app.use('/db', function(req, res, next) {
-  if (USE_COUCH_AUTH) {
-    let auth = 'Basic ' + btoa(`${COUCHDB_USER}:${COUCHDB_PASSWORD}`);
-
-    req.headers['authorization'] = auth;
-  }
-
-  next();
-});
-app.use('/db', proxy(COUCHDB_URL));
 
 app.use('/api', apiRouter);
 app.use('/', indexRouter);
@@ -143,5 +128,7 @@ function onListening() {
     : 'port ' + addr.port;
   debugLog('Listening on ' + bind);
 }
+
+console.info('Express started');
 
 export { app, server };

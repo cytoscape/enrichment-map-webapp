@@ -1,4 +1,3 @@
 /* eslint-disable no-unused-vars */
 
-// import 'core-js/stable';
-// import 'whatwg-fetch';
+// No polyfills for now

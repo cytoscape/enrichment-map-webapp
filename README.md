@@ -3,7 +3,7 @@
 ## Required software
 
 - [Node.js](https://nodejs.org/en/) 16.x, >=16.13
-- [MongoDB](https://www.mongodb.com) ^4.x
+- [MongoDB](https://www.mongodb.com) ^5.x
 
 ## Getting started
 
@@ -26,6 +26,7 @@
     - Mac: `brew install mongodb-community && brew services start mongodb-community`
     - Linux: Use `dnf`, `zypper`, `apt`, etc.
     - Or use [the installer](https://downloads.apache.org/couchdb/binary/mac/2.3.1/)
+    - Use [MongoDB Compass](https://www.mongodb.com/products/compass) for debugging
 - Start off by running `npm install`.
 - The main target you will run during development is `npm run watch`.
   - This automatically builds the clientside code in the background. The browser will refresh automatically when the code is rebuilt.
@@ -53,15 +54,12 @@ The following environment variables can be used to configure the server:
 - `NODE_ENV` : the environment mode, either `production` or `development` (default)
 - `PORT` : the port on which the server runs (default 3000)
 - `LOG_LEVEL` : the log level for `out.log`
-- `COUCHDB_URL` : the URL of the CouchDB instance that the server should permanently store its data
-- `USE_COUCH_AUTH` : set to `true` if you want to use CouchDB auth via `COUCHDB_USER` & `COUCHDB_PASSWORD`
-- `COUCHDB_USER` : admin user name
-- `COUCHDB_PASSWORD` : admin user password
-- `LOG_SYNC` : log CouchDB operations when set to `true`
-- `LOG_VIZMAPPER` : log VizMapper operations when set to `true`
 - `BASE_URL` : the base url of the server (e.g. `https://example.com`)
 - `UPLOAD_LIMIT` : max network upload size (e.g. `20kb`)
 - `NDEX_API_URL`: the URL for the NDEx web application
+- `MONGO_URL`: the MongoDB connection URL
+- `MONGO_ROOT_NAME`: the name of the app's DB in Mongo
+- `MONGO_COLLECTION_QUERIES`: the name of the query collection
 
 ## Run targets
 
@@ -70,7 +68,6 @@ The following environment variables can be used to configure the server:
 - `npm run inspect` : start the server in inspection mode, with server-side code debuggable via the chrome debugger with a breakpoint automatically set on the first line ([chrome://inspect](chrome://inspect))
 - `npm run build` : build project
 - `npm run build-prod` : build the project for production
-- `npm run bundle-profile` : visualise the bundle dependencies
 - `npm run clean` : clean the project
 - `npm run lint` : lint the project
 - `npm run fix` : fix linting errors that can be automatically addressed
