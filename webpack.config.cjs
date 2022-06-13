@@ -3,9 +3,6 @@ const DotEnvPlugin = require('dotenv-webpack');
 const { env } = require('process');
 const nodeEnv = env.NODE_ENV || 'development';
 const isProd = env.NODE_ENV === 'production';
-const isNonNil = x => x != null;
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-const isProfile = env.PROFILE == 'true';
 const minify = env.MINIFY == 'true' || isProd;
 
 let conf = {
@@ -58,10 +55,8 @@ let conf = {
   },
 
   plugins: [
-    new DotEnvPlugin({ defaults: true }),
-
-    isProfile ? new BundleAnalyzerPlugin() : null
-  ].filter( isNonNil )
+    new DotEnvPlugin({ defaults: true })
+  ]
 };
 
 module.exports = conf;

@@ -1,5 +1,5 @@
 import express from 'express';
-import { NODE_ENV } from '../env';
+import { NODE_ENV } from '../env.js';
 
 const router = express.Router();
 
