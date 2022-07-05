@@ -5,9 +5,7 @@ import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape';
 
 import { NODE_ENV } from '../../env';
-import { DEFAULT_PADDING } from '../layout/defaults';
-import { CytoscapeSyncher } from '../../../model/cytoscape-syncher';
-import { LoginController } from '../login/controller';
+import { DEFAULT_PADDING } from './defaults';
 import { NetworkEditorController } from './controller';
 import theme from '../../theme';
 import Header from './header';
@@ -26,6 +24,9 @@ export class NetworkEditor extends Component {
     const id = _.get(props, ['match', 'params', 'id'], _.get(props, 'id'));
     const secret = _.get(props, ['match', 'params', 'secret'], _.get(props, 'secret'));
 
+    // TODO temporary
+    this.secret = secret;
+
     this.bus = new EventEmitter();
 
     this.cy = new Cytoscape({
@@ -34,7 +35,7 @@ export class NetworkEditor extends Component {
     });
 
     this.cy.data({ id });
-    this.cySyncher = new CytoscapeSyncher(this.cy, secret);
+    // this.cySyncher = new CytoscapeSyncher(this.cy, secret);
     this.controller = new NetworkEditorController(this.cy, this.cySyncher, this.bus);
 
     if (NODE_ENV !== 'production') {
@@ -48,12 +49,13 @@ export class NetworkEditor extends Component {
     this.cy.style().fromJson([
       {
         selector: 'node',
-        style: this.cy.vizmapper().nodeStyleBlock()
+        style: {
+          'background-color': 'blue'
+        }
       },
       {
         selector: 'edge',
         style: { 
-          ...this.cy.vizmapper().edgeStyleBlock(), 
           'curve-style': 'bezier',
         }
       },
@@ -67,7 +69,7 @@ export class NetworkEditor extends Component {
       {
         selector: '.unselected',
         style: {
-          'opacity': ele => 0.333 * this.cy.vizmapper().calculate(ele, 'opacity')
+          'opacity': 0.333
         }
       },
       {
@@ -95,14 +97,8 @@ export class NetworkEditor extends Component {
       console.log('Starting to enable sync in editor');
 
       console.log('Loading');
-      await this.cySyncher.load();
+      // TODO load from database
       console.log('Loaded');
-
-      if (this.cySyncher.editable()) {
-        console.log('Enabling sync');
-        await this.cySyncher.enable();
-        console.log('Sync enabled');
-      }
 
       this.cy.fit(DEFAULT_PADDING);
 
@@ -114,22 +110,19 @@ export class NetworkEditor extends Component {
   }
 
   onCyEvents() {
-    const secret = this.cySyncher.secret;
-    this.props.loginController.updateRecentNetwork({ secret, cy: this.cy });
+    const secret = this.secret;
+    // TODO auto-save
   }
 
   componentDidMount() {
-    const secret = this.cySyncher.secret;
-    this.props.loginController.saveRecentNetwork({ secret, cy: this.cy });
+    const secret = this.secret;
     this._debounceCyEvents = _.debounce(this.onCyEvents, 500);
-
     this.cy.on(CY_EVENTS, this._debounceCyEvents);
   }
 
   componentWillUnmount() {
     this.cy.removeListener(CY_EVENTS, this._debounceCyEvents);
     this.eh.destroy();
-    this.cySyncher.destroy(); // disable live synch for now...
     this.bus.removeAllListeners();
     this.cy.destroy();
   }
@@ -137,55 +130,18 @@ export class NetworkEditor extends Component {
   render() {
     const { controller } = this;
 
-    const controllers = {
-      loginController: this.props.loginController,
-      networkEditorController: controller,
-    };
-
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className="network-editor">
-          <Header controllers={controllers} />
-          <Main controllers={controllers} />
+          <Header controller={controller} />
+          <Main controller={controller} />
         </div>
       </ThemeProvider>
     );
   }
 }
 
-export class NewDoc extends Component {
-  constructor(props) {
-    super(props);
-
-    let juryRigDoc = async () => {
-      console.log('Attempting to jury-rig document creation.  This should probably be done by creating a document beforehand in future (e.g. with a post request made in a file manager UI)');
-      
-      const res = await fetch(`/api/document`, {
-        method: 'POST',
-        body: JSON.stringify({
-          // empty for now
-        }),
-        headers: {'Content-Type': 'application/json'}
-      });
-
-      const json = await res.json();
-
-      console.log('Doc created');
-      console.log(json);
-
-      const { privateUrl } = json;
-
-      location.assign(privateUrl); // redirect to the private URL whereupon the new doc is loaded
-    };
-
-    juryRigDoc();
-  }
-
-  render() {
-    return <div>Creating new doc...</div>;
-  }
-}
 
 export class Demo extends Component {
   constructor(props) {
@@ -193,17 +149,12 @@ export class Demo extends Component {
   }
 
   render() {
-    return <NetworkEditor id="demo" secret="demo" loginController={this.props.loginController} />;
+    return <NetworkEditor id="demo" secret="demo" />;
   }
 }
 
-Demo.propTypes = {
-  loginController: PropTypes.instanceOf(LoginController).isRequired,
-};
 
 NetworkEditor.propTypes = {
-  loginController: PropTypes.instanceOf(LoginController).isRequired,
-  history: PropTypes.any,
 };
 
 export default NetworkEditor;

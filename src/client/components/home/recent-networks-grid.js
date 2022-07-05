@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 
-import { LoginController } from '../login/controller';
+import { RecentNetworksController } from './recent-networks-controller';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -29,7 +29,7 @@ export class RecentNetworksGrid extends Component {
   constructor(props) {
     super(props);
 
-    this.controller = this.props.controller;
+    this.controller = new RecentNetworksController();
 
     this.state = {
       loading: false,
@@ -396,7 +396,6 @@ const useStyles = theme => ({
 });
 
 RecentNetworksGrid.propTypes = {
-  controller: PropTypes.instanceOf(LoginController).isRequired,
   classes: PropTypes.object.isRequired,
 };
 

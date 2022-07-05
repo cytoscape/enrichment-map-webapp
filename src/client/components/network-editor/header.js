@@ -2,10 +2,8 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
-import { DEFAULT_PADDING } from '../layout/defaults';
-import NDExNetworkExportDialog from '../network-export/ndex-network-export-dialog';
+import { DEFAULT_PADDING } from './defaults';
 import TitleEditor from './title-editor';
-import AccountButton from '../login/AccountButton';
 import ShareButton from './share-button';
 
 import { withStyles } from '@material-ui/core/styles';
@@ -16,11 +14,10 @@ import { Popover, MenuList, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
 import { IconButton } from '@material-ui/core';
 
-import { AppLogoIcon, AddNodeIcon, DrawEdgeIcon, NDExLogoIcon } from '../svg-icons';
+import { AppLogoIcon } from '../svg-icons';
 import SearchIcon from '@material-ui/icons/Search'; // eslint-disable-line
 import DebugIcon from '@material-ui/icons/BugReport'; // eslint-disable-line
 import FitScreenIcon from '@material-ui/icons/Fullscreen';
-import DeleteIcon from '@material-ui/icons/DeleteForever';
 
 /**
  * The network editor's header or app bar.
@@ -31,7 +28,6 @@ export class Header extends Component {
   constructor(props) {
     super(props);
 
-    this.loginController = props.controllers.loginController;
     this.controller = props.controllers.networkEditorController;
     this.busProxy = new EventEmitterProxy(this.controller.bus);
 
@@ -40,26 +36,6 @@ export class Header extends Component {
       anchorEl: null,
       dialogId: null,
     };
-  }
-
-  createNewNetwork() {
-    let create = async () => {
-      let res = await fetch('/api/document', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          data: {},
-          elements: []
-        })
-      });
-
-      let urls = await res.json();
-      location.href = `/document/${urls.id}/${urls.secret}`;
-    };
-
-    create();
   }
 
   handleClick(event, menuName) {
@@ -117,7 +93,7 @@ export class Header extends Component {
   render() {
     const { anchorEl, menuName, dialogName } = this.state;
     const { classes } = this.props;
-    const { loginController, controller } = this;
+    const { controller } = this;
 
     const ToolbarDivider = ({ unrelated }) => {
       return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
@@ -152,26 +128,6 @@ export class Header extends Component {
               <Grid item>
                 <Grid container alignItems="center" color="secondary.main" className={classes.root}>
                   <ToolbarButton
-                    title="Add Node"
-                    icon={<AddNodeIcon />}
-                    onClick={() => controller.addNode()}
-                  />
-                  <ToolbarDivider />
-                  <ToolbarButton
-                    title="Draw Edge"
-                    icon={<DrawEdgeIcon />}
-                    color={controller.drawModeEnabled ? 'primary' : 'inherit'}
-                    onClick={() => controller.toggleDrawMode()}
-                  />
-                  <ToolbarDivider />
-                  <ToolbarButton
-                    title="Delete Selected"
-                    icon={<DeleteIcon />}
-                    onClick={() => controller.deletedSelectedElements()}
-                  />
-                  <ToolbarDivider unrelated />
-
-                  <ToolbarButton
                     title="Fit Network"
                     icon={<FitScreenIcon />}
                     onClick={() => controller.cy.fit(DEFAULT_PADDING)}
@@ -185,13 +141,6 @@ export class Header extends Component {
                   <ToolbarDivider unrelated />
                   <ShareButton controller={controller}/>
                   <ToolbarDivider />
-                  <ToolbarButton
-                    title="Export Network To NDEx"
-                    icon={<NDExLogoIcon style={{ fontSize: 28 }} />}
-                    onClick={() => this.showDialog('ndex-network-export')}
-                  />
-                  <ToolbarDivider unrelated />
-                  <AccountButton controller={loginController} />
                   {/* <ToolbarButton
                     title="Debug"
                     icon={<DebugIcon />}
@@ -210,7 +159,6 @@ export class Header extends Component {
             >
               {menuName === 'account' && (
                 <MenuList>
-                  <MenuItem disabled={true} onClick={() => this.handleClose()}>NDEx Account</MenuItem>
                   <MenuItem disabled={true} onClick={() => this.handleClose()}>Sign Out</MenuItem>
                 </MenuList>
               )}
@@ -222,15 +170,6 @@ export class Header extends Component {
             </Popover>
           )}
         </AppBar>
-        { dialogName === 'ndex-network-export' && (
-          <NDExNetworkExportDialog
-            id="ndex-network-export"
-            controller={loginController}
-            cy={controller.cy}
-            open={true}
-            onClose={() => this.hideDialog()}
-          />
-        )}
       </>
     );
   }

@@ -1,19 +1,13 @@
 import EventEmitter from 'eventemitter3';
 import LocalForage from 'localforage';
-import { NDEx } from '@js4cytoscape/ndex-client';
-
-import { NDEX_API_URL } from '../../env';
 
 const NETWORK_THUMBNAIL_WIDTH = 344;
 const NETWORK_THUMBNAIL_HEIGHT = 344;
 
 /**
- * The Login Controller contains all high-level model operations required by the user account features.
- *
  * @property {EventEmitter} bus The event bus that the controller emits on after every operation
- * @property {NDEx} ndexClient The API client for the ndex rest server
  */
- export class LoginController {
+ export class RecentNetworksController {
 
   /**
    * @param {EventEmitter} bus The event bus that the controller emits on after every operation
@@ -21,9 +15,6 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
   constructor(bus) {
     /** @type {EventEmitter} */
     this.bus = bus || new EventEmitter();
-
-    /** @type {NDEx} */
-    this.ndexClient = new NDEx(NDEX_API_URL);
   }
 
    saveRecentNetwork({ secret, cy }) {

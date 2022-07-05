@@ -5,13 +5,8 @@ import { NetworkEditorController } from './controller';
 import Tooltip from '@material-ui/core/Tooltip';
 import { Drawer } from '@material-ui/core';
 import { IconButton, Divider, Box } from '@material-ui/core';
-import { StyleSection, StylePanel, OpacityStylePicker } from '../style/style-picker'; 
-import { ColorStylePicker, ShapeStylePicker, SizeStylePicker, TextStylePicker } from '../style/style-picker';
-import { NodeSizeStyleSection, NodeLabelPositionStylePicker } from '../style/style-picker';
-import { LayoutPanel } from '../layout/layout-panel';
-import { HistoryPanel } from './history-panel';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
-import { LayoutIcon, NodeLabelIcon } from '../svg-icons';
+import { LayoutIcon } from '../svg-icons';
 
 function SidePanel({ title, onClose, children }) {
   return <div>
@@ -97,196 +92,28 @@ export class ToolPanel extends Component {
       <Box className="tool-panel-buttons" bgcolor="background.paper" color="secondary.main">
 
         <ToolButton 
-          title="Layout"
-          tool="layout"
+          title="Gene List"
+          tool="gene_list"
           icon={<LayoutIcon />}
           render={() =>
-            <SidePanel title="Layout" onClose={closePanel}>
-              <LayoutPanel controller={controller} />
+            <SidePanel title="Gene List" onClose={closePanel}>
+              The Gene List goes here.
             </SidePanel>
           }>
         </ToolButton>
         
+        <Divider />
+        
         <ToolButton 
-          title="History"
-          tool="history"
+          title="Filtering"
+          tool="filtering"
           icon="history"
           render={() =>
-            <SidePanel title="History" onClose={closePanel}>
-              <HistoryPanel controller={controller} />
+            <SidePanel title="Filters" onClose={closePanel}>
+              The filters go here.
             </SidePanel>
           }>
         </ToolButton>
-
-        <Divider />
-
-        <ToolButton 
-          title="Node Body" 
-          icon="lens"
-          tool="node_body"
-          render={() =>
-            <SidePanel title="Node Body" onClose={closePanel}>
-              <StylePanel selector="node" controller={controller}>
-                <StyleSection title="Color">
-                  <ColorStylePicker
-                    controller={controller}
-                    selector='node'
-                    styleProps={['background-color']}
-                  />
-                </StyleSection>
-                <StyleSection title="Shape">
-                  <ShapeStylePicker
-                    controller={controller}
-                    selector='node'
-                    styleProp='shape'
-                    variant='node'
-                  />
-                </StyleSection>
-                <NodeSizeStyleSection
-                  controller={controller}
-                />
-              </StylePanel>
-            </SidePanel>
-          }
-        />
-
-        <ToolButton 
-          title="Node Border" 
-          icon="trip_origin"
-          tool="node_border"
-          render={() => 
-            <SidePanel title="Node Border" onClose={closePanel}>
-              <StylePanel selector="node" controller={controller}>
-                <StyleSection title="Color">
-                  <ColorStylePicker
-                    controller={controller}
-                    selector='node'
-                    styleProps={['border-color']}
-                  />
-                </StyleSection>
-                <StyleSection title="Width">
-                  <SizeStylePicker
-                    controller={controller}
-                    selector='node'
-                    styleProps={['border-width']}
-                    variant='border'
-                  />
-                </StyleSection>
-              </StylePanel>
-            </SidePanel>
-          }
-        />
-
-        <ToolButton 
-          title="Node Label" 
-          icon={<NodeLabelIcon />}
-          tool="node_label"
-          render={() =>
-            <SidePanel title="Node Label" onClose={closePanel}>
-              <StylePanel selector="node" controller={controller}>
-                <StyleSection title="Text">
-                  <TextStylePicker
-                    controller={controller}
-                    selector='node'
-                    styleProp='label'
-                  />
-                </StyleSection>
-                <StyleSection title="Color">
-                  <ColorStylePicker
-                    controller={controller}
-                    selector='node'
-                    styleProps={['color']}
-                  />
-                </StyleSection>
-                <StyleSection title="Size">
-                  <SizeStylePicker
-                    controller={controller}
-                    selector='node'
-                    styleProps={['font-size']}
-                    variant='text'
-                  />
-                </StyleSection>
-                <StyleSection title="Position">
-                  <NodeLabelPositionStylePicker
-                    controller={controller}
-                  />
-                </StyleSection>
-              </StylePanel>
-            </SidePanel>
-          }
-        />
-
-        <Divider />
-
-        <ToolButton 
-          title="Edge" 
-          icon="remove"
-          tool="edge"
-          render={() =>
-            <SidePanel title="Edge" onClose={closePanel}>
-              <StylePanel selector="edge" controller={controller}>
-                <StyleSection title="Color">
-                  <ColorStylePicker
-                    controller={controller}
-                    selector='edge'
-                    styleProps={['line-color', 'source-arrow-color', 'target-arrow-color']}
-                  />
-                </StyleSection>
-                <StyleSection title="Opacity">
-                  <OpacityStylePicker
-                    controller={controller}
-                    selector='edge'
-                    styleProp='opacity'
-                  />
-                </StyleSection>
-                <StyleSection title="Width">
-                  <SizeStylePicker
-                    controller={controller}
-                    selector='edge'
-                    styleProps={['width']}
-                    variant='line'
-                  />
-                </StyleSection>
-                <StyleSection title="Line Style">
-                  <ShapeStylePicker
-                    controller={controller}
-                    selector='edge'
-                    styleProp='line-style'
-                    variant='line'
-                  />
-                </StyleSection>
-              </StylePanel>
-            </SidePanel>
-          }
-        />
-
-        <ToolButton 
-          title="Edge Arrows" 
-          icon="arrow_forward"
-          tool="edge_arrows"
-          render={() =>
-            <SidePanel title="Edge Arrows" onClose={closePanel}>
-              <StylePanel selector="edge" controller={controller}>
-                <StyleSection title="Source Arrow">
-                  <ShapeStylePicker
-                    controller={controller}
-                    selector='edge'
-                    styleProp='source-arrow-shape'
-                    variant='arrow'
-                  />
-                </StyleSection>
-                <StyleSection title="Target Arrow">
-                  <ShapeStylePicker
-                    controller={controller}
-                    selector='edge'
-                    styleProp='target-arrow-shape'
-                    variant='arrow'
-                  />
-                </StyleSection>
-              </StylePanel>
-            </SidePanel>
-          }
-        />
 
       </Box>
     </div>);
