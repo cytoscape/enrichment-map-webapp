@@ -1,3 +1,4 @@
+import { ObjectID } from 'bson';
 import { MongoClient } from 'mongodb';
 import { MONGO_URL, MONGO_ROOT_NAME, MONGO_COLLECTION_QUERIES } from './env.js';
 
@@ -7,7 +8,6 @@ class Datastore {
     // queries; // queries collection (i.e. query results)
 
     constructor() {
-
     }
 
     async connect() {
@@ -22,8 +22,13 @@ class Datastore {
         if(typeof(networkJson) == 'string') {
             networkJson = JSON.parse(networkJson);
         }
-        const result = await this.db.collection("networks").insertOne(networkJson);
+        const result = await this.db.collection('networks').insertOne(networkJson);
         return result.insertedId;
+    }
+
+    async getNetwork(netID) {
+       const network = await this.db.collection('networks').findOne({ '_id': ObjectID(netID) });
+       return network;
     }
 }
 

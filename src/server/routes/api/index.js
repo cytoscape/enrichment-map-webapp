@@ -9,9 +9,9 @@ import { EM_SERVICE_URL, FGSEA_SERVICE_URL } from '../../env.js';
 const http = Express.Router();
 const tsvParser = bodyParser.text({ type: "text/tab-separated-values" });
 
-http.post('/rankedtoem', tsvParser, async function(req, res, next) {
+http.post('/create', tsvParser, async function(req, res, next) {
   try {
-    console.log('Running /rankedtoem endpoint.');
+    console.log('Running /create endpoint.');
     const rankedGeneList = req.body;
 
     console.log('  Running fgsea service');
@@ -28,11 +28,36 @@ http.post('/rankedtoem', tsvParser, async function(req, res, next) {
     console.log('  Creating Network Document - DONE');
 
     res.send(netID); 
-    console.log("Running /rankedtoem endpoint - DONE. Network ID: " + netID);
+    console.log("Running /create endpoint - DONE. Network ID: " + netID);
   } catch (err) {
     next(err);
   }
 });
+
+
+http.get('/:id', async function(req, res, next) {
+  try {
+    const { id } = req.params;
+    const network = await getNetwork(id);
+    if(!network) {
+      res.sendStatus(404);
+    } else {
+      res.send(JSON.stringify(network));
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+
+async function getNetwork(netID) {
+  console.log('Running get network endpoint.');
+  await Datastore.connect();
+  const network = await Datastore.getNetwork(netID);
+  console.log('Running get network endpoint - DONE');
+  return network;
+}
 
 
 async function runFGSEA(ranksTSV) {
