@@ -23,7 +23,7 @@ class Datastore {
             networkJson = JSON.parse(networkJson);
         }
         const result = await this.db.collection('networks').insertOne(networkJson);
-        return result.insertedId;
+        return "" + result.insertedId;
     }
 
     async getNetwork(netID) {

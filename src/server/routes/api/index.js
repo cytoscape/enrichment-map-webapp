@@ -7,27 +7,34 @@ import { EM_SERVICE_URL, FGSEA_SERVICE_URL } from '../../env.js';
 
 
 const http = Express.Router();
-const tsvParser = bodyParser.text({ type: "text/tab-separated-values" });
+
+const tsvParser = bodyParser.text({ 
+  type: "text/tab-separated-values", 
+  limit: '1mb' 
+});
 
 http.post('/create', tsvParser, async function(req, res, next) {
   try {
     console.log('Running /create endpoint.');
+    console.time('create_endpoint');
     const rankedGeneList = req.body;
 
-    console.log('  Running fgsea service');
+    console.time('fgsea_service');
     const fgseaResultJson = await runFGSEA(rankedGeneList);
-    console.log('  Running fgsea service - DONE');
+    console.timeEnd('fgsea_service');
 
-    console.log('  Running EM service');
+    console.time('em_service');
     const networkJsonString = await runEM(fgseaResultJson);
-    console.log('  Running EM service - DONE');
+    console.timeEnd('em_service');
 
-    console.log('  Creating Network Document');
+    console.log();
+    console.time('mongo_create');
     await Datastore.connect();
     const netID = await Datastore.createNetwork(networkJsonString);
-    console.log('  Creating Network Document - DONE');
+    console.timeEnd('mongo_create');
 
-    res.send(netID); 
+    res.send(netID);
+    console.timeEnd('create_endpoint');
     console.log("Running /create endpoint - DONE. Network ID: " + netID);
   } catch (err) {
     next(err);
@@ -50,6 +57,11 @@ http.get('/:id', async function(req, res, next) {
 });
 
 
+const removeQuotes = str => {
+  if(str.charAt(0) === '"' && str.charAt(str.length-1) === '"')
+    return str.substr(1, str.length-2);
+  return str;
+};
 
 async function getNetwork(netID) {
   console.log('Running get network endpoint.');

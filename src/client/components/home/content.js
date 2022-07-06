@@ -25,7 +25,8 @@ export class Content extends Component {
   }
 
   loadNetwork(id, secret) {
-    location.href = `/document/${id}/${secret}`;
+    // location.href = `/document/${id}/${secret}`;
+    location.href = `/document/${id}`;
   }
 
   // createNewNetwork() {
@@ -58,19 +59,17 @@ export class Content extends Component {
   // MKTODO enable this once mongo is working
   async loadSampleNetwork() {
     // Fetch the sample file
-    // const res1 = await fetch('/sample-data/galFiltered-cx2.json');
-    // const cx2 = await res1.json();
-    // // Ask the server to import the json data
-    // const res2 = await fetch(`/api/document/cx`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(cx2),
-    // });
-    // // Navigate to the new document
-    // const urls = await res2.json();
-    // this.loadNetwork(urls.id, urls.secret);
+    const res = await fetch('/sample-data/brca_hd_tep_ranks.rnk');
+    const ranks = await res.text();
+    // Ask the server to import the json data
+    const res2 = await fetch(`/api/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/tab-separated-values' },
+      body: ranks
+    });
+    // Navigate to the new document
+    const netID = await res2.text();
+    this.loadNetwork(netID);
   }
 
   render() {
@@ -117,9 +116,9 @@ export class Content extends Component {
               </Grid>
             </Grid>
             { /* === BOTTOM Panel ================================================================= */ }
-            <Grid item>
+            {/* <Grid item>
               <RecentNetworksGrid />
-            </Grid>
+            </Grid> */}
           </Grid>
         </div>
       </div>

@@ -35,7 +35,6 @@ export class NetworkEditor extends Component {
     });
 
     this.cy.data({ id });
-    // this.cySyncher = new CytoscapeSyncher(this.cy, secret);
     this.controller = new NetworkEditorController(this.cy, this.cySyncher, this.bus);
 
     if (NODE_ENV !== 'production') {
@@ -50,13 +49,18 @@ export class NetworkEditor extends Component {
       {
         selector: 'node',
         style: {
-          'background-color': 'blue'
+          'background-color': 'blue',
+          'label': 'data(name)',
+          'width':  ele => ele.data('gs_size') / 10,
+          'height': ele => ele.data('gs_size') / 10,
+          'font-size': '5px',
         }
       },
       {
         selector: 'edge',
         style: { 
           'curve-style': 'bezier',
+          'width': ele => ele.data('similarity_coefficient') * 10
         }
       },
       {
@@ -97,10 +101,17 @@ export class NetworkEditor extends Component {
       console.log('Starting to enable sync in editor');
 
       console.log('Loading');
-      // TODO load from database
+
+      const res = await fetch(`/api/${id}`);
+      const result = await res.json();
+
+      this.cy.add(result.network.elements);
+      this.cy.data({ parameters: result.parameters });
+
       console.log('Loaded');
 
       this.cy.fit(DEFAULT_PADDING);
+      this.cy.layout({ name: 'cose' }).run();
 
       console.log('Successful load from DB');
       console.log('End of editor sync initial phase');

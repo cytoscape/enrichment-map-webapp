@@ -5,6 +5,7 @@ import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { DEFAULT_PADDING } from './defaults';
 import TitleEditor from './title-editor';
 import ShareButton from './share-button';
+import { NetworkEditorController } from './controller';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -28,7 +29,7 @@ export class Header extends Component {
   constructor(props) {
     super(props);
 
-    this.controller = props.controllers.networkEditorController;
+    this.controller = props.controller;
     this.busProxy = new EventEmitterProxy(this.controller.bus);
 
     this.state = {
@@ -214,8 +215,8 @@ ToolbarButton.propTypes = {
 };
 
 Header.propTypes = {
-  controllers: PropTypes.object.isRequired,
   classes: PropTypes.object.isRequired,
+  controller: PropTypes.instanceOf(NetworkEditorController)
 };
 
 export default withStyles(useStyles)(Header);
