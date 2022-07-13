@@ -10,3 +10,4 @@ pouch__all_dbs__
 /cytoscape-explore.code-workspace
 .idea
 /.project
+.env
