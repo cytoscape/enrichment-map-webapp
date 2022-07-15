@@ -13,6 +13,18 @@ const tsvParser = bodyParser.text({
   limit: '1mb' 
 });
 
+
+/*
+ * This is just for pinging the server.
+ */
+http.get('/', async function(req, res) {
+  res.send("OK");
+});
+
+/*
+ * Runs the FGSEA/EnrichmentMap algorithms, saves the 
+ * created network, then returns its ID.
+ */
 http.post('/create', tsvParser, async function(req, res, next) {
   try {
     console.log('Running /create endpoint.');
@@ -41,7 +53,9 @@ http.post('/create', tsvParser, async function(req, res, next) {
   }
 });
 
-
+/* 
+ * Returns a network given its ID.
+ */
 http.get('/:id', async function(req, res, next) {
   try {
     const { id } = req.params;
@@ -56,12 +70,6 @@ http.get('/:id', async function(req, res, next) {
   }
 });
 
-
-const removeQuotes = str => {
-  if(str.charAt(0) === '"' && str.charAt(str.length-1) === '"')
-    return str.substr(1, str.length-2);
-  return str;
-};
 
 async function getNetwork(netID) {
   console.log('Running get network endpoint.');
@@ -78,7 +86,6 @@ async function runFGSEA(ranksTSV) {
     headers: { 'Content-Type': 'text/tab-separated-values' },
     body: ranksTSV
   });
-
   if(!response.ok) {
     throw new Error("Error running fgsea service.");
   }
@@ -99,16 +106,15 @@ async function runEM(enrichmentsJson) {
     ]
   }`;
 
+  console.log(body);
   const response = await fetch(EM_SERVICE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body
   });
-
   if(!response.ok) {
     throw new Error("Error running em service.");
   }
-
   const networkJson = await response.text();
   return networkJson;
 }

@@ -59,7 +59,7 @@ export class Content extends Component {
   // MKTODO enable this once mongo is working
   async loadSampleNetwork() {
     // Fetch the sample file
-    const res = await fetch('/sample-data/brca_hd_tep_ranks.rnk');
+    const res = await fetch('/sample-data/brca_hd_tep_ranks_100.rnk');
     const ranks = await res.text();
     // Ask the server to import the json data
     const res2 = await fetch(`/api/create`, {
@@ -178,7 +178,7 @@ export class Content extends Component {
                 }}
                 style={{ minWidth: 172, minHeight: 176 }}
                 startIcon={<AddIcon style={{ fontSize: 44 }} />}
-                onClick={() => this.createNewNetwork()}
+                onClick={() => this.creaaeNewNetwork()}
               >
                 Empty
               </Button>

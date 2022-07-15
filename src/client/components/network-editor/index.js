@@ -111,7 +111,10 @@ export class NetworkEditor extends Component {
       console.log('Loaded');
 
       this.cy.fit(DEFAULT_PADDING);
-      this.cy.layout({ name: 'cose' }).run();
+      this.cy.layout({ 
+        name: 'cose',
+        animate: false, 
+      }).run();
 
       console.log('Successful load from DB');
       console.log('End of editor sync initial phase');
