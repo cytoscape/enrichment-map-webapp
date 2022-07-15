@@ -7,6 +7,7 @@ import { Drawer } from '@material-ui/core';
 import { IconButton, Divider, Box } from '@material-ui/core';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import { LayoutIcon } from '../svg-icons';
+import { GeneListPanel } from './gene-list-panel';
 
 function SidePanel({ title, onClose, children }) {
   return <div>
@@ -97,7 +98,7 @@ export class ToolPanel extends Component {
           icon={<LayoutIcon />}
           render={() =>
             <SidePanel title="Gene List" onClose={closePanel}>
-              The Gene List goes here.
+              <GeneListPanel controller={controller} />
             </SidePanel>
           }>
         </ToolButton>

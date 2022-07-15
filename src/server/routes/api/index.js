@@ -3,8 +3,12 @@ import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
 
 import Datastore from '../../datastore.js';
+import { GenesetDB, DB_1_PATH } from '../../geneset-db.js';
 import { EM_SERVICE_URL, FGSEA_SERVICE_URL } from '../../env.js';
 
+
+
+const genesetDB = new GenesetDB(DB_1_PATH);
 
 const http = Express.Router();
 
@@ -69,6 +73,28 @@ http.get('/:id', async function(req, res, next) {
     next(err);
   }
 });
+
+/*
+ * Returns the contents of a geneset given its name.
+ * TODO: Add a query parameter that specifies the database name.
+ */
+http.get('/geneset/:name', async function(req, res, next) {
+  try {
+    const { name } = req.params;
+
+    await genesetDB.connect();
+    const entry = genesetDB.getEntry(name);
+    
+    if(entry) {
+      res.send(JSON.stringify(entry));
+    } else {
+      res.sendStatus(404);
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 
 async function getNetwork(netID) {
