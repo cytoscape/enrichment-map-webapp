@@ -135,7 +135,7 @@ export class Content extends Component {
             <Grid item>
               <Grid container alignItems='center'>
                 <Grid item>
-                  <Tooltip arrow placement="bottom" title="RNA-seq to EM Home">
+                  <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
                     <IconButton 
                       aria-label='close' 
                       onClick={() => location.href = '/'}
@@ -145,7 +145,7 @@ export class Content extends Component {
                   </Tooltip>
                 </Grid>
                 <Grid item>
-                  <Typography variant="h5" className={classes.h5}>RNA-seq to EM</Typography>
+                  <Typography variant="h5" className={classes.h5}>EnrichmentMap</Typography>
                 </Grid>
               </Grid>
             </Grid>

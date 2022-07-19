@@ -108,7 +108,7 @@ export class Header extends Component {
               <Grid item>
                 <Grid container alignItems='center' className={classes.root}>
                   <Grid item>
-                    <Tooltip arrow placement="bottom" title="Cytoscape Explore Home">
+                    <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
                       <IconButton 
                         aria-label='close' 
                         onClick={() => location.href = '/'}
