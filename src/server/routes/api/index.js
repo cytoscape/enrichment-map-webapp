@@ -33,10 +33,10 @@ http.post('/create', tsvParser, async function(req, res, next) {
   try {
     console.log('Running /create endpoint.');
     console.time('create_endpoint');
-    const rankedGeneList = req.body;
+    const rankedGeneListTSV = req.body;
 
     console.time('fgsea_service');
-    const fgseaResultJson = await runFGSEA(rankedGeneList);
+    const fgseaResultJson = await runFGSEA(rankedGeneListTSV);
     console.timeEnd('fgsea_service');
 
     console.time('em_service');
@@ -47,6 +47,7 @@ http.post('/create', tsvParser, async function(req, res, next) {
     console.time('mongo_create');
     await Datastore.connect();
     const netID = await Datastore.createNetwork(networkJsonString);
+    await Datastore.createRankedGeneList(rankedGeneListTSV, netID);
     console.timeEnd('mongo_create');
 
     res.send(netID);
@@ -56,6 +57,7 @@ http.post('/create', tsvParser, async function(req, res, next) {
     next(err);
   }
 });
+
 
 /* 
  * Returns a network given its ID.
@@ -74,9 +76,28 @@ http.get('/:id', async function(req, res, next) {
   }
 });
 
+
+/*
+ * Returns the gene rank.
+ */
+http.get('/:id/gene/:gene', async function(req, res, next) {
+  try {
+    const { id, gene } = req.params;
+    const geneInfo = await getGene(id, gene);
+    if(!geneInfo) {
+      res.sendStatus(404);
+    } else {
+      res.send(JSON.stringify(geneInfo));
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 /*
  * Returns the contents of a geneset given its name.
- * TODO: Add a query parameter that specifies the database name.
+ * TODO: Add a query parameter that specifies the geneset database name.
  */
 http.get('/geneset/:name', async function(req, res, next) {
   try {
@@ -84,7 +105,7 @@ http.get('/geneset/:name', async function(req, res, next) {
 
     await genesetDB.connect();
     const entry = genesetDB.getEntry(name);
-    
+
     if(entry) {
       res.send(JSON.stringify(entry));
     } else {
@@ -96,7 +117,6 @@ http.get('/geneset/:name', async function(req, res, next) {
 });
 
 
-
 async function getNetwork(netID) {
   console.log('Running get network endpoint.');
   await Datastore.connect();
@@ -105,6 +125,13 @@ async function getNetwork(netID) {
   return network;
 }
 
+async function getGene(netID, geneName) {
+  console.log('Running get gene endpoint.');
+  await Datastore.connect();
+  const network = await Datastore.getGeneInfo(netID, geneName);
+  console.log('Running get gene endpoint - DONE');
+  return network;
+}
 
 async function runFGSEA(ranksTSV) {
   const response = await fetch(FGSEA_SERVICE_URL, {
