@@ -2,6 +2,11 @@ import { MongoClient } from 'mongodb';
 import { MONGO_URL, MONGO_ROOT_NAME, MONGO_COLLECTION_QUERIES } from './env.js';
 import uuid from 'uuid';
 import MUUID from 'uuid-mongodb';
+import { fileForEachLine } from './util.js';
+
+
+export const DB_1 = 'Human_GOBP_AllPathways_no_GO_iea_June_01_2022_symbol.gmt';
+
 
 function makeID(string) {
     if(!string) {
@@ -26,6 +31,34 @@ class Datastore {
         const db = this.db = mongo.db(MONGO_ROOT_NAME);
         const queries = this.queries = db.collection(MONGO_COLLECTION_QUERIES);
         console.info('Connected to MongoDB');
+
+        console.info('Loading gene set databases into MongoDB');
+        await this.loadGenesetDB(DB_1);
+        console.info('Loading done');
+    }
+
+
+    async loadGenesetDB(fileName) {
+        const collections = await this.db.listCollections().toArray();
+        if(collections.some(c => c.name === fileName)) {
+            console.info("Collection " + fileName + " already loaded");
+            return;
+        } else {
+            console.info("Loading collection " + fileName);
+        }
+
+        const filepath = './public/geneset-db/' + fileName;
+        const geneSets = [];
+
+        await fileForEachLine(filepath, line => {
+          const [ name, description, ...genes ] = line.split("\t");
+          if(genes[genes.length-1] === "") {
+            genes.pop();
+          }
+          geneSets.push({ name, description, genes });
+        });
+
+        await this.db.collection(fileName).insertMany(geneSets);
     }
 
 
@@ -88,6 +121,19 @@ class Datastore {
             return matches[0].genes[0];
     }
 
+    // Returns just the contents of a gene set.
+    async getGeneSet(fileName, geneSetName) {
+        console.info("gene set name: " + geneSetName);
+        return await this.db
+            .collection(fileName)
+            .findOne({ name: geneSetName });
+    }
+
+    // Returns a gene set merged with the gene ranks. Note some genes might not 
+    // have ranks if they were not included in the original gene list.
+    async getGeneSetWithRanks(fileName, geneSetName, networkID) {
+
+    }
 }
 
 const ds = new Datastore(); // singleton

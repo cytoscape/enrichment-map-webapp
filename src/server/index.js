@@ -9,7 +9,6 @@ import http from 'http';
 import logger from './logger.js';
 import fs from 'fs';
 import stream from 'stream';
-import Cytoscape from 'cytoscape';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
@@ -96,6 +95,8 @@ app.set('port', PORT);
 server.listen(PORT);
 server.on('error', onError);
 server.on('listening', onListening);
+
+// Connect to mongo
 
 function onError(error) {
   if (error.syscall !== 'listen') {
