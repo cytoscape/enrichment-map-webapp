@@ -1,15 +1,13 @@
+import debug from './client/debug.js';
 import React from 'react';
 import ReactDOM from 'react-dom';
-
-import debug from './debug';
-
-import { Router } from './router';
+import { Router } from './client/router.js';
 import { Chart } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
-import { registerCytoscapeExtensions } from '../model/cy-extensions';
-import { fixOldFashionedScrollStyle } from './scroll';
+import { registerCytoscapeExtensions } from './model/cy-extensions';
+import { fixOldFashionedScrollStyle } from './client/scroll';
 
-if (debug.enabled()) {
+if( debug.enabled() ){
   debug.init();
 }
 
@@ -19,7 +17,8 @@ registerCytoscapeExtensions();
 
 let div = document.createElement('div');
 div.setAttribute('id', 'root');
-document.body.appendChild(div);
+
+document.body.appendChild( div );
 
 ReactDOM.render(
   <Router/>,

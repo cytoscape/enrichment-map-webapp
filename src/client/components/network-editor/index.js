@@ -1,18 +1,13 @@
 import _ from 'lodash';
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape';
 
 import { NODE_ENV } from '../../env';
 import { DEFAULT_PADDING } from './defaults';
 import { NetworkEditorController } from './controller';
-import theme from '../../theme';
 import Header from './header';
 import Main from './main';
-
-import { ThemeProvider } from '@material-ui/core/styles';
-import CssBaseline from '@material-ui/core/CssBaseline';
 
 const CY_EVENTS = 'data add remove move layoutstop viewport';
 
@@ -145,17 +140,13 @@ export class NetworkEditor extends Component {
     const { controller } = this;
 
     return (
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
         <div className="network-editor">
           <Header controller={controller} />
           <Main controller={controller} />
         </div>
-      </ThemeProvider>
     );
   }
 }
-
 
 export class Demo extends Component {
   constructor(props) {
@@ -166,9 +157,5 @@ export class Demo extends Component {
     return <NetworkEditor id="demo" secret="demo" />;
   }
 }
-
-
-NetworkEditor.propTypes = {
-};
 
 export default NetworkEditor;

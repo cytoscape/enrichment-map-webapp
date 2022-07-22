@@ -22,8 +22,22 @@ let conf = {
 
   module: {
     rules: [
-      { test: /\.(js|jsx)$/, exclude: /node_modules/, loader: 'babel-loader' }
-    ]
+      {
+        test: /\.js|\.jsx$/,
+        exclude: /node_modules/,
+        loader: 'babel-loader',
+        resolve: { fullySpecified: false, }
+      },
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+    ],
+  },
+
+  resolve: {
+    extensions: ['', '.js', '.jsx', '.css'],
+    modules: ['node_modules']
   },
 
   optimization: {
@@ -32,11 +46,12 @@ let conf = {
       cacheGroups: {
         vendors: {
           name: 'deps',
-          test: (mod, chunks) => {
-            let context = mod.context || '';
+          // test: (mod, chunks) => {
+          //   let context = mod.context || '';
 
-            return context.indexOf('node_modules') >= 0 && !chunks.some(chunk => chunk.name === 'polyfills');
-          }
+          //   return context.indexOf('node_modules') >= 0 && !chunks.some(chunk => chunk.name === 'polyfills');
+          // }
+          test: /[\\/]node_modules[\\/]|vendor[\\/]/,
         },
         default: {
           name: 'main',
@@ -56,7 +71,8 @@ let conf = {
 
   plugins: [
     new DotEnvPlugin({ defaults: true })
-  ]
+  ],
+
 };
 
 module.exports = conf;

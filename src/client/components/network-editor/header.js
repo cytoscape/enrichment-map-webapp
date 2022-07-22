@@ -7,18 +7,21 @@ import TitleEditor from './title-editor';
 import ShareButton from './share-button';
 import { NetworkEditorController } from './controller';
 
-import { withStyles } from '@material-ui/core/styles';
-
-import { AppBar, Toolbar } from '@material-ui/core';
-import { Grid, Divider } from '@material-ui/core';
-import { Popover, MenuList, MenuItem} from "@material-ui/core";
-import { Tooltip } from '@material-ui/core';
-import { IconButton } from '@material-ui/core';
+import {
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
+  IonButton,
+  IonIcon,
+  IonContent,
+  IonGrid,
+  IonRow,
+  IonCol,
+} from '@ionic/react';
 
 import { AppLogoIcon } from '../svg-icons';
-import SearchIcon from '@material-ui/icons/Search'; // eslint-disable-line
-import DebugIcon from '@material-ui/icons/BugReport'; // eslint-disable-line
-import FitScreenIcon from '@material-ui/icons/Fullscreen';
+import { expandOutline, search } from 'ionicons/icons';
 
 /**
  * The network editor's header or app bar.
@@ -93,130 +96,77 @@ export class Header extends Component {
 
   render() {
     const { anchorEl, menuName, dialogName } = this.state;
-    const { classes } = this.props;
     const { controller } = this;
 
-    const ToolbarDivider = ({ unrelated }) => {
-      return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
-    };
-    
     return (
-      <>
-        <AppBar position="relative" color='default'>
-          <Toolbar variant="dense">
-            <Grid container alignItems='center' justifyContent="space-between">
-              <Grid item>
-                <Grid container alignItems='center' className={classes.root}>
-                  <Grid item>
-                    <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
-                      <IconButton 
-                        aria-label='close' 
-                        onClick={() => location.href = '/'}
-                      >
-                        <AppLogoIcon style={{ fontSize: 28 }} />
-                      </IconButton>
-                    </Tooltip>
-                  </Grid>
-                  <Grid item>
-                    <div className="header-title-area">
-                      <TitleEditor controller={controller} />
-                      <div className="header-title-save-status">Edits saved</div>
-                    </div>
-                  </Grid>
-                </Grid>
-              </Grid>
-
-              <Grid item>
-                <Grid container alignItems="center" color="secondary.main" className={classes.root}>
-                  <ToolbarButton
-                    title="Fit Network"
-                    icon={<FitScreenIcon />}
-                    onClick={() => controller.cy.fit(DEFAULT_PADDING)}
-                  />
-                  {/* <ToolbarDivider unrelated />
-                  <ToolbarButton
-                    title="Search"
-                    icon={<SearchIcon />}
-                    onClick={() => console.log('Search NOT IMPLEMENTED...')}
-                  /> */}
-                  <ToolbarDivider unrelated />
-                  <ShareButton controller={controller}/>
-                  <ToolbarDivider />
-                  {/* <ToolbarButton
-                    title="Debug"
-                    icon={<DebugIcon />}
-                    onClick={e => this.handleClick(e, 'debug')} 
-                  /> */}
-                </Grid>
-              </Grid>
-            </Grid>
-          </Toolbar>
-          {anchorEl && (
-            <Popover
-              id="menu-popover"
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={() => this.handleClose()}
-            >
-              {menuName === 'account' && (
-                <MenuList>
-                  <MenuItem disabled={true} onClick={() => this.handleClose()}>Sign Out</MenuItem>
-                </MenuList>
-              )}
-              {/* {menuName === 'debug' && !dialogName && (
-                <MenuList>
-                  <MenuItem disabled={false} onClick={() => this.showDialog('dialog-name')}>Item Title Here</MenuItem>
-                </MenuList>
-              )} */}
-            </Popover>
-          )}
-        </AppBar>
-      </>
+      <IonHeader>
+        <IonToolbar color="dark">
+          <IonButtons slot="start">
+            <IonButton aria-label='home' defaultHref="/">
+              <AppLogoIcon fontSize="large" />
+            </IonButton>
+          </IonButtons>
+          <IonButtons slot="end">
+            <IonButton onClick={() => controller.cy.fit(DEFAULT_PADDING)} >
+              <IonIcon slot="icon-only" icon={expandOutline} />
+            </IonButton>
+            <IonButton onClick={() => console.log('Search NOT IMPLEMENTED...')} >
+              <IonIcon slot="icon-only" icon={search} />
+            </IonButton>
+            {/* <ShareButton controller={controller}/> */}
+          </IonButtons>
+          <TitleEditor controller={controller} />
+        </IonToolbar>
+      </IonHeader>
+      // {anchorEl && (
+      //   <Popover
+      //     id="menu-popover"
+      //     anchorEl={anchorEl}
+      //     open={Boolean(anchorEl)}
+      //     onClose={() => this.handleClose()}
+      //   >
+      //     {menuName === 'account' && (
+      //       <MenuList>
+      //         <MenuItem disabled={true} onClick={() => this.handleClose()}>Sign Out</MenuItem>
+      //       </MenuList>
+      //     )}
+      //   </Popover>
+      // )}
     );
   }
 }
 
-class ToolbarButton extends Component {
+// const ToolbarButton = ({ children, title, onClick }) => (
+//     <IonButton onClick={onClick}>
+//       { children }
+//     </IonButton>
+// );
 
-  render() {
-    const { title, icon, color, onClick } = this.props;
+// const useStyles = theme => ({
+//   root: {
+//     width: 'fit-content',
+//   },
+//   divider: {
+//     marginLeft: theme.spacing(0.5),
+//     marginRight: theme.spacing(0.5),
+//     width: 0,
+//   },
+//   unrelatedDivider: {
+//     marginLeft: theme.spacing(2.5),
+//     marginRight: theme.spacing(2.5),
+//     width: 0,
+//   },
+// });
 
-    return (
-      <Tooltip arrow placement="bottom" title={title}>
-        <IconButton size="small" color={color || 'inherit'} onClick={onClick}>
-          { icon }
-        </IconButton>
-      </Tooltip>
-    );
-  }
-}
-
-const useStyles = theme => ({
-  root: {
-    width: 'fit-content',
-  },
-  divider: {
-    marginLeft: theme.spacing(0.5),
-    marginRight: theme.spacing(0.5),
-    width: 0,
-  },
-  unrelatedDivider: {
-    marginLeft: theme.spacing(2.5),
-    marginRight: theme.spacing(2.5),
-    width: 0,
-  },
-});
-
-ToolbarButton.propTypes = {
-  title: PropTypes.string.isRequired,
-  icon: PropTypes.element.isRequired,
-  color: PropTypes.string,
-  onClick: PropTypes.func.isRequired,
-};
+// ToolbarButton.propTypes = {
+//   title: PropTypes.string.isRequired,
+//   color: PropTypes.string,
+//   onClick: PropTypes.func.isRequired,
+//   children: PropTypes.element.isRequired,
+// };
 
 Header.propTypes = {
-  classes: PropTypes.object.isRequired,
   controller: PropTypes.instanceOf(NetworkEditorController)
 };
 
-export default withStyles(useStyles)(Header);
+export default Header;
