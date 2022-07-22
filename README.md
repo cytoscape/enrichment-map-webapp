@@ -33,7 +33,7 @@
 - The main target you will run during development is `npm run watch`.
   - This automatically builds the clientside code in the background. The browser will refresh automatically when the code is rebuilt.
   - The server will automatically reload when you change the server code. That way new HTTP requests from the client will use the updated code right away.
-- <span id="dependent-services">Dependent services</a>:
+- <span id="dependent-services">Dependent services</span>:
   - MongoDB: If you have MongoDB running locally on the default port, you don't need to configure any environment variables to get things working. The defaults are preset for local development. 
   - [Java service](https://github.com/cytoscape/enrichmentmap-service):  This app depends on the Java webservice.  The project is set up to point to a local instance of the Java service by default.  A public instance is available at https://service.em.baderlab.org
   - [FGSEA service](https://github.com/cytoscape/fgsea-service):  This app depends on the FSGEA service.  The project is set up to point to a local instance of FGSEA by default.  A public instance is available at https://fgsea.em.baderlab.org
