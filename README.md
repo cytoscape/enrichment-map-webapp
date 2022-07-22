@@ -7,6 +7,8 @@
 
 ## Getting started
 
+**N.b. you can use [public service instances](https://github.com/BaderLab/sysadmin/blob/master/websites/em.env) for your local development to obviate local service dependencies.**  [See below for details.](#dependent-services)
+
 - Windows Cloning
 
   - The `public` directory includes symlinks, which most versions of Windows Git will not correctly clone by default. Make sure to clone using the following command:
@@ -31,7 +33,11 @@
 - The main target you will run during development is `npm run watch`.
   - This automatically builds the clientside code in the background. The browser will refresh automatically when the code is rebuilt.
   - The server will automatically reload when you change the server code. That way new HTTP requests from the client will use the updated code right away.
-- If you have MongoDB running locally on the default port, you don't need to configure any environment variables to get things working. The defaults are preset for local development.
+- <span id="dependent-services">Dependent services</a>:
+  - MongoDB: If you have MongoDB running locally on the default port, you don't need to configure any environment variables to get things working. The defaults are preset for local development. 
+  - [Java service](https://github.com/cytoscape/enrichmentmap-service):  This app depends on the Java webservice.  The project is set up to point to a local instance of the Java service by default.  A public instance is available at https://service.em.baderlab.org
+  - [FGSEA service](https://github.com/cytoscape/fgsea-service):  This app depends on the FSGEA service.  The project is set up to point to a local instance of FGSEA by default.  A public instance is available at https://fgsea.em.baderlab.org
+  - **N.b. you can use public service instances for your local development to obviate local service dependencies.  It is recommended to use a local instance of MongoDB, where possible, to avoid conflicts.  You can use [an `.env` file in the root of this project](https://github.com/BaderLab/sysadmin/blob/master/websites/em.env) with [the proper values](https://github.com/BaderLab/sysadmin/blob/master/websites/em.env) for remote services.  Do not commit the linked environment variables in public GitHub repositories.**
 - The Chrome debugger can be used for the clientside code (Chrome > View > Developer > Developer Tools) or the serverside code (`npm run inspect` and go to [chrome://inspect](chrome://inspect)). There is also an included launch config file that allows you to debug the client or the server directly in VSC.
 
 ## Editor
@@ -58,6 +64,8 @@ The following environment variables can be used to configure the server:
 - `UPLOAD_LIMIT` : max network upload size (e.g. `20kb`)
 - `NDEX_API_URL`: the URL for the NDEx web application
 - `MONGO_URL`: the MongoDB connection URL
+- `FGSEA_SERVICE_URL`: the full path of the [FGSEA service](https://github.com/cytoscape/fgsea-service) (i.e. for a query, not the root URL)
+- `EM_SERVICE_URL`: the pull path of the [Java service](https://github.com/cytoscape/enrichmentmap-service) (i.e. for a query, not the root URL)
 - `MONGO_ROOT_NAME`: the name of the app's DB in Mongo
 - `MONGO_COLLECTION_QUERIES`: the name of the query collection
 
