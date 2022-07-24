@@ -70,6 +70,7 @@ class Datastore {
         const networkID = makeID();
 
         networkJson['_id'] = networkID.bson;
+        networkJson['networkIDStr'] = networkID.string;
         await this.db.collection('networks').insertOne(networkJson);
 
         return networkID.string;
@@ -83,6 +84,7 @@ class Datastore {
         const geneList = {
             _id: geneListID.bson,
             networkID: networkID.bson,
+            networkIDStr: networkID.string,
             genes: []
         };
         
@@ -122,18 +124,52 @@ class Datastore {
     }
 
     // Returns just the contents of a gene set.
-    async getGeneSet(fileName, geneSetName) {
-        console.info("gene set name: " + geneSetName);
+    async getGeneSet(geneSetCollection, geneSetName) {
         return await this.db
-            .collection(fileName)
+            .collection(geneSetCollection)
             .findOne({ name: geneSetName });
     }
 
-    // Returns a gene set merged with the gene ranks. Note some genes might not 
-    // have ranks if they were not included in the original gene list.
-    async getGeneSetWithRanks(fileName, geneSetName, networkID) {
+    // Returns the gene set with the genes joined with the ranks.
+    async getGeneSetWithRanks(geneSetCollection, geneSetName, networkIDStr) {
+        console.log(geneSetCollection);
+        console.log(geneSetName);
+        console.log(networkIDStr);
 
+        const geneSetInfo = await this.db
+            .collection(geneSetCollection)
+            .findOne({ name: geneSetName }, { name: 1, description: 1 });
+        
+        console.log("geneSetInfo:" + geneSetInfo);
+
+        const geneListWithRanks = await this.db
+            .collection(geneSetCollection)
+            .aggregate([
+                { $match: { name: geneSetName } },
+                { $project: { genes: { $map: { input: "$genes", as: "g", in: { gene: "$$g" } } } }},
+                { $unwind: "$genes" },
+                { $replaceRoot: { newRoot: "$genes"} },
+                { $lookup: {
+                    from: "geneLists",
+                    let: { gx: "$gene" },
+                    pipeline: [
+                        { $match: { networkIDStr } },
+                        { $unwind: "$genes" },
+                        { $replaceRoot: { newRoot: "$genes"} },
+                        { $match: { $expr: { $eq: ["$gene", "$$gx" ] } } }
+                    ],
+                    as: "newField"
+                }},
+                { $project: { gene: "$gene", rank: { $first: "$newField.rank" } } }
+            ]).toArray();
+
+        return {
+            name: geneSetInfo.name,
+            description: geneSetInfo.description,
+            genes: geneListWithRanks
+        };
     }
+
 }
 
 const ds = new Datastore(); // singleton

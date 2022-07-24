@@ -57,10 +57,10 @@ http.post('/create', tsvParser, async function(req, res, next) {
 /* 
  * Returns a network given its ID.
  */
-http.get('/:id', async function(req, res, next) {
+http.get('/:netid', async function(req, res, next) {
   try {
-    const { id } = req.params;
-    const network = await Datastore.getNetwork(id);
+    const { netid } = req.params;
+    const network = await Datastore.getNetwork(netid);
     if(!network) {
       res.sendStatus(404);
     } else {
@@ -73,12 +73,12 @@ http.get('/:id', async function(req, res, next) {
 
 
 /*
- * Returns the gene rank.
+ * Returns the rank of an individual gene.
  */
-http.get('/:id/gene/:gene', async function(req, res, next) {
+http.get('/:netid/gene/:gene', async function(req, res, next) {
   try {
-    const { id, gene } = req.params;
-    const geneInfo = await Datastore.getGeneInfo(id, gene);
+    const { netid, gene } = req.params;
+    const geneInfo = await Datastore.getGeneInfo(netid, gene);
     if(!geneInfo) {
       res.sendStatus(404);
     } else {
@@ -109,6 +109,24 @@ http.get('/geneset/:name', async function(req, res, next) {
   }
 });
 
+
+/*
+ * Returns the contents of a geneset, including ranks.
+ */
+http.get('/:netid/geneset/:name', async function(req, res, next) {
+  try {
+    const { netid, name } = req.params;
+    const geneInfo = await Datastore.getGeneSetWithRanks(DB_1, name, netid);
+    console.log(geneInfo);
+    if(!geneInfo) {
+      res.sendStatus(404);
+    } else {
+      res.send(JSON.stringify(geneInfo));
+    }
+  } catch (err) {
+    next(err);
+  }
+});
 
 
 async function runFGSEA(ranksTSV) {

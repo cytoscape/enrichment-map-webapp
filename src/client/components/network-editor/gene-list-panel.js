@@ -1,21 +1,23 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { NetworkEditorController } from './controller';
+import _ from 'lodash';
 
 export class GeneListPanel extends Component {
 
   constructor(props) {
     super(props);
     this.controller = props.controller;
+    this.networkIDStr = props.controller.cy.data('id');
 
     this.state = {
-      genes: []
+      genes: [],
     };
 
     this.selectionHandler = (event) => {
       const node = event.target;
       const geneSet = node.data('name');
-      this.fetchGeneList(geneSet);
+      this.fetchGeneListWithRanks(geneSet);
     };
 
     this.controller.cy.on('select', 'node', this.selectionHandler);
@@ -25,13 +27,24 @@ export class GeneListPanel extends Component {
     this.controller.cy.removeListener('select', 'node', this.selectionHandler);
   }
 
-  fetchGeneList(geneSetName) {
-    fetch(`/api/geneset/${encodeURIComponent(geneSetName)}`)
+  // fetchGeneList(geneSetName) {
+  //   fetch(`/api/geneset/${encodeURIComponent(geneSetName)}`)
+  //     .then(res => res.json())
+  //     .then(({ name, description, genes }) => this.setState({ name, description, genes }));
+  // }
+
+  fetchGeneListWithRanks(geneSetName) {
+    fetch(`/api/${this.networkIDStr}/geneset/${encodeURIComponent(geneSetName)}`)
       .then(res => res.json())
-      .then(({ name, description, genes }) => this.setState({ name, description, genes }));
+      .then(({ name, description, genes }) => {
+        genes = _.sortBy(genes, ["rank", "gene"]);
+        // genes = _.orderBy(genes, ["rank", "gene"], ["desc", "asc"]);
+        this.setState({ name, description, genes });
+      });
   }
 
   render() {
+    console.log("genes: " + JSON.stringify(this.state.genes));
     return <div>
       <div>
         Gene Set: {this.state.name}
@@ -41,12 +54,23 @@ export class GeneListPanel extends Component {
         Description: {this.state.description}
       </div>
       <hr/>
-      <div>
+      {/* <div>
         Genes:
         <div>
             { this.state.genes.map(gene =>
               <div key={gene}>{gene}</div>
             )}
+        </div>
+      </div> */}
+      <div>
+        Genes:
+        <div>
+            { this.state.genes.map(({gene, rank}) =>
+              <div key={gene}>{gene} { rank ? "(" + rank + ")" : null }</div>
+            )}
+            {/* { this.state.genes.map(({gene, rank}) =>
+              {rank ? <div>{rank}</div> : null; }
+            )} */}
         </div>
       </div>
     </div>;
