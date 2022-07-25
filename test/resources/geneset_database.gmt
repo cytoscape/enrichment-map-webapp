@@ -1,0 +1,5 @@
+GENESET_1	the first geneset	AAA	BBB	CCC	DDD
+GENESET_2	the second geneset	AAA	BBB	CCC	DDD	EEE	FFF
+GENESET_3	the third geneset	AAA	BBB	CCC	GGG	HHH
+GENESET_4	the fourth geneset	AAA	BBB	III
+GENESET_5	the fifth geneset	AAA	BBB	JJJ	LLL	ZZZ

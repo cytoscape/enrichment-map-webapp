@@ -1,5 +1,4 @@
 import { MongoClient } from 'mongodb';
-import { MONGO_URL, MONGO_ROOT_NAME, MONGO_COLLECTION_QUERIES } from './env.js';
 import uuid from 'uuid';
 import MUUID from 'uuid-mongodb';
 import { fileForEachLine } from './util.js';
@@ -27,18 +26,20 @@ class Datastore {
 
     async connect() {
         console.info('Connecting to MongoDB');
+        const { MONGO_URL, MONGO_ROOT_NAME, MONGO_COLLECTION_QUERIES } = process.env;
+
         const mongo = this.mongo = await MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true });
         const db = this.db = mongo.db(MONGO_ROOT_NAME);
         const queries = this.queries = db.collection(MONGO_COLLECTION_QUERIES);
         console.info('Connected to MongoDB');
 
         console.info('Loading gene set databases into MongoDB');
-        await this.loadGenesetDB(DB_1);
+        await this.loadGenesetDB('./public/geneset-db/', DB_1);
         console.info('Loading done');
     }
 
 
-    async loadGenesetDB(fileName) {
+    async loadGenesetDB(path, fileName) {
         const collections = await this.db.listCollections().toArray();
         if(collections.some(c => c.name === fileName)) {
             console.info("Collection " + fileName + " already loaded");
@@ -47,7 +48,7 @@ class Datastore {
             console.info("Loading collection " + fileName);
         }
 
-        const filepath = './public/geneset-db/' + fileName;
+        const filepath = path + fileName;
         const geneSets = [];
 
         await fileForEachLine(filepath, line => {
@@ -110,7 +111,7 @@ class Datastore {
     }
 
 
-    async getGeneInfo(networkIDString, geneName) {
+    async getGeneRank(networkIDString, geneName) {
         const networkID = makeID(networkIDString);
 
         const matches = await this.db
@@ -132,31 +133,25 @@ class Datastore {
 
     // Returns the gene set with the genes joined with the ranks.
     async getGeneSetWithRanks(geneSetCollection, geneSetName, networkIDStr) {
-        console.log(geneSetCollection);
-        console.log(geneSetName);
-        console.log(networkIDStr);
-
         const geneSetInfo = await this.db
             .collection(geneSetCollection)
             .findOne({ name: geneSetName }, { name: 1, description: 1 });
-        
-        console.log("geneSetInfo:" + geneSetInfo);
 
         const geneListWithRanks = await this.db
             .collection(geneSetCollection)
             .aggregate([
                 { $match: { name: geneSetName } },
-                { $project: { genes: { $map: { input: "$genes", as: "g", in: { gene: "$$g" } } } }},
+                { $project: { genes: { $map: { input: "$genes", as: "g", in: { gene: "$$g" } } } } },
                 { $unwind: "$genes" },
                 { $replaceRoot: { newRoot: "$genes"} },
                 { $lookup: {
                     from: "geneLists",
-                    let: { gx: "$gene" },
+                    let: { foreignGene: "$gene" },
                     pipeline: [
                         { $match: { networkIDStr } },
                         { $unwind: "$genes" },
                         { $replaceRoot: { newRoot: "$genes"} },
-                        { $match: { $expr: { $eq: ["$gene", "$$gx" ] } } }
+                        { $match: { $expr: { $eq: ["$gene", "$$foreignGene" ] } } }
                     ],
                     as: "newField"
                 }},

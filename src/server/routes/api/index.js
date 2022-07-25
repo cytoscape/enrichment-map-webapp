@@ -78,7 +78,7 @@ http.get('/:netid', async function(req, res, next) {
 http.get('/:netid/gene/:gene', async function(req, res, next) {
   try {
     const { netid, gene } = req.params;
-    const geneInfo = await Datastore.getGeneInfo(netid, gene);
+    const geneInfo = await Datastore.getGeneRank(netid, gene);
     if(!geneInfo) {
       res.sendStatus(404);
     } else {
