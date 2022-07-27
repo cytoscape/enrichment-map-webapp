@@ -11,10 +11,10 @@ import { NetworkEditorController } from './controller';
 import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Toolbar } from '@material-ui/core';
-import { Grid, Divider } from '@material-ui/core';
+import { Divider } from '@material-ui/core';
 import { Popover, MenuList, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
-import { IconButton } from '@material-ui/core';
+import { IconButton, Box } from '@material-ui/core';
 
 import { AppLogoIcon } from '../svg-icons';
 import MenuIcon from '@material-ui/icons/Menu';
@@ -108,58 +108,44 @@ export class Header extends Component {
           className={clsx(classes.appBar, { [classes.appBarShift]: showControlPanel })}
         >
           <Toolbar variant="dense">
-            <Grid container alignItems='center' justifyContent="space-between">
-              <Grid item>
-                <Grid container alignItems='center' className={classes.root}>
-                  <Grid item>
-                    <ToolbarButton
-                      title="Control Panel"
-                      icon={<MenuIcon />}
-                      edge="start"
-                      className={classes.menuButton}
-                      onClick={() => onShowControlPanel(!showControlPanel)}
-                    />
-                    <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
-                      <IconButton 
-                        aria-label='close' 
-                        onClick={() => location.href = '/'}
-                      >
-                        <AppLogoIcon style={{ fontSize: 28 }} />
-                      </IconButton>
-                    </Tooltip>
-                  </Grid>
-                  <Grid item>
-                    <div className="header-title-area">
-                      <TitleEditor controller={controller} />
-                    </div>
-                  </Grid>
-                </Grid>
-              </Grid>
-
-              <Grid item>
-                <Grid container alignItems="center" color="secondary.main" className={classes.root}>
-                  <ToolbarButton
-                    title="Fit Network"
-                    icon={<FitScreenIcon />}
-                    onClick={() => controller.cy.fit(DEFAULT_PADDING)}
-                  />
-                  {/* <ToolbarDivider unrelated />
-                  <ToolbarButton
-                    title="Search"
-                    icon={<SearchIcon />}
-                    onClick={() => console.log('Search NOT IMPLEMENTED...')}
-                  /> */}
-                  <ToolbarDivider unrelated />
-                  <ShareButton controller={controller}/>
-                  <ToolbarDivider />
-                  {/* <ToolbarButton
-                    title="Debug"
-                    icon={<DebugIcon />}
-                    onClick={e => this.handleClick(e, 'debug')} 
-                  /> */}
-                </Grid>
-              </Grid>
-            </Grid>
+            <ToolbarButton
+              title="Control Panel"
+              icon={<MenuIcon />}
+              edge="start"
+              className={classes.menuButton}
+              onClick={() => onShowControlPanel(!showControlPanel)}
+            />
+            <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' } }}>
+              <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
+                <IconButton 
+                  aria-label='close' 
+                  onClick={() => location.href = '/'}
+                >
+                  <AppLogoIcon style={{ fontSize: 28 }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <TitleEditor controller={controller} />
+            <ToolbarDivider unrelated />
+            <ToolbarButton
+              title="Fit Network"
+              icon={<FitScreenIcon />}
+              onClick={() => controller.cy.fit(DEFAULT_PADDING)}
+            />
+            {/* <ToolbarDivider unrelated />
+            <ToolbarButton
+              title="Search"
+              icon={<SearchIcon />}
+              onClick={() => console.log('Search NOT IMPLEMENTED...')}
+            /> */}
+            <ToolbarDivider unrelated />
+            <ShareButton controller={controller}/>
+            <ToolbarDivider />
+            {/* <ToolbarButton
+              title="Debug"
+              icon={<DebugIcon />}
+              onClick={e => this.handleClick(e, 'debug')} 
+            /> */}
           </Toolbar>
           {anchorEl && (
             <Popover
@@ -204,9 +190,6 @@ class ToolbarButton extends Component {
 const drawerWidth = 240;
 
 const useStyles = theme => ({
-  root: {
-    width: 'fit-content',
-  },
   appBar: {
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,

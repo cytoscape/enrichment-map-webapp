@@ -26,10 +26,7 @@ export default function SearchField() {
 
   return (
     <Paper component="form" className={classes.root}>
-      <InputBase
-        className={classes.input}
-        placeholder="Search"
-      />
+      <InputBase className={classes.input} placeholder="Search" />
       <IconButton type="submit" className={classes.iconButton} aria-label="search">
         <SearchIcon />
       </IconButton>
