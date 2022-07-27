@@ -121,6 +121,12 @@ export class NetworkEditor extends Component {
     };
 
     enableSync();
+
+    this.state = {
+      showControlPanel: false,
+    };
+
+    this.onShowControlPanel = this.onShowControlPanel.bind(this);
   }
 
   onCyEvents() {
@@ -141,15 +147,20 @@ export class NetworkEditor extends Component {
     this.cy.destroy();
   }
 
+  onShowControlPanel(show) {
+    this.setState({ showControlPanel: show });
+  }
+
   render() {
     const { controller } = this;
+    const { showControlPanel } = this.state;
 
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className="network-editor">
-          <Header controller={controller} />
-          <Main controller={controller} />
+          <Header controller={controller} onShowControlPanel={this.onShowControlPanel} showControlPanel={showControlPanel}  />
+          <Main controller={controller} showControlPanel={showControlPanel} />
         </div>
       </ThemeProvider>
     );

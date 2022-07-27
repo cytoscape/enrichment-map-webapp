@@ -80,3 +80,5 @@ export class GeneListPanel extends Component {
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
 };
+
+export default GeneListPanel;

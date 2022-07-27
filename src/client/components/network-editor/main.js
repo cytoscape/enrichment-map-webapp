@@ -4,9 +4,15 @@ import PropTypes from 'prop-types';
 
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
-import { ToolPanel } from './tool-panel';
+import SearchField from './search-field';
+import { GeneListPanel } from './gene-list-panel';
 
 import { withStyles } from '@material-ui/core/styles';
+
+import { Drawer, Divider, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
+
+import InboxIcon from '@material-ui/icons/MoveToInbox';
+import MailIcon from '@material-ui/icons/Mail';
 
 export class Main extends Component {
 
@@ -16,10 +22,6 @@ export class Main extends Component {
     this.controller = this.props.controller;
     this.cy = this.controller.cy;
     this.cyEmitter = new EventEmitterProxy(this.cy);
-
-    this.state = {
-      rightPanelOpen: false,
-    };
   }
 
   componentDidMount() {
@@ -71,26 +73,37 @@ export class Main extends Component {
     });
   }
 
-  componentWillUnmount(){
+  componentWillUnmount() {
     this.cyEmitter.removeAllListeners();
   }
 
   render() {
     const { controller } = this;
-    
-    const setOpen = open => this.setState({ rightPanelOpen: open });
-    const panelStyleOverrides = {};
-    
-    if (this.state.rightPanelOpen)
-      panelStyleOverrides.right = '300px';
+    const { classes, showControlPanel } = this.props;
 
     return (
       <div className="network-editor-content">
-        <div className="cy" style={panelStyleOverrides}>
+        <Drawer
+          className={classes.drawer}
+          variant="persistent"
+          anchor="left"
+          open={showControlPanel}
+          classes={{
+            paper: classes.drawerPaper,
+          }}
+        >
+          <div className={classes.drawerHeader}>
+            <SearchField controller={controller} />
+          </div>
+          <Divider />
+          <List>
+            <GeneListPanel controller={controller} />
+          </List>
+        </Drawer>
+        <div className="cy">
           <div id="cy" />
           <NetworkBackground controller={controller} />
         </div>
-        <ToolPanel controller={controller} onSetOpen={setOpen} />
       </div>
     );
   }
@@ -115,14 +128,35 @@ class NetworkBackground extends Component {
 
   render() {
     const { bgColor } = this.state;
+
     return (
       <div id="cy-background" style={{ backgroundColor: bgColor }} />
     );
   }
 }
 
+const drawerWidth = 240;
+
 const useStyles = theme => ({
+  drawer: {
+    width: drawerWidth,
+    flexShrink: 0,
+  },
+  drawerPaper: {
+    width: drawerWidth,
+  },
   root: {
+    padding: '2px 4px',
+    display: 'flex',
+    alignItems: 'center',
+    width: 400,
+  },
+  input: {
+    marginLeft: theme.spacing(1),
+    flex: 1,
+  },
+  iconButton: {
+    padding: 10,
   },
 });
 
@@ -130,7 +164,9 @@ NetworkBackground.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
 };
 Main.propTypes = {
-  controller: PropTypes.object.isRequired,
+  classes: PropTypes.object.isRequired,
+  controller: PropTypes.instanceOf(NetworkEditorController),
+  showControlPanel: PropTypes.bool.isRequired,
 };
 
 export default withStyles(useStyles)(Main);

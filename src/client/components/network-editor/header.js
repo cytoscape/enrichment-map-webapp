@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import clsx from 'clsx';
 
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { DEFAULT_PADDING } from './defaults';
@@ -16,9 +17,8 @@ import { Tooltip } from '@material-ui/core';
 import { IconButton } from '@material-ui/core';
 
 import { AppLogoIcon } from '../svg-icons';
-import SearchIcon from '@material-ui/icons/Search'; // eslint-disable-line
-import DebugIcon from '@material-ui/icons/BugReport'; // eslint-disable-line
-import FitScreenIcon from '@material-ui/icons/Fullscreen';
+import MenuIcon from '@material-ui/icons/Menu';
+import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 
 /**
  * The network editor's header or app bar.
@@ -93,7 +93,7 @@ export class Header extends Component {
 
   render() {
     const { anchorEl, menuName, dialogName } = this.state;
-    const { classes } = this.props;
+    const { classes, onShowControlPanel, showControlPanel } = this.props;
     const { controller } = this;
 
     const ToolbarDivider = ({ unrelated }) => {
@@ -102,12 +102,23 @@ export class Header extends Component {
     
     return (
       <>
-        <AppBar position="relative" color='default'>
+        <AppBar
+          position="relative"
+          color='default'
+          className={clsx(classes.appBar, { [classes.appBarShift]: showControlPanel })}
+        >
           <Toolbar variant="dense">
             <Grid container alignItems='center' justifyContent="space-between">
               <Grid item>
                 <Grid container alignItems='center' className={classes.root}>
                   <Grid item>
+                    <ToolbarButton
+                      title="Control Panel"
+                      icon={<MenuIcon />}
+                      edge="start"
+                      className={classes.menuButton}
+                      onClick={() => onShowControlPanel(!showControlPanel)}
+                    />
                     <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
                       <IconButton 
                         aria-label='close' 
@@ -120,7 +131,6 @@ export class Header extends Component {
                   <Grid item>
                     <div className="header-title-area">
                       <TitleEditor controller={controller} />
-                      <div className="header-title-save-status">Edits saved</div>
                     </div>
                   </Grid>
                 </Grid>
@@ -179,11 +189,11 @@ export class Header extends Component {
 class ToolbarButton extends Component {
 
   render() {
-    const { title, icon, color, onClick } = this.props;
+    const { title, icon, color, className, onClick } = this.props;
 
     return (
       <Tooltip arrow placement="bottom" title={title}>
-        <IconButton size="small" color={color || 'inherit'} onClick={onClick}>
+        <IconButton size="small" color={color || 'inherit'} className={className} onClick={onClick}>
           { icon }
         </IconButton>
       </Tooltip>
@@ -191,9 +201,28 @@ class ToolbarButton extends Component {
   }
 }
 
+const drawerWidth = 240;
+
 const useStyles = theme => ({
   root: {
     width: 'fit-content',
+  },
+  appBar: {
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+  },
+  appBarShift: {
+    width: `calc(100% - ${drawerWidth}px)`,
+    marginLeft: drawerWidth,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+  },
+  hide: {
+    display: 'none',
   },
   divider: {
     marginLeft: theme.spacing(0.5),
@@ -201,8 +230,8 @@ const useStyles = theme => ({
     width: 0,
   },
   unrelatedDivider: {
-    marginLeft: theme.spacing(2.5),
-    marginRight: theme.spacing(2.5),
+    marginLeft: theme.spacing(1.5),
+    marginRight: theme.spacing(1.5),
     width: 0,
   },
 });
@@ -211,12 +240,15 @@ ToolbarButton.propTypes = {
   title: PropTypes.string.isRequired,
   icon: PropTypes.element.isRequired,
   color: PropTypes.string,
+  className: PropTypes.string,
   onClick: PropTypes.func.isRequired,
 };
 
 Header.propTypes = {
   classes: PropTypes.object.isRequired,
-  controller: PropTypes.instanceOf(NetworkEditorController)
+  controller: PropTypes.instanceOf(NetworkEditorController),
+  onShowControlPanel: PropTypes.func.isRequired,
+  showControlPanel: PropTypes.bool.isRequired,
 };
 
 export default withStyles(useStyles)(Header);
