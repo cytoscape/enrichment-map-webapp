@@ -1,12 +1,12 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
 import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
-import TitleEditor from './title-editor';
-import ShareButton from './share-button';
 import { NetworkEditorController } from './controller';
+import TitleEditor from './title-editor';
+import SharePanel from './share-panel';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -19,13 +19,11 @@ import { IconButton, Box } from '@material-ui/core';
 import { AppLogoIcon } from '../svg-icons';
 import MenuIcon from '@material-ui/icons/Menu';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
-import ScreenShareIcon from '@material-ui/icons/ScreenShare';
+import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
 
-const FIT_NETWORK = "Fit Network";
-const SHARE = "Share";
-
-const mobileMenuId = "menu-mobile";
+const MOBILE_MENU_ID = "menu-mobile";
+const SHARE_MENU_ID = "menu-share";
 
 /**
  * The network editor's header or app bar.
@@ -46,59 +44,30 @@ export class Header extends Component {
       dialogId: null,
     };
 
-    this.handleMobileMenuOpen = this.handleMobileMenuOpen.bind(this);
+    this.showMobileMenu = this.showMobileMenu.bind(this);
   }
 
-  handleMobileMenuOpen(event) {
+  showMenu(menuName, target) {
+    this.setState({
+      menuName: menuName,
+      anchorEl: target,
+    });
+  }
+
+  handleMenuClose() {
+    this.setState({
+      menuName: null,
+      mobileMoreAnchorEl: null,
+      anchorEl: null,
+    });
+  }
+
+  showMobileMenu(event) {
     this.setState({ mobileMoreAnchorEl: event.currentTarget });
   }
 
   handleMobileMenuClose() {
     this.setState({ mobileMoreAnchorEl: null });
-  }
-
-  handleClick(event, menuName) {
-    this.showMenu(menuName, event.currentTarget);
-  }
-
-  handleClose() {
-    this.setState({
-      menuName: null,
-      mobileMoreAnchorEl: null,
-      anchorEl: null,
-      dialogName: null,
-    });
-  }
-
-  showMenu(menuName, anchorEl) {
-    this.setState({
-      menuName: menuName,
-      anchorEl: anchorEl,
-      dialogName: null,
-    });
-  }
-
-  goBackToMenu(menuName) {
-    this.setState({
-      menuName: menuName,
-      dialogName: null,
-    });
-  }
-
-  showDialog(dialogName, menuName) {
-    this.setState({
-      menuName: menuName,
-      anchorEl: menuName ? this.state.anchorEl : null,
-      dialogName: dialogName,
-    });
-  }
-
-  hideDialog() {
-    this.setState({
-      menuName: null,
-      anchorEl: null,
-      dialogName: null,
-    });
   }
 
   componentDidMount() {
@@ -114,6 +83,25 @@ export class Header extends Component {
     const { anchorEl, menuName } = this.state;
     const { classes, onShowControlPanel, showControlPanel } = this.props;
     const { controller } = this;
+
+    const showShareMenu = (event) => {
+      this.showMenu(SHARE_MENU_ID, event.currentTarget);
+    };
+
+    const buttonsDef = [
+      {
+        title: "Fit Network",
+        icon: <FitScreenIcon />,
+        onClick: () => controller.cy.fit(DEFAULT_PADDING),
+        unrelated: true,
+      },
+      {
+        title: "Share",
+        icon: <ReplyIcon style={{transform: 'scaleX(-1)'}} />,
+        onClick: showShareMenu,
+        unrelated: false,
+      },
+    ];
 
     const ToolbarDivider = ({ unrelated }) => {
       return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
@@ -148,52 +136,36 @@ export class Header extends Component {
             <TitleEditor controller={controller} />
             <ToolbarDivider unrelated />
             <div className={classes.sectionDesktop}>
-              <ToolbarButton
-                title={FIT_NETWORK}
-                icon={<FitScreenIcon />}
-                onClick={() => controller.cy.fit(DEFAULT_PADDING)}
-              />
-              {/* <ToolbarDivider unrelated />
-              <ToolbarButton
-                title="Search"
-                icon={<SearchIcon />}
-                onClick={() => console.log('Search NOT IMPLEMENTED...')}
-              /> */}
-              <ToolbarDivider unrelated />
-              <ShareButton controller={controller}/>
-              <ToolbarDivider />
-              {/* <ToolbarButton
-                title="Debug"
-                icon={<DebugIcon />}
-                onClick={e => this.handleClick(e, 'debug')} 
-              /> */}
+              { buttonsDef.map(({title, icon, onClick, unrelated}, idx) =>
+                <Fragment key={idx}>
+                  <ToolbarButton
+                    title={title}
+                    icon={icon}
+                    onClick={onClick}
+                  />
+                  <ToolbarDivider unrelated={unrelated} />
+                </Fragment>
+              )}
             </div>
             <div className={classes.sectionMobile}>
               <ToolbarButton
                 title="Options"
                 icon={<MoreIcon />}
-                onClick={(event) => this.handleMobileMenuOpen(event)}
+                onClick={(evt) => this.showMobileMenu(evt)}
               />
             </div>
           </Toolbar>
-          {this.renderMobileMenu()}
+          {this.renderMobileMenu(buttonsDef)}
           {anchorEl && (
             <Popover
               id="menu-popover"
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
-              onClose={() => this.handleClose()}
+              onClose={() => this.handleMenuClose()}
             >
-              {menuName === 'account' && (
-                <MenuList>
-                  <MenuItem disabled={true} onClick={() => this.handleClose()}>Sign Out</MenuItem>
-                </MenuList>
+              {menuName === SHARE_MENU_ID && (
+                <SharePanel controller={controller} />
               )}
-              {/* {menuName === 'debug' && !dialogName && (
-                <MenuList>
-                  <MenuItem disabled={false} onClick={() => this.showDialog('dialog-name')}>Item Title Here</MenuItem>
-                </MenuList>
-              )} */}
             </Popover>
           )}
         </AppBar>
@@ -201,34 +173,26 @@ export class Header extends Component {
     );
   }
 
-  renderMobileMenu() {
-    const { controller } = this;
+  renderMobileMenu(buttonsDef) {
     const { mobileMoreAnchorEl } = this.state;
-
     const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
 
     return (
       <Menu
         anchorEl={mobileMoreAnchorEl}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        id={mobileMenuId}
+        id={MOBILE_MENU_ID}
         keepMounted
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         open={isMobileMenuOpen}
         onClose={() => this.handleMobileMenuClose()}
       >
-        <MenuItem onClick={() => controller.cy.fit(DEFAULT_PADDING)}>
-          <IconButton>
-            <FitScreenIcon />
-          </IconButton>
-          <p>{FIT_NETWORK}</p>
-        </MenuItem>
-        <MenuItem onClick={() => controller.cy.fit(DEFAULT_PADDING)}>
-          <IconButton>
-            <ScreenShareIcon />
-          </IconButton>
-          <p>{SHARE}</p>
-        </MenuItem>
+        { buttonsDef.map(({title, icon, onClick}, idx) =>
+          <MenuItem key={idx} onClick={onClick}>
+            <IconButton>{icon}</IconButton>
+            <p>{title}</p>
+          </MenuItem>
+        )}
       </Menu>
     );
   }

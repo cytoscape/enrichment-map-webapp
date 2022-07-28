@@ -1,14 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import ScreenShareIcon from '@material-ui/icons/ScreenShare';
+import { saveAs } from 'file-saver';
+
+import { NetworkEditorController } from './controller';
+
+import { Button, ClickAwayListener, FormLabel, Grid, TextField, Tooltip } from '@material-ui/core';
+import { RadioGroup, Radio, FormControlLabel, FormControl, Divider } from '@material-ui/core';
+
+import LinkIcon from '@material-ui/icons/Link';
 import EmailIcon from '@material-ui/icons/Email';
 import FileCopyIcon from '@material-ui/icons/FileCopy';
 import ImageIcon from '@material-ui/icons/Image';
-import LandscapeIcon from '@material-ui/icons/Landscape';
-import { Button, ClickAwayListener, FormLabel, Grid, IconButton, Popover, TextField, Tooltip } from '@material-ui/core';
-import { RadioGroup, Radio, FormControlLabel, FormControl } from '@material-ui/core';
-import { saveAs } from 'file-saver';
-import { NetworkEditorController } from './controller';
 
 const ImageSize = {
   SMALL:  { value:'SMALL',  scale: 0.3 },
@@ -26,14 +28,13 @@ const ImageArea = {
   VIEW: 'view',
 };
 
-export class ShareButton extends React.Component {
+export class SharePanel extends React.Component {
 
   constructor(props) {
     super(props);
     this.url = window.location.href;
     this.controller = props.controller;
     this.state = {
-      popoverAnchorEl: null,
       tooltipOpen: false,
       imageType: ImageType.PNG,
       imageSize: ImageSize.MEDIUM,
@@ -55,7 +56,7 @@ export class ShareButton extends React.Component {
     const { cy } = this.controller;
     const { imageType, imageSize, imageArea } = this.state;
 
-    const blob = await cy[imageType]({ 
+    const blob = await cy[imageType]({
       output:'blob-promise',
       bg: 'white',
       full: imageArea === ImageArea.FULL,
@@ -65,16 +66,14 @@ export class ShareButton extends React.Component {
     saveAs(blob, `cytoscape_explore.${imageType}`);
   }
 
-  handlePopoverOpen(target) {
-    this.setState({ 
-      popoverAnchorEl: target, 
+  handlePopoverOpen() {
+    this.setState({
       tooltipOpen: false 
     });
   }
 
   handlePopoverClose() {
-    this.setState({ 
-      popoverAnchorEl: null, 
+    this.setState({
       tooltipOpen: false 
     });
   }
@@ -87,9 +86,9 @@ export class ShareButton extends React.Component {
     const SectionHeader = ({ icon, text }) => 
       <div className='share-button-popover-heading'> {icon} &nbsp; {text} </div>;
 
-    const ShareLinkForm = () => 
+    const ShareLinkForm = () => (
       <div className='share-button-popover-content'>
-        <SectionHeader icon={<ScreenShareIcon/>} text="Share link to network" />
+        <SectionHeader icon={<LinkIcon/>} text="Share Link to Network" />
         <TextField defaultValue={this.url} variant="outlined" size="small" />
         <div className='share-button-popover-buttons'>
           <Button variant='outlined' startIcon={<EmailIcon />} onClick={() => this.handleOpenEmail()}>
@@ -111,7 +110,8 @@ export class ShareButton extends React.Component {
             </div>
           </ClickAwayListener>
         </div>
-      </div>;
+      </div>
+    );
 
     const ExportImageForm = () => {
       const handleType = imageType => this.setState({ imageType }); 
@@ -119,77 +119,65 @@ export class ShareButton extends React.Component {
       const handleArea = imageArea => this.setState({ imageArea });
       const ImageRadio = ({ label, value, onClick }) =>
         <FormControlLabel label={label} value={value} control={<Radio size='small' onClick={() => onClick(value)}/>} />;
+      
       // Note: For some reason the RadioGroup.onChange handler does not fire, using Radio.onClick instead.
       // May have something to do with this: https://github.com/mui/material-ui/issues/9336
-      return <div className='share-button-popover-content'>
-        <SectionHeader icon={<LandscapeIcon/>} text="Export Image" />
-        <div style={{ paddingLeft:'10px' }}>
-          <Grid container alignItems="flex-start" spacing={3}>
-            <Grid item>
-              <FormControl>
-                <FormLabel>Size</FormLabel>
-                <RadioGroup value={this.state.imageSize.value}>
-                  <ImageRadio label="Small"  value={ImageSize.SMALL.value}  onClick={handleSize} />
-                  <ImageRadio label="Medium" value={ImageSize.MEDIUM.value} onClick={handleSize} />
-                  <ImageRadio label="Large"  value={ImageSize.LARGE.value}  onClick={handleSize} />
-                </RadioGroup>
-              </FormControl>
+      return (
+        <div className='share-button-popover-content'>
+          <SectionHeader icon={<ImageIcon />} text="Export Image" />
+          <div style={{ paddingLeft:'10px' }}>
+            <Grid container alignItems="flex-start" spacing={3}>
+              <Grid item>
+                <FormControl>
+                  <FormLabel>Size:</FormLabel>
+                  <RadioGroup value={this.state.imageSize.value}>
+                    <ImageRadio label="Small"  value={ImageSize.SMALL.value}  onClick={handleSize} />
+                    <ImageRadio label="Medium" value={ImageSize.MEDIUM.value} onClick={handleSize} />
+                    <ImageRadio label="Large"  value={ImageSize.LARGE.value}  onClick={handleSize} />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
+              <Grid item>
+                <FormControl>
+                  <FormLabel>Format:</FormLabel>
+                  <RadioGroup value={this.state.imageType}>
+                    <ImageRadio label="PNG" value={ImageType.PNG} onClick={handleType} />
+                    <ImageRadio label="JPG" value={ImageType.JPG} onClick={handleType} />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
+              <Grid item>
+                <FormControl>
+                  <FormLabel>Area:</FormLabel>
+                  <RadioGroup  value={this.state.imageArea}>
+                    <ImageRadio label="Visible Area"   value={ImageArea.VIEW} onClick={handleArea} />
+                    <ImageRadio label="Entire Network" value={ImageArea.FULL} onClick={handleArea} />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
             </Grid>
-            <Grid item>
-              <FormControl>
-                <FormLabel>Format</FormLabel>
-                <RadioGroup value={this.state.imageType}>
-                  <ImageRadio label="PNG" value={ImageType.PNG} onClick={handleType} />
-                  <ImageRadio label="JPG" value={ImageType.JPG} onClick={handleType} />
-                </RadioGroup>
-              </FormControl>
-            </Grid>
-            <Grid item>
-              <FormControl>
-                <FormLabel>Area</FormLabel>
-                <RadioGroup  value={this.state.imageArea}>
-                  <ImageRadio label="Visible Area"   value={ImageArea.VIEW} onClick={handleArea} />
-                  <ImageRadio label="Entire Network" value={ImageArea.FULL} onClick={handleArea} />
-                </RadioGroup>
-              </FormControl>
-            </Grid>
-          </Grid>
+          </div>
+          <div className='share-button-popover-buttons'>
+            <Button variant='outlined' startIcon={<ImageIcon />} onClick={() => this.handleExportImage()}>
+              Export Image
+            </Button>
+          </div>
         </div>
-        <div className='share-button-popover-buttons'>
-          <Button variant='outlined' startIcon={<ImageIcon />} onClick={() => this.handleExportImage()}>
-            Export Image
-          </Button>
-        </div>
-      </div>;
+      );
     };
 
-    return <div> 
-      <div>
-        <span onClick={evt => this.handlePopoverOpen(evt.currentTarget)}>
-          <Tooltip arrow placement="bottom" title="Share">
-            <IconButton size="small" color="inherit">
-              <ScreenShareIcon />
-            </IconButton>
-          </Tooltip>
-        </span>
-      </div>
-      <Popover
-        className='share-button-popover'
-        open={Boolean(this.state.popoverAnchorEl)}
-        anchorEl={this.state.popoverAnchorEl}
-        onClose={() => this.handlePopoverClose()}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
+    return (
+      <>
         <ShareLinkForm />
+        <Divider />
         <ExportImageForm />
-      </Popover>
-    </div>;
+      </>
+    );
   }
 }
-ShareButton.propTypes = {
-  controller: PropTypes.instanceOf(NetworkEditorController),
+
+SharePanel.propTypes = {
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
 };
 
-
-export default ShareButton;
+export default SharePanel;
