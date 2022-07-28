@@ -26,7 +26,6 @@ const ImageArea = {
   VIEW: 'view',
 };
 
-
 export class ShareButton extends React.Component {
 
   constructor(props) {

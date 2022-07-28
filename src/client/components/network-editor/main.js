@@ -1,7 +1,9 @@
 import _ from 'lodash';
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import clsx from 'clsx';
 
+import { CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import SearchField from './search-field';
@@ -9,10 +11,7 @@ import { GeneListPanel } from './gene-list-panel';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { Drawer, Divider, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
-
-import InboxIcon from '@material-ui/icons/MoveToInbox';
-import MailIcon from '@material-ui/icons/Mail';
+import { Drawer, Divider, List } from '@material-ui/core';
 
 export class Main extends Component {
 
@@ -100,9 +99,11 @@ export class Main extends Component {
             <GeneListPanel controller={controller} />
           </List>
         </Drawer>
-        <div className="cy">
-          <div id="cy" />
-          <NetworkBackground controller={controller} />
+        <div className={classes.cy}>
+          <div className={clsx(classes.cy, { [classes.cyShift]: showControlPanel })}>
+            <div id="cy" className={classes.cy} />
+            <NetworkBackground controller={controller} />
+          </div>
         </div>
       </div>
     );
@@ -135,16 +136,7 @@ class NetworkBackground extends Component {
   }
 }
 
-const drawerWidth = 240;
-
 const useStyles = theme => ({
-  drawer: {
-    width: drawerWidth,
-    flexShrink: 0,
-  },
-  drawerPaper: {
-    width: drawerWidth,
-  },
   root: {
     padding: '2px 4px',
     display: 'flex',
@@ -157,6 +149,33 @@ const useStyles = theme => ({
   },
   iconButton: {
     padding: 10,
+  },
+  drawer: {
+    width: CONTROL_PANEL_WIDTH,
+    flexShrink: 0,
+  },
+  drawerPaper: {
+    width: CONTROL_PANEL_WIDTH,
+  },
+  cy: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    background: '#fff',
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+  },
+  cyShift: {
+    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
+    marginLeft: CONTROL_PANEL_WIDTH,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
   },
 });
 

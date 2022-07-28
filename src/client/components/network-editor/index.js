@@ -159,14 +159,20 @@ export class NetworkEditor extends Component {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className="network-editor">
-          <Header controller={controller} onShowControlPanel={this.onShowControlPanel} showControlPanel={showControlPanel}  />
-          <Main controller={controller} showControlPanel={showControlPanel} />
+          <Header
+            controller={controller}
+            onShowControlPanel={this.onShowControlPanel}
+            showControlPanel={showControlPanel}
+          />
+          <Main
+            controller={controller}
+            showControlPanel={showControlPanel}
+          />
         </div>
       </ThemeProvider>
     );
   }
 }
-
 
 export class Demo extends Component {
   constructor(props) {
@@ -177,7 +183,6 @@ export class Demo extends Component {
     return <NetworkEditor id="demo" secret="demo" />;
   }
 }
-
 
 NetworkEditor.propTypes = {
 };

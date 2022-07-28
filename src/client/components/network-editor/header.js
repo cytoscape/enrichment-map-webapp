@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
+import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
-import { DEFAULT_PADDING } from './defaults';
 import TitleEditor from './title-editor';
 import ShareButton from './share-button';
 import { NetworkEditorController } from './controller';
@@ -12,13 +12,20 @@ import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Toolbar } from '@material-ui/core';
 import { Divider } from '@material-ui/core';
-import { Popover, MenuList, MenuItem} from "@material-ui/core";
+import { Popover, Menu, MenuList, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
 import { IconButton, Box } from '@material-ui/core';
 
 import { AppLogoIcon } from '../svg-icons';
 import MenuIcon from '@material-ui/icons/Menu';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
+import ScreenShareIcon from '@material-ui/icons/ScreenShare';
+import MoreIcon from '@material-ui/icons/MoreVert';
+
+const FIT_NETWORK = "Fit Network";
+const SHARE = "Share";
+
+const mobileMenuId = "menu-mobile";
 
 /**
  * The network editor's header or app bar.
@@ -33,10 +40,21 @@ export class Header extends Component {
     this.busProxy = new EventEmitterProxy(this.controller.bus);
 
     this.state = {
-      menu: null,
+      menuName: null,
+      mobileMoreAnchorEl: null,
       anchorEl: null,
       dialogId: null,
     };
+
+    this.handleMobileMenuOpen = this.handleMobileMenuOpen.bind(this);
+  }
+
+  handleMobileMenuOpen(event) {
+    this.setState({ mobileMoreAnchorEl: event.currentTarget });
+  }
+
+  handleMobileMenuClose() {
+    this.setState({ mobileMoreAnchorEl: null });
   }
 
   handleClick(event, menuName) {
@@ -46,6 +64,7 @@ export class Header extends Component {
   handleClose() {
     this.setState({
       menuName: null,
+      mobileMoreAnchorEl: null,
       anchorEl: null,
       dialogName: null,
     });
@@ -92,7 +111,7 @@ export class Header extends Component {
   }
 
   render() {
-    const { anchorEl, menuName, dialogName } = this.state;
+    const { anchorEl, menuName } = this.state;
     const { classes, onShowControlPanel, showControlPanel } = this.props;
     const { controller } = this;
 
@@ -115,7 +134,7 @@ export class Header extends Component {
               className={classes.menuButton}
               onClick={() => onShowControlPanel(!showControlPanel)}
             />
-            <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' } }}>
+            <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
               <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
                 <IconButton 
                   aria-label='close' 
@@ -125,28 +144,39 @@ export class Header extends Component {
                 </IconButton>
               </Tooltip>
             </Box>
+            <ToolbarDivider unrelated />
             <TitleEditor controller={controller} />
             <ToolbarDivider unrelated />
-            <ToolbarButton
-              title="Fit Network"
-              icon={<FitScreenIcon />}
-              onClick={() => controller.cy.fit(DEFAULT_PADDING)}
-            />
-            {/* <ToolbarDivider unrelated />
-            <ToolbarButton
-              title="Search"
-              icon={<SearchIcon />}
-              onClick={() => console.log('Search NOT IMPLEMENTED...')}
-            /> */}
-            <ToolbarDivider unrelated />
-            <ShareButton controller={controller}/>
-            <ToolbarDivider />
-            {/* <ToolbarButton
-              title="Debug"
-              icon={<DebugIcon />}
-              onClick={e => this.handleClick(e, 'debug')} 
-            /> */}
+            <div className={classes.sectionDesktop}>
+              <ToolbarButton
+                title={FIT_NETWORK}
+                icon={<FitScreenIcon />}
+                onClick={() => controller.cy.fit(DEFAULT_PADDING)}
+              />
+              {/* <ToolbarDivider unrelated />
+              <ToolbarButton
+                title="Search"
+                icon={<SearchIcon />}
+                onClick={() => console.log('Search NOT IMPLEMENTED...')}
+              /> */}
+              <ToolbarDivider unrelated />
+              <ShareButton controller={controller}/>
+              <ToolbarDivider />
+              {/* <ToolbarButton
+                title="Debug"
+                icon={<DebugIcon />}
+                onClick={e => this.handleClick(e, 'debug')} 
+              /> */}
+            </div>
+            <div className={classes.sectionMobile}>
+              <ToolbarButton
+                title="Options"
+                icon={<MoreIcon />}
+                onClick={(event) => this.handleMobileMenuOpen(event)}
+              />
+            </div>
           </Toolbar>
+          {this.renderMobileMenu()}
           {anchorEl && (
             <Popover
               id="menu-popover"
@@ -170,6 +200,38 @@ export class Header extends Component {
       </>
     );
   }
+
+  renderMobileMenu() {
+    const { controller } = this;
+    const { mobileMoreAnchorEl } = this.state;
+
+    const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
+
+    return (
+      <Menu
+        anchorEl={mobileMoreAnchorEl}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        id={mobileMenuId}
+        keepMounted
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={isMobileMenuOpen}
+        onClose={() => this.handleMobileMenuClose()}
+      >
+        <MenuItem onClick={() => controller.cy.fit(DEFAULT_PADDING)}>
+          <IconButton>
+            <FitScreenIcon />
+          </IconButton>
+          <p>{FIT_NETWORK}</p>
+        </MenuItem>
+        <MenuItem onClick={() => controller.cy.fit(DEFAULT_PADDING)}>
+          <IconButton>
+            <ScreenShareIcon />
+          </IconButton>
+          <p>{SHARE}</p>
+        </MenuItem>
+      </Menu>
+    );
+  }
 }
 
 class ToolbarButton extends Component {
@@ -187,8 +249,6 @@ class ToolbarButton extends Component {
   }
 }
 
-const drawerWidth = 240;
-
 const useStyles = theme => ({
   appBar: {
     transition: theme.transitions.create(['margin', 'width'], {
@@ -197,8 +257,8 @@ const useStyles = theme => ({
     }),
   },
   appBarShift: {
-    width: `calc(100% - ${drawerWidth}px)`,
-    marginLeft: drawerWidth,
+    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
+    marginLeft: CONTROL_PANEL_WIDTH,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
@@ -216,6 +276,18 @@ const useStyles = theme => ({
     marginLeft: theme.spacing(1.5),
     marginRight: theme.spacing(1.5),
     width: 0,
+  },
+  sectionDesktop: {
+    display: 'none',
+    [theme.breakpoints.up('sm')]: {
+      display: 'flex',
+    },
+  },
+  sectionMobile: {
+    display: 'flex',
+    [theme.breakpoints.up('sm')]: {
+      display: 'none',
+    },
   },
 });
 
