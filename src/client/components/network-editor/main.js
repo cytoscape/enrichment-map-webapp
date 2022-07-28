@@ -6,8 +6,6 @@ import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { ToolPanel } from './tool-panel';
 
-import { withStyles } from '@material-ui/core/styles';
-
 export class Main extends Component {
 
   constructor(props) {
@@ -18,7 +16,6 @@ export class Main extends Component {
     this.cyEmitter = new EventEmitterProxy(this.cy);
 
     this.state = {
-      rightPanelOpen: false,
     };
   }
 
@@ -78,19 +75,12 @@ export class Main extends Component {
   render() {
     const { controller } = this;
     
-    const setOpen = open => this.setState({ rightPanelOpen: open });
-    const panelStyleOverrides = {};
-    
-    if (this.state.rightPanelOpen)
-      panelStyleOverrides.right = '300px';
-
     return (
       <div className="network-editor-content">
-        <div className="cy" style={panelStyleOverrides}>
+        <div className="cy">
           <div id="cy" />
           <NetworkBackground controller={controller} />
         </div>
-        <ToolPanel controller={controller} onSetOpen={setOpen} />
       </div>
     );
   }
@@ -121,11 +111,6 @@ class NetworkBackground extends Component {
   }
 }
 
-const useStyles = theme => ({
-  root: {
-  },
-});
-
 NetworkBackground.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
 };
@@ -133,4 +118,4 @@ Main.propTypes = {
   controller: PropTypes.object.isRequired,
 };
 
-export default withStyles(useStyles)(Main);
+export default Main;

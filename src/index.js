@@ -7,7 +7,9 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { registerCytoscapeExtensions } from './model/cy-extensions';
 import { fixOldFashionedScrollStyle } from './client/scroll';
 
-if( debug.enabled() ){
+import 'font-awesome/css/font-awesome.min.css';
+
+if (debug.enabled()) {
   debug.init();
 }
 

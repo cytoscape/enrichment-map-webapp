@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+
 import ScreenShareIcon from '@material-ui/icons/ScreenShare';
 import EmailIcon from '@material-ui/icons/Email';
 import FileCopyIcon from '@material-ui/icons/FileCopy';
@@ -7,8 +8,19 @@ import ImageIcon from '@material-ui/icons/Image';
 import LandscapeIcon from '@material-ui/icons/Landscape';
 import { Button, ClickAwayListener, FormLabel, Grid, IconButton, Popover, TextField, Tooltip } from '@material-ui/core';
 import { RadioGroup, Radio, FormControlLabel, FormControl } from '@material-ui/core';
+
 import { saveAs } from 'file-saver';
 import { NetworkEditorController } from './controller';
+
+import {
+  IonHeader,
+  IonToolbar,
+  IonButtons,
+  IonButton,
+} from '@ionic/react';
+
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShare } from '@fortawesome/fontawesome-free-solid';
 
 const ImageSize = {
   SMALL:  { value:'SMALL',  scale: 0.3 },
@@ -25,7 +37,6 @@ const ImageArea = {
   FULL: 'full',
   VIEW: 'view',
 };
-
 
 export class ShareButton extends React.Component {
 
@@ -90,7 +101,7 @@ export class ShareButton extends React.Component {
 
     const ShareLinkForm = () => 
       <div className='share-button-popover-content'>
-        <SectionHeader icon={<ScreenShareIcon/>} text="Share link to network" />
+        {/* <SectionHeader icon={<ScreenShareIcon/>} text="Share link to network" />
         <TextField defaultValue={this.url} variant="outlined" size="small" />
         <div className='share-button-popover-buttons'>
           <Button variant='outlined' startIcon={<EmailIcon />} onClick={() => this.handleOpenEmail()}>
@@ -111,7 +122,7 @@ export class ShareButton extends React.Component {
               </Tooltip>
             </div>
           </ClickAwayListener>
-        </div>
+        </div> */}
       </div>;
 
     const ExportImageForm = () => {
@@ -167,14 +178,12 @@ export class ShareButton extends React.Component {
     return <div> 
       <div>
         <span onClick={evt => this.handlePopoverOpen(evt.currentTarget)}>
-          <Tooltip arrow placement="bottom" title="Share">
-            <IconButton size="small" color="inherit">
-              <ScreenShareIcon />
-            </IconButton>
-          </Tooltip>
+          <IonButton dataTip="Share">
+            <FontAwesomeIcon slot="icon-only" icon={faShare} fontSize="large" />
+          </IonButton>
         </span>
       </div>
-      <Popover
+      {/* <Popover
         className='share-button-popover'
         open={Boolean(this.state.popoverAnchorEl)}
         anchorEl={this.state.popoverAnchorEl}
@@ -184,13 +193,12 @@ export class ShareButton extends React.Component {
       >
         <ShareLinkForm />
         <ExportImageForm />
-      </Popover>
+      </Popover> */}
     </div>;
   }
 }
 ShareButton.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
 };
-
 
 export default ShareButton;

@@ -9,6 +9,28 @@ import { NetworkEditorController } from './controller';
 import Header from './header';
 import Main from './main';
 
+import ReactTooltip from 'react-tooltip';
+
+import { 
+  IonHeader,
+  IonTitle,
+  IonToolbar,
+  IonContent, 
+  IonFooter, 
+  IonSplitPane, 
+  IonMenu, 
+  IonButton,
+  IonButtons,
+  IonList,
+  IonListHeader,
+  IonMenuToggle,
+  IonItem,
+  IonIcon,
+  IonLabel,
+  IonSearchbar,
+} from '@ionic/react';
+
+
 const CY_EVENTS = 'data add remove move layoutstop viewport';
 
 export class NetworkEditor extends Component {
@@ -140,10 +162,29 @@ export class NetworkEditor extends Component {
     const { controller } = this;
 
     return (
-        <div className="network-editor">
+      <IonSplitPane when="(min-width: 99999px)" contentId="main-content">
+        <IonMenu menuId="left-menu" contentId="main-content" side="start">
+          <IonHeader>
+            <IonToolbar color="primary">
+              <IonTitle>
+                <IonSearchbar onIonChange={e => console.log('Not implemented!')}></IonSearchbar>
+              </IonTitle>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent>
+            <IonList>
+              
+              
+            </IonList>
+          </IonContent>
+        </IonMenu>
+
+        <div className="ion-page" id="main-content">
           <Header controller={controller} />
           <Main controller={controller} />
+          <ReactTooltip effect="solid" delayShow={500} />
         </div>
+      </IonSplitPane>
     );
   }
 }

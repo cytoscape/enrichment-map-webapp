@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 
 import Content from './content';
 
+import ReactTooltip from 'react-tooltip';
+
 export class Home extends Component {
 
   constructor(props) {
@@ -10,7 +12,10 @@ export class Home extends Component {
 
   render() {
     return (
-      <Content />
+      <>
+        <Content />
+        <ReactTooltip effect="solid" delayShow={500} />
+      </>
     );
   }
 }

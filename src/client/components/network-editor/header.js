@@ -10,18 +10,15 @@ import { NetworkEditorController } from './controller';
 import {
   IonHeader,
   IonToolbar,
-  IonTitle,
   IonButtons,
   IonButton,
-  IonIcon,
-  IonContent,
-  IonGrid,
-  IonRow,
-  IonCol,
+  IonMenuToggle,
 } from '@ionic/react';
 
 import { AppLogoIcon } from '../svg-icons';
-import { expandOutline, search } from 'ionicons/icons';
+
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faExpand, faBars } from '@fortawesome/fontawesome-free-solid';
 
 /**
  * The network editor's header or app bar.
@@ -100,20 +97,22 @@ export class Header extends Component {
 
     return (
       <IonHeader>
-        <IonToolbar color="dark">
+        <IonToolbar color="light">
           <IonButtons slot="start">
-            <IonButton aria-label='home' defaultHref="/">
+            <IonMenuToggle menu="start" autoHide={false} dataTip="EnrichmentMap Home">
+              <IonButton>
+                <FontAwesomeIcon slot="icon-only" icon={faBars} fontSize="large" />
+              </IonButton>
+            </IonMenuToggle>
+            <IonButton dataTip="EnrichmentMap Home" onClick={() => location.href = '/'}>
               <AppLogoIcon fontSize="large" />
             </IonButton>
           </IonButtons>
           <IonButtons slot="end">
-            <IonButton onClick={() => controller.cy.fit(DEFAULT_PADDING)} >
-              <IonIcon slot="icon-only" icon={expandOutline} />
+            <IonButton dataTip="Fit Network" onClick={() => controller.cy.fit(DEFAULT_PADDING)}>
+              <FontAwesomeIcon slot="icon-only" icon={faExpand} fontSize="large" />
             </IonButton>
-            <IonButton onClick={() => console.log('Search NOT IMPLEMENTED...')} >
-              <IonIcon slot="icon-only" icon={search} />
-            </IonButton>
-            {/* <ShareButton controller={controller}/> */}
+            <ShareButton controller={controller}/>
           </IonButtons>
           <TitleEditor controller={controller} />
         </IonToolbar>

@@ -83,7 +83,6 @@ export const Router = () => (
         <Route status={404} exact component={PageNotFound} />
       </Switch>
     </BrowserRouter> */}
-
   </IonApp>
 );
 

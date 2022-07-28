@@ -79,9 +79,9 @@ export class Content extends Component {
     return (
       <>
         <IonHeader>
-          <IonToolbar color="dark">
+          <IonToolbar color="light">
             <IonButtons slot="start">
-              <IonButton aria-label='home' defaultHref="/">
+              <IonButton dataTip="EnrichmentMap Home" onClick={() => location.href = '/'}>
                 <AppLogoIcon fontSize="large" />
               </IonButton>
             </IonButtons>
