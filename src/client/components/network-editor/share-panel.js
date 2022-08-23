@@ -91,7 +91,7 @@ export class SharePanel extends React.Component {
         <SectionHeader icon={<LinkIcon/>} text="Share Link to Network" />
         <TextField defaultValue={this.url} variant="outlined" size="small" />
         <div className='share-button-popover-buttons'>
-          <Button variant='outlined' startIcon={<EmailIcon />} onClick={() => this.handleOpenEmail()}>
+          <Button variant='contained' startIcon={<EmailIcon />} onClick={() => this.handleOpenEmail()}>
             Send by email
           </Button>
           <ClickAwayListener onClickAway={() => this.handleTooltip(false)}>
@@ -103,7 +103,7 @@ export class SharePanel extends React.Component {
                 placement="right"
                 title="Copied!"
               >
-                <Button variant='outlined' startIcon={<FileCopyIcon />} onClick={() => { this.handleCopyToClipboard(); this.handleTooltip(true); }}> 
+                <Button variant='contained' startIcon={<FileCopyIcon />} onClick={() => { this.handleCopyToClipboard(); this.handleTooltip(true); }}> 
                   Copy to Clipboard
                 </Button>
               </Tooltip>
@@ -158,7 +158,7 @@ export class SharePanel extends React.Component {
             </Grid>
           </div>
           <div className='share-button-popover-buttons'>
-            <Button variant='outlined' startIcon={<ImageIcon />} onClick={() => this.handleExportImage()}>
+            <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportImage()}>
               Export Image
             </Button>
           </div>

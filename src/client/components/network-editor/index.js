@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape';
 
@@ -124,9 +123,13 @@ export class NetworkEditor extends Component {
 
     this.state = {
       showControlPanel: false,
+      isMobile: this.isMobile(),
     };
 
+    this.handleResize = this.handleResize.bind(this);
     this.onShowControlPanel = this.onShowControlPanel.bind(this);
+
+    window.addEventListener("resize", this.handleResize);
   }
 
   onCyEvents() {
@@ -147,13 +150,43 @@ export class NetworkEditor extends Component {
     this.cy.destroy();
   }
 
+  handleResize() {console.log('handleResize...');
+    this.setState({ isMobile: this.isMobile() });
+  }
+
+  isMobile() {
+    const sm = theme.breakpoints.values.sm;
+    
+    return window.innerWidth < sm;
+  }
+
   onShowControlPanel(show) {
     this.setState({ showControlPanel: show });
   }
 
   render() {
     const { controller } = this;
-    const { showControlPanel } = this.state;
+    const { showControlPanel, isMobile } = this.state;
+
+    const maybeHideDrawer = () => {
+      if (!isMobile) {
+        return;
+      }
+      this.setState({ showControlPanel: false });
+    };
+
+    const onContentClick = () => {
+      maybeHideDrawer();
+    };
+
+    const onContentKeyDown = (event) => {
+      if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
+        return;
+      }
+      maybeHideDrawer();
+    };
+
+    const drawerVariant = isMobile ? 'temporary' : 'persistent';
 
     return (
       <ThemeProvider theme={theme}>
@@ -161,12 +194,16 @@ export class NetworkEditor extends Component {
         <div className="network-editor">
           <Header
             controller={controller}
-            onShowControlPanel={this.onShowControlPanel}
             showControlPanel={showControlPanel}
+            drawerVariant={drawerVariant}
+            onShowControlPanel={this.onShowControlPanel}
           />
           <Main
             controller={controller}
             showControlPanel={showControlPanel}
+            drawerVariant={drawerVariant}
+            onContentClick={onContentClick}
+            onContentKeyDown={onContentKeyDown}
           />
         </div>
       </ThemeProvider>

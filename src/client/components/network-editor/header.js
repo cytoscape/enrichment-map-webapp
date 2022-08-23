@@ -81,7 +81,7 @@ export class Header extends Component {
 
   render() {
     const { anchorEl, menuName } = this.state;
-    const { classes, onShowControlPanel, showControlPanel } = this.props;
+    const { classes, showControlPanel, drawerVariant, onShowControlPanel } = this.props;
     const { controller } = this;
 
     const showShareMenu = (event) => {
@@ -106,13 +106,15 @@ export class Header extends Component {
     const ToolbarDivider = ({ unrelated }) => {
       return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
     };
+
+    const shiftAppBar = showControlPanel && drawerVariant === 'persistent';
     
     return (
       <>
         <AppBar
           position="relative"
           color='default'
-          className={clsx(classes.appBar, { [classes.appBarShift]: showControlPanel })}
+          className={clsx(classes.appBar, { [classes.appBarShift]: shiftAppBar })}
         >
           <Toolbar variant="dense">
             <ToolbarButton
@@ -128,7 +130,7 @@ export class Header extends Component {
                   aria-label='close' 
                   onClick={() => location.href = '/'}
                 >
-                  <AppLogoIcon style={{ fontSize: 28 }} />
+                  <AppLogoIcon style={{ fontSize: 26 }} />
                 </IconButton>
               </Tooltip>
             </Box>
@@ -199,7 +201,6 @@ export class Header extends Component {
 }
 
 class ToolbarButton extends Component {
-
   render() {
     const { title, icon, color, className, onClick } = this.props;
 
@@ -266,8 +267,9 @@ ToolbarButton.propTypes = {
 Header.propTypes = {
   classes: PropTypes.object.isRequired,
   controller: PropTypes.instanceOf(NetworkEditorController),
-  onShowControlPanel: PropTypes.func.isRequired,
+  drawerVariant: PropTypes.string.isRequired,
   showControlPanel: PropTypes.bool.isRequired,
+  onShowControlPanel: PropTypes.func.isRequired,
 };
 
 export default withStyles(useStyles)(Header);

@@ -78,13 +78,14 @@ export class Main extends Component {
 
   render() {
     const { controller } = this;
-    const { classes, showControlPanel } = this.props;
-
-    return (
-      <div className="network-editor-content">
+    const { classes, showControlPanel, drawerVariant, onContentClick, onContentKeyDown } = this.props;
+    console.log(">>> showControlPanel: " + showControlPanel);
+    
+    const LeftDrawer = () => {
+      return (
         <Drawer
           className={classes.drawer}
-          variant="persistent"
+          variant={drawerVariant}
           anchor="left"
           open={showControlPanel}
           classes={{
@@ -99,8 +100,20 @@ export class Main extends Component {
             <GeneListPanel controller={controller} />
           </List>
         </Drawer>
+      );
+    };
+
+    const shiftCy = showControlPanel && drawerVariant === 'persistent';
+
+    return (
+      <div
+        className="network-editor-content"
+        onClick={onContentClick}
+        onKeyDown={onContentKeyDown}
+      >
+        <LeftDrawer />
         <div className={classes.cy}>
-          <div className={clsx(classes.cy, { [classes.cyShift]: showControlPanel })}>
+          <div className={clsx(classes.cy, { [classes.cyShift]: shiftCy })}>
             <div id="cy" className={classes.cy} />
             <NetworkBackground controller={controller} />
           </div>
@@ -186,6 +199,9 @@ Main.propTypes = {
   classes: PropTypes.object.isRequired,
   controller: PropTypes.instanceOf(NetworkEditorController),
   showControlPanel: PropTypes.bool.isRequired,
+  drawerVariant: PropTypes.string.isRequired,
+  onContentClick: PropTypes.func.isRequired,
+  onContentKeyDown: PropTypes.func.isRequired,
 };
 
 export default withStyles(useStyles)(Main);
