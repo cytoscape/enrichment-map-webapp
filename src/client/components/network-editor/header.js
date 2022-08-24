@@ -1,24 +1,29 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
+import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
-import { DEFAULT_PADDING } from './defaults';
-import TitleEditor from './title-editor';
-import ShareButton from './share-button';
 import { NetworkEditorController } from './controller';
+import TitleEditor from './title-editor';
+import SharePanel from './share-panel';
 
 import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Toolbar } from '@material-ui/core';
 import { Divider } from '@material-ui/core';
-import { Popover, MenuList, MenuItem} from "@material-ui/core";
+import { Popover, Menu, MenuList, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
 import { IconButton, Box } from '@material-ui/core';
 
 import { AppLogoIcon } from '../svg-icons';
 import MenuIcon from '@material-ui/icons/Menu';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
+import ReplyIcon from '@material-ui/icons/Reply';
+import MoreIcon from '@material-ui/icons/MoreVert';
+
+const MOBILE_MENU_ID = "menu-mobile";
+const SHARE_MENU_ID = "menu-share";
 
 /**
  * The network editor's header or app bar.
@@ -33,53 +38,36 @@ export class Header extends Component {
     this.busProxy = new EventEmitterProxy(this.controller.bus);
 
     this.state = {
-      menu: null,
+      menuName: null,
+      mobileMoreAnchorEl: null,
       anchorEl: null,
       dialogId: null,
     };
+
+    this.showMobileMenu = this.showMobileMenu.bind(this);
   }
 
-  handleClick(event, menuName) {
-    this.showMenu(menuName, event.currentTarget);
+  showMenu(menuName, target) {
+    this.setState({
+      menuName: menuName,
+      anchorEl: target,
+    });
   }
 
-  handleClose() {
+  handleMenuClose() {
     this.setState({
       menuName: null,
+      mobileMoreAnchorEl: null,
       anchorEl: null,
-      dialogName: null,
     });
   }
 
-  showMenu(menuName, anchorEl) {
-    this.setState({
-      menuName: menuName,
-      anchorEl: anchorEl,
-      dialogName: null,
-    });
+  showMobileMenu(event) {
+    this.setState({ mobileMoreAnchorEl: event.currentTarget });
   }
 
-  goBackToMenu(menuName) {
-    this.setState({
-      menuName: menuName,
-      dialogName: null,
-    });
-  }
-
-  showDialog(dialogName, menuName) {
-    this.setState({
-      menuName: menuName,
-      anchorEl: menuName ? this.state.anchorEl : null,
-      dialogName: dialogName,
-    });
-  }
-
-  hideDialog() {
-    this.setState({
-      menuName: null,
-      anchorEl: null,
-      dialogName: null,
-    });
+  handleMobileMenuClose() {
+    this.setState({ mobileMoreAnchorEl: null });
   }
 
   componentDidMount() {
@@ -92,20 +80,41 @@ export class Header extends Component {
   }
 
   render() {
-    const { anchorEl, menuName, dialogName } = this.state;
-    const { classes, onShowControlPanel, showControlPanel } = this.props;
+    const { anchorEl, menuName } = this.state;
+    const { classes, showControlPanel, drawerVariant, onShowControlPanel } = this.props;
     const { controller } = this;
+
+    const showShareMenu = (event) => {
+      this.showMenu(SHARE_MENU_ID, event.currentTarget);
+    };
+
+    const buttonsDef = [
+      {
+        title: "Fit Network",
+        icon: <FitScreenIcon />,
+        onClick: () => controller.cy.fit(DEFAULT_PADDING),
+        unrelated: true,
+      },
+      {
+        title: "Share",
+        icon: <ReplyIcon style={{transform: 'scaleX(-1)'}} />,
+        onClick: showShareMenu,
+        unrelated: false,
+      },
+    ];
 
     const ToolbarDivider = ({ unrelated }) => {
       return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
     };
+
+    const shiftAppBar = showControlPanel && drawerVariant === 'persistent';
     
     return (
       <>
         <AppBar
           position="relative"
           color='default'
-          className={clsx(classes.appBar, { [classes.appBarShift]: showControlPanel })}
+          className={clsx(classes.appBar, { [classes.appBarShift]: shiftAppBar })}
         >
           <Toolbar variant="dense">
             <ToolbarButton
@@ -115,65 +124,83 @@ export class Header extends Component {
               className={classes.menuButton}
               onClick={() => onShowControlPanel(!showControlPanel)}
             />
-            <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' } }}>
+            <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
               <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
                 <IconButton 
                   aria-label='close' 
                   onClick={() => location.href = '/'}
                 >
-                  <AppLogoIcon style={{ fontSize: 28 }} />
+                  <AppLogoIcon style={{ fontSize: 26 }} />
                 </IconButton>
               </Tooltip>
             </Box>
+            <ToolbarDivider unrelated />
             <TitleEditor controller={controller} />
             <ToolbarDivider unrelated />
-            <ToolbarButton
-              title="Fit Network"
-              icon={<FitScreenIcon />}
-              onClick={() => controller.cy.fit(DEFAULT_PADDING)}
-            />
-            {/* <ToolbarDivider unrelated />
-            <ToolbarButton
-              title="Search"
-              icon={<SearchIcon />}
-              onClick={() => console.log('Search NOT IMPLEMENTED...')}
-            /> */}
-            <ToolbarDivider unrelated />
-            <ShareButton controller={controller}/>
-            <ToolbarDivider />
-            {/* <ToolbarButton
-              title="Debug"
-              icon={<DebugIcon />}
-              onClick={e => this.handleClick(e, 'debug')} 
-            /> */}
+            <div className={classes.sectionDesktop}>
+              { buttonsDef.map(({title, icon, onClick, unrelated}, idx) =>
+                <Fragment key={idx}>
+                  <ToolbarButton
+                    title={title}
+                    icon={icon}
+                    onClick={onClick}
+                  />
+                  <ToolbarDivider unrelated={unrelated} />
+                </Fragment>
+              )}
+            </div>
+            <div className={classes.sectionMobile}>
+              <ToolbarButton
+                title="Options"
+                icon={<MoreIcon />}
+                onClick={(evt) => this.showMobileMenu(evt)}
+              />
+            </div>
           </Toolbar>
+          {this.renderMobileMenu(buttonsDef)}
           {anchorEl && (
             <Popover
               id="menu-popover"
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
-              onClose={() => this.handleClose()}
+              onClose={() => this.handleMenuClose()}
             >
-              {menuName === 'account' && (
-                <MenuList>
-                  <MenuItem disabled={true} onClick={() => this.handleClose()}>Sign Out</MenuItem>
-                </MenuList>
+              {menuName === SHARE_MENU_ID && (
+                <SharePanel controller={controller} />
               )}
-              {/* {menuName === 'debug' && !dialogName && (
-                <MenuList>
-                  <MenuItem disabled={false} onClick={() => this.showDialog('dialog-name')}>Item Title Here</MenuItem>
-                </MenuList>
-              )} */}
             </Popover>
           )}
         </AppBar>
       </>
     );
   }
+
+  renderMobileMenu(buttonsDef) {
+    const { mobileMoreAnchorEl } = this.state;
+    const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
+
+    return (
+      <Menu
+        anchorEl={mobileMoreAnchorEl}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        id={MOBILE_MENU_ID}
+        keepMounted
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={isMobileMenuOpen}
+        onClose={() => this.handleMobileMenuClose()}
+      >
+        { buttonsDef.map(({title, icon, onClick}, idx) =>
+          <MenuItem key={idx} onClick={onClick}>
+            <IconButton>{icon}</IconButton>
+            <p>{title}</p>
+          </MenuItem>
+        )}
+      </Menu>
+    );
+  }
 }
 
 class ToolbarButton extends Component {
-
   render() {
     const { title, icon, color, className, onClick } = this.props;
 
@@ -187,8 +214,6 @@ class ToolbarButton extends Component {
   }
 }
 
-const drawerWidth = 240;
-
 const useStyles = theme => ({
   appBar: {
     transition: theme.transitions.create(['margin', 'width'], {
@@ -197,8 +222,8 @@ const useStyles = theme => ({
     }),
   },
   appBarShift: {
-    width: `calc(100% - ${drawerWidth}px)`,
-    marginLeft: drawerWidth,
+    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
+    marginLeft: CONTROL_PANEL_WIDTH,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
@@ -217,6 +242,18 @@ const useStyles = theme => ({
     marginRight: theme.spacing(1.5),
     width: 0,
   },
+  sectionDesktop: {
+    display: 'none',
+    [theme.breakpoints.up('sm')]: {
+      display: 'flex',
+    },
+  },
+  sectionMobile: {
+    display: 'flex',
+    [theme.breakpoints.up('sm')]: {
+      display: 'none',
+    },
+  },
 });
 
 ToolbarButton.propTypes = {
@@ -230,8 +267,9 @@ ToolbarButton.propTypes = {
 Header.propTypes = {
   classes: PropTypes.object.isRequired,
   controller: PropTypes.instanceOf(NetworkEditorController),
-  onShowControlPanel: PropTypes.func.isRequired,
+  drawerVariant: PropTypes.string.isRequired,
   showControlPanel: PropTypes.bool.isRequired,
+  onShowControlPanel: PropTypes.func.isRequired,
 };
 
 export default withStyles(useStyles)(Header);

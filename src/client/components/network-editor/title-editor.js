@@ -94,6 +94,12 @@ export class TitleEditor extends Component {
         maxWidth: 640,
         padding: 2,
         fontWeight: 'bold',
+        [theme.breakpoints.down('sm')]: {
+          textAlign: 'center',
+        },
+        [theme.breakpoints.up('sm')]: {
+          textAlign: 'left',
+        },
         '&:hover': {
           border: `1px solid ${theme.palette.secondary.main}`,
         },

@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape';
 
@@ -124,9 +123,14 @@ export class NetworkEditor extends Component {
 
     this.state = {
       showControlPanel: false,
+      isMobile: this.isMobile(),
     };
 
+    this.handleResize = this.handleResize.bind(this);
     this.onShowControlPanel = this.onShowControlPanel.bind(this);
+    this.onContentKeyDown = this.onContentKeyDown.bind(this);
+
+    window.addEventListener("resize", this.handleResize);
   }
 
   onCyEvents() {
@@ -138,35 +142,76 @@ export class NetworkEditor extends Component {
     const secret = this.secret;
     this._debounceCyEvents = _.debounce(this.onCyEvents, 500);
     this.cy.on(CY_EVENTS, this._debounceCyEvents);
+    document.addEventListener("keydown", this.onContentKeyDown, false);
   }
 
   componentWillUnmount() {
+    document.removeEventListener("keydown", this.onContentKeyDown, false);
     this.cy.removeListener(CY_EVENTS, this._debounceCyEvents);
     this.eh.destroy();
     this.bus.removeAllListeners();
     this.cy.destroy();
   }
 
+  handleResize() {
+    this.setState({ isMobile: this.isMobile() });
+  }
+
+  maybeHideDrawer() {
+    if (this.isMobile()) {
+      this.setState({ showControlPanel: false });
+    }
+  }
+
+  isMobile() {
+    const sm = theme.breakpoints.values.sm;
+    
+    return window.innerWidth < sm;
+  }
+
   onShowControlPanel(show) {
     this.setState({ showControlPanel: show });
   }
 
+  onContentKeyDown(event) {
+    if (event.key === 'Escape') {
+      this.maybeHideDrawer();
+    }
+  }
+
   render() {
     const { controller } = this;
-    const { showControlPanel } = this.state;
+    const { showControlPanel, isMobile } = this.state;
+
+    const onContentClick = (event) => {
+      if (showControlPanel && isMobile && event.target.className === 'MuiBackdrop-root') {
+        this.maybeHideDrawer();
+      }
+    };
+
+    const drawerVariant = isMobile ? 'temporary' : 'persistent';
 
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className="network-editor">
-          <Header controller={controller} onShowControlPanel={this.onShowControlPanel} showControlPanel={showControlPanel}  />
-          <Main controller={controller} showControlPanel={showControlPanel} />
+          <Header
+            controller={controller}
+            showControlPanel={showControlPanel}
+            drawerVariant={drawerVariant}
+            onShowControlPanel={this.onShowControlPanel}
+          />
+          <Main
+            controller={controller}
+            showControlPanel={showControlPanel}
+            drawerVariant={drawerVariant}
+            onContentClick={onContentClick}
+          />
         </div>
       </ThemeProvider>
     );
   }
 }
-
 
 export class Demo extends Component {
   constructor(props) {
@@ -177,7 +222,6 @@ export class Demo extends Component {
     return <NetworkEditor id="demo" secret="demo" />;
   }
 }
-
 
 NetworkEditor.propTypes = {
 };

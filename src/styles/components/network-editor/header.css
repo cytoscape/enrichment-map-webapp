@@ -35,12 +35,10 @@
 
 .share-button-popover-content {
   width: 450px;
-  background-color: #121212;
   padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 5px;
-  border: 2px solid gray;
 }
 
 .share-button-popover-buttons {
