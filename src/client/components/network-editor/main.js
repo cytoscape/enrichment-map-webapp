@@ -79,7 +79,6 @@ export class Main extends Component {
   render() {
     const { controller } = this;
     const { classes, showControlPanel, drawerVariant, onContentClick, onContentKeyDown } = this.props;
-    console.log(">>> showControlPanel: " + showControlPanel);
     
     const LeftDrawer = () => {
       return (
@@ -109,7 +108,6 @@ export class Main extends Component {
       <div
         className="network-editor-content"
         onClick={onContentClick}
-        onKeyDown={onContentKeyDown}
       >
         <LeftDrawer />
         <div className={classes.cy}>
@@ -201,7 +199,6 @@ Main.propTypes = {
   showControlPanel: PropTypes.bool.isRequired,
   drawerVariant: PropTypes.string.isRequired,
   onContentClick: PropTypes.func.isRequired,
-  onContentKeyDown: PropTypes.func.isRequired,
 };
 
 export default withStyles(useStyles)(Main);

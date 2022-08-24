@@ -128,6 +128,7 @@ export class NetworkEditor extends Component {
 
     this.handleResize = this.handleResize.bind(this);
     this.onShowControlPanel = this.onShowControlPanel.bind(this);
+    this.onContentKeyDown = this.onContentKeyDown.bind(this);
 
     window.addEventListener("resize", this.handleResize);
   }
@@ -141,17 +142,25 @@ export class NetworkEditor extends Component {
     const secret = this.secret;
     this._debounceCyEvents = _.debounce(this.onCyEvents, 500);
     this.cy.on(CY_EVENTS, this._debounceCyEvents);
+    document.addEventListener("keydown", this.onContentKeyDown, false);
   }
 
   componentWillUnmount() {
+    document.removeEventListener("keydown", this.onContentKeyDown, false);
     this.cy.removeListener(CY_EVENTS, this._debounceCyEvents);
     this.eh.destroy();
     this.bus.removeAllListeners();
     this.cy.destroy();
   }
 
-  handleResize() {console.log('handleResize...');
+  handleResize() {
     this.setState({ isMobile: this.isMobile() });
+  }
+
+  maybeHideDrawer() {
+    if (this.isMobile()) {
+      this.setState({ showControlPanel: false });
+    }
   }
 
   isMobile() {
@@ -164,26 +173,20 @@ export class NetworkEditor extends Component {
     this.setState({ showControlPanel: show });
   }
 
+  onContentKeyDown(event) {
+    if (event.key === 'Escape') {
+      this.maybeHideDrawer();
+    }
+  }
+
   render() {
     const { controller } = this;
     const { showControlPanel, isMobile } = this.state;
 
-    const maybeHideDrawer = () => {
-      if (!isMobile) {
-        return;
+    const onContentClick = (event) => {
+      if (showControlPanel && isMobile && event.target.className === 'MuiBackdrop-root') {
+        this.maybeHideDrawer();
       }
-      this.setState({ showControlPanel: false });
-    };
-
-    const onContentClick = () => {
-      maybeHideDrawer();
-    };
-
-    const onContentKeyDown = (event) => {
-      if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
-        return;
-      }
-      maybeHideDrawer();
     };
 
     const drawerVariant = isMobile ? 'temporary' : 'persistent';
@@ -203,7 +206,6 @@ export class NetworkEditor extends Component {
             showControlPanel={showControlPanel}
             drawerVariant={drawerVariant}
             onContentClick={onContentClick}
-            onContentKeyDown={onContentKeyDown}
           />
         </div>
       </ThemeProvider>
