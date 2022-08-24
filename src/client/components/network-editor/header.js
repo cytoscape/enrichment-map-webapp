@@ -70,15 +70,6 @@ export class Header extends Component {
     this.setState({ mobileMoreAnchorEl: null });
   }
 
-  componentDidMount() {
-    const dirty = () => this.setState({ dirty: Date.now() });
-    this.busProxy.on('toggleDrawMode', dirty);
-  }
-
-  componentWillUnmount() {
-    this.busProxy.removeAllListeners();
-  }
-
   render() {
     const { anchorEl, menuName } = this.state;
     const { classes, showControlPanel, drawerVariant, onShowControlPanel } = this.props;

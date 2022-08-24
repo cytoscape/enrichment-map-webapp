@@ -58,17 +58,12 @@ export class Main extends Component {
       });
     }, 64);
 
-    this.cyEmitter.on('tap', event => { // tap on bg
-      if (event.target !== this.cy) { return; }
-      this.controller.disableDrawMode();
-    }).on('select', () => {
+    this.cyEmitter.on('select', () => {
       this.updateSelectionClass();
     }).on('unselect', () => {
       this.updateSelectionClass();
     }).on('remove', () => {
       this.updateSelectionClass();
-    }).on('ehstop', () => {
-      this.controller.disableDrawMode();
     });
   }
 

@@ -22,8 +22,6 @@ export class NetworkEditorController {
     /** @type {EventEmitter} */
     this.bus = bus || new EventEmitter();
 
-    this.drawModeEnabled = false;
-
     // Save the last used layout optionst
     this.layoutOptions = {
       fcose: {
@@ -63,44 +61,6 @@ export class NetworkEditorController {
    */
   getLayoutOptions(name) {
     return Object.assign({}, this.layoutOptions[name]);
-  }
-
-
-  /**
-   * Toggle whether draw mode is enabled
-   * @param {Boolean} [bool] A boolean override (i.e. force enable on true, force disable on false)
-   */
-  toggleDrawMode(bool = !this.drawModeEnabled){
-    if( bool ){
-      this.eh.enableDrawMode();
-      this.bus.emit('enableDrawMode');
-    } else {
-      this.eh.disableDrawMode();
-      this.bus.emit('disableDrawMode');
-    }
-
-    this.drawModeEnabled = bool;
-
-    /**
-     * toggleDrawMode event
-     * @event NetworkEditorController#toggleDrawMode
-     * @argument {Boolean} bool Whether draw mode has been enabled (true) or disabled (false)
-     */
-    this.bus.emit('toggleDrawMode', bool);
-  }
-
-  /**
-   * Enable draw mode
-   */
-  enableDrawMode(){
-    return this.toggleDrawMode(true);
-  }
-
-  /**
-   * Disable draw mode
-   */
-  disableDrawMode(){
-    this.toggleDrawMode(false);
   }
 
   /**
