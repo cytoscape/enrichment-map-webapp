@@ -30,7 +30,9 @@ export class NetworkEditor extends Component {
 
     this.cy = new Cytoscape({
       headless: true,
-      styleEnabled: true
+      styleEnabled: true,
+      boxSelectionEnabled: false,
+      selectionType: 'single',
     });
 
     this.cy.data({ id });
@@ -98,8 +100,7 @@ export class NetworkEditor extends Component {
 
     const enableSync = async () => {
       console.log('Starting to enable sync in editor');
-
-      console.log('Loading');
+      console.log('Loading...');
 
       const res = await fetch(`/api/${id}`);
       const result = await res.json();

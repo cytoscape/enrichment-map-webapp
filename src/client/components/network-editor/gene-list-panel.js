@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { NetworkEditorController } from './controller';
-import _ from 'lodash';
 
 export class GeneListPanel extends Component {
 
@@ -11,69 +10,83 @@ export class GeneListPanel extends Component {
     this.networkIDStr = props.controller.cy.data('id');
 
     this.state = {
-      genes: [],
+      geneSet: null,
     };
 
     this.selectionHandler = (event) => {
       const node = event.target;
-      const geneSet = node.data('name');
-      this.fetchGeneListWithRanks(geneSet);
+      const geneSetName = node.data('name');
+      this.fetchGeneList(geneSetName);
     };
+    this.unselectionHandler = () => {
+      const eles = this.controller.cy.nodes(':selected');
+
+      if (eles.length === 0) {
+        this.setState({ geneSet: null });
+      }
+    };
+  }
+
+  componentDidMount() {
+    const eles = this.controller.cy.nodes(':selected');
+    
+    if (eles.length > 0) {
+      const geneSetName = eles[0].data('name');
+      this.fetchGeneList(geneSetName);
+    }
 
     this.controller.cy.on('select', 'node', this.selectionHandler);
+    this.controller.cy.on('unselect', 'node', this.unselectionHandler);
   }
 
   componentWillUnmount() {
     this.controller.cy.removeListener('select', 'node', this.selectionHandler);
+    this.controller.cy.removeListener('unselect', 'node', this.unselectionHandler);
   }
 
-  // fetchGeneList(geneSetName) {
-  //   fetch(`/api/geneset/${encodeURIComponent(geneSetName)}`)
-  //     .then(res => res.json())
-  //     .then(({ name, description, genes }) => this.setState({ name, description, genes }));
-  // }
-
-  fetchGeneListWithRanks(geneSetName) {
-    fetch(`/api/${this.networkIDStr}/geneset/${encodeURIComponent(geneSetName)}`)
-      .then(res => res.json())
-      .then(({ name, description, genes }) => {
-        genes = _.sortBy(genes, ["rank", "gene"]);
-        // genes = _.orderBy(genes, ["rank", "gene"], ["desc", "asc"]);
-        this.setState({ name, description, genes });
-      });
+  async fetchGeneList(geneSetName) {
+    const geneSet = await this.controller.fetchGeneList(geneSetName);
+    this.setState({ geneSet });
   }
 
   render() {
-    console.log("genes: " + JSON.stringify(this.state.genes));
-    return <div>
+    const { geneSet } = this.state;
+
+    return (
       <div>
-        Gene Set: {this.state.name}
+        {geneSet && (
+          <>
+            <div>
+              Gene Set: {geneSet.name}
+            </div>
+            <hr/>
+            <div>
+              Description: {geneSet.description}
+            </div>
+            <hr/>
+            {/* <div>
+              Genes:
+              <div>
+                  { geneSet.genes.map(gene =>
+                    <div key={gene}>{gene}</div>
+                  )}
+              </div>
+            </div> */}
+            <div>
+              Genes:
+              <div>
+                  { geneSet.genes.map(({gene, rank}) =>
+                    <div key={gene}>{gene} { rank ? "(" + rank + ")" : null }</div>
+                  )}
+                  {/* { geneSet.genes.map(({gene, rank}) =>
+                    {rank ? <div>{rank}</div> : null; }
+                  )} */}
+              </div>
+            </div>
+          </>
+        )}
       </div>
-      <hr/>
-      <div>
-        Description: {this.state.description}
-      </div>
-      <hr/>
-      {/* <div>
-        Genes:
-        <div>
-            { this.state.genes.map(gene =>
-              <div key={gene}>{gene}</div>
-            )}
-        </div>
-      </div> */}
-      <div>
-        Genes:
-        <div>
-            { this.state.genes.map(({gene, rank}) =>
-              <div key={gene}>{gene} { rank ? "(" + rank + ")" : null }</div>
-            )}
-            {/* { this.state.genes.map(({gene, rank}) =>
-              {rank ? <div>{rank}</div> : null; }
-            )} */}
-        </div>
-      </div>
-    </div>;
+    );
   }
 }
 

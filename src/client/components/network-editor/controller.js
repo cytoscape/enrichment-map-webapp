@@ -1,5 +1,6 @@
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape'; // eslint-disable-line
+import _ from 'lodash';
 import { DEFAULT_PADDING } from './defaults';
 
 /**
@@ -76,4 +77,23 @@ export class NetworkEditorController {
     this.bus.emit('deletedSelectedElements', deletedEls);
   }
 
+  async fetchGeneList(geneSetName) {
+    if (this.lastGeneSet == null || this.lastGeneSet.name !== geneSetName) {
+      // New query...
+      const geneSet = await fetch(`/api/${this.networkIDStr}/geneset/${encodeURIComponent(geneSetName)}`)
+        .then(res => res.json())
+        .then(geneSet => {
+          const genes = geneSet.genes;
+          geneSet.genes = _.sortBy(genes, ["rank", "gene"]);
+          // genes = _.orderBy(genes, ["rank", "gene"], ["desc", "asc"]);
+          
+          return geneSet;
+        });
+
+      return this.lastGeneSet = geneSet; // Cache the last geneSet
+    } else {
+      // Same query as before...
+      return this.lastGeneSet;
+    }
+  }
 }
