@@ -18,11 +18,6 @@ const ImageSize = {
   LARGE:  { value:'LARGE',  scale: 3.0 },
 };
 
-const ImageType = {
-  PNG: 'png',
-  JPG: 'jpg',
-};
-
 const ImageArea = {
   FULL: 'full',
   VIEW: 'view',
@@ -36,7 +31,6 @@ export class SharePanel extends React.Component {
     this.controller = props.controller;
     this.state = {
       tooltipOpen: false,
-      imageType: ImageType.PNG,
       imageSize: ImageSize.MEDIUM,
       imageArea: ImageArea.VIEW,
     };
@@ -54,16 +48,16 @@ export class SharePanel extends React.Component {
 
   async handleExportImage() {
     const { cy } = this.controller;
-    const { imageType, imageSize, imageArea } = this.state;
+    const { imageSize, imageArea } = this.state;
 
-    const blob = await cy[imageType]({
+    const blob = await cy.png({
       output:'blob-promise',
       bg: 'white',
       full: imageArea === ImageArea.FULL,
       scale: imageSize.scale,
     });
 
-    saveAs(blob, `cytoscape_explore.${imageType}`);
+    saveAs(blob, 'cytoscape_explore.png');
   }
 
   handlePopoverOpen() {
@@ -95,7 +89,7 @@ export class SharePanel extends React.Component {
             Send by email
           </Button>
           <ClickAwayListener onClickAway={() => this.handleTooltip(false)}>
-            <div>
+            <div> 
               <Tooltip arrow disableFocusListener disableHoverListener disableTouchListener
                 PopperProps={{ disablePortal: true }}
                 onClose={() => this.handleTooltip(false)}
@@ -114,7 +108,6 @@ export class SharePanel extends React.Component {
     );
 
     const ExportImageForm = () => {
-      const handleType = imageType => this.setState({ imageType }); 
       const handleSize = imageSize => this.setState({ imageSize: ImageSize[imageSize] });
       const handleArea = imageArea => this.setState({ imageArea });
       const ImageRadio = ({ label, value, onClick }) =>
@@ -126,11 +119,11 @@ export class SharePanel extends React.Component {
         <div className='share-button-popover-content'>
           <SectionHeader icon={<ImageIcon />} text="Export Image" />
           <div style={{ paddingLeft:'10px' }}>
-            <Grid container alignItems="flex-start" spacing={3}>
+            <Grid container alignItems="flex-start" spacing={1}>
               <Grid item>
                 <FormControl>
                   <FormLabel>Size:</FormLabel>
-                  <RadioGroup value={this.state.imageSize.value}>
+                  <RadioGroup row value={this.state.imageSize.value}>
                     <ImageRadio label="Small"  value={ImageSize.SMALL.value}  onClick={handleSize} />
                     <ImageRadio label="Medium" value={ImageSize.MEDIUM.value} onClick={handleSize} />
                     <ImageRadio label="Large"  value={ImageSize.LARGE.value}  onClick={handleSize} />
@@ -139,17 +132,8 @@ export class SharePanel extends React.Component {
               </Grid>
               <Grid item>
                 <FormControl>
-                  <FormLabel>Format:</FormLabel>
-                  <RadioGroup value={this.state.imageType}>
-                    <ImageRadio label="PNG" value={ImageType.PNG} onClick={handleType} />
-                    <ImageRadio label="JPG" value={ImageType.JPG} onClick={handleType} />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
-              <Grid item>
-                <FormControl>
                   <FormLabel>Area:</FormLabel>
-                  <RadioGroup  value={this.state.imageArea}>
+                  <RadioGroup row value={this.state.imageArea}>
                     <ImageRadio label="Visible Area"   value={ImageArea.VIEW} onClick={handleArea} />
                     <ImageRadio label="Entire Network" value={ImageArea.FULL} onClick={handleArea} />
                   </RadioGroup>
