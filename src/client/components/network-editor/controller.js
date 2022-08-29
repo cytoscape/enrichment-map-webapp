@@ -23,6 +23,8 @@ export class NetworkEditorController {
     /** @type {EventEmitter} */
     this.bus = bus || new EventEmitter();
 
+    this.networkIDStr = cy.data('id');
+    
     // Save the last used layout optionst
     this.layoutOptions = {
       fcose: {

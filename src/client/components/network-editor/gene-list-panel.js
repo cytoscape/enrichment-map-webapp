@@ -7,7 +7,6 @@ export class GeneListPanel extends Component {
   constructor(props) {
     super(props);
     this.controller = props.controller;
-    this.networkIDStr = props.controller.cy.data('id');
 
     this.state = {
       geneSet: null,
