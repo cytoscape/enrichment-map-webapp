@@ -52,8 +52,8 @@ export class NetworkEditor extends Component {
         style: {
           'background-color': 'blue',
           'label': 'data(name)',
-          'width':  ele => ele.data('gs_size') / 10,
-          'height': ele => ele.data('gs_size') / 10,
+          'width':  20, //ele => ele.data('gs_size') / 10,
+          'height': 20, // ele => ele.data('gs_size') / 10,
           'font-size': '5px',
         }
       },
@@ -61,7 +61,7 @@ export class NetworkEditor extends Component {
         selector: 'edge',
         style: { 
           'curve-style': 'bezier',
-          'width': ele => ele.data('similarity_coefficient') * 10
+          'width': 2// ele => ele.data('similarity_coefficient') * 10
         }
       },
       {
@@ -69,6 +69,13 @@ export class NetworkEditor extends Component {
         style: {
           'text-wrap': 'wrap',
           'text-max-width': 60
+        }
+      },
+      {
+        selector: ':parent',
+        style: {
+          'background-opacity': 0.333,
+          'border-color': '#2B65EC'
         }
       },
       {
@@ -104,6 +111,7 @@ export class NetworkEditor extends Component {
 
       const res = await fetch(`/api/${id}`);
       const result = await res.json();
+      this.addClusterNodesToNetworkJSON(result.network);
 
       this.cy.add(result.network.elements);
       this.cy.data({ parameters: result.parameters });
@@ -132,6 +140,28 @@ export class NetworkEditor extends Component {
     this.onContentKeyDown = this.onContentKeyDown.bind(this);
 
     window.addEventListener("resize", this.handleResize);
+  }
+
+  addClusterNodesToNetworkJSON(network) {
+    const clusterMap = new Map();
+
+    network.elements.nodes.forEach(node => {
+      const clusterID = node.data['mcode_cluster_id'];
+      if(clusterID) {
+        if(!clusterMap.has(clusterID)) {
+          clusterMap.set(clusterID, [node]);
+        } else {
+          clusterMap.get(clusterID).push(node);
+        }
+      }
+    });
+
+    clusterMap.forEach((nodes, clusterID) => {
+      network.elements.nodes.push({ data: { id: clusterID } });
+      nodes.forEach(node => {
+        node.data['parent'] = clusterID;
+      });
+    });
   }
 
   onCyEvents() {
