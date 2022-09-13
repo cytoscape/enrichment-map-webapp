@@ -36,12 +36,12 @@ http.post('/create', tsvParser, async function(req, res, next) {
     console.timeEnd('fgsea_service');
 
     console.time('em_service');
-    const networkJsonString = await runEM(fgseaResultJson);
+    const networkJson = await runEM(fgseaResultJson);
     console.timeEnd('em_service');
 
     console.log();
     console.time('mongo_create');
-    const netID = await Datastore.createNetwork(networkJsonString);
+    const netID = await Datastore.createNetwork(networkJson);
     await Datastore.createRankedGeneList(rankedGeneListTSV, netID);
     console.timeEnd('mongo_create');
 
@@ -139,32 +139,33 @@ async function runFGSEA(ranksTSV) {
     throw new Error("Error running fgsea service.");
   }
 
-  const enrichmentsJson = await response.text();
+  const enrichmentsJson = await response.json();
   return enrichmentsJson;
 }
 
 
-async function runEM(enrichmentsJson) {
-  // TODO, Can we stream the JSON that surrounds the enrichmentJson, instead of building a string in memory?
-  const body = `{
-    "dataSets": [ {
-        "name": "FGSEA Test",
-        "method": "FGSEA",
-        "fgseaResults": ${enrichmentsJson}
-      }
-    ]
-  }`;
+async function runEM(fgseaResults) {
+  const body = {
+    dataSets: [{
+      name: "EM Web",
+      method: "FGSEA",
+      fgseaResults
+    }],
+    parameters: {
+      similarityMetric: "JACCARD", 
+      similarityCutoff: 0.25
+    }
+  };
 
-  console.log(body);
   const response = await fetch(EM_SERVICE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body
+    body: JSON.stringify(body)
   });
   if(!response.ok) {
     throw new Error("Error running em service.");
   }
-  const networkJson = await response.text();
+  const networkJson = await response.json();
   return networkJson;
 }
 

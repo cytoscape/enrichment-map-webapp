@@ -61,7 +61,8 @@ export class NetworkEditor extends Component {
         selector: 'edge',
         style: { 
           'curve-style': 'bezier',
-          'width': 2// ele => ele.data('similarity_coefficient') * 10
+          'width': 2, // ele => ele.data('similarity_coefficient') * 10
+          'opacity': 'data(similarity_coefficient)', 
         }
       },
       {
