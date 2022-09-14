@@ -50,45 +50,58 @@ export class NetworkEditor extends Component {
       {
         selector: 'node',
         style: {
-          'background-color': 'blue',
+          'background-color': 'mapData(colouring,-1.0,1.0,rgb(33,102,172),rgb(178,24,43))',//'#f0f0f0',
+          'opacity': 0.8,
+          'border-color': '#333333',
+          'border-width': 1,
+          'border-opacity': 0.7,
           'label': 'data(name)',
-          'width':  20, //ele => ele.data('gs_size') / 10,
-          'height': 20, // ele => ele.data('gs_size') / 10,
-          'font-size': '5px',
+          'width':  40, //ele => ele.data('gs_size') / 10,
+          'height': 40, // ele => ele.data('gs_size') / 10,
+          'font-size': '6px',
+          'text-valign': 'center',
+          'text-wrap': 'wrap',
+          'text-max-width': 80,
         }
       },
       {
         selector: 'edge',
-        style: { 
+        style: {
+          'line-color' : '#a6cee3', //'#404040',
+          'line-opacity': 0.6,
           'curve-style': 'bezier',
-          'width': 2, // ele => ele.data('similarity_coefficient') * 10
-          'opacity': 'data(similarity_coefficient)', 
+          'width': ele => ele.data('similarity_coefficient') * 6,
         }
       },
       {
-        selector: 'node',
+        selector: 'edge[interaction = "Geneset_Overlap"]',
         style: {
-          'text-wrap': 'wrap',
-          'text-max-width': 60
+          'line-color' : 'red',
         }
       },
       {
         selector: ':parent',
         style: {
-          'background-opacity': 0.333,
+          'background-opacity': 0.2,
           'border-color': '#2B65EC'
         }
       },
       {
-        selector: '.unselected',
+        selector: 'node.unselected',
         style: {
-          'opacity': 0.333
+          'opacity': 0.2
+        }
+      },
+      {
+        selector: 'edge.unselected',
+        style: {
+          'opacity': 0.1
         }
       },
       {
         selector: 'node.eh-preview',
         style: {
-          'overlay-opacity': 0.25
+          'overlay-opacity': 0.2
         }
       },
       {
@@ -122,6 +135,16 @@ export class NetworkEditor extends Component {
       this.cy.fit(DEFAULT_PADDING);
       this.cy.layout({ 
         name: 'cose',
+        nodeDimensionsIncludeLabels: false,
+        nodeOverlap: 10,
+        gravity: -5,
+        nodeRepulsion: function() {
+          return 1000000;
+        },
+        edgeElasticity: function(edge) {
+          const coeff = edge.data('similarity_coefficient');
+          return coeff > 0 ? (200 / (coeff * coeff)): 1000;
+        },
         animate: false, 
       }).run();
 
