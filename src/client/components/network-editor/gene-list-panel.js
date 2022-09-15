@@ -1,92 +1,227 @@
-import React, { Component } from 'react';
+import React, { useEffect, useReducer } from 'react';
 import PropTypes from 'prop-types';
 import { NetworkEditorController } from './controller';
+import theme from '../../theme';
 
-export class GeneListPanel extends Component {
+import { makeStyles } from '@material-ui/core/styles';
 
-  constructor(props) {
-    super(props);
-    this.controller = props.controller;
+import { List, ListSubheader, ListItem, ListItemText } from '@material-ui/core';
+import { Grid, Typography, Divider } from '@material-ui/core';
+import { Tooltip } from '@material-ui/core';
+import { Bar } from 'react-chartjs-2';
 
-    this.state = {
-      geneSet: null,
-    };
+const useStyles = makeStyles((theme) => ({
+  title: {
+    fontWeight: 'bold',
+  },
+  description: {
+    paddingLeft: '0.75em',
+  },
+  chart: {
+    width: 160,
+    height: 17,
+    padding: '1px 0',
+    borderLeftWidth: 1,
+    borderLeftColor: theme.palette.text.primary,
+    borderLeftStyle: 'solid',
+  },
+}));
 
-    this.selectionHandler = (event) => {
-      const node = event.target;
-      const geneSetName = node.data('name');
-      this.fetchGeneList(geneSetName);
-    };
-    this.unselectionHandler = () => {
-      const eles = this.controller.cy.nodes(':selected');
+const chartOptions = {
+  indexAxis: 'y',
+  barThickness: 12,
+  scales: {
+    x: {
+      type: 'linear',
+      ticks: {
+        display: false,
+      },
+      grid: {
+        display: false,
+        drawBorder: false,
+      },
+      stacked: true,
+      display: false,
+    },
+    y: {
+      ticks: {
+        display: false,
+      },
+      grid: {
+        display: false,
+        drawBorder: false,
+      },
+      stacked: true,
+      display: false,
+    },
+  },
+  plugins: {
+    responsive: true,
+    legend: {
+      display: false,
+    },
+    tooltip: {
+      enabled: false,
+    },
+  },
+};
 
-      if (eles.length === 0) {
-        this.setState({ geneSet: null });
-      }
-    };
-  }
+const chartProps = {
+  width: 160,
+  height: 16,
+};
 
-  componentDidMount() {
-    const eles = this.controller.cy.nodes(':selected');
+export function GeneListPanel({ controller }) {
+  const [state, setState] = useReducer(
+    (state, newState) => ({...state, ...newState}),
+    {
+      geneSet: null, // for when a geneset node is selected
+      genes: [], // for when the search field is used
+    }
+  );
+  const { geneSet, genes } = state;
+
+  const classes = useStyles();
+
+  const fetchGeneList = async (geneSetName) => {
+    const geneSet = await controller.fetchGeneList(geneSetName);
+    const genes = geneSet ? geneSet.genes : [];
+    setState({ geneSet, genes });
+  };
+
+  const selectionHandler = (event) => {
+    const node = event.target;
+    const geneSetName = node.data('name');
+    fetchGeneList(geneSetName);
+  };
+  const unselectionHandler = () => {
+    const eles = controller.cy.nodes(':selected');
+
+    if (eles.length === 0) {
+      // fetchAllGenes();
+      setState({ geneSet: null, genes: [] });
+    }
+  };
+
+  useEffect(() => {
+    controller.cy.on('select', 'node', selectionHandler);
+    controller.cy.on('unselect', 'node', unselectionHandler);
+
+    const eles = controller.cy.nodes(':selected');
     
     if (eles.length > 0) {
       const geneSetName = eles[0].data('name');
-      this.fetchGeneList(geneSetName);
+      fetchGeneList(geneSetName);
     }
 
-    this.controller.cy.on('select', 'node', this.selectionHandler);
-    this.controller.cy.on('unselect', 'node', this.unselectionHandler);
-  }
+    return function cleanup() {console.log("<<< UNMOUNTED...");
+      controller.cy.removeListener('select', 'node', selectionHandler);
+      controller.cy.removeListener('unselect', 'node', unselectionHandler);
+    };
+  }, []); // Pass an empty array as the 2nd arg to make it only run on mount and unmount, thus stopping any infinite loops!
 
-  componentWillUnmount() {
-    this.controller.cy.removeListener('select', 'node', this.selectionHandler);
-    this.controller.cy.removeListener('unselect', 'node', this.unselectionHandler);
-  }
+  const getMaxRank = () => {
+    let max = 0;
 
-  async fetchGeneList(geneSetName) {
-    const geneSet = await this.controller.fetchGeneList(geneSetName);
-    this.setState({ geneSet });
-  }
+    for (var i = 0; i < genes.length; i++) {
+      if (genes[i].rank) {
+        max = Math.max(max, genes[i].rank);
+      }
+    }
 
-  render() {
-    const { geneSet } = this.state;
+    return max;
+  };
 
+  const maxRank = getMaxRank();
+
+  const renderRow = (gene, rank, idx) => {
     return (
-      <div>
-        {geneSet && (
-          <>
-            <div>
-              Gene Set: {geneSet.name}
-            </div>
-            <hr/>
-            <div>
-              Description: {geneSet.description}
-            </div>
-            <hr/>
-            {/* <div>
-              Genes:
-              <div>
-                  { geneSet.genes.map(gene =>
-                    <div key={gene}>{gene}</div>
-                  )}
-              </div>
-            </div> */}
-            <div>
-              Genes:
-              <div>
-                  { geneSet.genes.map(({gene, rank}) =>
-                    <div key={gene}>{gene} { rank ? "(" + rank + ")" : null }</div>
-                  )}
-                  {/* { geneSet.genes.map(({gene, rank}) =>
-                    {rank ? <div>{rank}</div> : null; }
-                  )} */}
-              </div>
-            </div>
-          </>
-        )}
+      <div key={idx}>
+        <ListItem alignItems="flex-start">
+          <ListItemText
+            primary={
+              <Grid
+                container
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Grid item>
+                  <Typography display="inline" variant="body2" color="textPrimary">{gene}</Typography>
+                </Grid>
+                <Tooltip
+                  title={<span style={{fontSize: '1.5em'}}>rank:&nbsp;&nbsp;<b>{(Math.round(rank * 100) / 100)}</b></span>}
+                  arrow
+                  placement="right-end"
+                >
+                  <Grid item className={classes.chart}>
+                    {rank && (
+                      <Bar
+                        data={{
+                          labels: [rank],
+                          datasets: [{
+                            data: [rank],
+                            fill: true,
+                            borderWidth: 0,
+                            backgroundColor: theme.palette.text.secondary,
+                          }, {
+                            data: [maxRank - rank],
+                            backgroundColor: theme.palette.background.default,
+                          }],
+                        }}
+                        options={chartOptions}
+                        {...chartProps}
+                      />
+                    )}
+                  </Grid>
+                </Tooltip>
+              </Grid>
+            }
+            // secondary={
+            //   "TODO: Gene description..."
+            // }
+          />
+        </ListItem>
+        {/* <Divider /> */}
       </div>
     );
-  }
+  };
+
+  return (
+    <div>
+      {geneSet && (
+        <>
+          <div style={{padding: '0 0.25em 0.5em 0.5em'}}>
+              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
+                Gene Set:
+              </Typography>
+              <Typography display="block" variant="body2" color="textPrimary" className={classes.description} gutterBottom>
+                {geneSet.name}
+              </Typography>
+              <Typography display="block" variant="body2" color="textSecondary" className={classes.description} gutterBottom>
+                = {geneSet.description}
+              </Typography>
+          </div>
+          <Divider />
+        </>
+      )}
+      {genes.length > 0 && (
+        <List
+          style={{padding: '0.5em 0'}}
+          subheader={
+            <ListSubheader component="div">
+              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
+                Genes <Typography display="inline" variant="body2" color="textSecondary">({genes.length})</Typography>:
+              </Typography>
+              <Divider />
+            </ListSubheader>
+          }
+        >
+          { genes.map(({gene, rank}, idx) => renderRow(gene, rank, idx) )}
+        </List>
+      )}
+    </div>
+  );
 }
 
 GeneListPanel.propTypes = {

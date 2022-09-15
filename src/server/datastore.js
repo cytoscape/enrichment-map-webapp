@@ -132,7 +132,7 @@ class Datastore {
     }
 
     // Returns the gene set with the genes joined with the ranks.
-    async getGeneSetWithRanks(geneSetCollection, geneSetName, networkIDStr) {
+    async getGeneSetWithRanks(geneSetCollection, geneSetName, networkIDStr) {console.log(">>>>>> " + geneSetCollection);
         const geneSetInfo = await this.db
             .collection(geneSetCollection)
             .findOne({ name: geneSetName }, { name: 1, description: 1 });
@@ -158,6 +158,7 @@ class Datastore {
                 { $project: { gene: "$gene", rank: { $first: "$newField.rank" } } }
             ]).toArray();
 
+            console.log(geneSetInfo);
         return {
             name: geneSetInfo.name,
             description: geneSetInfo.description,

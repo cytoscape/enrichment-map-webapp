@@ -114,6 +114,7 @@ http.get('/geneset/:name', async function(req, res, next) {
  * Returns the contents of a geneset, including ranks.
  */
 http.get('/:netid/geneset/:name', async function(req, res, next) {
+  console.log(req.params['name']);
   try {
     const { netid, name } = req.params;
     const geneInfo = await Datastore.getGeneSetWithRanks(DB_1, name, netid);

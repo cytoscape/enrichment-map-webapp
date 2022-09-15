@@ -147,6 +147,7 @@ export class NetworkEditor extends Component {
         },
         animate: false, 
       }).run();
+      console.log(this.cy.nodes());
 
       console.log('Successful load from DB');
       console.log('End of editor sync initial phase');
