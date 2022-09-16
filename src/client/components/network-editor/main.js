@@ -73,7 +73,7 @@ export class Main extends Component {
 
   render() {
     const { controller } = this;
-    const { classes, showControlPanel, drawerVariant, onContentClick, onContentKeyDown } = this.props;
+    const { classes, showControlPanel, drawerVariant, onContentClick } = this.props;
     
     const LeftDrawer = () => {
       return (
@@ -157,11 +157,13 @@ const useStyles = theme => ({
     padding: 10,
   },
   drawer: {
+    background: theme.palette.background.default,
     width: CONTROL_PANEL_WIDTH,
     flexShrink: 0,
   },
   drawerPaper: {
     width: CONTROL_PANEL_WIDTH,
+    background: theme.palette.background.default,
   },
   cy: {
     position: 'absolute',

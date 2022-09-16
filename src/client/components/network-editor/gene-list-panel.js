@@ -17,12 +17,16 @@ const useStyles = makeStyles((theme) => ({
   description: {
     paddingLeft: '0.75em',
   },
-  chart: {
+  geneItem : {
+    paddingTop: 2,
+    paddingBottom: 2,
+  },
+  chartContainer: {
     width: 160,
     height: 17,
-    padding: '1px 0',
+    padding: '1px 0 0 0',
     borderLeftWidth: 1,
-    borderLeftColor: theme.palette.text.primary,
+    borderLeftColor: theme.palette.text.disabled,
     borderLeftStyle: 'solid',
   },
 }));
@@ -56,7 +60,6 @@ const chartOptions = {
     },
   },
   plugins: {
-    responsive: true,
     legend: {
       display: false,
     },
@@ -114,7 +117,7 @@ export function GeneListPanel({ controller }) {
       fetchGeneList(geneSetName);
     }
 
-    return function cleanup() {console.log("<<< UNMOUNTED...");
+    return function cleanup() {
       controller.cy.removeListener('select', 'node', selectionHandler);
       controller.cy.removeListener('unselect', 'node', unselectionHandler);
     };
@@ -137,7 +140,7 @@ export function GeneListPanel({ controller }) {
   const renderRow = (gene, rank, idx) => {
     return (
       <div key={idx}>
-        <ListItem alignItems="flex-start">
+        <ListItem alignItems="flex-start" className={classes.geneItem}>
           <ListItemText
             primary={
               <Grid
@@ -150,11 +153,16 @@ export function GeneListPanel({ controller }) {
                   <Typography display="inline" variant="body2" color="textPrimary">{gene}</Typography>
                 </Grid>
                 <Tooltip
-                  title={<span style={{fontSize: '1.5em'}}>rank:&nbsp;&nbsp;<b>{(Math.round(rank * 100) / 100)}</b></span>}
+                  title={
+                    <span style={{fontSize: '1.5em'}}>
+                      rank:&nbsp;&nbsp;<b>{isNaN(rank) ? '---' : (Math.round(rank * 100) / 100)}</b>
+                    </span>
+                  }
+                  hidden={isNaN(rank)}
                   arrow
                   placement="right-end"
                 >
-                  <Grid item className={classes.chart}>
+                  <Grid item className={classes.chartContainer}>
                     {rank && (
                       <Bar
                         data={{
@@ -163,10 +171,10 @@ export function GeneListPanel({ controller }) {
                             data: [rank],
                             fill: true,
                             borderWidth: 0,
-                            backgroundColor: theme.palette.text.secondary,
+                            backgroundColor: theme.palette.action.disabled,
                           }, {
                             data: [maxRank - rank],
-                            backgroundColor: theme.palette.background.default,
+                            backgroundColor: theme.palette.background.focus,
                           }],
                         }}
                         options={chartOptions}
