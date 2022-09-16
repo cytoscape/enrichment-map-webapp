@@ -8,7 +8,7 @@ import { withStyles } from '@material-ui/core/styles';
 import { AppBar, Toolbar } from '@material-ui/core';
 import { Grid, Container, Fade } from '@material-ui/core';
 import { Tooltip, Typography, Link } from '@material-ui/core';
-import { Button, IconButton } from '@material-ui/core';
+import { CircularProgress, IconButton } from '@material-ui/core';
 import { DropzoneArea } from 'material-ui-dropzone';
 
 import { AppLogoIcon } from '../svg-icons';
@@ -21,6 +21,7 @@ export class Content extends Component {
     this.state = {
       dialogName: null,
       wizardInfo: null,
+      loading: false,
     };
   }
 
@@ -41,6 +42,9 @@ export class Content extends Component {
   }
 
   async loadSampleNetwork() {
+    if(this.state.loading)
+      return;
+    this.setState({ loading: true });
     const sdRes = await fetch('/sample-data/brca_hd_tep_ranks_100.rnk');
     const ranks = await sdRes.text();
     const netID = await this.sendRankedGeneListToService(ranks);
@@ -48,8 +52,11 @@ export class Content extends Component {
   }
 
   async onDropzoneFileLoad(files) {
+    if(this.state.loading)
+      return;
     const file = files && files.length > 0 ? files[0] : null;
     if(file) {
+      this.setState({ loading: true });
       const contents = await this.readTextFile(file);
       this.validateRanks(contents); // TODO
       const netID = await this.sendRankedGeneListToService(contents);
@@ -76,6 +83,24 @@ export class Content extends Component {
   render() {
     const { classes } = this.props;
 
+    const RanksDropArea = () =>
+      <DropzoneArea
+        //acceptedFiles={['text/plain']} // no idea how to get this to accept .rnk files
+        filesLimit={1}
+        onChange={files => this.onDropzoneFileLoad(files)}
+        dropzoneText={'Drag and drop a ranked-gene-list file, or click.'}
+        showPreviews={false}
+        showPreviewsInDropzone={false}
+      />;
+
+    const LoadingProgress = () => 
+      <div className={classes.body1}>
+        <CircularProgress />
+        <Typography>
+          Running Enrichment Analysis and Building Network.
+        </Typography>
+      </div>;
+
     return (
       <div className={classes.root} style={{ height: '100%' }}>
         { this.renderHeader() }
@@ -95,20 +120,15 @@ export class Content extends Component {
                       and interpret enrichment results. <br />
                       <br />
                     </Typography>
-                    <div className="dropzone-background">
-                      <DropzoneArea
-                        //acceptedFiles={['text/plain']} // no idea how to get this to accept .rnk files
-                        filesLimit={1}
-                        // initialFiles={initialFile ? [initialFile] : []}
-                        onChange={files => this.onDropzoneFileLoad(files)}
-                        dropzoneText={'Drag and drop a ranked-gene-list file, or click.'}
-                        showPreviews={false}
-                        showPreviewsInDropzone={false}
-                      />
-                    </div>
-                    <Typography variant="body1" gutterBottom className={classes.body1}>
-                      Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.loadSampleNetwork()}>sample network</Link>.
-                    </Typography>
+                    { this.state.loading
+                      ? <LoadingProgress />
+                      : <RanksDropArea />
+                    }
+                    { this.state.loading ? null :
+                      <Typography variant="body1" gutterBottom className={classes.body1}>
+                        Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.loadSampleNetwork()}>sample network</Link>.
+                      </Typography>
+                    }
                   </Container>
                 </Grid>
               </Grid>
