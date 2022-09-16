@@ -83,7 +83,9 @@ export class NetworkEditor extends Component {
         selector: ':parent',
         style: {
           'background-opacity': 0.2,
-          'border-color': '#2B65EC'
+          'border-color': '#2B65EC',
+          'font-size': '24px',
+          'text-valign':'top',
         }
       },
       {
@@ -125,7 +127,7 @@ export class NetworkEditor extends Component {
 
       const res = await fetch(`/api/${id}`);
       const result = await res.json();
-      this.addClusterNodesToNetworkJSON(result.network);
+      this.addClusterNodesToNetworkJSON(result);
 
       this.cy.add(result.network.elements);
       this.cy.data({ parameters: result.parameters });
@@ -167,7 +169,10 @@ export class NetworkEditor extends Component {
     window.addEventListener("resize", this.handleResize);
   }
 
-  addClusterNodesToNetworkJSON(network) {
+  addClusterNodesToNetworkJSON(result) {
+    const { network } = result;
+    const clusterLabelMap = this.getClusterLabels(result);
+
     const clusterMap = new Map();
 
     network.elements.nodes.forEach(node => {
@@ -182,12 +187,22 @@ export class NetworkEditor extends Component {
     });
 
     clusterMap.forEach((nodes, clusterID) => {
-      network.elements.nodes.push({ data: { id: clusterID } });
+      const name = clusterLabelMap.get(clusterID);
+      network.elements.nodes.push({ data: { id: clusterID, name } });
       nodes.forEach(node => {
         node.data['parent'] = clusterID;
       });
     });
   }
+
+  getClusterLabels(result) {
+    if(!result.clusterLabels)
+      return new Map();
+    const { labels } = result.clusterLabels;
+    return new Map(labels.map(obj => [obj.clusterId, obj.label]));
+  }
+
+
 
   onCyEvents() {
     const secret = this.secret;
