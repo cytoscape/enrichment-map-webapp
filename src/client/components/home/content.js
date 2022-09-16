@@ -9,9 +9,9 @@ import { AppBar, Toolbar } from '@material-ui/core';
 import { Grid, Container, Fade } from '@material-ui/core';
 import { Tooltip, Typography, Link } from '@material-ui/core';
 import { Button, IconButton } from '@material-ui/core';
+import { DropzoneArea } from 'material-ui-dropzone';
 
 import { AppLogoIcon } from '../svg-icons';
-import AddIcon from '@material-ui/icons/Add';
 
 export class Content extends Component {
 
@@ -24,53 +24,54 @@ export class Content extends Component {
     };
   }
 
-  loadNetwork(id, secret) {
+  showNetwork(id, secret) {
     // location.href = `/document/${id}/${secret}`;
     location.href = `/document/${id}`;
   }
 
-  // createNewNetwork() {
-  //   let create = async () => {
-  //     let res = await fetch('/api/document', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json'
-  //       },
-  //       body: JSON.stringify({
-  //         data: {},
-  //         elements: []
-  //       })
-  //     });
-
-  //     let urls = await res.json();
-  //     this.loadNetwork(urls.id, urls.secret);
-  //   };
-
-  //   create();
-  // }
-
-  // onCloseDialog() {
-  //   this.setState({
-  //     dialogName: null,
-  //     wizardInfo: null,
-  //   });
-  // }
-
-  // MKTODO enable this once mongo is working
-  async loadSampleNetwork() {
-    // Fetch the sample file
-    const res = await fetch('/sample-data/brca_hd_tep_ranks_100.rnk');
-    const ranks = await res.text();
-    // Ask the server to import the json data
+  async sendRankedGeneListToService(ranksTSV) {
     const res2 = await fetch(`/api/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'text/tab-separated-values' },
-      body: ranks
+      body: ranksTSV
     });
-    // Navigate to the new document
+    // TODO Check for error!!
     const netID = await res2.text();
-    this.loadNetwork(netID);
+    return netID;
   }
+
+  async loadSampleNetwork() {
+    const sdRes = await fetch('/sample-data/brca_hd_tep_ranks_100.rnk');
+    const ranks = await sdRes.text();
+    const netID = await this.sendRankedGeneListToService(ranks);
+    this.showNetwork(netID);
+  }
+
+  async onDropzoneFileLoad(files) {
+    const file = files && files.length > 0 ? files[0] : null;
+    if(file) {
+      const contents = await this.readTextFile(file);
+      this.validateRanks(contents); // TODO
+      const netID = await this.sendRankedGeneListToService(contents);
+      this.showNetwork(netID);
+    }
+  }
+
+  validateRanks(contents) {
+    // TODO validate that the file contents are a properly formatted ranked gene list
+  }
+
+
+  readTextFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = evt => resolve(evt.target.result);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  }
+
+  
 
   render() {
     const { classes } = this.props;
@@ -87,32 +88,29 @@ export class Content extends Component {
                 <Grid item className={classes.root}>
                   <Container direction="column" className={classes.container}>
                     <Typography variant="body1" gutterBottom className={classes.body1}>
-                      Create EnrichmentMap networks <br />for your papers<br />with This Website.
+                      Create EnrichmentMap networks with This Website. <br />
+                      EnrichmentMap allows you to visualize the results of gene-set enrichment as a network.  <br />
+                      Nodes represent gene-sets and edges represent mutual overlap; in this way, highly redundant  <br />
+                      gene-sets are grouped together as clusters, dramatically improving the capability to navigate  <br />
+                      and interpret enrichment results. <br />
+                      <br />
                     </Typography>
+                    <div className="dropzone-background">
+                      <DropzoneArea
+                        //acceptedFiles={['text/plain']} // no idea how to get this to accept .rnk files
+                        filesLimit={1}
+                        // initialFiles={initialFile ? [initialFile] : []}
+                        onChange={files => this.onDropzoneFileLoad(files)}
+                        dropzoneText={'Drag and drop a ranked-gene-list file, or click.'}
+                        showPreviews={false}
+                        showPreviewsInDropzone={false}
+                      />
+                    </div>
                     <Typography variant="body1" gutterBottom className={classes.body1}>
                       Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.loadSampleNetwork()}>sample network</Link>.
                     </Typography>
                   </Container>
                 </Grid>
-                { /* === RIGHT Panel ==================================================== */ }
-                {/* <Grid item className={classes.root}>
-                  <Grid container direction="row" spacing={3}>
-                    <Grid item xs={12}>
-                      <Container className={classes.container}>
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} className={classes.root}>
-                            <Typography variant="subtitle1" gutterBottom className={classes.subtitle1}>
-                              Start a New Network
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} className={classes.root}>
-                            { this.renderStart() }
-                          </Grid>
-                        </Grid>
-                      </Container>
-                    </Grid>
-                  </Grid>
-                </Grid> */}
               </Grid>
             </Grid>
             { /* === BOTTOM Panel ================================================================= */ }
@@ -155,49 +153,7 @@ export class Content extends Component {
     );
   }
 
-  renderStart() {
-    const { classes } = this.props;
-
-    return (
-      <Grid container direction="row" justifyContent="center" alignItems="stretch" spacing={4}>
-        <Grid item>
-          <Grid container direction="column" className={classes.root} spacing={2}>
-            <Grid item>
-              <Typography variant="subtitle2">Create New:</Typography>
-            </Grid>
-            <Grid item>
-              <Button
-                aria-label='create empty network'
-                variant="contained"
-                color="default"
-                size="large"
-                classes={{
-                  root: classes.button,
-                  startIcon: classes.startIcon,
-                  label: classes.emptyButtonLabel,
-                }}
-                style={{ minWidth: 172, minHeight: 176 }}
-                startIcon={<AddIcon style={{ fontSize: 44 }} />}
-                onClick={() => this.creaaeNewNetwork()}
-              >
-                Empty
-              </Button>
-            </Grid>
-          </Grid>
-        </Grid>
-        <Grid item>
-          <Grid container direction="column" className={classes.root} spacing={2}>
-            <Grid item>
-              <Typography variant="subtitle2">Import From:</Typography>
-            </Grid>
-            <Grid item>
-              TODO
-            </Grid>
-          </Grid>
-        </Grid>
-      </Grid>
-    );
-  }
+  
 
 }
 
