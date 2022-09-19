@@ -5,13 +5,14 @@ import RecentNetworksGrid from './recent-networks-grid';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { AppBar, Toolbar } from '@material-ui/core';
+import { AppBar, Button, Toolbar } from '@material-ui/core';
 import { Grid, Container } from '@material-ui/core';
 import { Tooltip, Typography, Link } from '@material-ui/core';
 import { CircularProgress, IconButton } from '@material-ui/core';
 import { DropzoneArea } from 'material-ui-dropzone';
 import WarningIcon from '@material-ui/icons/Warning';
 import { AppLogoIcon } from '../svg-icons';
+import CSVFileValidator from 'csv-file-validator';
 
 
 const STEP = {
@@ -28,7 +29,7 @@ export class Content extends Component {
 
     this.state = {
       step: STEP.WAITING,
-      errorMessage: null
+      errorMessages: null
     };
   }
 
@@ -37,51 +38,68 @@ export class Content extends Component {
     location.href = `/document/${id}`;
   }
 
-  async sendRankedGeneListToService(ranksTSV) {
-    const res2 = await fetch('/api/create', {
+  async sendRankedGeneListToEMService(ranksTSV) {
+    const res = await fetch('/api/create', {
       method: 'POST',
       headers: { 'Content-Type': 'text/tab-separated-values' },
       body: ranksTSV
     });
-    // TODO Check for error!!
-    const netID = await res2.text();
-    return netID;
+
+    if(res.ok) {
+      const netID = await res.text();
+      return { netID };
+    } else {
+      return { errors: ["Error running EnrichmentMap service."]};
+    }
   }
 
-  async loadSampleNetwork() {
-    if(this.state.loading)
+
+  async onLoadSampleNetwork() {
+    if(this.state.step == STEP.LOADING)
       return;
+
     this.setState({ step: STEP.LOADING });
 
-    // const sdRes = await fetch('/sample-data/brca_hd_tep_ranks_100.rnk');
-    const sdRes = await fetch('/api/iamerror');
-    if(sdRes.ok) {
-      const ranks = await sdRes.text();
-      const netID = await this.sendRankedGeneListToService(ranks);
-      this.showNetwork(netID);
-    } else {
-      this.setState({ 
-        step: STEP.ERROR, 
-        errorMessage: "Error loading sample network"
-      });
+    const sdRes = await fetch('/sample-data/brca_hd_tep_ranks_100.rnk');
+    if(!sdRes.ok) {
+      this.setState({ step: STEP.ERROR, errorMessages: ["Error loading sample network"] });
+      return;
     }
+
+    const ranks = await sdRes.text();
+    const emRes = await this.sendRankedGeneListToEMService(ranks);
+    if(emRes.errors) {
+      this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
+      return;
+    }
+
+    this.showNetwork(emRes.netID);
   }
+
 
   async onDropzoneFileLoad(files) {
-    if(this.state.loading)
+    if(this.state.step == STEP.LOADING)
       return;
     const file = files && files.length > 0 ? files[0] : null;
-    if(file) {
-      this.setState({ loading: true });
-      const contents = await this.readTextFile(file);
-      this.validateRanks(contents); // TODO
-      const netID = await this.sendRankedGeneListToService(contents);
-      this.showNetwork(netID);
-    }
-  }
+    if(!file)
+      return;
+   
+    this.setState({ step: STEP.LOADING });
 
-  validateRanks(contents) {
-    // TODO validate that the file contents are a properly formatted ranked gene list
+    const contents = await this.readTextFile(file);
+    const errors   = await this.validateRanks(contents);
+    if(errors) {
+      this.setState({ step: STEP.ERROR, errorMessages: errors });
+      return;
+    } 
+
+    const emRes = await this.sendRankedGeneListToEMService(contents);
+    if(emRes.errors) {
+      this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
+      return;
+    }
+
+    this.showNetwork(emRes.netID);
   }
 
 
@@ -94,7 +112,30 @@ export class Content extends Component {
     });
   }
 
-  
+
+  async validateRanks(contents) {
+    const headerError = (val, name) => {
+      if(name == 'gene')
+        return 'The header name for the first column should be "gene".';
+      else if(name == 'rank')
+        return 'The header name for the second column should be "rank".';
+    };
+
+    const config = {
+      delimiter: '\t',
+      headers: [
+        { name: 'gene', inputName: 'gene', required: true, headerError }, 
+        { name: 'rank', inputName: 'rank', required: true, headerError }
+      ]
+    };
+
+    const csvData = await CSVFileValidator(contents, config);
+    const errors = csvData.inValidData.map(({message}) => message);
+    if(errors && errors.length > 0)
+      return errors; // otherwise fall off end and return undefined
+  }
+
+
 
   render() {
     const { classes } = this.props;
@@ -115,10 +156,16 @@ export class Content extends Component {
         <Typography>Running Enrichment Analysis and Building Network.</Typography>
       </div>;
 
-    const ErrorReport = ({message}) =>
+    const ErrorReport = ({ errorMessages }) =>
       <div className={classes.spinner}>
         <WarningIcon fontSize='large'/>
-        <Typography>{message}</Typography>
+        { errorMessages.slice(0,7).map((message, index) =>
+          <Typography key={index}>{message}</Typography>
+        )}
+        <br />
+        <Button variant='outlined' onClick={() => this.setState({ step: STEP.WAITING, errorMessages: null })}>
+          Retry
+        </Button>
       </div>;
 
     return (
@@ -139,13 +186,13 @@ export class Content extends Component {
                     <div style={{ width: '550px', height: '300px'}}>
                       { {'WAITING': () => <RanksDropArea />,
                          'LOADING': () => <LoadingProgress />,
-                         'ERROR':   () => <ErrorReport message={this.state.errorMessage} />
+                         'ERROR':   () => <ErrorReport errorMessages={this.state.errorMessages} />
                         }[this.state.step]()
                       }
                     </div>
                     { this.state.loading ? null :
                       <Typography variant="body1" gutterBottom className={classes.body1}>
-                        Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.loadSampleNetwork()}>sample network</Link>.
+                        Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork()}>sample network</Link>.
                       </Typography>
                     }
                   </Container>
@@ -173,10 +220,7 @@ export class Content extends Component {
               <Grid container alignItems='center'>
                 <Grid item>
                   <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
-                    <IconButton 
-                      aria-label='close' 
-                      onClick={() => location.href = '/'}
-                    >
+                    <IconButton aria-label='close' onClick={() => location.href = '/'} >
                       <AppLogoIcon fontSize="large" />
                     </IconButton>
                   </Tooltip>
@@ -191,9 +235,6 @@ export class Content extends Component {
       </AppBar>
     );
   }
-
-  
-
 }
 
 
