@@ -8,7 +8,10 @@ import { makeStyles } from '@material-ui/core/styles';
 import { List, ListSubheader, ListItem, ListItemText } from '@material-ui/core';
 import { Grid, Typography, Divider } from '@material-ui/core';
 import { Tooltip } from '@material-ui/core';
-import { Bar } from 'react-chartjs-2';
+import HSBar from "react-horizontal-stacked-bar-chart";
+
+const CHART_WIDTH = 160;
+const CHART_HEIGHT = 14;
 
 const useStyles = makeStyles((theme) => ({
   title: {
@@ -22,57 +25,10 @@ const useStyles = makeStyles((theme) => ({
     paddingBottom: 2,
   },
   chartContainer: {
-    width: 160,
-    height: 17,
-    padding: '1px 0 0 0',
-    borderLeftWidth: 1,
-    borderLeftColor: theme.palette.text.disabled,
-    borderLeftStyle: 'solid',
+    width: CHART_WIDTH,
+    padding: '0 8px',
   },
 }));
-
-const chartOptions = {
-  indexAxis: 'y',
-  barThickness: 12,
-  scales: {
-    x: {
-      type: 'linear',
-      ticks: {
-        display: false,
-      },
-      grid: {
-        display: false,
-        drawBorder: false,
-      },
-      stacked: true,
-      display: false,
-    },
-    y: {
-      ticks: {
-        display: false,
-      },
-      grid: {
-        display: false,
-        drawBorder: false,
-      },
-      stacked: true,
-      display: false,
-    },
-  },
-  plugins: {
-    legend: {
-      display: false,
-    },
-    tooltip: {
-      enabled: false,
-    },
-  },
-};
-
-const chartProps = {
-  width: 160,
-  height: 16,
-};
 
 export function GeneListPanel({ controller }) {
   const [state, setState] = useReducer(
@@ -121,68 +77,60 @@ export function GeneListPanel({ controller }) {
       controller.cy.removeListener('select', 'node', selectionHandler);
       controller.cy.removeListener('unselect', 'node', unselectionHandler);
     };
-  }, []); // Pass an empty array as the 2nd arg to make it only run on mount and unmount, thus stopping any infinite loops!
+  }, []);
 
-  const getMaxRank = () => {
-    let max = 0;
+  // Get the min and max rank values
+  let minRank = 0, maxRank = 0;
 
-    for (var i = 0; i < genes.length; i++) {
-      if (genes[i].rank) {
-        max = Math.max(max, genes[i].rank);
+  for (var i = 0; i < genes.length; i++) {
+    const rank = genes[i].rank;
+
+    if (rank) {
+      minRank = Math.min(minRank, rank);
+      maxRank = Math.max(maxRank, rank);
+    }
+  }
+
+  const renderRow = (gene, rank, idx) => {
+    let data;
+
+    if (rank) {
+      data = [];
+      const desc = 'rank: ' + Math.round(rank * 100) / 100;
+      
+      if (rank < 0) {
+        if (minRank < 0 && minRank !== rank) {
+          data.push({ value: -(minRank - rank), color: theme.palette.background.focus, description: desc });
+        }
+        data.push({ value: -rank, color: theme.palette.action.disabled, description: desc });
+        if (maxRank > 0) {
+          data.push({ value: maxRank, color: theme.palette.background.focus, description: desc });
+        }
+      } else {
+        if (minRank < 0) {
+          data.push({ value: -minRank, color: theme.palette.background.focus, description: desc });
+        }
+        data.push({ value: rank, color: theme.palette.text.disabled, description: desc });
+        if (maxRank > 0 && maxRank !== rank) {
+          data.push({ value: (maxRank - rank), color: theme.palette.background.focus, description: desc });
+        }
       }
     }
 
-    return max;
-  };
-
-  const maxRank = getMaxRank();
-
-  const renderRow = (gene, rank, idx) => {
     return (
       <div key={idx}>
         <ListItem alignItems="flex-start" className={classes.geneItem}>
           <ListItemText
             primary={
-              <Grid
-                container
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
+              <Grid container direction="row" justifyContent="space-between" alignItems='center'>
                 <Grid item>
-                  <Typography display="inline" variant="body2" color="textPrimary">{gene}</Typography>
+                    <Typography display="inline" variant="body2" color="textPrimary">{gene}</Typography>
                 </Grid>
-                <Tooltip
-                  title={
-                    <span style={{fontSize: '1.5em'}}>
-                      rank:&nbsp;&nbsp;<b>{isNaN(rank) ? '---' : (Math.round(rank * 100) / 100)}</b>
-                    </span>
-                  }
-                  hidden={isNaN(rank)}
-                  arrow
-                  placement="right-end"
-                >
-                  <Grid item className={classes.chartContainer}>
-                    {rank && (
-                      <Bar
-                        data={{
-                          labels: [rank],
-                          datasets: [{
-                            data: [rank],
-                            fill: true,
-                            borderWidth: 0,
-                            backgroundColor: theme.palette.action.disabled,
-                          }, {
-                            data: [maxRank - rank],
-                            backgroundColor: theme.palette.background.focus,
-                          }],
-                        }}
-                        options={chartOptions}
-                        {...chartProps}
-                      />
-                    )}
-                  </Grid>
-                </Tooltip>
+                <Grid item className={classes.chartContainer}>
+                  {data && (
+                    <HSBar data={data} height={CHART_HEIGHT} />
+                  )}
+                </Grid>
               </Grid>
             }
             // secondary={
