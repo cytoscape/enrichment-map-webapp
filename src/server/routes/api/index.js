@@ -22,6 +22,14 @@ http.get('/', async function(req, res) {
 });
 
 /*
+ * This is for simulating a server error, useful for debugging.
+ */
+http.get('/iamerror', async function(req, res) {
+  res.sendStatus(500);
+});
+
+
+/*
  * Runs the FGSEA/EnrichmentMap algorithms, saves the 
  * created network, then returns its ID.
  */

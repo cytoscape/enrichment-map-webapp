@@ -6,12 +6,20 @@ import RecentNetworksGrid from './recent-networks-grid';
 import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Toolbar } from '@material-ui/core';
-import { Grid, Container, Fade } from '@material-ui/core';
+import { Grid, Container } from '@material-ui/core';
 import { Tooltip, Typography, Link } from '@material-ui/core';
 import { CircularProgress, IconButton } from '@material-ui/core';
 import { DropzoneArea } from 'material-ui-dropzone';
-
+import WarningIcon from '@material-ui/icons/Warning';
 import { AppLogoIcon } from '../svg-icons';
+
+
+const STEP = {
+  WAITING:'WAITING',
+  LOADING:'LOADING',
+  ERROR:'ERROR'
+};
+
 
 export class Content extends Component {
 
@@ -19,9 +27,8 @@ export class Content extends Component {
     super(props);
 
     this.state = {
-      dialogName: null,
-      wizardInfo: null,
-      loading: false,
+      step: STEP.WAITING,
+      errorMessage: null
     };
   }
 
@@ -31,7 +38,7 @@ export class Content extends Component {
   }
 
   async sendRankedGeneListToService(ranksTSV) {
-    const res2 = await fetch(`/api/create`, {
+    const res2 = await fetch('/api/create', {
       method: 'POST',
       headers: { 'Content-Type': 'text/tab-separated-values' },
       body: ranksTSV
@@ -44,11 +51,20 @@ export class Content extends Component {
   async loadSampleNetwork() {
     if(this.state.loading)
       return;
-    this.setState({ loading: true });
-    const sdRes = await fetch('/sample-data/brca_hd_tep_ranks_100.rnk');
-    const ranks = await sdRes.text();
-    const netID = await this.sendRankedGeneListToService(ranks);
-    this.showNetwork(netID);
+    this.setState({ step: STEP.LOADING });
+
+    // const sdRes = await fetch('/sample-data/brca_hd_tep_ranks_100.rnk');
+    const sdRes = await fetch('/api/iamerror');
+    if(sdRes.ok) {
+      const ranks = await sdRes.text();
+      const netID = await this.sendRankedGeneListToService(ranks);
+      this.showNetwork(netID);
+    } else {
+      this.setState({ 
+        step: STEP.ERROR, 
+        errorMessage: "Error loading sample network"
+      });
+    }
   }
 
   async onDropzoneFileLoad(files) {
@@ -88,17 +104,21 @@ export class Content extends Component {
         //acceptedFiles={['text/plain']} // no idea how to get this to accept .rnk files
         filesLimit={1}
         onChange={files => this.onDropzoneFileLoad(files)}
-        dropzoneText={'Drag and drop a ranked-gene-list file, or click.'}
+        dropzoneText='Drag and drop a ranked-gene-list file, or click.'
         showPreviews={false}
         showPreviewsInDropzone={false}
       />;
 
     const LoadingProgress = () => 
-      <div className={classes.body1}>
+      <div className={classes.spinner}>
         <CircularProgress />
-        <Typography>
-          Running Enrichment Analysis and Building Network.
-        </Typography>
+        <Typography>Running Enrichment Analysis and Building Network.</Typography>
+      </div>;
+
+    const ErrorReport = ({message}) =>
+      <div className={classes.spinner}>
+        <WarningIcon fontSize='large'/>
+        <Typography>{message}</Typography>
       </div>;
 
     return (
@@ -114,16 +134,15 @@ export class Content extends Component {
                   <Container direction="column" className={classes.container}>
                     <Typography variant="body1" gutterBottom className={classes.body1}>
                       Create EnrichmentMap networks with This Website. <br />
-                      EnrichmentMap allows you to visualize the results of gene-set enrichment as a network.  <br />
-                      Nodes represent gene-sets and edges represent mutual overlap; in this way, highly redundant  <br />
-                      gene-sets are grouped together as clusters, dramatically improving the capability to navigate  <br />
-                      and interpret enrichment results. <br />
                       <br />
                     </Typography>
-                    { this.state.loading
-                      ? <LoadingProgress />
-                      : <RanksDropArea />
-                    }
+                    <div style={{ width: '550px', height: '300px'}}>
+                      { {'WAITING': () => <RanksDropArea />,
+                         'LOADING': () => <LoadingProgress />,
+                         'ERROR':   () => <ErrorReport message={this.state.errorMessage} />
+                        }[this.state.step]()
+                      }
+                    </div>
                     { this.state.loading ? null :
                       <Typography variant="body1" gutterBottom className={classes.body1}>
                         Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.loadSampleNetwork()}>sample network</Link>.
@@ -179,6 +198,11 @@ export class Content extends Component {
 
 
 const useStyles = theme => ({
+  spinner: {
+    paddingTop: theme.spacing(6),
+    textAlign: 'center',
+    verticalAligh: 'middle',
+  },
   root: {
     alignContent: 'center',
   },
