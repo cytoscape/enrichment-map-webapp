@@ -50,7 +50,7 @@ export class NetworkEditor extends Component {
       {
         selector: 'node',
         style: {
-          'background-color': 'mapData(colouring,-1.0,1.0,rgb(33,102,172),rgb(178,24,43))',//'#f0f0f0',
+          'background-color': '#f0f0f0',//'mapData(colouring,-1.0,1.0,rgb(33,102,172),rgb(178,24,43))',
           'opacity': 0.8,
           'border-color': '#333333',
           'border-width': 1,
@@ -136,18 +136,10 @@ export class NetworkEditor extends Component {
 
       this.cy.fit(DEFAULT_PADDING);
       this.cy.layout({ 
-        name: 'cose',
-        nodeDimensionsIncludeLabels: false,
-        nodeOverlap: 10,
-        gravity: -5,
-        nodeRepulsion: function() {
-          return 1000000;
-        },
-        edgeElasticity: function(edge) {
-          const coeff = edge.data('similarity_coefficient');
-          return coeff > 0 ? (200 / (coeff * coeff)): 1000;
-        },
-        animate: false, 
+        name: 'fcose',
+        idealEdgeLength: 100,
+        nodeSeparation: 150,
+        animate: false,
       }).run();
       console.log(this.cy.nodes());
 

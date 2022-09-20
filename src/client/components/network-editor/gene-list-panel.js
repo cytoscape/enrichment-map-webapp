@@ -3,15 +3,19 @@ import PropTypes from 'prop-types';
 import { NetworkEditorController } from './controller';
 import theme from '../../theme';
 
+import _ from 'lodash';
+
 import { makeStyles } from '@material-ui/core/styles';
 
 import { List, ListSubheader, ListItem, ListItemText } from '@material-ui/core';
 import { Grid, Typography, Divider } from '@material-ui/core';
-import { Tooltip } from '@material-ui/core';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
-const CHART_WIDTH = 160;
+const CHART_WIDTH = 180;
 const CHART_HEIGHT = 14;
+const UP_RANK_COLOR = theme.palette.text.disabled;
+const DOWN_RANK_COLOR = theme.palette.action.disabled;
+const RANK_RANGE_COLOR = theme.palette.background.focus;
 
 const useStyles = makeStyles((theme) => ({
   title: {
@@ -21,8 +25,8 @@ const useStyles = makeStyles((theme) => ({
     paddingLeft: '0.75em',
   },
   geneItem : {
-    paddingTop: 2,
-    paddingBottom: 2,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   chartContainer: {
     width: CHART_WIDTH,
@@ -39,22 +43,48 @@ export function GeneListPanel({ controller }) {
     }
   );
   const { geneSet, genes } = state;
+  const totalGenes = genes.length;
+  let rankedGenes = genes.filter(g => g.rank);
+  rankedGenes = _.orderBy(rankedGenes, ["rank", "gene"], ["desc", "asc"]);
 
   const classes = useStyles();
 
-  const fetchGeneList = async (geneSetName) => {
-    const geneSet = await controller.fetchGeneList(geneSetName);
-    const genes = geneSet ? geneSet.genes : [];
-    setState({ geneSet, genes });
+  const fetchGeneList = async (geneSetName1, geneSetName2) => {
+    if (geneSetName2 === undefined) {
+      // Only one gene set...
+      const geneSet = await controller.fetchGeneList(geneSetName1);
+      const genes = geneSet ? geneSet.genes : [];
+      setState({ geneSet, genes });
+    } else {
+      // Fetch the genes from the fisrt gene set
+      const gs1 = await controller.fetchGeneList(geneSetName1);
+      const genes1 = gs1 ? gs1.genes : [];
+      // Fetch the genes from the second gene set
+      const gs2 = await controller.fetchGeneList(geneSetName2);
+      const genes2 = gs2 ? gs2.genes : [];
+      // Concat genes from both sets and filter the unique ones
+      const genes = genes1.concat(genes2).filter((item, idx, self) => self.findIndex(v => v.gene === item.gene) === idx);
+      setState({ geneSet: null, genes });
+    }
+  };
+  const fetchGeneListFromNodeOrEdge = async (ele) => {
+    if (ele.group() === 'nodes') {
+      // TODO: get ranked genes from the selected cluster
+      const gsName = ele.data('name');
+      fetchGeneList(gsName);
+    } else if (ele.group() === 'edges') {
+      const gsName1 = ele.source().data('name');
+      const gsName2 = ele.target().data('name');
+      fetchGeneList(gsName1, gsName2);
+    }
   };
 
   const selectionHandler = (event) => {
-    const node = event.target;
-    const geneSetName = node.data('name');
-    fetchGeneList(geneSetName);
+    const ele = event.target;
+    fetchGeneListFromNodeOrEdge(ele);
   };
   const unselectionHandler = () => {
-    const eles = controller.cy.nodes(':selected');
+    const eles = controller.cy.$(':selected');
 
     if (eles.length === 0) {
       // fetchAllGenes();
@@ -63,27 +93,26 @@ export function GeneListPanel({ controller }) {
   };
 
   useEffect(() => {
-    controller.cy.on('select', 'node', selectionHandler);
-    controller.cy.on('unselect', 'node', unselectionHandler);
+    controller.cy.on('select', selectionHandler);
+    controller.cy.on('unselect', unselectionHandler);
 
-    const eles = controller.cy.nodes(':selected');
+    const eles = controller.cy.$(':selected');
     
     if (eles.length > 0) {
-      const geneSetName = eles[0].data('name');
-      fetchGeneList(geneSetName);
+      fetchGeneListFromNodeOrEdge(eles[0]);
     }
 
     return function cleanup() {
-      controller.cy.removeListener('select', 'node', selectionHandler);
-      controller.cy.removeListener('unselect', 'node', unselectionHandler);
+      controller.cy.removeListener('select', selectionHandler);
+      controller.cy.removeListener('unselect', unselectionHandler);
     };
   }, []);
 
   // Get the min and max rank values
   let minRank = 0, maxRank = 0;
 
-  for (var i = 0; i < genes.length; i++) {
-    const rank = genes[i].rank;
+  for (var i = 0; i < rankedGenes.length; i++) {
+    const rank = rankedGenes[i].rank;
 
     if (rank) {
       minRank = Math.min(minRank, rank);
@@ -99,26 +128,28 @@ export function GeneListPanel({ controller }) {
       const desc = 'rank: ' + Math.round(rank * 100) / 100;
       
       if (rank < 0) {
+        // Low regulated genes
         if (minRank < 0 && minRank !== rank) {
-          data.push({ value: -(minRank - rank), color: theme.palette.background.focus, description: desc });
+          data.push({ value: -(minRank - rank), color: RANK_RANGE_COLOR, description: desc });
         }
-        data.push({ value: -rank, color: theme.palette.action.disabled, description: desc });
+        data.push({ value: -rank, color: DOWN_RANK_COLOR, description: desc });
         if (maxRank > 0) {
-          data.push({ value: maxRank, color: theme.palette.background.focus, description: desc });
+          data.push({ value: maxRank, color: RANK_RANGE_COLOR, description: desc });
         }
       } else {
+        // Up regulated genes
         if (minRank < 0) {
-          data.push({ value: -minRank, color: theme.palette.background.focus, description: desc });
+          data.push({ value: -minRank, color: RANK_RANGE_COLOR, description: desc });
         }
-        data.push({ value: rank, color: theme.palette.text.disabled, description: desc });
+        data.push({ value: rank, color: UP_RANK_COLOR, description: desc });
         if (maxRank > 0 && maxRank !== rank) {
-          data.push({ value: (maxRank - rank), color: theme.palette.background.focus, description: desc });
+          data.push({ value: (maxRank - rank), color: RANK_RANGE_COLOR, description: desc });
         }
       }
     }
 
     return (
-      <div key={idx}>
+      <React.Fragment key={idx}>
         <ListItem alignItems="flex-start" className={classes.geneItem}>
           <ListItemText
             primary={
@@ -139,7 +170,7 @@ export function GeneListPanel({ controller }) {
           />
         </ListItem>
         {/* <Divider /> */}
-      </div>
+      </React.Fragment>
     );
   };
 
@@ -161,19 +192,19 @@ export function GeneListPanel({ controller }) {
           <Divider />
         </>
       )}
-      {genes.length > 0 && (
+      {totalGenes > 0 && (
         <List
           style={{padding: '0.5em 0'}}
           subheader={
             <ListSubheader component="div">
               <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
-                Genes <Typography display="inline" variant="body2" color="textSecondary">({genes.length})</Typography>:
+                Ranked Genes <Typography display="inline" variant="body2" color="textSecondary">({rankedGenes.length} of {totalGenes})</Typography>:
               </Typography>
               <Divider />
             </ListSubheader>
           }
         >
-          { genes.map(({gene, rank}, idx) => renderRow(gene, rank, idx) )}
+          { rankedGenes.map(({gene, rank}, idx) => renderRow(gene, rank, idx) )}
         </List>
       )}
     </div>
