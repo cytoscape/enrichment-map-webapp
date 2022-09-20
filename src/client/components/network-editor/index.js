@@ -157,9 +157,11 @@ export class NetworkEditor extends Component {
 
     enableSync();
 
+    const isMobile = this.isMobile();
+
     this.state = {
-      showControlPanel: false,
-      isMobile: this.isMobile(),
+      showControlPanel: !isMobile,
+      isMobile,
     };
 
     this.handleResize = this.handleResize.bind(this);

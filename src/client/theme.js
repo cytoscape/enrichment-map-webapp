@@ -10,9 +10,9 @@ const theme = createTheme({
       main: '#B4B4B4',
     },
     background: {
-      default: '#272728',
-      paper: '#242424',
-      focus: '#050505',
+      default: '#181818',
+      paper: '#222222',
+      focus: '#000000',
     },
     error: {
       main: '#db4f4f',
