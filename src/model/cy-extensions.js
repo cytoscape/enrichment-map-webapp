@@ -4,6 +4,7 @@ import dagre from 'cytoscape-dagre';
 import fcose from 'cytoscape-fcose';
 import cola from 'cytoscape-cola';
 import popper from 'cytoscape-popper';
+import coseBilkent from 'cytoscape-cose-bilkent';
 
 export const registerCytoscapeExtensions = () => {
   Cytoscape.use(edgehandles);
@@ -12,6 +13,7 @@ export const registerCytoscapeExtensions = () => {
   Cytoscape.use(dagre);
   Cytoscape.use(fcose);
   Cytoscape.use(cola);
+  Cytoscape.use(coseBilkent);
 
   Cytoscape.use(popper);
 };

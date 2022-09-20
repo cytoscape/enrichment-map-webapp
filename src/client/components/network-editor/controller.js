@@ -87,7 +87,7 @@ export class NetworkEditorController {
         .then(geneSet => {
           const genes = geneSet.genes;
           geneSet.genes = _.sortBy(genes, ["rank", "gene"]);
-          // genes = _.orderBy(genes, ["rank", "gene"], ["desc", "asc"]);
+          // geneSet.genes = _.orderBy(genes, ["rank", "gene"], ["desc", "asc"]);
           
           return geneSet;
         });
