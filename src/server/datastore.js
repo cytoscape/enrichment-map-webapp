@@ -1,3 +1,4 @@
+import e from 'express';
 import { MongoClient } from 'mongodb';
 import uuid from 'uuid';
 import MUUID from 'uuid-mongodb';
@@ -15,6 +16,8 @@ function makeID(string) {
     return { string, bson };
 }
 
+
+// TODO reformat this file, should be using two spaces for indentation
 
 class Datastore {
     // mongo; // mongo connection obj
@@ -62,7 +65,10 @@ class Datastore {
         await this.db.collection(fileName).insertMany(geneSets);
     }
 
-
+    /**
+     * Inserts a network document into the 'networks' collection.
+     * @returns The id of the created document.
+     */
     async createNetwork(networkJson) {
         if(typeof(networkJson) == 'string') {
             networkJson = JSON.parse(networkJson);
@@ -77,32 +83,53 @@ class Datastore {
         return networkID.string;
     }
 
-
+    /**
+     * Inserts a ranked gene list document into the "geneLists" collection.
+     * @returns The id of the created document.
+     */
     async createRankedGeneList(rankedGeneListTSV, networkIDString) {
         const networkID  = makeID(networkIDString);
         const geneListID = makeID();
+        
+        const genes = [];
+        var [min, max] = [Infinity, -Infinity];
 
-        const geneList = {
+        rankedGeneListTSV.split("\n").slice(1).forEach(line => {
+            const [gene, rankStr] = line.split("\t");
+            const rank = Number(rankStr);
+
+            if(gene) {
+                if(isNaN(rank)) {
+                    genes.push({ gene });
+                } else {
+                    min = Math.min(min, rank);
+                    max = Math.max(max, rank);
+                    genes.push({ gene, rank });
+                }
+            }
+        });
+
+        const geneListDocument = {
             _id: geneListID.bson,
             networkID: networkID.bson,
             networkIDStr: networkID.string,
-            genes: []
+            min,
+            max,
+            genes
         };
-        
-        rankedGeneListTSV.split("\n").slice(1).forEach(line => {
-            const [gene, rank] = line.split("\t");
-            geneList.genes.push({ gene, rank: Number(rank) });
-        });
 
-        await this.db.collection('geneLists').insertOne(geneList);
+        await this.db
+            .collection('geneLists')
+            .insertOne(geneListDocument);
 
         return geneListID.string;
     }
 
-
+    /**
+     * Returns the entire network document. 
+     */
     async getNetwork(networkIDString) {
         const networkID = makeID(networkIDString);
-
         const network = await this.db
             .collection('networks')
             .findOne({ _id: networkID.bson });
@@ -110,7 +137,9 @@ class Datastore {
         return network;
     }
 
-
+    /**
+     * Returns the rank of a gene.
+     */
     async getGeneRank(networkIDString, geneName) {
         const networkID = makeID(networkIDString);
 
@@ -124,23 +153,43 @@ class Datastore {
             return matches[0].genes[0];
     }
 
-    // Returns just the contents of a gene set.
+    /**
+     * Returns the contents of a gene set, including the name,
+     * description and gene list.
+     */
     async getGeneSet(geneSetCollection, geneSetName) {
         return await this.db
             .collection(geneSetCollection)
             .findOne({ name: geneSetName });
     }
 
-    // Returns the gene set with the genes joined with the ranks.
-    async getGeneSetWithRanks(geneSetCollection, geneSetName, networkIDStr) {console.log(">>>>>> " + geneSetCollection);
-        const geneSetInfo = await this.db
+    /**
+     * Returns the name and description of a gene set. 
+     * Does not return the gene list.
+     */
+    // TODO Is this needed? Aren't the name and description available as node attributes?
+    async getGeneSetInfo(geneSetCollection, geneSetName) {
+        return await this.db
             .collection(geneSetCollection)
-            .findOne({ name: geneSetName }, { name: 1, description: 1 });
+            .findOne(
+                { name: geneSetName }, 
+                { name: 1, description: 1 }
+            );
+    }
+
+    /**
+     * Returns the genes from one or more gene sets joined with ranks.
+     * The returned array is sorted so that the genes with ranks are first (sorted by rank),
+     * then the genes without rankes are after (sorted alphabetically).
+     */
+    async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames) {
+        if(geneSetNames === undefined || geneSetNames.length == 0)
+            return { genes: [] };
 
         const geneListWithRanks = await this.db
             .collection(geneSetCollection)
             .aggregate([
-                { $match: { name: geneSetName } },
+                { $match: { name: { $in: geneSetNames } } },
                 { $project: { genes: { $map: { input: "$genes", as: "g", in: { gene: "$$g" } } } } },
                 { $unwind: "$genes" },
                 { $replaceRoot: { newRoot: "$genes"} },
@@ -155,15 +204,13 @@ class Datastore {
                     ],
                     as: "newField"
                 }},
-                { $project: { gene: "$gene", rank: { $first: "$newField.rank" } } }
-            ]).toArray();
+                { $project: { gene: "$gene", rank: { $first: "$newField.rank" } } },
+                { $sort: { rank: -1, gene: 1 } }
+            ])
+            .toArray();
 
-            console.log(geneSetInfo);
-        return {
-            name: geneSetInfo.name,
-            description: geneSetInfo.description,
-            genes: geneListWithRanks
-        };
+        // TODO should this return an object with a 'genes' field, or just the array itself.
+        return { genes: geneListWithRanks };
     }
 
 }

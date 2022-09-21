@@ -79,22 +79,25 @@ export class NetworkEditorController {
     this.bus.emit('deletedSelectedElements', deletedEls);
   }
 
-  async fetchGeneList(geneSetName) {
-    if (this.lastGeneSet == null || this.lastGeneSet.name !== geneSetName) {
-      // New query...
-      const geneSet = await fetch(`/api/${this.networkIDStr}/geneset/${encodeURIComponent(geneSetName)}`)
-        .then(res => res.json())
-        .then(geneSet => {
-          const genes = geneSet.genes;
-          geneSet.genes = _.sortBy(genes, ["rank", "gene"]);
-          // geneSet.genes = _.orderBy(genes, ["rank", "gene"], ["desc", "asc"]);
-          
-          return geneSet;
-        });
+  async fetchGeneList(geneSetNames) {
+    const nameSet = new Set(geneSetNames);
 
-      return this.lastGeneSet = geneSet; // Cache the last geneSet
+    if (this.lastGeneSet == null || !_.isEqual(this.lastGeneSetNames, nameSet)) {
+      // New query...
+      const res = await fetch(`/api/${this.networkIDStr}/genesets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          geneSets: geneSetNames
+        })
+      });
+      if(res.ok) {
+        const geneSet = await res.json();
+        this.lastGeneSet = geneSet;
+        this.lastGeneSetNames = nameSet;
+        return geneSet;
+      }
     } else {
-      // Same query as before...
       return this.lastGeneSet;
     }
   }

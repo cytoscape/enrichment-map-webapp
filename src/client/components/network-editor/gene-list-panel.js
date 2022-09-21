@@ -45,37 +45,24 @@ export function GeneListPanel({ controller }) {
   const { geneSet, genes } = state;
   const totalGenes = genes.length;
   let rankedGenes = genes.filter(g => g.rank);
-  rankedGenes = _.orderBy(rankedGenes, ["rank", "gene"], ["desc", "asc"]);
 
   const classes = useStyles();
 
-  const fetchGeneList = async (geneSetName1, geneSetName2) => {
-    if (geneSetName2 === undefined) {
-      // Only one gene set...
-      const geneSet = await controller.fetchGeneList(geneSetName1);
-      const genes = geneSet ? geneSet.genes : [];
-      setState({ geneSet, genes });
-    } else {
-      // Fetch the genes from the fisrt gene set
-      const gs1 = await controller.fetchGeneList(geneSetName1);
-      const genes1 = gs1 ? gs1.genes : [];
-      // Fetch the genes from the second gene set
-      const gs2 = await controller.fetchGeneList(geneSetName2);
-      const genes2 = gs2 ? gs2.genes : [];
-      // Concat genes from both sets and filter the unique ones
-      const genes = genes1.concat(genes2).filter((item, idx, self) => self.findIndex(v => v.gene === item.gene) === idx);
-      setState({ geneSet: null, genes });
-    }
+  const fetchGeneList = async (geneSetNames) => {
+    const geneSet = await controller.fetchGeneList(geneSetNames);
+    const genes = geneSet ? geneSet.genes : [];
+    setState({ geneSet, genes });
   };
+
   const fetchGeneListFromNodeOrEdge = async (ele) => {
     if (ele.group() === 'nodes') {
       // TODO: get ranked genes from the selected cluster
       const gsName = ele.data('name');
-      fetchGeneList(gsName);
+      fetchGeneList([gsName]);
     } else if (ele.group() === 'edges') {
       const gsName1 = ele.source().data('name');
       const gsName2 = ele.target().data('name');
-      fetchGeneList(gsName1, gsName2);
+      fetchGeneList([gsName1, gsName2]);
     }
   };
 
