@@ -27,6 +27,16 @@ const useStyles = makeStyles((theme) => ({
   header: {
     padding: '0 0.25em 0.5em 0',
   },
+  clusterName: {
+    textTransform: 'capitalize',
+    paddingTop: '1.0em',
+    paddingBottom: '1.0em',
+    paddingLeft: '0.75em',
+  },
+  gsName: {
+    textTransform: 'capitalize',
+    paddingBottom: '0.5em',
+  },
   chartContainer: {
     width: CHART_WIDTH,
     padding: '0 8px',
@@ -120,11 +130,17 @@ export function GeneListPanel({ controller }) {
   }
 
   const renderGeneSetRow = (gsName, idx) => {
+    if (gsName.indexOf('%') >= 0) {
+      gsName = gsName.substring(0, gsName.indexOf('%')).toLowerCase();
+    }
+
     return (
       <ListItem key={idx} alignItems="flex-start">
         <ListItemText
           primary={
-            <Typography display="inline" variant="body2" color="textPrimary">&#8226; {gsName}</Typography>
+            <Typography display="inline" variant="body2" color="textPrimary" className={classes.gsName}>
+              &#8226; {gsName}
+            </Typography>
           }
         />
       </ListItem>
@@ -189,7 +205,7 @@ export function GeneListPanel({ controller }) {
           <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
             Cluster:
           </Typography>
-          <Typography display="block" variant="body2" color="textPrimary" className={classes.description} style={{paddingTop: '1.0em', paddingBottom: '1.0em'}} gutterBottom>
+          <Typography display="block" variant="body2" color="textPrimary" className={classes.clusterName} gutterBottom>
             { clusterName }
           </Typography>
           <Divider />
@@ -200,7 +216,7 @@ export function GeneListPanel({ controller }) {
           <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} style={{paddingLeft: '0.5em'}} gutterBottom>
             Gene Set{geneSetNames.length > 1 ? 's' : ''}:
           </Typography>
-          <List style={{padding: 0, margin: 0}}>
+          <List>
             { geneSetNames.map((gsName, idx) => renderGeneSetRow(gsName, idx)) }
           </List>
           <Divider />
