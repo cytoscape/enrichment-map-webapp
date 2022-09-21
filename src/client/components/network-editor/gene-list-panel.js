@@ -24,9 +24,8 @@ const useStyles = makeStyles((theme) => ({
   description: {
     paddingLeft: '0.75em',
   },
-  geneItem : {
-    paddingTop: 0,
-    paddingBottom: 0,
+  header: {
+    padding: '0 0.25em 0.5em 0',
   },
   chartContainer: {
     width: CHART_WIDTH,
@@ -38,31 +37,44 @@ export function GeneListPanel({ controller }) {
   const [state, setState] = useReducer(
     (state, newState) => ({...state, ...newState}),
     {
-      geneSet: null, // for when a geneset node is selected
-      genes: [], // for when the search field is used
+      clusterName: null,
+      geneSetNames: [],
+      genes: [],
     }
   );
-  const { geneSet, genes } = state;
+  const { clusterName, geneSetNames, genes } = state;
   const totalGenes = genes.length;
   let rankedGenes = genes.filter(g => g.rank);
 
   const classes = useStyles();
 
-  const fetchGeneList = async (geneSetNames) => {
-    const geneSet = await controller.fetchGeneList(geneSetNames);
-    const genes = geneSet ? geneSet.genes : [];
-    setState({ geneSet, genes });
+  const fetchGeneList = async (clusterName, geneSetNames) => {
+    const gs = await controller.fetchGeneList(geneSetNames);
+    const genes = gs ? gs.genes : [];
+    setState({ clusterName, geneSetNames, genes });
   };
 
   const fetchGeneListFromNodeOrEdge = async (ele) => {
+    const gsNames = [];
+    let cName = null;
+
     if (ele.group() === 'nodes') {
-      // TODO: get ranked genes from the selected cluster
-      const gsName = ele.data('name');
-      fetchGeneList([gsName]);
+      const children = ele.children();
+     
+      if (children.length > 0) { // Compound node (cluster)...
+        cName = ele.data('name');
+        children.forEach(n => gsNames.push(n.data('name')));
+      } else { // Regular node (gene set)...
+        gsNames.push(ele.data('name'));
+      }
     } else if (ele.group() === 'edges') {
-      const gsName1 = ele.source().data('name');
-      const gsName2 = ele.target().data('name');
-      fetchGeneList([gsName1, gsName2]);
+      // Edge (get overlapping genes)...
+      gsNames.push(ele.source().data('name'));
+      gsNames.push(ele.target().data('name'));
+    }
+
+    if (gsNames.length > 0) {
+      fetchGeneList(cName, gsNames);
     }
   };
 
@@ -75,7 +87,7 @@ export function GeneListPanel({ controller }) {
 
     if (eles.length === 0) {
       // fetchAllGenes();
-      setState({ geneSet: null, genes: [] });
+      setState({ clusterName: null, geneSetNames: [], genes: [] });
     }
   };
 
@@ -107,7 +119,19 @@ export function GeneListPanel({ controller }) {
     }
   }
 
-  const renderRow = (gene, rank, idx) => {
+  const renderGeneSetRow = (gsName, idx) => {
+    return (
+      <ListItem key={idx} alignItems="flex-start">
+        <ListItemText
+          primary={
+            <Typography display="inline" variant="body2" color="textPrimary">&#8226; {gsName}</Typography>
+          }
+        />
+      </ListItem>
+    );
+  };
+
+  const renderGeneRow = (gene, rank, idx) => {
     let data;
 
     if (rank) {
@@ -136,52 +160,55 @@ export function GeneListPanel({ controller }) {
     }
 
     return (
-      <React.Fragment key={idx}>
-        <ListItem alignItems="flex-start" className={classes.geneItem}>
-          <ListItemText
-            primary={
-              <Grid container direction="row" justifyContent="space-between" alignItems='center'>
-                <Grid item>
-                    <Typography display="inline" variant="body2" color="textPrimary">{gene}</Typography>
-                </Grid>
-                <Grid item className={classes.chartContainer}>
-                  {data && (
-                    <HSBar data={data} height={CHART_HEIGHT} />
-                  )}
-                </Grid>
+      <ListItem key={idx} alignItems="flex-start">
+        <ListItemText
+          primary={
+            <Grid container direction="row" justifyContent="space-between" alignItems='center'>
+              <Grid item>
+                  <Typography display="inline" variant="body2" color="textPrimary">{gene}</Typography>
               </Grid>
-            }
-            // secondary={
-            //   "TODO: Gene description..."
-            // }
-          />
-        </ListItem>
-        {/* <Divider /> */}
-      </React.Fragment>
+              <Grid item className={classes.chartContainer}>
+                {data && (
+                  <HSBar data={data} height={CHART_HEIGHT} />
+                )}
+              </Grid>
+            </Grid>
+          }
+          // secondary={
+          //   "TODO: Gene description..."
+          // }
+        />
+      </ListItem>
     );
   };
 
   return (
     <div>
-      {geneSet && (
-        <>
-          <div style={{padding: '0 0.25em 0.5em 0.5em'}}>
-              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
-                Gene Set:
-              </Typography>
-              <Typography display="block" variant="body2" color="textPrimary" className={classes.description} gutterBottom>
-                {geneSet.name}
-              </Typography>
-              <Typography display="block" variant="body2" color="textSecondary" className={classes.description} gutterBottom>
-                = {geneSet.description}
-              </Typography>
-          </div>
+      {clusterName && (
+        <div className={classes.header} style={{paddingLeft: '0.5em'}}>
+          <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
+            Cluster:
+          </Typography>
+          <Typography display="block" variant="body2" color="textPrimary" className={classes.description} style={{paddingTop: '1.0em', paddingBottom: '1.0em'}} gutterBottom>
+            { clusterName }
+          </Typography>
           <Divider />
-        </>
+        </div>
+      )}
+      {!clusterName && geneSetNames.length > 0 && (
+        <div className={classes.header}>
+          <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} style={{paddingLeft: '0.5em'}} gutterBottom>
+            Gene Set{geneSetNames.length > 1 ? 's' : ''}:
+          </Typography>
+          <List style={{padding: 0, margin: 0}}>
+            { geneSetNames.map((gsName, idx) => renderGeneSetRow(gsName, idx)) }
+          </List>
+          <Divider />
+        </div>
       )}
       {totalGenes > 0 && (
         <List
-          style={{padding: '0.5em 0'}}
+          dense
           subheader={
             <ListSubheader component="div">
               <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
@@ -191,7 +218,7 @@ export function GeneListPanel({ controller }) {
             </ListSubheader>
           }
         >
-          { rankedGenes.map(({gene, rank}, idx) => renderRow(gene, rank, idx) )}
+          { rankedGenes.map(({gene, rank}, idx) => renderGeneRow(gene, rank, idx)) }
         </List>
       )}
     </div>
