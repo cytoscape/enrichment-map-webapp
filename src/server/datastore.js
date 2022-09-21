@@ -193,6 +193,7 @@ class Datastore {
                 { $project: { genes: { $map: { input: "$genes", as: "g", in: { gene: "$$g" } } } } },
                 { $unwind: "$genes" },
                 { $replaceRoot: { newRoot: "$genes"} },
+                { $group: {  _id: "$gene", gene: { $first: "$gene" } } },
                 { $lookup: {
                     from: "geneLists",
                     let: { foreignGene: "$gene" },
@@ -204,12 +205,11 @@ class Datastore {
                     ],
                     as: "newField"
                 }},
-                { $project: { gene: "$gene", rank: { $first: "$newField.rank" } } },
+                { $project: { _id: 0, gene: "$gene", rank: { $first: "$newField.rank" } } },
                 { $sort: { rank: -1, gene: 1 } }
             ])
             .toArray();
 
-        // TODO should this return an object with a 'genes' field, or just the array itself.
         return { genes: geneListWithRanks };
     }
 
