@@ -54,13 +54,17 @@ export class Content extends Component {
   }
 
 
-  async onLoadSampleNetwork() {
+  async onLoadSampleNetwork(size) {
     if(this.state.step == STEP.LOADING)
       return;
 
     this.setState({ step: STEP.LOADING });
 
-    const sdRes = await fetch('/sample-data/brca_hd_tep_ranks_100.rnk');
+    const url = size == 'small' 
+      ? '/sample-data/brca_hd_tep_ranks_100.rnk' 
+      : '/sample-data/brca_hd_tep_ranks.rnk';
+
+    const sdRes = await fetch(url);
     if(!sdRes.ok) {
       this.setState({ step: STEP.ERROR, errorMessages: ["Error loading sample network"] });
       return;
@@ -191,9 +195,18 @@ export class Content extends Component {
                       }
                     </div>
                     { this.state.loading ? null :
-                      <Typography variant="body1" gutterBottom className={classes.body1}>
-                        Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork()}>sample network</Link>.
-                      </Typography>
+                      <div>
+                        <Typography variant="body1" gutterBottom className={classes.body1}>
+                          Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('small')}>
+                            sample network (small)
+                          </Link>
+                        </Typography>
+                        <Typography variant="body1" gutterBottom className={classes.body1}>
+                          Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('large')}>
+                            sample network (large)
+                          </Link>
+                        </Typography>
+                      </div>
                     }
                   </Container>
                 </Grid>
