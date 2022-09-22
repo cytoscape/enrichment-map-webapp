@@ -175,14 +175,18 @@ async function runFGSEA(ranksTSV) {
 
 async function runEM(fgseaResults) {
   const body = {
+    // We only support one dataSet
     dataSets: [{
       name: "EM Web",
       method: "FGSEA",
       fgseaResults
     }],
     parameters: {
+      // Reduces number of edges
       similarityMetric: "JACCARD", 
-      similarityCutoff: 0.25
+      similarityCutoff: 0.25,
+      // Reduces number of nodes
+      qvalueFilterMaxNodes: 800,
     }
   };
 
