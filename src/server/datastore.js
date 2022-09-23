@@ -7,6 +7,9 @@ import { fileForEachLine } from './util.js';
 
 export const DB_1 = 'Human_GOBP_AllPathways_no_GO_iea_June_01_2022_symbol.gmt';
 
+const GENE_LISTS_COLLECTION = 'geneLists';
+const NETWORKS_COLLECTION = 'networks';
+
 
 function makeID(string) {
     if(!string) {
@@ -78,7 +81,10 @@ class Datastore {
 
         networkJson['_id'] = networkID.bson;
         networkJson['networkIDStr'] = networkID.string;
-        await this.db.collection('networks').insertOne(networkJson);
+
+        await this.db
+            .collection(NETWORKS_COLLECTION)
+            .insertOne(networkJson);
 
         return networkID.string;
     }
@@ -119,7 +125,7 @@ class Datastore {
         };
 
         await this.db
-            .collection('geneLists')
+            .collection(GENE_LISTS_COLLECTION)
             .insertOne(geneListDocument);
 
         return geneListID.string;
@@ -131,7 +137,7 @@ class Datastore {
     async getNetwork(networkIDString) {
         const networkID = makeID(networkIDString);
         const network = await this.db
-            .collection('networks')
+            .collection(NETWORKS_COLLECTION)
             .findOne({ _id: networkID.bson });
 
         return network;
@@ -144,7 +150,7 @@ class Datastore {
         const networkID = makeID(networkIDString);
 
         const matches = await this.db
-            .collection('geneLists')
+            .collection(GENE_LISTS_COLLECTION)
             .find({ networkID: networkID.bson })
             .project({ genes: { $elemMatch: { gene: geneName } }})
             .toArray();
@@ -186,6 +192,13 @@ class Datastore {
         if(geneSetNames === undefined || geneSetNames.length == 0)
             return { genes: [] };
 
+        const minMax = await this.db
+            .collection(GENE_LISTS_COLLECTION)
+            .findOne(
+                { networkIDStr }, 
+                { projection: { min: 1, max: 1} } // min,max have special meaning in mongo, that's why 'projection:' is explicit
+            ); 
+
         const geneListWithRanks = await this.db
             .collection(geneSetCollection)
             .aggregate([
@@ -194,8 +207,8 @@ class Datastore {
                 { $unwind: "$genes" },
                 { $replaceRoot: { newRoot: "$genes"} },
                 { $group: {  _id: "$gene", gene: { $first: "$gene" } } },
-                { $lookup: {
-                    from: "geneLists",
+                { $lookup: { // This is the Join
+                    from: GENE_LISTS_COLLECTION,
                     let: { foreignGene: "$gene" },
                     pipeline: [
                         { $match: { networkIDStr } },
@@ -210,7 +223,11 @@ class Datastore {
             ])
             .toArray();
 
-        return { genes: geneListWithRanks };
+        return { 
+            minRank: minMax.min,
+            maxRank: minMax.max,
+            genes: geneListWithRanks  
+        };
     }
 
 }
