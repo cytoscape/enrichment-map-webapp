@@ -50,18 +50,22 @@ export function GeneListPanel({ controller }) {
       clusterName: null,
       geneSetNames: [],
       genes: [],
+      minRank: 0,
+      maxRank: 0,
     }
   );
-  const { clusterName, geneSetNames, genes } = state;
+  const { clusterName, geneSetNames, genes, minRank, maxRank } = state;
   const totalGenes = genes.length;
   let rankedGenes = genes.filter(g => g.rank);
 
   const classes = useStyles();
 
   const fetchGeneList = async (clusterName, geneSetNames) => {
-    const gs = await controller.fetchGeneList(geneSetNames);
-    const genes = gs ? gs.genes : [];
-    setState({ clusterName, geneSetNames, genes });
+    const res = await controller.fetchGeneList(geneSetNames);
+    const genes = res ? res.genes : [];
+    const minRank = res ? res.minRank : 0;
+    const maxRank = res ? res.maxRank : 0;
+    setState({ clusterName, geneSetNames, genes, minRank, maxRank });
   };
 
   const fetchGeneListFromNodeOrEdge = async (ele) => {
@@ -97,7 +101,7 @@ export function GeneListPanel({ controller }) {
 
     if (eles.length === 0) {
       // fetchAllGenes();
-      setState({ clusterName: null, geneSetNames: [], genes: [] });
+      setState({ clusterName: null, geneSetNames: [], genes: [], minRank: 0, maxRank: 0 });
     }
   };
 
@@ -116,18 +120,6 @@ export function GeneListPanel({ controller }) {
       controller.cy.removeListener('unselect', unselectionHandler);
     };
   }, []);
-
-  // Get the min and max rank values
-  let minRank = 0, maxRank = 0;
-
-  for (var i = 0; i < rankedGenes.length; i++) {
-    const rank = rankedGenes[i].rank;
-
-    if (rank) {
-      minRank = Math.min(minRank, rank);
-      maxRank = Math.max(maxRank, rank);
-    }
-  }
 
   const renderGeneSetRow = (gsName, idx) => {
     if (gsName.indexOf('%') >= 0) {
