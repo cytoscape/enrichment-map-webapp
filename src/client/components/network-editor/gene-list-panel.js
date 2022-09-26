@@ -9,7 +9,10 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { List, ListSubheader, ListItem, ListItemText } from '@material-ui/core';
 import { Grid, Typography, Divider } from '@material-ui/core';
+import Skeleton from '@material-ui/lab/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
+
+const PRECISION = 4;
 
 const CHART_WIDTH = 180;
 const CHART_HEIGHT = 14;
@@ -65,7 +68,18 @@ export function GeneListPanel({ controller }) {
     const genes = res ? res.genes : [];
     const minRank = res ? res.minRank : 0;
     const maxRank = res ? res.maxRank : 0;
-    setState({ clusterName, geneSetNames, genes, minRank, maxRank });
+    setState({ clusterName, geneSetNames: (geneSetNames.length <= 2 ? geneSetNames : []), genes, minRank, maxRank });
+  };
+
+  const fetchAllRankedGenes = async () => {
+    // TODO: Better call another function/endpoint...
+    const gsNames = [];
+    controller.cy.nodes().forEach(n => {
+      if (n.children().length === 0) {
+        gsNames.push(n.data('name'));
+      }
+    });
+    fetchGeneList(null, gsNames);
   };
 
   const fetchGeneListFromNodeOrEdge = async (ele) => {
@@ -92,32 +106,27 @@ export function GeneListPanel({ controller }) {
     }
   };
 
-  const selectionHandler = (event) => {
-    const ele = event.target;
-    fetchGeneListFromNodeOrEdge(ele);
-  };
-  const unselectionHandler = () => {
+  const debouncedSelectionHandler = _.debounce(() => {
     const eles = controller.cy.$(':selected');
 
-    if (eles.length === 0) {
-      // fetchAllGenes();
-      setState({ clusterName: null, geneSetNames: [], genes: [], minRank: 0, maxRank: 0 });
+    if (eles.length > 0) {
+      fetchGeneListFromNodeOrEdge(eles[eles.length - 1]);
+    } else {
+      fetchAllRankedGenes();
     }
+  }, 250);
+
+  const selectionHandler = () => {
+    setState({ clusterName: null, geneSetNames: [], genes: [], minRank: 0, maxRank: 0 });
+    debouncedSelectionHandler();
   };
 
   useEffect(() => {
-    controller.cy.on('select', selectionHandler);
-    controller.cy.on('unselect', unselectionHandler);
-
-    const eles = controller.cy.$(':selected');
-    
-    if (eles.length > 0) {
-      fetchGeneListFromNodeOrEdge(eles[0]);
-    }
+    controller.cy.on('select unselect', selectionHandler);
+    debouncedSelectionHandler();
 
     return function cleanup() {
-      controller.cy.removeListener('select', selectionHandler);
-      controller.cy.removeListener('unselect', unselectionHandler);
+      controller.cy.removeListener('select unselect', selectionHandler);
     };
   }, []);
 
@@ -144,7 +153,7 @@ export function GeneListPanel({ controller }) {
 
     if (rank) {
       data = [];
-      const desc = 'rank: ' + Math.round(rank * 100) / 100;
+      const desc = 'rank: ' + rank; //rank.toFixed(PRECISION); // TODO: Should we round it?
       
       if (rank < 0) {
         // Low regulated genes
@@ -190,6 +199,27 @@ export function GeneListPanel({ controller }) {
     );
   };
 
+  const renderGeneSkeletonRow = (idx) => {
+    return (
+      <ListItem key={idx} alignItems="flex-start">
+        <ListItemText
+          primary={
+            <Grid container direction="row" justifyContent="space-between" alignItems='center'>
+              <Grid item>
+                <Typography display="inline" variant="body2" color="textPrimary">
+                  <Skeleton variant="text" width={65} />
+                </Typography>
+              </Grid>
+              <Grid item className={classes.chartContainer}>
+                <Skeleton variant="rect" height={CHART_HEIGHT} />
+              </Grid>
+            </Grid>
+          }
+        />
+      </ListItem>
+    );
+  };
+
   return (
     <div>
       {clusterName && (
@@ -227,6 +257,21 @@ export function GeneListPanel({ controller }) {
           }
         >
           { rankedGenes.map(({gene, rank}, idx) => renderGeneRow(gene, rank, idx)) }
+        </List>
+      )}
+      {totalGenes <= 0 && (
+        <List
+          dense
+          subheader={
+            <ListSubheader component="div">
+              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
+                Ranked Genes <Typography display="inline" variant="body2" color="textSecondary">(<em>loading...</em>)</Typography>:
+              </Typography>
+              <Divider />
+            </ListSubheader>
+          }
+        >
+          { _.range(0, 30).map((idx) => renderGeneSkeletonRow(idx)) }
         </List>
       )}
     </div>
