@@ -9,6 +9,7 @@ import { NetworkEditorController } from './controller';
 import theme from '../../theme';
 import Header from './header';
 import Main from './main';
+import StyleLegend from './legend';
 
 import DEFAULT_NETWORK_STYLE from './network-style';
 
@@ -203,6 +204,7 @@ export class NetworkEditor extends Component {
             drawerVariant={drawerVariant}
             onContentClick={onContentClick}
           />
+          <StyleLegend />
         </div>
       </ThemeProvider>
     );
