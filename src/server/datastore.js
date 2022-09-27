@@ -45,16 +45,16 @@ class Datastore {
     }
 
 
-    async loadGenesetDB(path, fileName) {
+    async loadGenesetDB(path, dbFileName) {
         const collections = await this.db.listCollections().toArray();
-        if(collections.some(c => c.name === fileName)) {
-            console.info("Collection " + fileName + " already loaded");
+        if(collections.some(c => c.name === dbFileName)) {
+            console.info("Collection " + dbFileName + " already loaded");
             return;
         } else {
-            console.info("Loading collection " + fileName);
+            console.info("Loading collection " + dbFileName);
         }
 
-        const filepath = path + fileName;
+        const filepath = path + dbFileName;
         const geneSets = [];
 
         await fileForEachLine(filepath, line => {
@@ -65,8 +65,28 @@ class Datastore {
           geneSets.push({ name, description, genes });
         });
 
-        await this.db.collection(fileName).insertMany(geneSets);
+        await this.db
+            .collection(dbFileName)
+            .insertMany(geneSets);
+
+        await this.createIndexes(dbFileName);
     }
+
+
+    async createIndexes(dbFileName) {
+        await this.db
+            .collection(dbFileName)
+            .createIndex({ name: 1 });
+
+        await this.db
+            .collection(GENE_LISTS_COLLECTION)
+            .createIndex({ networkID: 1 });
+
+        await this.db
+            .collection(GENE_LISTS_COLLECTION)
+            .createIndex({ "genes.gene": 1 });
+    }
+
 
     /**
      * Inserts a network document into the 'networks' collection.
