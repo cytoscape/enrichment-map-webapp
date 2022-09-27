@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { NetworkEditorController } from './controller';
 import theme from '../../theme';
@@ -47,28 +47,25 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export function GeneListPanel({ controller }) {
-  const [state, setState] = useReducer(
-    (state, newState) => ({...state, ...newState}),
-    {
-      clusterName: null,
-      geneSetNames: [],
-      genes: [],
-      minRank: 0,
-      maxRank: 0,
-    }
-  );
-  const { clusterName, geneSetNames, genes, minRank, maxRank } = state;
+  const [clusterName, setClusterName] = useState(null);
+  const [geneSetNames, setGeneSetNames] = useState([]);
+  const [genes, setGenes] = useState([]);
+  const [minRank, setMinRank] = useState(0);
+  const [maxRank, setMaxRank] = useState(0);
+  
   const totalGenes = genes.length;
   let rankedGenes = genes.filter(g => g.rank);
 
   const classes = useStyles();
 
-  const fetchGeneList = async (clusterName, geneSetNames) => {
+  const fetchGeneList = async (geneSetNames) => {
     const res = await controller.fetchGeneList(geneSetNames);
     const genes = res ? res.genes : [];
     const minRank = res ? res.minRank : 0;
     const maxRank = res ? res.maxRank : 0;
-    setState({ clusterName, geneSetNames: (geneSetNames.length <= 2 ? geneSetNames : []), genes, minRank, maxRank });
+    setMinRank(minRank);
+    setMaxRank(maxRank);
+    setGenes(genes);
   };
 
   const fetchAllRankedGenes = async () => {
@@ -79,7 +76,7 @@ export function GeneListPanel({ controller }) {
         gsNames.push(n.data('name'));
       }
     });
-    fetchGeneList(null, gsNames);
+    fetchGeneList(gsNames);
   };
 
   const fetchGeneListFromNodeOrEdge = async (ele) => {
@@ -100,13 +97,22 @@ export function GeneListPanel({ controller }) {
       gsNames.push(ele.source().data('name'));
       gsNames.push(ele.target().data('name'));
     }
+    
+    setClusterName(cName);
 
     if (gsNames.length > 0) {
-      fetchGeneList(cName, gsNames);
+      setGeneSetNames(gsNames);
+      fetchGeneList(gsNames);
     }
   };
 
   const debouncedSelectionHandler = _.debounce(() => {
+    setClusterName(null);
+    setGeneSetNames([]);
+    setGenes([]);
+    setMinRank(0);
+    setMaxRank(0);
+    
     const eles = controller.cy.$(':selected');
 
     if (eles.length > 0) {
@@ -117,7 +123,6 @@ export function GeneListPanel({ controller }) {
   }, 250);
 
   const selectionHandler = () => {
-    setState({ clusterName: null, geneSetNames: [], genes: [], minRank: 0, maxRank: 0 });
     debouncedSelectionHandler();
   };
 
