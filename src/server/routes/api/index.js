@@ -136,7 +136,7 @@ http.get('/:netid/geneset/:name', async function(req, res, next) {
 });
 
 
-http.post('/:netid/genesets/', async function(req, res, next) {
+http.post('/:netid/genesets', async function(req, res, next) {
   try {
     const { netid } = req.params;
     const geneSets = req.body.geneSets;

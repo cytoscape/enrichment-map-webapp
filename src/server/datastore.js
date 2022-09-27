@@ -45,16 +45,16 @@ class Datastore {
     }
 
 
-    async loadGenesetDB(path, fileName) {
+    async loadGenesetDB(path, dbFileName) {
         const collections = await this.db.listCollections().toArray();
-        if(collections.some(c => c.name === fileName)) {
-            console.info("Collection " + fileName + " already loaded");
+        if(collections.some(c => c.name === dbFileName)) {
+            console.info("Collection " + dbFileName + " already loaded");
             return;
         } else {
-            console.info("Loading collection " + fileName);
+            console.info("Loading collection " + dbFileName);
         }
 
-        const filepath = path + fileName;
+        const filepath = path + dbFileName;
         const geneSets = [];
 
         await fileForEachLine(filepath, line => {
@@ -65,8 +65,28 @@ class Datastore {
           geneSets.push({ name, description, genes });
         });
 
-        await this.db.collection(fileName).insertMany(geneSets);
+        await this.db
+            .collection(dbFileName)
+            .insertMany(geneSets);
+
+        await this.createIndexes(dbFileName);
     }
+
+
+    async createIndexes(dbFileName) {
+        await this.db
+            .collection(dbFileName)
+            .createIndex({ name: 1 });
+
+        await this.db
+            .collection(GENE_LISTS_COLLECTION)
+            .createIndex({ networkID: 1 });
+
+        await this.db
+            .collection(GENE_LISTS_COLLECTION)
+            .createIndex({ "genes.gene": 1 });
+    }
+
 
     /**
      * Inserts a network document into the 'networks' collection.
@@ -189,39 +209,53 @@ class Datastore {
      * then the genes without rankes are after (sorted alphabetically).
      */
     async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames) {
-        if(geneSetNames === undefined || geneSetNames.length == 0)
-            return { genes: [] };
+        const all = geneSetNames === undefined || geneSetNames.length == 0;
+        const networkID = makeID(networkIDStr);
 
         const minMax = await this.db
             .collection(GENE_LISTS_COLLECTION)
             .findOne(
-                { networkIDStr }, 
-                { projection: { min: 1, max: 1} } // min,max have special meaning in mongo, that's why 'projection:' is explicit
+                { networkID: networkID.bson }, 
+                { projection: { min: 1, max: 1} } // 'projection:' is explicit because min,max have special meaning in mongo
             ); 
 
-        const geneListWithRanks = await this.db
-            .collection(geneSetCollection)
-            .aggregate([
-                { $match: { name: { $in: geneSetNames } } },
-                { $project: { genes: { $map: { input: "$genes", as: "g", in: { gene: "$$g" } } } } },
-                { $unwind: "$genes" },
-                { $replaceRoot: { newRoot: "$genes"} },
-                { $group: {  _id: "$gene", gene: { $first: "$gene" } } },
-                { $lookup: { // This is the Join
-                    from: GENE_LISTS_COLLECTION,
-                    let: { foreignGene: "$gene" },
-                    pipeline: [
-                        { $match: { networkIDStr } },
-                        { $unwind: "$genes" },
-                        { $replaceRoot: { newRoot: "$genes"} },
-                        { $match: { $expr: { $eq: ["$gene", "$$foreignGene" ] } } }
-                    ],
-                    as: "newField"
-                }},
-                { $project: { _id: 0, gene: "$gene", rank: { $first: "$newField.rank" } } },
-                { $sort: { rank: -1, gene: 1 } }
-            ])
-            .toArray();
+        let geneListWithRanks;
+        if(all) {
+            geneListWithRanks = await this.db
+                .collection(GENE_LISTS_COLLECTION)
+                .aggregate([
+                    { $match: { networkID: networkID.bson } },
+                    { $unwind: "$genes" },
+                    { $replaceRoot: { newRoot: "$genes"} },
+                    { $sort: { rank: -1, gene: 1 } }
+                ])
+                .toArray();
+
+        } else {
+            geneListWithRanks = await this.db
+                .collection(geneSetCollection)
+                .aggregate([
+                    { $match: { name: { $in: geneSetNames } } },
+                    { $project: { genes: { $map: { input: "$genes", as: "g", in: { gene: "$$g" } } } } },
+                    { $unwind: "$genes" },
+                    { $replaceRoot: { newRoot: "$genes"} },
+                    { $group: {  _id: "$gene", gene: { $first: "$gene" } } },
+                    { $lookup: { // This is the Join
+                        from: GENE_LISTS_COLLECTION,
+                        let: { foreignGene: "$gene" },
+                        pipeline: [
+                            { $match: { networkID: networkID.bson } },
+                            { $unwind: "$genes" },
+                            { $replaceRoot: { newRoot: "$genes"} },
+                            { $match: { $expr: { $eq: ["$gene", "$$foreignGene" ] } } }
+                        ],
+                        as: "newField"
+                    }},
+                    { $project: { _id: 0, gene: "$gene", rank: { $first: "$newField.rank" } } },
+                    { $sort: { rank: -1, gene: 1 } }
+                ])
+                .toArray();
+        }
 
         return { 
             minRank: minMax.min,

@@ -68,4 +68,23 @@ describe('Gene Set Queries', () => {
     ]);
   });
 
+  it('gets all genesets with ranks', async () => {
+    const geneset = await Datastore.getGenesWithRanks(GENESET_DB, networkID, []);
+    expect(geneset.minRank).to.eql(1);
+    expect(geneset.maxRank).to.eql(11);
+    expect(geneset.genes).to.eql([
+      { gene: "LLL", rank: 11 },
+      { gene: "JJJ", rank: 10 },
+      { gene: "III", rank: 9 },
+      { gene: "HHH", rank: 8 },
+      { gene: "GGG", rank: 7 },
+      { gene: "FFF", rank: 6 },
+      { gene: "EEE", rank: 5 },
+      { gene: "DDD", rank: 4 },
+      { gene: "CCC", rank: 3 },
+      { gene: "BBB", rank: 2 },
+      { gene: "AAA", rank: 1 }
+    ]);
+  });
+
 });
