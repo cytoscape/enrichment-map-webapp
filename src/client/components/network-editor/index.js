@@ -196,8 +196,6 @@ export class NetworkEditor extends Component {
     return new Map(labels.map(obj => [obj.clusterId, obj.label]));
   }
 
-
-
   onCyEvents() {
     const secret = this.secret;
     // TODO auto-save
@@ -219,7 +217,10 @@ export class NetworkEditor extends Component {
   }
 
   handleResize() {
-    this.setState({ isMobile: this.isMobile() });
+    const isMobile = this.isMobile();
+    if (this.state.isMobile !== isMobile) {
+      this.setState({ isMobile });
+    }
   }
 
   maybeHideDrawer() {

@@ -80,6 +80,7 @@ export class NetworkEditorController {
   }
 
   async fetchGeneList(geneSetNames) {
+    geneSetNames = geneSetNames || [];
     const nameSet = new Set(geneSetNames);
 
     if (this.lastGeneSet == null || !_.isEqual(this.lastGeneSetNames, nameSet)) {
