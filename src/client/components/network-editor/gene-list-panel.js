@@ -28,7 +28,7 @@ const useStyles = makeStyles((theme) => ({
     paddingLeft: '0.75em',
   },
   header: {
-    padding: '0 0.25em 0.5em 0',
+    padding: '0 0.25em 0.25em 0',
   },
   clusterName: {
     textTransform: 'capitalize',
@@ -112,7 +112,7 @@ export function GeneListPanel({ controller }) {
     setGenes([]);
     setMinRank(0);
     setMaxRank(0);
-    
+
     const eles = controller.cy.$(':selected');
 
     if (eles.length > 0) {
@@ -205,6 +205,9 @@ export function GeneListPanel({ controller }) {
   };
 
   const renderGeneSkeletonRow = (idx) => {
+    let w = Math.round(Math.random() * 100);
+    w = Math.min(60, Math.max(40, w));
+
     return (
       <ListItem key={idx} alignItems="flex-start">
         <ListItemText
@@ -212,7 +215,7 @@ export function GeneListPanel({ controller }) {
             <Grid container direction="row" justifyContent="space-between" alignItems='center'>
               <Grid item>
                 <Typography display="inline" variant="body2" color="textPrimary">
-                  <Skeleton variant="text" width={65} />
+                  <Skeleton variant="text" width={w} />
                 </Typography>
               </Grid>
               <Grid item className={classes.chartContainer}>
@@ -235,7 +238,6 @@ export function GeneListPanel({ controller }) {
           <Typography display="block" variant="body2" color="textPrimary" className={classes.clusterName} gutterBottom>
             { clusterName }
           </Typography>
-          <Divider />
         </div>
       )}
       {!clusterName && geneSetNames.length > 0 && (
@@ -246,39 +248,32 @@ export function GeneListPanel({ controller }) {
           <List>
             { geneSetNames.map((gsName, idx) => renderGeneSetRow(gsName, idx)) }
           </List>
-          <Divider />
         </div>
       )}
-      {totalGenes > 0 && (
-        <List
-          dense
-          subheader={
-            <ListSubheader component="div">
-              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
-                Ranked Genes <Typography display="inline" variant="body2" color="textSecondary">({rankedGenes.length} of {totalGenes})</Typography>:
-              </Typography>
-              <Divider />
-            </ListSubheader>
-          }
-        >
-          { rankedGenes.map(({gene, rank}, idx) => renderGeneRow(gene, rank, idx)) }
-        </List>
+      {(clusterName || geneSetNames.length > 0) && (
+        <Divider style={{marginBottom: '0.5em'}} />
       )}
-      {totalGenes <= 0 && (
-        <List
-          dense
-          subheader={
-            <ListSubheader component="div">
-              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
-                Ranked Genes <Typography display="inline" variant="body2" color="textSecondary">(<em>loading...</em>)</Typography>:
+      <List
+        dense
+        subheader={
+          <ListSubheader component="div">
+            <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
+              Ranked Genes&nbsp;
+              <Typography display="inline" variant="body2" color="textSecondary">
+                ({totalGenes > 0 ? `${rankedGenes.length} of ${totalGenes}` : (<em>loading...</em>)})
               </Typography>
-              <Divider />
-            </ListSubheader>
-          }
-        >
-          { _.range(0, 30).map((idx) => renderGeneSkeletonRow(idx)) }
-        </List>
-      )}
+              :
+            </Typography>
+            <Divider />
+          </ListSubheader>
+        }
+      >
+        {totalGenes > 0 ?
+          rankedGenes.map(({gene, rank}, idx) => renderGeneRow(gene, rank, idx))
+        :
+          _.range(0, 30).map((idx) => renderGeneSkeletonRow(idx))
+        }
+      </List>
     </div>
   );
 }
