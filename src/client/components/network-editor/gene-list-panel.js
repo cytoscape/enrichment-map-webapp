@@ -73,13 +73,7 @@ export function GeneListPanel({ controller }) {
 
   const fetchAllRankedGenes = async () => {
     // TODO: Better call another function/endpoint...
-    const gsNames = [];
-    controller.cy.nodes().forEach(n => {
-      if (n.children().length === 0) {
-        gsNames.push(n.data('name'));
-      }
-    });
-    fetchGeneList(null, gsNames);
+    fetchGeneList(null, []);
   };
 
   const fetchGeneListFromNodeOrEdge = async (ele) => {
