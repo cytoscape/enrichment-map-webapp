@@ -204,7 +204,7 @@ export class NetworkEditor extends Component {
             drawerVariant={drawerVariant}
             onContentClick={onContentClick}
           />
-          <StyleLegend />
+          <StyleLegend controller={controller} />
         </div>
       </ThemeProvider>
     );

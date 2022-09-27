@@ -4,6 +4,7 @@ import { NetworkEditorController } from './controller';
 import theme from '../../theme';
 import { makeStyles } from '@material-ui/core/styles';
 import Cytoscape from 'cytoscape';
+import { saveAs } from 'file-saver';
 
 import DEFAULT_NETWORK_STYLE from './network-style';
 
@@ -142,21 +143,40 @@ function createCy() {
 }
 
 
-export function StyleLegend(props) {
-  const cyRef = useRef(null);
-  useEffect(() => cyRef.current = createCy(), []);
+async function exportLegend(cy, scale) {
+  const blob = await cy.png({
+    output:'blob-promise',
+    bg: 'white',
+    scale
+  });
+  saveAs(blob, 'enrichment_map_legend.png');
+}
+
+
+export function StyleLegend({ controller }) {
+  const cyRef = useRef();
+  
+  useEffect(() => { cyRef.current = createCy(); }, []);
+
+  useEffect(() => { 
+    const handleExport = scale => exportLegend(cyRef.current, scale);
+    controller.bus.on('exportLegend', handleExport);
+    return () => {
+      controller.bus.removeListener('exportLegend', handleExport);
+    };
+  }, []);
+
   const classes = useStyles();
 
   return (
       <div className={classes.parent}>
         <div id='cy-style-legend' className={classes.legend} />
-
       </div>
   );
 }
 
 StyleLegend.propTypes = {
-  // controller: PropTypes.instanceOf(NetworkEditorController),
+  controller: PropTypes.instanceOf(NetworkEditorController),
 };
 
 export default StyleLegend;
