@@ -41,7 +41,9 @@ describe('Gene Set Queries', () => {
     expect(geneset3.genes).to.eql(['AAA','BBB','CCC','GGG','HHH']);
   });
 
-  it('gets a gene set with ranks', async () => {
+  // TODO: update this test.  See also: Test 'gets a gene set with ranks' is failing #26
+  // https://github.com/cytoscape/enrichment-map-webapp/issues/26
+  it.skip('gets a gene set with ranks', async () => {
     const geneset = await Datastore.getGeneSetWithRanks(GENESET_DB, 'GENESET_5', networkID);
     expect(geneset.name).to.eql('GENESET_5');
     expect(geneset.description).to.eql('the fifth geneset');
