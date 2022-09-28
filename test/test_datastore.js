@@ -11,6 +11,7 @@ describe('Gene Set Queries', () => {
   before('load genesets, load network, load ranks', async () => {
     const network = fs.readFileSync('./test/resources/network.json', { encoding: 'utf8' });
     const ranks = fs.readFileSync('./test/resources/ranks.rnk', { encoding: 'utf8' });
+    await Datastore.db.collection(GENESET_DB).drop();
     await Datastore.loadGenesetDB('./test/resources/', GENESET_DB);
     networkID = await Datastore.createNetwork(network);
     await Datastore.createRankedGeneList(ranks, networkID);
@@ -42,49 +43,68 @@ describe('Gene Set Queries', () => {
   });
 
   it('gets a geneset with ranks', async () => {
-    const geneset = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_5']);
-    expect(geneset.minRank).to.eql(1);
-    expect(geneset.maxRank).to.eql(11);
-    expect(geneset.genes).to.eql([
-      { gene: "LLL", rank: 11 },
-      { gene: "JJJ", rank: 10 },
-      { gene: "BBB", rank: 2 },
-      { gene: "AAA", rank: 1 },
-      { gene: "ZZZ" }
-    ]);
+    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_5']);
+    expect(results).to.eql({
+      minRank: 1,
+      maxRank: 11,
+      genes: [
+        { gene: "LLL", rank: 11 },
+        { gene: "JJJ", rank: 10 },
+        { gene: "BBB", rank: 2 },
+        { gene: "AAA", rank: 1 },
+        { gene: "ADF" },
+        { gene: "ZZZ" }
+      ]
+    });
   });
 
   it('gets more than one geneset with ranks', async () => {
-    const geneset = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_3', 'GENESET_4']);
-    expect(geneset.minRank).to.eql(1);
-    expect(geneset.maxRank).to.eql(11);
-    expect(geneset.genes).to.eql([
-      { gene: "III", rank: 9 },
-      { gene: "HHH", rank: 8 },
-      { gene: "GGG", rank: 7 },
-      { gene: "CCC", rank: 3 },
-      { gene: "BBB", rank: 2 },
-      { gene: "AAA", rank: 1 }
-    ]);
+    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_3', 'GENESET_4']);
+    expect(results).to.eql({
+      minRank: 1,
+      maxRank: 11,
+      genes: [
+        { gene: "III", rank: 9 },
+        { gene: "HHH", rank: 8 },
+        { gene: "GGG", rank: 7 },
+        { gene: "CCC", rank: 3 },
+        { gene: "BBB", rank: 2 },
+        { gene: "AAA", rank: 1 }
+      ]
+    });
   });
 
   it('gets all genesets with ranks', async () => {
-    const geneset = await Datastore.getGenesWithRanks(GENESET_DB, networkID, []);
-    expect(geneset.minRank).to.eql(1);
-    expect(geneset.maxRank).to.eql(11);
-    expect(geneset.genes).to.eql([
-      { gene: "LLL", rank: 11 },
-      { gene: "JJJ", rank: 10 },
-      { gene: "III", rank: 9 },
-      { gene: "HHH", rank: 8 },
-      { gene: "GGG", rank: 7 },
-      { gene: "FFF", rank: 6 },
-      { gene: "EEE", rank: 5 },
-      { gene: "DDD", rank: 4 },
-      { gene: "CCC", rank: 3 },
-      { gene: "BBB", rank: 2 },
-      { gene: "AAA", rank: 1 }
-    ]);
+    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, []);
+    expect(results).to.eql({
+      minRank: 1,
+      maxRank: 11,
+      genes: [
+        { gene: "LLL", rank: 11 },
+        { gene: "JJJ", rank: 10 },
+        { gene: "III", rank: 9 },
+        { gene: "HHH", rank: 8 },
+        { gene: "GGG", rank: 7 },
+        { gene: "FFF", rank: 6 },
+        { gene: "EEE", rank: 5 },
+        { gene: "DDD", rank: 4 },
+        { gene: "CCC", rank: 3 },
+        { gene: "BBB", rank: 2 },
+        { gene: "AAA", rank: 1 }
+      ]
+    });
+  });
+
+  it('searches for genes', async () => {
+    const results = await Datastore.searchGenes(GENESET_DB, networkID, ['D']);
+    expect(results).to.eql({
+      minRank: 1,
+      maxRank: 11,
+      genes: [
+        { gene: "DDD", rank: 4, geneSets: ['GENESET_1','GENESET_2'] },
+        { gene: "ADF", geneSets: ['GENESET_5' ] },
+      ]
+    });
   });
 
 });

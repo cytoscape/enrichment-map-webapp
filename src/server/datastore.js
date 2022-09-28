@@ -45,7 +45,7 @@ class Datastore {
 
   async loadGenesetDB(path, dbFileName) {
     const collections = await this.db.listCollections().toArray();
-    if (collections.some(c => c.name === dbFileName)) {
+    if(collections.some(c => c.name === dbFileName)) {
       console.info("Collection " + dbFileName + " already loaded");
       return;
     } else {
@@ -57,7 +57,7 @@ class Datastore {
 
     await fileForEachLine(filepath, line => {
       const [name, description, ...genes] = line.split("\t");
-      if (genes[genes.length - 1] === "") {
+      if(genes[genes.length - 1] === "") {
         genes.pop();
       }
       geneSets.push({ name, description, genes });
@@ -77,12 +77,16 @@ class Datastore {
       .createIndex({ name: 1 });
 
     await this.db
+      .collection(dbFileName)
+      .createIndex({ genes: 1 });
+
+    await this.db
       .collection(GENE_LISTS_COLLECTION)
       .createIndex({ networkID: 1 });
 
     await this.db
       .collection(GENE_LISTS_COLLECTION)
-      .createIndex({ "genes.gene": 1 });
+      .createIndex({ 'genes.gene': 1 });
   }
 
 
@@ -200,6 +204,7 @@ class Datastore {
         { name: 1, description: 1 }
       );
   }
+  
 
   /**
    * Returns the genes from one or more gene sets joined with ranks.
@@ -261,6 +266,55 @@ class Datastore {
       minRank: minMax.min,
       maxRank: minMax.max,
       genes: geneListWithRanks
+    };
+  }
+
+
+  async searchGenes(geneSetCollection, networkIDStr, geneTokens) {
+    if(geneTokens === undefined || geneTokens.length === 0)
+      return { genes: [] };
+
+    const networkID = makeID(networkIDStr);
+    const queryRE = new RegExp(geneTokens.join('|'));
+
+    const minMax = await this.db
+      .collection(GENE_LISTS_COLLECTION)
+      .findOne(
+        { networkID: networkID.bson },
+        { projection: { min: 1, max: 1 } } // 'projection:' is explicit because min,max have special meaning in mongo
+      );
+
+    const geneListWithRanksAndGeneSets = await this.db
+      .collection(geneSetCollection)
+      .aggregate([
+        { $match: { genes: queryRE } },
+        { $unwind: '$genes' },
+        { $match: { genes: queryRE } },
+        { $limit: 100 },
+        { $group: { _id: { gene: '$genes' }, geneSets: { $addToSet: '$name' } } },
+        { $project: { _id: 0, gene: '$_id.gene', geneSets: 1 }},
+        {
+          $lookup: {
+            from: GENE_LISTS_COLLECTION,
+            let: { foreignGene: "$gene" },
+            pipeline: [
+              { $match: { networkID: networkID.bson } },
+              { $unwind: "$genes" },
+              { $replaceRoot: { newRoot: "$genes" } },
+              { $match: { $expr: { $eq: ["$gene", "$$foreignGene"] } } }
+            ],
+            as: "newField"
+          }
+        },
+        { $project: { _id: 0, gene: 1, geneSets: 1, rank: { $first: "$newField.rank" } } },
+        { $sort: { rank: -1, gene: 1 } }
+      ])
+      .toArray();
+
+    return {
+      minRank: minMax.min,
+      maxRank: minMax.max,
+      genes: geneListWithRanksAndGeneSets
     };
   }
 

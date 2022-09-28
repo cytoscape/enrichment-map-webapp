@@ -139,13 +139,34 @@ http.get('/:netid/geneset/:name', async function(req, res, next) {
 http.post('/:netid/genesets', async function(req, res, next) {
   try {
     const { netid } = req.params;
-    const geneSets = req.body.geneSets;
+    const { geneSets } = req.body;
     if(!Array.isArray(geneSets)) {
       res.sendStatus(404);
       return;
     }
 
     const geneInfo = await Datastore.getGenesWithRanks(DB_1, netid, geneSets);
+    if(!geneInfo) {
+      res.sendStatus(404);
+    } else {
+      res.send(JSON.stringify(geneInfo));
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+http.post('/:netid/genesearch', async function(req, res, next) {
+  try {
+    const { netid } = req.params;
+    const { genes } = req.body;
+    if(!Array.isArray(genes)) {
+      res.sendStatus(404);
+      return;
+    }
+
+    const geneInfo = await Datastore.searchGenes(DB_1, netid, genes);
     console.log(geneInfo);
     if(!geneInfo) {
       res.sendStatus(404);
