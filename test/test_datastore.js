@@ -97,6 +97,7 @@ describe('Gene Set Queries', () => {
 
   it('searches for genes', async () => {
     const results = await Datastore.searchGenes(GENESET_DB, networkID, ['D']);
+    results.genes.forEach(g => g.geneSets.sort());
     expect(results).to.eql({
       minRank: 1,
       maxRank: 11,
