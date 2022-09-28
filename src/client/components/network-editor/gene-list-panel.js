@@ -8,7 +8,7 @@ import _ from 'lodash';
 import { makeStyles } from '@material-ui/core/styles';
 
 import { List, ListSubheader, ListItem, ListItemText } from '@material-ui/core';
-import { Grid, Typography, Divider } from '@material-ui/core';
+import { Grid, Paper, Typography, Link, Divider, CircularProgress } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
@@ -40,6 +40,11 @@ const useStyles = makeStyles((theme) => ({
     textTransform: 'capitalize',
     paddingBottom: '0.5em',
   },
+  geneDesc: {
+    fontSize: '1.0em',
+    marginTop: '1.0em',
+    marginLeft: '0.75em',
+  },
   chartContainer: {
     width: CHART_WIDTH,
     padding: '0 8px',
@@ -52,6 +57,8 @@ export function GeneListPanel({ controller }) {
   const [genes, setGenes] = useState([]);
   const [minRank, setMinRank] = useState(0);
   const [maxRank, setMaxRank] = useState(0);
+  const [selectedGene, setSelectedGene] = useState(0);
+  const [geneDescription, setGeneDescription] = useState(0);
   
   const totalGenes = genes.length;
   let rankedGenes = genes.filter(g => g.rank);
@@ -69,8 +76,7 @@ export function GeneListPanel({ controller }) {
   };
 
   const fetchAllRankedGenes = async () => {
-    // TODO: Better call another function/endpoint...
-    fetchGeneList(null, []);
+    fetchGeneList([]);
   };
 
   const fetchGeneListFromNodeOrEdge = async (ele) => {
@@ -175,13 +181,50 @@ export function GeneListPanel({ controller }) {
       }
     }
 
+    // const ncbiUrl = `https://www.ncbi.nlm.nih.gov/gene/?term=Homo+sapiens+${gene}`;
+
+    const getGeneMetadata = (symbol) => {
+      setSelectedGene(symbol);
+      setGeneDescription(null);
+
+      fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbol}/taxon/9606`, {
+        method: 'GET',
+      })
+      .then(res => {
+        return res.ok ? res.json() : {};
+      })
+      .then(data => {
+        if (data.genes && data.genes.length > 0) {
+          const gene = data.genes[0].gene;
+          console.log(gene);
+          const ncbi = gene['gene_id'];
+          const Desc = (
+            <>
+              { gene.description }<br />
+              <Link href={`https://www.ncbi.nlm.nih.gov/gene/${ncbi}`} target="_blank" rel="noreferrer" color="textSecondary" underline="always">
+                NCBI Gene
+              </Link>
+              &nbsp;&nbsp;&#8212;&nbsp;&nbsp;
+              <Link href={`http://genemania.org/search/human/${symbol}`} target="_blank"rel="noreferrer" color="textSecondary" underline="always">
+                GeneMANIA
+              </Link>
+            </>
+          );
+          setGeneDescription(Desc);
+        }
+      });
+    };
+
     return (
       <ListItem key={idx} alignItems="flex-start">
         <ListItemText
           primary={
             <Grid container direction="row" justifyContent="space-between" alignItems='center'>
               <Grid item>
-                  <Typography display="inline" variant="body2" color="textPrimary">{gene}</Typography>
+                {/* <Link href={ncbiUrl} variant="body2" color="textPrimary" target="_blank">{gene}</Link> */}
+                <Link component="button" variant="body2" color="textPrimary" onClick={() => getGeneMetadata(gene)}>
+                  {gene}
+                </Link>
               </Grid>
               <Grid item className={classes.chartContainer}>
                 {data && (
@@ -190,9 +233,11 @@ export function GeneListPanel({ controller }) {
               </Grid>
             </Grid>
           }
-          // secondary={
-          //   "TODO: Gene description..."
-          // }
+          secondary={selectedGene === gene && (
+            <Typography variant="body2" color="textSecondary" className={classes.geneDesc}>
+              { geneDescription ? geneDescription : 'Loading...' }
+            </Typography>
+          )}
         />
       </ListItem>
     );
