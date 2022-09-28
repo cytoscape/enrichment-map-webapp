@@ -18,11 +18,11 @@ const useStyles = makeStyles((theme) => ({
     position: 'fixed',
     right: '20px',
     bottom: '20px',
-    height: '250px',
+    height: '200px',
     backgroundColor: '#AAA',
     color: 'white',
     padding: '5px',
-    width: '350px',
+    width: '385px',
     border: 'solid black'
   }
 }));
@@ -38,10 +38,15 @@ function createCy() {
 
     style: [ 
       ...DEFAULT_NETWORK_STYLE,
+      { selector: 'node',
+        style: {
+          'width': 30,
+          'height': 30
+      }},
       { selector: 'node[label]',
         style: {
           'label': 'data(label)',
-          'font-size': '18px',
+          'font-size': '14px',
           'text-wrap': 'none',
           'background-opacity': 0,
           'border-opacity': 0,
@@ -55,7 +60,7 @@ function createCy() {
       }},
       { selector: '#c',
         style: {
-          'font-size': '12px',
+          'font-size': '10px',
       }},
       { selector: 'node[hidden]', 
         style: {
@@ -81,7 +86,7 @@ function createCy() {
 
       { data: { id: 'b' } },
       { data: { id: 'b-lab', label: 'Node Color' } },
-      { data: { id: 'b-exp', label: 'q-value' } },
+      { data: { id: 'b-exp', label: 'q-value, white (0.0) to green (0.1)' } },
 
       { data: { id: 'c', name: 'Label' } },
       { data: { id: 'c-lab', label: 'Node Label' } },
@@ -91,14 +96,14 @@ function createCy() {
       { data: { id: 'e-target', hidden: true } },
       { data: { id: 'e', source: 'e-source', target: 'e-target' } },
       { data: { id: 'e-lab', label: 'Edge Width' } },
-      { data: { id: 'e-exp', label: 'Similarity' } },
+      { data: { id: 'e-exp', label: 'Gene Set Overlap' } },
 
       { data: { id: 'p' } },
       { data: { id: 'p-1', parent: 'p', child: true } },
       { data: { id: 'p-2', parent: 'p', child: true } },
       { data: { id: 'p-3', parent: 'p', child: true } },
       { data: { id: 'p-lab', label: 'Clusters' } },
-      { data: { id: 'p-exp', label: 'Pathways' } },
+      { data: { id: 'p-exp', label: 'Gene Sets with High Overlap' } },
     ],
   });
 
@@ -108,8 +113,8 @@ function createCy() {
 
   // Have to manually position because this needs to run after the mount/resize.
   const pos = (row, col) => {
-    const xs = [25, 55, 185];
-    const padTop = 25, ySep = 45;
+    const xs = [25, 55, 155];
+    const padTop = 20, ySep = 35;
     return { x: xs[col], y: padTop + row * ySep };
   };
   
@@ -127,15 +132,15 @@ function createCy() {
 
   const epos = pos(3,0);
   cy.nodes('#e-source').position({ x: epos.x-15, y: epos.y+12 });
-  cy.nodes('#e-target').position({ x: epos.x+20, y: epos.y-12 });
+  cy.nodes('#e-target').position({ x: epos.x+15, y: epos.y-12 });
   cy.nodes('#e-lab').position(pos(3,1));
   cy.nodes('#e-exp').position(pos(3,2));
 
   const cpos = pos(4,0);
   cy.nodes('#0').position(pos(4,0));
   cy.nodes('#p-1').position({ x: cpos.x-8,  y: cpos.y+6 });
-  cy.nodes('#p-2').position({ x: cpos.x+10, y: cpos.y   });
-  cy.nodes('#p-3').position({ x: cpos.x+5,  y: cpos.y-4 });
+  cy.nodes('#p-2').position({ x: cpos.x+8, y: cpos.y   });
+  cy.nodes('#p-3').position({ x: cpos.x+2,  y: cpos.y-4 });
   cy.nodes('#p-lab').position(pos(4,1));
   cy.nodes('#p-exp').position(pos(4,2));
 
