@@ -1,10 +1,12 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useReducer, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { NetworkEditorController } from './controller';
-import theme from '../../theme';
 import { makeStyles } from '@material-ui/core/styles';
 import Cytoscape from 'cytoscape';
 import { saveAs } from 'file-saver';
+import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
+import { IconButton } from '@material-ui/core';
 
 import DEFAULT_NETWORK_STYLE from './network-style';
 
@@ -18,12 +20,27 @@ const useStyles = makeStyles((theme) => ({
     position: 'fixed',
     right: '20px',
     bottom: '20px',
-    height: '200px',
     backgroundColor: '#AAA',
-    color: 'white',
-    padding: '5px',
+    padding: '0px',
     width: '385px',
-    border: 'solid black'
+    border: 'solid black',
+  },
+  cyContainer: {
+    padding: '0px',
+  },
+  title: {
+    height: '40px',
+    color: 'black',
+    padding: '4px',
+    borderBottom: 'solid black',
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontWeight: 'bold'
+  },
+  cy: {
+    height: '190px'
   }
 }));
 
@@ -113,8 +130,8 @@ function createCy() {
 
   // Have to manually position because this needs to run after the mount/resize.
   const pos = (row, col) => {
-    const xs = [25, 55, 155];
-    const padTop = 20, ySep = 35;
+    const xs = [30, 60, 155];
+    const padTop = 25, ySep = 35;
     return { x: xs[col], y: padTop + row * ySep };
   };
   
@@ -160,8 +177,10 @@ async function exportLegend(cy, scale) {
 
 export function StyleLegend({ controller }) {
   const cyRef = useRef();
-  
-  useEffect(() => { cyRef.current = createCy(); }, []);
+
+  useEffect(() => { 
+    cyRef.current = createCy(); 
+  }, []);
 
   useEffect(() => { 
     const handleExport = scale => exportLegend(cyRef.current, scale);
@@ -171,12 +190,24 @@ export function StyleLegend({ controller }) {
     };
   }, []);
 
+  const [ open, toggleOpen ] = useReducer(open => !open, true);
+
   const classes = useStyles();
 
   return (
-      <div className={classes.parent}>
-        <div id='cy-style-legend' className={classes.legend} />
+    <div className={classes.parent}>
+      <div className={classes.legend}>
+        <div className={classes.title} style={open ? null : { borderBottom: 0 }}>
+          <div>Legend</div>
+          <IconButton size="small" onClick={toggleOpen} >
+            { open ? <KeyboardArrowDownIcon/> : <KeyboardArrowUpIcon/> }
+          </IconButton>
+        </div>
+          <div className={classes.cyContainer} style={open ? null : {height: 0, visibility: 'hidden'}}>
+            <div id='cy-style-legend' className={classes.cy} />  
+          </div>
       </div>
+    </div>
   );
 }
 
