@@ -3,6 +3,8 @@ import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
 import { DEFAULT_PADDING } from './defaults';
 
+const MAX_INITIAL_METADATA_CACHE_SIZE = 50;
+
 /**
  * The network editor controller contains all high-level model operations that the network
  * editor view can perform.
@@ -36,6 +38,8 @@ export class NetworkEditorController {
         padding: DEFAULT_PADDING
       }
     };
+
+    this.metadatadaCache = {};
   }
 
   /**
@@ -100,6 +104,53 @@ export class NetworkEditorController {
       }
     } else {
       return this.lastGeneSet;
+    }
+  }
+
+  async fetchGeneMetadata(symbol) {
+    let md = this.metadatadaCache[symbol];
+
+    if (md == null) {
+      // New query...
+      try {
+        const res = await fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbol}/taxon/9606`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        
+        if (!res.ok) {
+          throw 'Unable to fetch gene metadata';
+        }
+
+        const data = await res.json();
+        const gene = data.genes[0].gene;
+        const geneId = gene['gene_id'];
+        const description = gene.description;
+        
+        md = { geneId, description };
+        this.metadatadaCache[symbol] = md;
+        
+        return md;
+      } catch (error) {
+        console.error(error);
+        return { error };
+      }
+    }
+
+    return md;
+  }
+
+  prefetchGeneMetadata(genes) {
+    if (genes != null) {
+      const chunkSize = 10;
+      const total = Math.min(genes.length, MAX_INITIAL_METADATA_CACHE_SIZE);
+
+      for (let i = 0; i < total; i += chunkSize) {
+          const chunk = genes.slice(i, i + chunkSize);
+          chunk.forEach(g => {
+            this.fetchGeneMetadata(g.gene);
+          });
+      }
     }
   }
 }

@@ -12,6 +12,8 @@ import { Grid, Paper, Typography, Link, Divider, CircularProgress } from '@mater
 import Skeleton from '@material-ui/lab/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
+import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
+
 const PRECISION = 4;
 
 const CHART_WIDTH = 180;
@@ -65,6 +67,8 @@ export function GeneListPanel({ controller }) {
 
   const classes = useStyles();
 
+  const debouncedPrefetchGeneMetadata = _.debounce((array) => controller.prefetchGeneMetadata(array), 1000);
+
   const fetchGeneList = async (geneSetNames) => {
     const res = await controller.fetchGeneList(geneSetNames);
     const genes = res ? res.genes : [];
@@ -73,6 +77,10 @@ export function GeneListPanel({ controller }) {
     setMinRank(minRank);
     setMaxRank(maxRank);
     setGenes(genes);
+
+    if (genes && genes.length > 0) {
+      debouncedPrefetchGeneMetadata(genes);
+    }
   };
 
   const fetchAllRankedGenes = async () => {
@@ -181,38 +189,33 @@ export function GeneListPanel({ controller }) {
       }
     }
 
-    // const ncbiUrl = `https://www.ncbi.nlm.nih.gov/gene/?term=Homo+sapiens+${gene}`;
-
-    const getGeneMetadata = (symbol) => {
+    const getGeneMetadata = async (symbol) => {
       setSelectedGene(symbol);
       setGeneDescription(null);
 
-      fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbol}/taxon/9606`, {
-        method: 'GET',
-      })
-      .then(res => {
-        return res.ok ? res.json() : {};
-      })
-      .then(data => {
-        if (data.genes && data.genes.length > 0) {
-          const gene = data.genes[0].gene;
-          console.log(gene);
-          const ncbi = gene['gene_id'];
-          const Desc = (
-            <>
-              { gene.description }<br />
-              <Link href={`https://www.ncbi.nlm.nih.gov/gene/${ncbi}`} target="_blank" rel="noreferrer" color="textSecondary" underline="always">
-                NCBI Gene
-              </Link>
-              &nbsp;&nbsp;&#8212;&nbsp;&nbsp;
-              <Link href={`http://genemania.org/search/human/${symbol}`} target="_blank"rel="noreferrer" color="textSecondary" underline="always">
-                GeneMANIA
-              </Link>
-            </>
-          );
-          setGeneDescription(Desc);
-        }
-      });
+      const obj = await controller.fetchGeneMetadata(symbol);
+      console.log(obj);
+
+      if (obj && !obj.error) {
+        setGeneDescription(
+          <>
+            { obj.description }<br />
+            <Link href={`https://www.ncbi.nlm.nih.gov/gene/${obj.geneId}`} target="_blank" rel="noreferrer" color="textSecondary" underline="always">
+              NCBI Gene
+            </Link>
+            &nbsp;&nbsp;&#8212;&nbsp;&nbsp;
+            <Link href={`http://genemania.org/search/human/${symbol}`} target="_blank"rel="noreferrer" color="textSecondary" underline="always">
+              GeneMANIA
+            </Link>
+          </>
+        );
+      } else {
+        setGeneDescription(
+          <span style={{color: theme.palette.error.main, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', height: '20px'}}>
+            <ErrorOutlineIcon fontSize="small" style={{marginRight: '10px'}} /> Error: {obj.error.message ? obj.error.message : 'Unable to fetch description'}
+          </span>
+        );
+      }
     };
 
     return (
