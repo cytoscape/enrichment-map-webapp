@@ -62,9 +62,7 @@ export class SharePanel extends React.Component {
   }
 
   handleExportLegend() {
-    const { legendSize } = this.state;
-    console.log("emit legendExport");
-    this.controller.bus.emit('exportLegend', legendSize.scale);
+    this.controller.bus.emit('exportLegend', this.state.legendSize.scale);
   }
 
   handlePopoverOpen() {

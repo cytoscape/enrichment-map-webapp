@@ -6,7 +6,7 @@ import Cytoscape from 'cytoscape';
 import { saveAs } from 'file-saver';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
-import { IconButton } from '@material-ui/core';
+import { IconButton, LinearProgress } from '@material-ui/core';
 
 import DEFAULT_NETWORK_STYLE from './network-style';
 
@@ -20,7 +20,7 @@ const useStyles = makeStyles((theme) => ({
     position: 'fixed',
     right: '20px',
     bottom: '20px',
-    backgroundColor: '#AAA',
+    backgroundColor: '#BBB',
     padding: '0px',
     width: '385px',
     border: 'solid black',
@@ -45,7 +45,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 
-function createCy() {
+function createCy(maxQVal) {
   const cy = new Cytoscape({
     headless: true,
     styleEnabled: true,
@@ -54,7 +54,7 @@ function createCy() {
     panningEnabled: false,
 
     style: [ 
-      ...DEFAULT_NETWORK_STYLE,
+      ...DEFAULT_NETWORK_STYLE(0.1),
       { selector: 'node',
         style: {
           'width': 30,
@@ -70,10 +70,6 @@ function createCy() {
           'width': 1,
           'text-valign': 'center',
           'text-halign': 'right'
-      }},
-      { selector: '#b', 
-        style: {
-          'background-color': 'lightblue',
       }},
       { selector: '#c',
         style: {
@@ -101,9 +97,9 @@ function createCy() {
       { data: { id: 'a-lab', label: 'Nodes' } },
       { data: { id: 'a-exp', label: 'Gene Sets' } },
 
-      { data: { id: 'b' } },
+      { data: { id: 'b', padj: 0.1 } },
       { data: { id: 'b-lab', label: 'Node Color' } },
-      { data: { id: 'b-exp', label: 'q-value, white (0.0) to green (0.1)' } },
+      { data: { id: 'b-exp', label: `q-value, white (0.0) to red (${maxQVal.toFixed(2)})` } },
 
       { data: { id: 'c', name: 'Label' } },
       { data: { id: 'c-lab', label: 'Node Label' } },
@@ -178,19 +174,25 @@ async function exportLegend(cy, scale) {
 export function StyleLegend({ controller }) {
   const cyRef = useRef();
 
-  useEffect(() => { 
-    cyRef.current = createCy(); 
-  }, []);
+  const [ open, toggleOpen ] = useReducer(open => !open, true);
+  const [ loading, setLoaded ] = useReducer(() => false, true);
 
-  useEffect(() => { 
+  useEffect(() => {
+    if(!loading) {
+      const maxQVal = controller.cy.data('maxQVal');
+      cyRef.current = createCy(maxQVal); 
+    }
+  }, [loading]); 
+
+  useEffect(() => {
     const handleExport = scale => exportLegend(cyRef.current, scale);
+    controller.bus.on('networkLoaded', setLoaded);
     controller.bus.on('exportLegend', handleExport);
     return () => {
       controller.bus.removeListener('exportLegend', handleExport);
+      controller.bus.removeListener('networkLoaded', setLoaded);
     };
   }, []);
-
-  const [ open, toggleOpen ] = useReducer(open => !open, true);
 
   const classes = useStyles();
 
@@ -198,13 +200,21 @@ export function StyleLegend({ controller }) {
     <div className={classes.parent}>
       <div className={classes.legend}>
         <div className={classes.title} style={open ? null : { borderBottom: 0 }}>
-          <div>Legend</div>
+          <div>
+            <div>
+              Legend 
+              { loading ? <i>(loading...)</i> : null }
+            </div>
+          </div>
           <IconButton size="small" onClick={toggleOpen} >
             { open ? <KeyboardArrowDownIcon/> : <KeyboardArrowUpIcon/> }
           </IconButton>
         </div>
           <div className={classes.cyContainer} style={open ? null : {height: 0, visibility: 'hidden'}}>
-            <div id='cy-style-legend' className={classes.cy} />  
+            { loading 
+              ? <LinearProgress />
+              : <div id='cy-style-legend' className={classes.cy} />  
+            }
           </div>
       </div>
     </div>

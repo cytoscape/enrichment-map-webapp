@@ -1,8 +1,13 @@
-export const DEFAULT_NETWORK_STYLE = [
+
+export const NODE_BG_COLOR = {
+  start: 'rgb(239,138,98)',
+  end: 'rgb(178,24,43)'
+};
+
+export const DEFAULT_NETWORK_STYLE = (maxQVal) => [
   {
     selector: 'node',
     style: {
-      'background-color': '#f0f0f0', //'mapData(colouring,-1.0,1.0,rgb(33,102,172),rgb(178,24,43))',
       'opacity': 0.8,
       'border-color': '#333333',
       'border-width': 1,
@@ -14,6 +19,12 @@ export const DEFAULT_NETWORK_STYLE = [
       'text-valign': 'center',
       'text-wrap': 'wrap',
       'text-max-width': 80,
+    }
+  },
+  {
+    selector: 'node[padj]',
+    style: {
+      'background-color': `mapData(padj, 0.0, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`,
     }
   },
   {

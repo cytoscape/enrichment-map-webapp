@@ -49,9 +49,6 @@ export class NetworkEditor extends Component {
 
     this.onCyEvents = this.onCyEvents.bind(this);
 
-    // Set network style
-    this.cy.style().fromJson(DEFAULT_NETWORK_STYLE);
-
     const loadNetwork = async () => {
       console.log('Starting to enable sync in editor');
       console.log('Loading...');
@@ -63,7 +60,17 @@ export class NetworkEditor extends Component {
       this.cy.add(result.network.elements);
       this.cy.data({ parameters: result.parameters });
 
+      const maxQVal = this.getMaxQValue();
+      this.cy.data({ maxQVal });
+      console.log("Max q-value: " + maxQVal);
+
+      // Set network style
+      this.cy.style().fromJson(DEFAULT_NETWORK_STYLE(maxQVal));
+
+      // Notify listeners that the network has been loaded
       console.log('Loaded');
+      this.cy.data({ loaded: true });
+      this.controller.bus.emit('networkLoaded');
 
       this.cy.fit(DEFAULT_PADDING);
       this.cy.layout({ 
@@ -72,8 +79,6 @@ export class NetworkEditor extends Component {
         nodeSeparation: 150,
         animate: false,
       }).run();
-
-      console.log(this.cy.nodes());
 
       console.log('Successful load from DB');
       console.log('End of editor sync initial phase');
@@ -119,6 +124,17 @@ export class NetworkEditor extends Component {
         node.data['parent'] = clusterID;
       });
     });
+  }
+
+  getMaxQValue() {
+    return this.cy.nodes().reduce(
+      (prevVal, node) => {
+        if(typeof prevVal === 'undefined')
+          return 0;
+        const qval = node.data('padj');
+        return qval ? Math.max(qval, prevVal) : prevVal;
+      }
+    );
   }
 
   getClusterLabels(result) {
