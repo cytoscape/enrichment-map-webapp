@@ -120,6 +120,11 @@ function createCy(maxQVal) {
     ],
   });
 
+  cy.elements().forEach(ele => {
+    if(!ele.data('name'))
+      ele.data('name', '');
+  });
+
   cy.mount(document.getElementById('cy-style-legend'));
   cy.resize();
   cy.nodes().ungrabify();
