@@ -20,7 +20,7 @@ const useStyles = makeStyles((theme) => ({
     position: 'fixed',
     right: '20px',
     bottom: '20px',
-    backgroundColor: '#BBB',
+    backgroundColor: '#999',
     padding: '0px',
     width: '385px',
     border: 'solid black',
@@ -125,37 +125,42 @@ function createCy(maxQVal) {
   cy.nodes().ungrabify();
 
   // Have to manually position because this needs to run after the mount/resize.
-  const pos = (row, col) => {
+  const pos = (col, row) => {
     const xs = [30, 60, 155];
     const padTop = 25, ySep = 35;
     return { x: xs[col], y: padTop + row * ySep };
   };
   
-  cy.nodes('#a').position(pos(0,0));
-  cy.nodes('#a-lab').position(pos(0,1));
-  cy.nodes('#a-exp').position(pos(0,2));
+  let row = 0;
+  cy.nodes('#a').position(pos(0,row));
+  cy.nodes('#a-lab').position(pos(1,row));
+  cy.nodes('#a-exp').position(pos(2,row));
 
-  cy.nodes('#b').position(pos(1,0));
-  cy.nodes('#b-lab').position(pos(1,1));
-  cy.nodes('#b-exp').position(pos(1,2));
+  row++;
+  cy.nodes('#b').position(pos(0,row));
+  cy.nodes('#b-lab').position(pos(1,row));
+  cy.nodes('#b-exp').position(pos(2,row));
 
-  cy.nodes('#c').position(pos(2,0));
-  cy.nodes('#c-lab').position(pos(2,1));
-  cy.nodes('#c-exp').position(pos(2,2));
+  row++;
+  cy.nodes('#c').position(pos(0,row));
+  cy.nodes('#c-lab').position(pos(1,row));
+  cy.nodes('#c-exp').position(pos(2,row));
 
-  const epos = pos(3,0);
+  row++;
+  const epos = pos(0,row);
   cy.nodes('#e-source').position({ x: epos.x-15, y: epos.y+12 });
   cy.nodes('#e-target').position({ x: epos.x+15, y: epos.y-12 });
-  cy.nodes('#e-lab').position(pos(3,1));
-  cy.nodes('#e-exp').position(pos(3,2));
+  cy.nodes('#e-lab').position(pos(1,row));
+  cy.nodes('#e-exp').position(pos(2,row));
 
-  const cpos = pos(4,0);
-  cy.nodes('#0').position(pos(4,0));
+  row++;
+  const cpos = pos(0,row);
+  cy.nodes('#0').position(pos(0,row));
   cy.nodes('#p-1').position({ x: cpos.x-8,  y: cpos.y+6 });
   cy.nodes('#p-2').position({ x: cpos.x+8, y: cpos.y   });
   cy.nodes('#p-3').position({ x: cpos.x+2,  y: cpos.y-4 });
-  cy.nodes('#p-lab').position(pos(4,1));
-  cy.nodes('#p-exp').position(pos(4,2));
+  cy.nodes('#p-lab').position(pos(1,row));
+  cy.nodes('#p-exp').position(pos(2,row));
 
   return cy;
 }
@@ -203,7 +208,7 @@ export function StyleLegend({ controller }) {
           <div>
             <div>
               Legend 
-              { loading ? <i>(loading...)</i> : null }
+              { loading ? <i>&nbsp;(loading...)</i> : null }
             </div>
           </div>
           <IconButton size="small" onClick={toggleOpen} >
