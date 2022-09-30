@@ -22,6 +22,8 @@ const UP_RANK_COLOR = theme.palette.text.disabled;
 const DOWN_RANK_COLOR = theme.palette.action.disabled;
 const RANK_RANGE_COLOR = theme.palette.background.focus;
 
+const linkoutProps = { target: "_blank",  rel: "noreferrer", color: "textSecondary", underline: "always" };
+
 const useStyles = makeStyles((theme) => ({
   title: {
     fontWeight: 'bold',
@@ -51,35 +53,40 @@ const useStyles = makeStyles((theme) => ({
     width: CHART_WIDTH,
     padding: '0 8px',
   },
+  linkout: {
+    fontSize: '0.9em',
+  }
 }));
 
 export function GeneListPanel({ controller }) {
   const [clusterName, setClusterName] = useState(null);
   const [geneSetNames, setGeneSetNames] = useState([]);
   const [genes, setGenes] = useState([]);
+  const [totalGenes, setTotalGenes] = useState(0);
   const [minRank, setMinRank] = useState(0);
   const [maxRank, setMaxRank] = useState(0);
   const [selectedGene, setSelectedGene] = useState(0);
   const [geneDescription, setGeneDescription] = useState(0);
   
-  const totalGenes = genes.length;
-  let rankedGenes = genes.filter(g => g.rank);
-
   const classes = useStyles();
 
   const debouncedPrefetchGeneMetadata = _.debounce((array) => controller.prefetchGeneMetadata(array), 1000);
 
   const fetchGeneList = async (geneSetNames) => {
     const res = await controller.fetchGeneList(geneSetNames);
-    const genes = res ? res.genes : [];
     const minRank = res ? res.minRank : 0;
     const maxRank = res ? res.maxRank : 0;
+    const genes = res ? res.genes : [];
+    const total = genes.length;
+    const rankedGenes = genes.filter(g => g.rank); // We only want the ranked genes
+    
     setMinRank(minRank);
     setMaxRank(maxRank);
-    setGenes(genes);
+    setTotalGenes(total);
+    setGenes(rankedGenes);
 
-    if (genes && genes.length > 0) {
-      debouncedPrefetchGeneMetadata(genes);
+    if (rankedGenes && rankedGenes.length > 0) {
+      debouncedPrefetchGeneMetadata(rankedGenes);
     }
   };
 
@@ -117,6 +124,7 @@ export function GeneListPanel({ controller }) {
   const debouncedSelectionHandler = _.debounce(() => {
     setClusterName(null);
     setGeneSetNames([]);
+    setTotalGenes(0);
     setGenes([]);
     setMinRank(0);
     setMaxRank(0);
@@ -189,9 +197,13 @@ export function GeneListPanel({ controller }) {
       }
     }
 
-    const getGeneMetadata = async (symbol) => {
-      setSelectedGene(symbol);
+    const toggleGeneDetails = async (symbol) => {
+      setSelectedGene(selectedGene !== symbol ? symbol : null);
       setGeneDescription(null);
+
+      if (selectedGene === symbol) {
+        return;
+      }
 
       const obj = await controller.fetchGeneMetadata(symbol);
       console.log(obj);
@@ -200,11 +212,26 @@ export function GeneListPanel({ controller }) {
         setGeneDescription(
           <>
             { obj.description }<br />
-            <Link href={`https://www.ncbi.nlm.nih.gov/gene/${obj.geneId}`} target="_blank" rel="noreferrer" color="textSecondary" underline="always">
+            <Link
+              href={`https://www.ncbi.nlm.nih.gov/gene/${obj.geneId}`}
+              className={classes.linkout}
+              {...linkoutProps}
+            >
               NCBI Gene
             </Link>
-            &nbsp;&nbsp;&#8212;&nbsp;&nbsp;
-            <Link href={`http://genemania.org/search/human/${symbol}`} target="_blank"rel="noreferrer" color="textSecondary" underline="always">
+            <Link
+              href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${obj.geneId}`}
+              className={classes.linkout}
+              style={{marginLeft: '2em', marginRight: '2em'}}
+              {...linkoutProps}
+            >
+              Ensembl
+            </Link>
+            <Link
+              href={`http://genemania.org/search/human/${symbol}`}
+              className={classes.linkout}
+              {...linkoutProps}
+            >
               GeneMANIA
             </Link>
           </>
@@ -224,8 +251,7 @@ export function GeneListPanel({ controller }) {
           primary={
             <Grid container direction="row" justifyContent="space-between" alignItems='center'>
               <Grid item>
-                {/* <Link href={ncbiUrl} variant="body2" color="textPrimary" target="_blank">{gene}</Link> */}
-                <Link component="button" variant="body2" color="textPrimary" onClick={() => getGeneMetadata(gene)}>
+                <Link component="button" variant="body2" color="textPrimary" onClick={() => toggleGeneDetails(gene)}>
                   {gene}
                 </Link>
               </Grid>
@@ -302,7 +328,7 @@ export function GeneListPanel({ controller }) {
             <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
               Ranked Genes&nbsp;
               <Typography display="inline" variant="body2" color="textSecondary">
-                ({totalGenes > 0 ? `${rankedGenes.length} of ${totalGenes}` : (<em>loading...</em>)})
+                ({totalGenes > 0 ? `${genes.length} of ${totalGenes}` : (<em>loading...</em>)})
               </Typography>
               :
             </Typography>
@@ -311,7 +337,7 @@ export function GeneListPanel({ controller }) {
         }
       >
         {totalGenes > 0 ?
-          rankedGenes.map(({gene, rank}, idx) => renderGeneRow(gene, rank, idx))
+          genes.map(({gene, rank}, idx) => renderGeneRow(gene, rank, idx))
         :
           _.range(0, 30).map((idx) => renderGeneSkeletonRow(idx))
         }

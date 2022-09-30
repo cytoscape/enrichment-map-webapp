@@ -3,7 +3,7 @@ import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
 import { DEFAULT_PADDING } from './defaults';
 
-const MAX_INITIAL_METADATA_CACHE_SIZE = 50;
+const MAX_INITIAL_METADATA_CACHE_SIZE = 1000;
 
 /**
  * The network editor controller contains all high-level model operations that the network
@@ -39,7 +39,7 @@ export class NetworkEditorController {
       }
     };
 
-    this.metadatadaCache = {};
+    this.metadatadaCache = new Map();
   }
 
   /**
@@ -108,7 +108,7 @@ export class NetworkEditorController {
   }
 
   async fetchGeneMetadata(symbol) {
-    let md = this.metadatadaCache[symbol];
+    let md = this.metadatadaCache.get(symbol);
 
     if (md == null) {
       // New query...
@@ -128,28 +128,68 @@ export class NetworkEditorController {
         const description = gene.description;
         
         md = { geneId, description };
-        this.metadatadaCache[symbol] = md;
+        this.metadatadaCache.set(symbol, md);
         
         return md;
       } catch (error) {
         console.error(error);
         return { error };
       }
+    } else {
+      console.log(". CACHED: " + symbol);
     }
 
     return md;
   }
 
+  /**
+   * Just fetch gene metadata (description, NCBI id) and save it into the memory cache.
+   * @param {Array} genes array of genes.
+   */
   prefetchGeneMetadata(genes) {
     if (genes != null) {
+      const fetchSymbols = (symbols) => {
+        const newSymbols = symbols.filter(s => !this.metadatadaCache.has(s));
+        
+        if (newSymbols.length === 0) {
+          return;
+        }
+        
+        const symbolsStr = newSymbols.join(',');
+        console.log("-- Will fetch " + newSymbols.length + " of " + symbols.length);
+        console.log(symbolsStr);
+    
+        try {
+          fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbolsStr}/taxon/9606`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          })
+          .then(res => {
+            return res.ok ? res.json() : {};
+          })
+          .then(data => {
+            if (data.genes && data.genes.length > 0) {
+              console.log('\t-- Fetched: ' + data.genes.length);
+              data.genes.forEach(entry => {
+                const gene = entry.gene;
+                const md = { geneId: gene['gene_id'], description: gene.description };
+                this.metadatadaCache.set(gene.symbol, md);
+              });
+            }
+          })
+          .catch(err => console.error(err));
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
       const chunkSize = 10;
       const total = Math.min(genes.length, MAX_INITIAL_METADATA_CACHE_SIZE);
 
       for (let i = 0; i < total; i += chunkSize) {
           const chunk = genes.slice(i, i + chunkSize);
-          chunk.forEach(g => {
-            this.fetchGeneMetadata(g.gene);
-          });
+          const symbols = chunk.map(obj => obj.gene);
+          fetchSymbols(symbols);
       }
     }
   }
