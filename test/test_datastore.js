@@ -11,7 +11,7 @@ describe('Gene Set Queries', () => {
   before('load genesets, load network, load ranks', async () => {
     const network = fs.readFileSync('./test/resources/network.json', { encoding: 'utf8' });
     const ranks = fs.readFileSync('./test/resources/ranks.rnk', { encoding: 'utf8' });
-    await Datastore.db.collection(GENESET_DB).drop();
+    await Datastore.dropCollectionIfExists(GENESET_DB);
     await Datastore.loadGenesetDB('./test/resources/', GENESET_DB);
     networkID = await Datastore.createNetwork(network);
     await Datastore.createRankedGeneList(ranks, networkID);

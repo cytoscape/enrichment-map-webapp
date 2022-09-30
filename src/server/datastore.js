@@ -42,6 +42,15 @@ class Datastore {
     console.info('Loading done');
   }
 
+  async dropCollectionIfExists(name) {
+    const collections = await this.db.listCollections().toArray();
+    console.log(`Checking if collection '${name}' exists`);
+    if(collections.some(c => c.name === name)) {
+      console.log(`  It does! Dropping '${name}'`);
+      await this.db.collection(name).drop();
+    }
+  }
+
 
   async loadGenesetDB(path, dbFileName) {
     const collections = await this.db.listCollections().toArray();
