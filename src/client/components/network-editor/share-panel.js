@@ -33,6 +33,7 @@ export class SharePanel extends React.Component {
       tooltipOpen: false,
       imageSize: ImageSize.MEDIUM,
       imageArea: ImageArea.VIEW,
+      legendSize: ImageSize.MEDIUM,
     };
   }
 
@@ -57,7 +58,11 @@ export class SharePanel extends React.Component {
       scale: imageSize.scale,
     });
 
-    saveAs(blob, 'cytoscape_explore.png');
+    saveAs(blob, 'enrichment_map.png');
+  }
+
+  handleExportLegend() {
+    this.controller.bus.emit('exportLegend', this.state.legendSize.scale);
   }
 
   handlePopoverOpen() {
@@ -117,7 +122,7 @@ export class SharePanel extends React.Component {
       // May have something to do with this: https://github.com/mui/material-ui/issues/9336
       return (
         <div className='share-button-popover-content'>
-          <SectionHeader icon={<ImageIcon />} text="Export Image" />
+          <SectionHeader icon={<ImageIcon />} text="Export Network as Image" />
           <div style={{ paddingLeft:'10px' }}>
             <Grid container alignItems="flex-start" spacing={1}>
               <Grid item>
@@ -143,7 +148,40 @@ export class SharePanel extends React.Component {
           </div>
           <div className='share-button-popover-buttons'>
             <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportImage()}>
-              Export Image
+              Export Network
+            </Button>
+          </div>
+        </div>
+      );
+    };
+
+    const ExportLegendForm = () => {
+      const handleSize = legendSize => this.setState({ legendSize: ImageSize[legendSize] });
+      const ImageRadio = ({ label, value, onClick }) =>
+        <FormControlLabel label={label} value={value} control={<Radio size='small' onClick={() => onClick(value)}/>} />;
+      
+      // Note: For some reason the RadioGroup.onChange handler does not fire, using Radio.onClick instead.
+      // May have something to do with this: https://github.com/mui/material-ui/issues/9336
+      return (
+        <div className='share-button-popover-content'>
+          <SectionHeader icon={<ImageIcon />} text="Export Legend as Image" />
+          <div style={{ paddingLeft:'10px' }}>
+            <Grid container alignItems="flex-start" spacing={1}>
+              <Grid item>
+                <FormControl>
+                  <FormLabel>Size:</FormLabel>
+                  <RadioGroup row value={this.state.legendSize.value}>
+                    <ImageRadio label="Small"  value={ImageSize.SMALL.value}  onClick={handleSize} />
+                    <ImageRadio label="Medium" value={ImageSize.MEDIUM.value} onClick={handleSize} />
+                    <ImageRadio label="Large"  value={ImageSize.LARGE.value}  onClick={handleSize} />
+                  </RadioGroup>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </div>
+          <div className='share-button-popover-buttons'>
+            <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportLegend()}>
+              Export Legend
             </Button>
           </div>
         </div>
@@ -155,6 +193,8 @@ export class SharePanel extends React.Component {
         <ShareLinkForm />
         <Divider />
         <ExportImageForm />
+        <Divider />
+        <ExportLegendForm />
       </>
     );
   }
