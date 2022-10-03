@@ -7,11 +7,20 @@ import { CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import SearchField from './search-field';
-import { GeneListPanel } from './gene-list-panel';
+import GeneListPanel from './gene-list-panel';
+import StyleLegend from './legend';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { Drawer, Divider, List } from '@material-ui/core';
+import { Drawer, Divider, List, Typography } from '@material-ui/core';
+import MuiAccordion from '@material-ui/core/Accordion';
+import MuiAccordionSummary from '@material-ui/core/AccordionSummary';
+import MuiAccordionDetails from '@material-ui/core/AccordionDetails';
+
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+
+const LEGEND_HEADER_HEIGHT = 48;
+const LEGEND_CONTENT_HEIGHT = 160;
 
 export class Main extends Component {
 
@@ -21,6 +30,10 @@ export class Main extends Component {
     this.controller = this.props.controller;
     this.cy = this.controller.cy;
     this.cyEmitter = new EventEmitterProxy(this.cy);
+
+    this.state = {
+      legendOpen: true,
+    };
   }
 
   componentDidMount() {
@@ -74,14 +87,64 @@ export class Main extends Component {
   render() {
     const { controller } = this;
     const { classes, showControlPanel, drawerVariant, onContentClick } = this.props;
+    const { legendOpen } = this.state;
     
+    const Legend = withStyles({
+      root: {
+        boxShadow: 'none',
+        '&:before': {
+          display: 'none',
+        },
+        '&$expanded': {
+          margin: 0,
+          padding: 0,
+        },
+      },
+      expanded: {},
+    })(MuiAccordion);
+
+    const LegendSummary = withStyles({
+      root: {
+        minHeight: LEGEND_HEADER_HEIGHT,
+        '&$expanded': {
+          minHeight: LEGEND_HEADER_HEIGHT,
+        },
+      },
+      content: {
+        '&$expanded': {
+          margin: 0,
+          padding: 0,
+        },
+      },
+      expanded: {
+        // margin: 0,
+        // padding: 4,
+      },
+    })(MuiAccordionSummary);
+
+    const LegendDetails = withStyles({
+      root: {
+        padding: 0,
+        margin: 0,
+      },
+    })(MuiAccordionDetails);
+
     const LeftDrawer = () => {
+      const onLegendChange = (evt, expanded) => {
+        this.setState({ legendOpen: expanded });
+      };
+
       return (
         <Drawer
           className={classes.drawer}
           variant={drawerVariant}
           anchor="left"
           open={showControlPanel}
+          PaperProps={{
+            style: {
+              overflow: "hidden"
+            }
+          }}
           classes={{
             paper: classes.drawerPaper,
           }}
@@ -90,9 +153,19 @@ export class Main extends Component {
             <SearchField controller={controller} />
           </div>
           <Divider />
-          <List>
+          <List className={clsx(classes.geneList, { [classes.geneListShift]: legendOpen })}>
             <GeneListPanel controller={controller} />
           </List>
+          <div className={classes.drawerFooter}>
+            <Legend expanded={legendOpen} onChange={onLegendChange}>
+              <LegendSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography>Legend</Typography>
+              </LegendSummary>
+              <LegendDetails>
+                <StyleLegend controller={controller} width={CONTROL_PANEL_WIDTH - 1} height={LEGEND_CONTENT_HEIGHT} />
+              </LegendDetails>
+            </Legend>
+          </div>
         </Drawer>
       );
     };
@@ -164,6 +237,29 @@ const useStyles = theme => ({
   drawerPaper: {
     width: CONTROL_PANEL_WIDTH,
     background: theme.palette.background.default,
+  },
+  drawerFooter: {
+    position: "fixed",
+    bottom: 0,
+    width: CONTROL_PANEL_WIDTH,
+    borderColor: theme.palette.divider,
+    borderWidth: '1px',
+    borderStyle: 'solid solid hidden hidden',
+  },
+  geneList: {
+    overflowY: "auto",
+    marginBottom: LEGEND_HEADER_HEIGHT,
+    transition: theme.transitions.create(['margin'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+  },
+  geneListShift: {
+    marginBottom: LEGEND_HEADER_HEIGHT + LEGEND_CONTENT_HEIGHT,
+    transition: theme.transitions.create(['margin'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
   },
   cy: {
     position: 'absolute',
