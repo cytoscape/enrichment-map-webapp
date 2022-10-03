@@ -12,9 +12,9 @@ import { Grid, Paper, Typography, Link, Divider, CircularProgress } from '@mater
 import Skeleton from '@material-ui/lab/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
+import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
+import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
-
-const PRECISION = 4;
 
 const CHART_WIDTH = 180;
 const CHART_HEIGHT = 14;
@@ -44,14 +44,27 @@ const useStyles = makeStyles((theme) => ({
     textTransform: 'capitalize',
     paddingBottom: '0.5em',
   },
-  geneDesc: {
-    fontSize: '1.0em',
-    marginTop: '1.0em',
-    marginLeft: '0.75em',
-  },
   chartContainer: {
     width: CHART_WIDTH,
     padding: '0 8px',
+  },
+  listItemtemIcon: {
+    cursor: 'pointer',
+  },
+  geneName: {
+    '&:hover': {
+      textDecoration: 'none',
+      color: theme.palette.primary.light,
+    }
+  },
+  geneDesc: {
+    fontSize: '1.0em',
+    marginTop: '0.25em',
+    marginLeft: '0.6em',
+    padding: '0.75em 0 0 0.75em',
+    borderWidth: 1,
+    borderColor: theme.palette.divider,
+    borderStyle: `hidden hidden hidden solid`,
   },
   linkout: {
     fontSize: '0.9em',
@@ -206,7 +219,6 @@ export function GeneListPanel({ controller }) {
       }
 
       const obj = await controller.fetchGeneMetadata(symbol);
-      console.log(obj);
 
       if (obj && !obj.error) {
         setGeneDescription(
@@ -245,15 +257,24 @@ export function GeneListPanel({ controller }) {
       }
     };
 
+    const isSelected = selectedGene === gene;
+
     return (
       <ListItem key={idx} alignItems="flex-start">
         <ListItemText
           primary={
             <Grid container direction="row" justifyContent="space-between" alignItems='center'>
-              <Grid item>
-                <Link component="button" variant="body2" color="textPrimary" onClick={() => toggleGeneDetails(gene)}>
-                  {gene}
-                </Link>
+              <Grid item onClick={() => toggleGeneDetails(gene)}>
+                <Grid container direction="row" justifyContent="flex-start" alignItems='center'>
+                  { isSelected ?
+                    <KeyboardArrowDownIcon fontSize="small" className={classes.listItemtemIcon} />
+                  :
+                    <KeyboardArrowRightIcon fontSize="small" className={classes.listItemtemIcon} />
+                  }
+                  <Link component="button" variant="body2" color="textPrimary" className={classes.geneName}>
+                    {gene}
+                  </Link>
+                </Grid>
               </Grid>
               <Grid item className={classes.chartContainer}>
                 {data && (
@@ -262,7 +283,7 @@ export function GeneListPanel({ controller }) {
               </Grid>
             </Grid>
           }
-          secondary={selectedGene === gene && (
+          secondary={isSelected && (
             <Typography variant="body2" color="textSecondary" className={classes.geneDesc}>
               { geneDescription ? geneDescription : 'Loading...' }
             </Typography>
