@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useRef, useState } from 'react';
+import React, { useEffect, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { NetworkEditorController } from './controller';
 import { makeStyles } from '@material-ui/core/styles';
@@ -7,12 +7,18 @@ import { saveAs } from 'file-saver';
 
 import DEFAULT_NETWORK_STYLE from './network-style';
 
-const useStyles = makeStyles({
+import { LinearProgress } from '@material-ui/core';
+
+const useStyles = makeStyles((theme) => ({
   cyContainer: {
     backgroundColor: '#f5f5f5',
-    padding: '0px',
+    padding: 0,
   },
-});
+  progressBar: {
+    backgroundColor: theme.palette.secondary.main,
+    height: 6,
+  },
+}));
 
 function createCy(maxQVal) {
   const cy = new Cytoscape({
@@ -82,9 +88,13 @@ function createCy(maxQVal) {
   });
 
   cy.elements().forEach(ele => {
-    if(!ele.data('name'))
+    if (!ele.data('name'))
       ele.data('name', '');
   });
+
+  cy.mount(document.getElementById('cy-style-legend'));
+  cy.resize();
+  cy.nodes().ungrabify();
 
   // Have to manually position because this needs to run after the mount/resize.
   const pos = (col, row) => {
@@ -133,20 +143,21 @@ async function exportLegend(cy, scale) {
 
 export function StyleLegend({ controller, width, height }) {
   const cyRef = useRef();
+  const [ loading, setLoaded ] = useReducer(() => false, true);
 
   useEffect(() => {
-    const maxQVal = controller.cy.data('maxQVal') || 0;
-    const cy = cyRef.current = createCy(maxQVal);
-    const element = document.getElementById('cy-style-legend');
-    cy.mount(element);
-    cy.resize();
-    cy.nodes().ungrabify();
-  }, []); 
+    if (!loading) {
+      const maxQVal = controller.cy.data('maxQVal');
+      cyRef.current = createCy(maxQVal); 
+    }
+  }, [loading]); 
 
   useEffect(() => {
     const handleExport = scale => exportLegend(cyRef.current, scale);
+    controller.bus.on('networkLoaded', setLoaded);
     controller.bus.on('exportLegend', handleExport);
     return () => {
+      controller.bus.removeListener('networkLoaded', setLoaded);
       controller.bus.removeListener('exportLegend', handleExport);
     };
   }, []);
@@ -156,7 +167,11 @@ export function StyleLegend({ controller, width, height }) {
   return (
     <div className={classes.legend}>
         <div className={classes.cyContainer}>
-          <div id='cy-style-legend' style={{width: width, height: height}} />
+          <div id='cy-style-legend' style={{width: width, height: height}}>
+            {loading && (
+              <LinearProgress className={classes.progressBar} />
+            )}
+          </div>
         </div>
     </div>
   );

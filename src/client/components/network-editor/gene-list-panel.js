@@ -64,7 +64,7 @@ const useStyles = makeStyles((theme) => ({
     padding: '0.75em 0 0 0.75em',
     borderWidth: 1,
     borderColor: theme.palette.divider,
-    borderStyle: `hidden hidden hidden solid`,
+    borderStyle: 'hidden hidden hidden solid',
   },
   linkout: {
     fontSize: '0.9em',
