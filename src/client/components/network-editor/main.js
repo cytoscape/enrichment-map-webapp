@@ -12,7 +12,7 @@ import StyleLegend from './legend';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { Drawer, Divider, List, Typography } from '@material-ui/core';
+import { Drawer, List, Typography } from '@material-ui/core';
 import MuiAccordion from '@material-ui/core/Accordion';
 import MuiAccordionSummary from '@material-ui/core/AccordionSummary';
 import MuiAccordionDetails from '@material-ui/core/AccordionDetails';
@@ -30,10 +30,6 @@ export class Main extends Component {
     this.controller = this.props.controller;
     this.cy = this.controller.cy;
     this.cyEmitter = new EventEmitterProxy(this.cy);
-
-    this.state = {
-      legendOpen: true,
-    };
   }
 
   componentDidMount() {
@@ -87,7 +83,6 @@ export class Main extends Component {
   render() {
     const { controller } = this;
     const { classes, showControlPanel, drawerVariant, onContentClick } = this.props;
-    const { legendOpen } = this.state;
     
     const Legend = withStyles({
       root: {
@@ -116,10 +111,7 @@ export class Main extends Component {
           padding: 0,
         },
       },
-      expanded: {
-        // margin: 0,
-        // padding: 4,
-      },
+      expanded: {},
     })(MuiAccordionSummary);
 
     const LegendDetails = withStyles({
@@ -130,10 +122,6 @@ export class Main extends Component {
     })(MuiAccordionDetails);
 
     const LeftDrawer = () => {
-      const onLegendChange = (evt, expanded) => {
-        this.setState({ legendOpen: expanded });
-      };
-
       return (
         <Drawer
           className={classes.drawer}
@@ -149,22 +137,25 @@ export class Main extends Component {
             paper: classes.drawerPaper,
           }}
         >
-          <div className={classes.drawerHeader}>
-            <SearchField controller={controller} />
-          </div>
-          <Divider />
-          <List className={clsx(classes.geneList, { [classes.geneListShift]: legendOpen })}>
-            <GeneListPanel controller={controller} />
-          </List>
-          <div className={classes.drawerFooter}>
-            <Legend expanded={legendOpen} onChange={onLegendChange}>
-              <LegendSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography>Legend</Typography>
-              </LegendSummary>
-              <LegendDetails>
-                <StyleLegend controller={controller} width={CONTROL_PANEL_WIDTH - 1} height={LEGEND_CONTENT_HEIGHT} />
-              </LegendDetails>
-            </Legend>
+          <div className={classes.drawerContent}>
+            <header className={classes.drawerHeader}>
+              <SearchField controller={controller} />
+            </header>
+            <section className={classes.drawerSection}>
+              <List className={classes.geneList}>
+                <GeneListPanel controller={controller} />
+              </List>
+            </section>
+            <footer className={classes.drawerFooter}>
+              <Legend defaultExpanded>
+                <LegendSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>Legend</Typography>
+                </LegendSummary>
+                <LegendDetails>
+                  <StyleLegend controller={controller} width={CONTROL_PANEL_WIDTH - 1} height={LEGEND_CONTENT_HEIGHT} />
+                </LegendDetails>
+              </Legend>
+            </footer>
           </div>
         </Drawer>
       );
@@ -216,31 +207,31 @@ class NetworkBackground extends Component {
 }
 
 const useStyles = theme => ({
-  root: {
-    padding: '2px 4px',
-    display: 'flex',
-    alignItems: 'center',
-    width: 400,
-  },
-  input: {
-    marginLeft: theme.spacing(1),
-    flex: 1,
-  },
-  iconButton: {
-    padding: 10,
-  },
   drawer: {
     background: theme.palette.background.default,
     width: CONTROL_PANEL_WIDTH,
     flexShrink: 0,
   },
+  drawerContent: {
+    display: 'flex',
+    flexFlow: 'column',
+    height: '100%',
+  },
   drawerPaper: {
     width: CONTROL_PANEL_WIDTH,
     background: theme.palette.background.default,
   },
+  drawerHeader: {
+    flex: '0 1 auto',
+    borderColor: theme.palette.divider,
+    borderWidth: '2px',
+    borderStyle: 'hidden hidden solid hidden',
+  },
+  drawerSection: {
+    flex: '1 1 auto', overflowY: 'auto',
+  },
   drawerFooter: {
-    position: "fixed",
-    bottom: 0,
+    flex: '0 1 auto',
     width: CONTROL_PANEL_WIDTH,
     borderColor: theme.palette.divider,
     borderWidth: '1px',
@@ -248,18 +239,6 @@ const useStyles = theme => ({
   },
   geneList: {
     overflowY: "auto",
-    marginBottom: LEGEND_HEADER_HEIGHT,
-    transition: theme.transitions.create(['margin'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-  },
-  geneListShift: {
-    marginBottom: LEGEND_HEADER_HEIGHT + LEGEND_CONTENT_HEIGHT,
-    transition: theme.transitions.create(['margin'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
   },
   cy: {
     position: 'absolute',

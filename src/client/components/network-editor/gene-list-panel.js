@@ -8,7 +8,7 @@ import _ from 'lodash';
 import { makeStyles } from '@material-ui/core/styles';
 
 import { List, ListSubheader, ListItem, ListItemText } from '@material-ui/core';
-import { Grid, Paper, Typography, Link, Divider, CircularProgress } from '@material-ui/core';
+import { Grid, Typography, Link, Divider } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
