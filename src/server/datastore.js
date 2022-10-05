@@ -6,6 +6,7 @@ import { fileForEachLine } from './util.js';
 
 export const DB_1 = 'Human_GOBP_AllPathways_no_GO_iea_June_01_2022_symbol.gmt';
 
+const GENE_RANKS_COLLECTION = 'geneRanks';
 const GENE_LISTS_COLLECTION = 'geneLists';
 const NETWORKS_COLLECTION = 'networks';
 
@@ -36,10 +37,15 @@ class Datastore {
     const db = this.db = mongo.db(MONGO_ROOT_NAME);
     const queries = this.queries = db.collection(MONGO_COLLECTION_QUERIES);
     console.info('Connected to MongoDB');
+  }
 
+  async initializeGeneSetDB(dbFilePath, dbFileName) {
     console.info('Loading gene set databases into MongoDB');
-    await this.loadGenesetDB('./public/geneset-db/', DB_1);
+    // await this.loadGenesetDB('./public/geneset-db/', DB_1);
+    await this.loadGenesetDB(dbFilePath, dbFileName);
     console.info('Loading done');
+    await this.createGeneListIndexes();
+    console.info('Mongo initialized');
   }
 
   async dropCollectionIfExists(name) {
@@ -76,11 +82,7 @@ class Datastore {
       .collection(dbFileName)
       .insertMany(geneSets);
 
-    await this.createIndexes(dbFileName);
-  }
-
-
-  async createIndexes(dbFileName) {
+    // Create indexes on dbFileName collection
     await this.db
       .collection(dbFileName)
       .createIndex({ name: 1 });
@@ -88,7 +90,10 @@ class Datastore {
     await this.db
       .collection(dbFileName)
       .createIndex({ genes: 1 });
+  }
 
+
+  async createGeneListIndexes() {
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .createIndex({ networkID: 1 });
@@ -96,6 +101,10 @@ class Datastore {
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .createIndex({ 'genes.gene': 1 });
+
+    await this.db
+      .collection(GENE_RANKS_COLLECTION)
+      .createIndex({ networkID: 1, gene: 1 }, { unique: true });
   }
 
 
@@ -122,13 +131,16 @@ class Datastore {
 
   /**
    * Inserts a ranked gene list document into the "geneLists" collection.
-   * @returns The id of the created document.
+   * Inserts gene documents into the "geneRanks" collection.
+   * @returns The id of the created document in the geneLists collection.
    */
   async createRankedGeneList(rankedGeneListTSV, networkIDString) {
     const networkID = makeID(networkIDString);
     const geneListID = makeID();
 
     const genes = [];
+    const geneRankMap = new Map();
+
     var [min, max] = [Infinity, -Infinity];
 
     rankedGeneListTSV.split("\n").slice(1).forEach(line => {
@@ -143,6 +155,7 @@ class Datastore {
           max = Math.max(max, rank);
           genes.push({ gene, rank });
         }
+        geneRankMap.set(gene, rank);
       }
     });
 
@@ -159,8 +172,30 @@ class Datastore {
       .collection(GENE_LISTS_COLLECTION)
       .insertOne(geneListDocument);
 
+    // Create a collection with { networkID, gene } as the key, 
+    // for quick lookup of gene ranks.
+
+    await this.db
+      .collection(GENE_LISTS_COLLECTION)
+      .aggregate([
+        { $match: { networkID: networkID.bson } },
+        { $project: { _id: 0, networkID: 1, genes: 1 } },
+        { $unwind: "$genes" },
+        { $project: { networkID: 1, gene: "$genes.gene", rank: "$genes.rank" } },
+        { $merge: { 
+            into: GENE_RANKS_COLLECTION, 
+            on: [ "networkID", "gene" ] 
+          }
+        }
+      ])
+      .toArray(); // Still need toArray() even though this is a merge
+
+    console.log("done loading ranks");
+
     return geneListID.string;
   }
+
+
 
   /**
    * Returns the entire network document. 
@@ -252,15 +287,18 @@ class Datastore {
           { $unwind: "$genes" },
           { $replaceRoot: { newRoot: "$genes" } },
           { $group: { _id: "$gene", gene: { $first: "$gene" } } },
-          {
-            $lookup: { // This is the Join
-              from: GENE_LISTS_COLLECTION,
-              let: { foreignGene: "$gene" },
+          { $lookup: {
+              from: GENE_RANKS_COLLECTION,
+              let: { gene: "$gene" },
               pipeline: [
-                { $match: { networkID: networkID.bson } },
-                { $unwind: "$genes" },
-                { $replaceRoot: { newRoot: "$genes" } },
-                { $match: { $expr: { $eq: ["$gene", "$$foreignGene"] } } }
+                { $match: 
+                  { $expr: 
+                    { $and: [ 
+                      { $eq: [ '$networkID', networkID.bson ] }, 
+                      { $eq: [ '$gene', '$$gene' ] } ] 
+                    }
+                  }
+                }
               ],
               as: "newField"
             }
@@ -302,15 +340,18 @@ class Datastore {
         { $limit: 100 },
         { $group: { _id: { gene: '$genes' }, geneSets: { $addToSet: '$name' } } },
         { $project: { _id: 0, gene: '$_id.gene', geneSets: 1 }},
-        {
-          $lookup: {
-            from: GENE_LISTS_COLLECTION,
-            let: { foreignGene: "$gene" },
+        { $lookup: {
+            from: GENE_RANKS_COLLECTION,
+            let: { gene: "$gene" },
             pipeline: [
-              { $match: { networkID: networkID.bson } },
-              { $unwind: "$genes" },
-              { $replaceRoot: { newRoot: "$genes" } },
-              { $match: { $expr: { $eq: ["$gene", "$$foreignGene"] } } }
+              { $match: 
+                { $expr: 
+                  { $and: [ 
+                    { $eq: [ '$networkID', networkID.bson ] }, 
+                    { $eq: [ '$gene', '$$gene' ] } ] 
+                  }
+                }
+              }
             ],
             as: "newField"
           }
