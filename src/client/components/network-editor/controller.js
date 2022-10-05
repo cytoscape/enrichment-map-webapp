@@ -19,7 +19,9 @@ export class NetworkEditorController {
    * @param {Cytoscape.Core} cy The graph instance (model)
    * @param {EventEmitter} bus The event bus that the controller emits on after every operation
    */
-  constructor(cy, bus){
+  constructor(cy, bus) {
+    this.networkLoaded = false;
+
     /** @type {Cytoscape.Core} */
     this.cy = cy;
 
@@ -43,10 +45,15 @@ export class NetworkEditorController {
     this.metadatadaCache = new Map();
 
     this.bus.on('networkLoaded', () => {
+      this.networkLoaded = true;
       console.log("LOADED...");
       console.log(cy.nodes().length);
       this.indexGeneList();
     });
+  }
+
+  isNetworkLoaded() {
+    return this.networkLoaded;
   }
 
   /**

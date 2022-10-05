@@ -154,6 +154,11 @@ export function StyleLegend({ controller, width, height }) {
 
   useEffect(() => {
     const handleExport = scale => exportLegend(cyRef.current, scale);
+    
+    if (controller.isNetworkLoaded()) {
+      setLoaded(true);
+    }
+
     controller.bus.on('networkLoaded', setLoaded);
     controller.bus.on('exportLegend', handleExport);
     return () => {
