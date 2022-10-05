@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
+import PropTypes, { object } from 'prop-types';
+import _ from 'lodash';
+
 import { NetworkEditorController } from './controller';
 import theme from '../../theme';
-
-import _ from 'lodash';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -71,7 +71,7 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-export function GeneListPanel({ controller }) {
+export function GeneListPanel({ controller, searchResult }) {
   const [clusterName, setClusterName] = useState(null);
   const [geneSetNames, setGeneSetNames] = useState([]);
   const [genes, setGenes] = useState([]);
@@ -157,7 +157,23 @@ export function GeneListPanel({ controller }) {
 
   useEffect(() => {
     controller.cy.on('select unselect', selectionHandler);
-    debouncedSelectionHandler();
+
+    if (searchResult) {
+      setClusterName(null);
+      setGeneSetNames([]);
+      searchResult.forEach(obj => {
+        // TODO Standardize object fields and field names!!!
+        obj.gene = obj.symbol;
+        obj['gene_id'] = obj.geneId;
+        obj.rank = Math.random(); // TODO cache ranks
+      });
+      setTotalGenes(searchResult.length);
+      setGenes(searchResult);
+      setMinRank(0); // TODO
+      setMaxRank(0); // TODO
+    } else {
+      debouncedSelectionHandler();
+    }
 
     return function cleanup() {
       controller.cy.removeListener('select unselect', selectionHandler);
@@ -317,6 +333,13 @@ export function GeneListPanel({ controller }) {
     );
   };
 
+  const emptySearchResult = searchResult != null && searchResult.length === 0;
+  let totalInfo = totalGenes;
+
+  if (searchResult == null) {
+    totalInfo = totalGenes > 0 ? (`${genes.length} of ${totalGenes}`) : (<em>loading...</em>);
+  }
+
   return (
     <div>
       {clusterName && (
@@ -349,7 +372,7 @@ export function GeneListPanel({ controller }) {
             <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
               Ranked Genes&nbsp;
               <Typography display="inline" variant="body2" color="textSecondary">
-                ({totalGenes > 0 ? `${genes.length} of ${totalGenes}` : (<em>loading...</em>)})
+                ({totalInfo})
               </Typography>
               :
             </Typography>
@@ -357,7 +380,7 @@ export function GeneListPanel({ controller }) {
           </ListSubheader>
         }
       >
-        {totalGenes > 0 ?
+        {totalGenes > 0 || emptySearchResult ?
           genes.map(({gene, rank}, idx) => renderGeneRow(gene, rank, idx))
         :
           _.range(0, 30).map((idx) => renderGeneSkeletonRow(idx))
@@ -368,7 +391,8 @@ export function GeneListPanel({ controller }) {
 }
 
 GeneListPanel.propTypes = {
-  controller: PropTypes.instanceOf(NetworkEditorController),
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  searchResult: PropTypes.array,
 };
 
 export default GeneListPanel;

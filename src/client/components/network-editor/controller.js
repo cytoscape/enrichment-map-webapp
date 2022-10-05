@@ -1,6 +1,7 @@
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
+import MiniSearch from 'minisearch';
 import { DEFAULT_PADDING } from './defaults';
 
 const MAX_INITIAL_METADATA_CACHE_SIZE = 1000;
@@ -40,6 +41,12 @@ export class NetworkEditorController {
     };
 
     this.metadatadaCache = new Map();
+
+    this.bus.on('networkLoaded', () => {
+      console.log("LOADED...");
+      console.log(cy.nodes().length);
+      this.indexGeneList();
+    });
   }
 
   /**
@@ -75,12 +82,51 @@ export class NetworkEditorController {
    */
   deletedSelectedElements() {
     let selectedEles = this.cy.$(':selected');
-    if(selectedEles.empty()) {
+    if (selectedEles.empty()) {
       selectedEles = this.cy.elements();
     }
 
     const deletedEls = selectedEles.remove();
     this.bus.emit('deletedSelectedElements', deletedEls);
+  }
+
+  searchGenes(query) {
+    if (query && query.length > 0) {
+      return this.geneMiniSearch.search(query, { fields: ['symbol'], prefix: true });
+    }
+    
+    return [];
+  }
+
+  async indexGeneList() {
+    const res = await this.fetchGeneList([]);
+    const genes = res ? res.genes : [];
+
+    if (genes && genes.length > 0) {
+      console.log(genes);
+
+      this.geneMiniSearch = new MiniSearch({
+        fields: ['symbol', 'description'], // fields to index for full-text search
+        storeFields: ['symbol', 'geneId', 'description'] // fields to return with search results
+      });
+
+      const docs = [];
+      let id = 0;
+
+      for (const g of genes) {
+        const obj = await this.fetchGeneMetadata(g.gene);
+
+        if (obj && !obj.error) {
+          docs.push({id: ++id, symbol: obj.symbol, geneId: obj.geneId, description: obj.description });
+        }
+      }
+
+      console.log(docs);
+      this.geneMiniSearch.addAll(docs);
+      // console.log('>>> SEARCH: ' + this.geneMiniSearch.documentCount);
+      // const searchRes = this.geneMiniSearch.search("NE", { fields: ['symbol'], prefix: true });
+      // console.log(searchRes);
+    }
   }
 
   async fetchGeneList(geneSetNames) {
@@ -96,7 +142,7 @@ export class NetworkEditorController {
           geneSets: geneSetNames
         })
       });
-      if(res.ok) {
+      if (res.ok) {
         const geneSet = await res.json();
         this.lastGeneSet = geneSet;
         this.lastGeneSetNames = nameSet;
@@ -127,7 +173,7 @@ export class NetworkEditorController {
         const geneId = gene['gene_id'];
         const description = gene.description;
         
-        md = { geneId, description };
+        md = { geneId, symbol, description };
         this.metadatadaCache.set(symbol, md);
         
         return md;
@@ -146,9 +192,9 @@ export class NetworkEditorController {
    * Just fetch gene metadata (description, NCBI id) and save it into the memory cache.
    * @param {Array} genes array of genes.
    */
-  prefetchGeneMetadata(genes) {
+  async prefetchGeneMetadata(genes) {
     if (genes != null) {
-      const fetchSymbols = (symbols) => {
+      const fetchSymbols = async (symbols) => {
         const newSymbols = symbols.filter(s => !this.metadatadaCache.has(s));
         
         if (newSymbols.length === 0) {
@@ -169,10 +215,9 @@ export class NetworkEditorController {
           })
           .then(data => {
             if (data.genes && data.genes.length > 0) {
-              console.log('\t-- Fetched: ' + data.genes.length);
               data.genes.forEach(entry => {
                 const gene = entry.gene;
-                const md = { geneId: gene['gene_id'], description: gene.description };
+                const md = { symbol: gene.symbol, geneId: gene['gene_id'], description: gene.description };
                 this.metadatadaCache.set(gene.symbol, md);
               });
             }
@@ -189,7 +234,7 @@ export class NetworkEditorController {
       for (let i = 0; i < total; i += chunkSize) {
           const chunk = genes.slice(i, i + chunkSize);
           const symbols = chunk.map(obj => obj.gene);
-          fetchSymbols(symbols);
+          await fetchSymbols(symbols);
       }
     }
   }

@@ -1,7 +1,7 @@
-import _ from 'lodash';
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
+import _ from 'lodash';
 
 import { CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
@@ -12,10 +12,11 @@ import StyleLegend from './legend';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { Drawer, List, Typography } from '@material-ui/core';
+import { Drawer, Paper, List, Typography } from '@material-ui/core';
 import MuiAccordion from '@material-ui/core/Accordion';
 import MuiAccordionSummary from '@material-ui/core/AccordionSummary';
 import MuiAccordionDetails from '@material-ui/core/AccordionDetails';
+import SearchBar from "material-ui-search-bar";
 
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
@@ -26,6 +27,11 @@ export class Main extends Component {
 
   constructor(props) {
     super(props);
+
+    this.state = {
+      searchValue: "",
+      searchResult: null,
+    };
 
     this.controller = this.props.controller;
     this.cy = this.controller.cy;
@@ -83,7 +89,31 @@ export class Main extends Component {
   render() {
     const { controller } = this;
     const { classes, showControlPanel, drawerVariant, onContentClick } = this.props;
+    const { searchValue, searchResult } = this.state;
     
+    // const debounceSearch = _.debounce(val => {
+    //   const query = val.trim();
+    //   if (query.length > 0) {
+    //     const res = controller.searchGenes(query);
+    //     this.setState({ searchResult: res });
+    //   }
+    // }, 500);
+    const cancelSearch = () => {
+      this.setState({ searchValue: "", searchResult: null });
+    };
+    const search = val => {
+      // this.setState({ searchValue: val });
+      const query = val.trim();
+
+      if (val.length > 0) {
+        // debounceSearch(val);
+        const res = controller.searchGenes(query);
+        this.setState({ searchValue: val, searchResult: res });
+      } else {
+        cancelSearch();
+      }
+    };
+
     const Legend = withStyles({
       root: {
         boxShadow: 'none',
@@ -139,11 +169,20 @@ export class Main extends Component {
         >
           <div className={classes.drawerContent}>
             <header className={classes.drawerHeader}>
-              <SearchField controller={controller} />
+              {/* <SearchField controller={controller} onChange={onSearchChange} /> */}
+              <Paper component="form" className={classes.root}>
+                <SearchBar
+                  autoFocus
+                  className={classes.input}
+                  value={searchValue}
+                  onChange={val => search(val)}
+                  onCancelSearch={() => cancelSearch()}
+                />
+              </Paper>
             </header>
             <section className={classes.drawerSection}>
               <List className={classes.geneList}>
-                <GeneListPanel controller={controller} />
+                <GeneListPanel controller={controller} searchResult={searchResult} />
               </List>
             </section>
             <footer className={classes.drawerFooter}>
