@@ -21,9 +21,10 @@ import { registerCytoscapeExtensions } from '../model/cy-extensions.js';
 
 console.info('Starting Express');
 
-import datastore from './datastore.js';
+import Datastore, { DB_1 } from './datastore.js';
 
-await datastore.connect();
+await Datastore.connect();
+await Datastore.initializeGeneSetDB('./public/geneset-db/', DB_1);
 
 // extensions/plugins
 registerCytoscapeExtensions();
