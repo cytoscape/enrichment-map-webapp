@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useRef, useState } from 'react';
+import React, { useEffect, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { NetworkEditorController } from './controller';
 import { makeStyles } from '@material-ui/core/styles';

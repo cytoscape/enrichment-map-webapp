@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 
@@ -22,117 +22,97 @@ const ImageArea = {
   VIEW: 'view',
 };
 
-export class SharePanel extends React.Component {
 
-  constructor(props) {
-    super(props);
-    this.url = window.location.href;
-    this.controller = props.controller;
-    this.state = {
-      tooltipOpen: false,
-      imageSize: ImageSize.LARGE,
-      imageArea: ImageArea.FULL,
-      legendSize: ImageSize.MEDIUM,
-    };
-  }
+function handleOpenEmail() {
+  const subject = "Sharing Network from EnrichmentMap";
+  const body = "Here is the network: " + window.location.href;
+  window.location=`mailto:?subject=${subject}&body=${body}`;
+}
 
-  handleOpenEmail() {
-    const subject = "Sharing Network from EnrichmentMap";
-    const body = "Here is the network: " + this.url;
-    window.location=`mailto:?subject=${subject}&body=${body}`;
-  }
+function handleCopyToClipboard() {
+  navigator.clipboard.writeText(window.location.href);
+}
 
-  handleCopyToClipboard() {
-    navigator.clipboard.writeText(this.url);
-  }
+async function handleExportImage(controller, imageSize, imageArea) {
+  const blob = await controller.cy.png({
+    output:'blob-promise',
+    bg: 'white',
+    full: imageArea === ImageArea.FULL,
+    scale: imageSize.scale,
+  });
 
-  async handleExportImage() {
-    const { cy } = this.controller;
-    const { imageSize, imageArea } = this.state;
+  saveAs(blob, 'enrichment_map.png');
+}
 
-    const blob = await cy.png({
-      output:'blob-promise',
-      bg: 'white',
-      full: imageArea === ImageArea.FULL,
-      scale: imageSize.scale,
-    });
+function handleExportLegend(controller, imageSize) {
+  controller.bus.emit('exportLegend', imageSize.scale);
+}
 
-    saveAs(blob, 'enrichment_map.png');
-  }
 
-  handleExportLegend() {
-    this.controller.bus.emit('exportLegend', this.state.legendSize.scale);
-  }
+function SectionHeader({ icon, text }) {
+  return <div className='share-button-popover-heading'> {icon} &nbsp; {text} </div>;
+}
+SectionHeader.propTypes = {
+  icon: PropTypes.any,
+  text: PropTypes.string
+};
 
-  handlePopoverOpen() {
-    this.setState({
-      tooltipOpen: false 
-    });
-  }
 
-  handlePopoverClose() {
-    this.setState({
-      tooltipOpen: false 
-    });
-  }
+function SharePanel({ controller }) {
+  const [ tooltipOpen, setTooltipOpen ] = useState(false);
 
-  handleTooltip(tooltipOpen) {
-    this.setState({ tooltipOpen });
-  }
-
-  render() {
-    const SectionHeader = ({ icon, text }) => 
-      <div className='share-button-popover-heading'> {icon} &nbsp; {text} </div>;
-
-    const ShareLinkForm = () => (
-      <div className='share-button-popover-content'>
-        <SectionHeader icon={<LinkIcon/>} text="Share Link to Network" />
-        <TextField defaultValue={this.url} variant="outlined" size="small" />
-        <div className='share-button-popover-buttons'>
-          <Button variant='contained' startIcon={<EmailIcon />} onClick={() => this.handleOpenEmail()}>
-            Send by email
-          </Button>
-          <ClickAwayListener onClickAway={() => this.handleTooltip(false)}>
-            <div> 
-              <Tooltip arrow disableFocusListener disableHoverListener disableTouchListener
-                PopperProps={{ disablePortal: true }}
-                onClose={() => this.handleTooltip(false)}
-                open={this.state.tooltipOpen}
-                placement="right"
-                title="Copied!"
-              >
-                <Button variant='contained' startIcon={<FileCopyIcon />} onClick={() => { this.handleCopyToClipboard(); this.handleTooltip(true); }}> 
-                  Copy to Clipboard
-                </Button>
-              </Tooltip>
-            </div>
-          </ClickAwayListener>
-        </div>
+  const ShareLinkForm = () => (
+    <div className='share-button-popover-content'>
+      <SectionHeader icon={<LinkIcon/>} text="Share Link to Network" />
+      <TextField defaultValue={window.location.href} variant="outlined" size="small" />
+      <div className='share-button-popover-buttons'>
+        <Button variant='contained' startIcon={<EmailIcon />} onClick={handleOpenEmail}>
+          Send by email
+        </Button>
+        <ClickAwayListener onClickAway={() => setTooltipOpen(false)}>
+          <div> 
+            <Tooltip arrow disableFocusListener disableHoverListener disableTouchListener
+              PopperProps={{ disablePortal: true }}
+              onClose={() => setTooltipOpen(false)}
+              open={tooltipOpen}
+              placement="right"
+              title="Copied!"
+            >
+              <Button variant='contained' 
+                startIcon={<FileCopyIcon />} 
+                onClick={() => { handleCopyToClipboard(); setTooltipOpen(true); }}> 
+                Copy to Clipboard
+              </Button>
+            </Tooltip>
+          </div>
+        </ClickAwayListener>
       </div>
-    );
+    </div>
+  );
 
-    const ExportImageForm = () => (
-      <div className='share-button-popover-content'>
-        <SectionHeader icon={<ImageIcon />} text="Export Image" />
-        <div className='share-button-popover-buttons'>
-          <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportImage()}>
-            Export Network
-          </Button>
-          <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportLegend()}>
-            Export Legend
-          </Button>
-        </div>
+  const ExportImageForm = () => (
+    <div className='share-button-popover-content'>
+      <SectionHeader icon={<ImageIcon />} text="Export Image" />
+      <div className='share-button-popover-buttons'>
+        <Button variant='contained' 
+          startIcon={<ImageIcon />} 
+          onClick={() => handleExportImage(controller, ImageSize.LARGE, ImageArea.FULL)}>
+          Export Network
+        </Button>
+        <Button variant='contained' 
+          startIcon={<ImageIcon />} 
+          onClick={() => handleExportLegend(controller, ImageSize.MEDIUM)}>
+          Export Legend
+        </Button>
       </div>
-    );
+    </div>
+  );
 
-    return (
-      <>
-        <ShareLinkForm />
-        <Divider />
-        <ExportImageForm />
-      </>
-    );
-  }
+  return <>
+    <ShareLinkForm />
+    <Divider />
+    <ExportImageForm />
+  </>;
 }
 
 SharePanel.propTypes = {
