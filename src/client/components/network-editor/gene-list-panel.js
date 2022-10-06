@@ -18,9 +18,11 @@ import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
 
 const CHART_WIDTH = 180;
 const CHART_HEIGHT = 14;
-const UP_RANK_COLOR = theme.palette.text.disabled;
-const DOWN_RANK_COLOR = theme.palette.action.disabled;
+
 const RANK_RANGE_COLOR = theme.palette.background.focus;
+const UP_RANK_COLOR = '#f1a340';
+const DOWN_RANK_COLOR = '#998ec3';
+// (rank colors from: https://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3)
 
 const linkoutProps = { target: "_blank",  rel: "noreferrer", color: "textSecondary", underline: "always" };
 
