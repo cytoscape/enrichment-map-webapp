@@ -3,12 +3,43 @@ import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 
 import { NetworkEditorController } from './controller';
+
 import { Button, ClickAwayListener, TextField, Tooltip, Divider } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
 
 import LinkIcon from '@material-ui/icons/Link';
 import EmailIcon from '@material-ui/icons/Email';
 import FileCopyIcon from '@material-ui/icons/FileCopy';
 import ImageIcon from '@material-ui/icons/Image';
+
+
+const useStyles = makeStyles((theme) => ({
+  popoverHeading: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: '2px',
+    fontSize: '1.25em',
+    fontWeight: 'bold',
+    paddingBottom: '0.5em',
+    marginLeft: '-0.5em',
+    marginRight: '-0.5em',
+    paddingLeft: '1em',
+    paddingRight: '1em',
+    alignItems: 'center'
+  },
+  popoverContent: {
+    width: '450px',
+    padding: '10px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px'
+  },
+  popoverButtons: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: '5px'
+  }
+}));
 
 
 const ImageSize = {
@@ -49,23 +80,22 @@ function handleExportLegend(controller, imageSize) {
 }
 
 
-function SectionHeader({ icon, text }) {
-  return <div className='share-button-popover-heading'> {icon} &nbsp; {text} </div>;
-}
-SectionHeader.propTypes = {
-  icon: PropTypes.any,
-  text: PropTypes.string
-};
-
 
 function SharePanel({ controller }) {
   const [ tooltipOpen, setTooltipOpen ] = useState(false);
 
+  const classes = useStyles();
+
+  // eslint-disable-next-line react/prop-types
+  function SectionHeader({ icon, text }) {
+    return <div className={classes.popoverHeading}> {icon} &nbsp; {text} </div>;
+  }
+
   const ShareLinkForm = () => (
-    <div className='share-button-popover-content'>
+    <div className={classes.popoverContent}>
       <SectionHeader icon={<LinkIcon/>} text="Share Link to Network" />
       <TextField defaultValue={window.location.href} variant="outlined" size="small" />
-      <div className='share-button-popover-buttons'>
+      <div className={classes.popoverButtons}>
         <Button variant='contained' startIcon={<EmailIcon />} onClick={handleOpenEmail}>
           Send by email
         </Button>
@@ -91,9 +121,9 @@ function SharePanel({ controller }) {
   );
 
   const ExportImageForm = () => (
-    <div className='share-button-popover-content'>
+    <div className={classes.popoverContent}>
       <SectionHeader icon={<ImageIcon />} text="Export Image" />
-      <div className='share-button-popover-buttons'>
+      <div className={classes.popoverButtons}>
         <Button variant='contained' 
           startIcon={<ImageIcon />} 
           onClick={() => handleExportImage(controller, ImageSize.LARGE, ImageArea.FULL)}>
