@@ -54,6 +54,11 @@ export class NetworkEditor extends Component {
       console.log('Loading...');
 
       const res = await fetch(`/api/${id}`);
+      if(!res.ok) {
+        location.href = '/';
+        return;
+      }
+
       const result = await res.json();
       this.addClusterNodesToNetworkJSON(result);
 
@@ -70,7 +75,7 @@ export class NetworkEditor extends Component {
       // Notify listeners that the network has been loaded
       console.log('Loaded');
       this.cy.data({ loaded: true });
-      this.controller.bus.emit('networkLoaded');
+      this.controller.bus.emit('networkLoaded', true);
 
       this.cy.fit(DEFAULT_PADDING);
       this.cy.layout({ 
