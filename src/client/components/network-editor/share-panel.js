@@ -3,14 +3,13 @@ import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 
 import { NetworkEditorController } from './controller';
-
-import { Button, ClickAwayListener, FormLabel, Grid, TextField, Tooltip } from '@material-ui/core';
-import { RadioGroup, Radio, FormControlLabel, FormControl, Divider } from '@material-ui/core';
+import { Button, ClickAwayListener, TextField, Tooltip, Divider } from '@material-ui/core';
 
 import LinkIcon from '@material-ui/icons/Link';
 import EmailIcon from '@material-ui/icons/Email';
 import FileCopyIcon from '@material-ui/icons/FileCopy';
 import ImageIcon from '@material-ui/icons/Image';
+
 
 const ImageSize = {
   SMALL:  { value:'SMALL',  scale: 0.3 },
@@ -31,14 +30,14 @@ export class SharePanel extends React.Component {
     this.controller = props.controller;
     this.state = {
       tooltipOpen: false,
-      imageSize: ImageSize.MEDIUM,
-      imageArea: ImageArea.VIEW,
+      imageSize: ImageSize.LARGE,
+      imageArea: ImageArea.FULL,
       legendSize: ImageSize.MEDIUM,
     };
   }
 
   handleOpenEmail() {
-    const subject = "Sharing Network from Cytoscape Explore";
+    const subject = "Sharing Network from EnrichmentMap";
     const body = "Here is the network: " + this.url;
     window.location=`mailto:?subject=${subject}&body=${body}`;
   }
@@ -112,89 +111,25 @@ export class SharePanel extends React.Component {
       </div>
     );
 
-    const ExportImageForm = () => {
-      const handleSize = imageSize => this.setState({ imageSize: ImageSize[imageSize] });
-      const handleArea = imageArea => this.setState({ imageArea });
-      const ImageRadio = ({ label, value, onClick }) =>
-        <FormControlLabel label={label} value={value} control={<Radio size='small' onClick={() => onClick(value)}/>} />;
-      
-      // Note: For some reason the RadioGroup.onChange handler does not fire, using Radio.onClick instead.
-      // May have something to do with this: https://github.com/mui/material-ui/issues/9336
-      return (
-        <div className='share-button-popover-content'>
-          <SectionHeader icon={<ImageIcon />} text="Export Network as Image" />
-          <div style={{ paddingLeft:'10px' }}>
-            <Grid container alignItems="flex-start" spacing={1}>
-              <Grid item>
-                <FormControl>
-                  <FormLabel>Size:</FormLabel>
-                  <RadioGroup row value={this.state.imageSize.value}>
-                    <ImageRadio label="Small"  value={ImageSize.SMALL.value}  onClick={handleSize} />
-                    <ImageRadio label="Medium" value={ImageSize.MEDIUM.value} onClick={handleSize} />
-                    <ImageRadio label="Large"  value={ImageSize.LARGE.value}  onClick={handleSize} />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
-              <Grid item>
-                <FormControl>
-                  <FormLabel>Area:</FormLabel>
-                  <RadioGroup row value={this.state.imageArea}>
-                    <ImageRadio label="Visible Area"   value={ImageArea.VIEW} onClick={handleArea} />
-                    <ImageRadio label="Entire Network" value={ImageArea.FULL} onClick={handleArea} />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </div>
-          <div className='share-button-popover-buttons'>
-            <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportImage()}>
-              Export Network
-            </Button>
-          </div>
+    const ExportImageForm = () => (
+      <div className='share-button-popover-content'>
+        <SectionHeader icon={<ImageIcon />} text="Export Image" />
+        <div className='share-button-popover-buttons'>
+          <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportImage()}>
+            Export Network
+          </Button>
+          <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportLegend()}>
+            Export Legend
+          </Button>
         </div>
-      );
-    };
-
-    const ExportLegendForm = () => {
-      const handleSize = legendSize => this.setState({ legendSize: ImageSize[legendSize] });
-      const ImageRadio = ({ label, value, onClick }) =>
-        <FormControlLabel label={label} value={value} control={<Radio size='small' onClick={() => onClick(value)}/>} />;
-      
-      // Note: For some reason the RadioGroup.onChange handler does not fire, using Radio.onClick instead.
-      // May have something to do with this: https://github.com/mui/material-ui/issues/9336
-      return (
-        <div className='share-button-popover-content'>
-          <SectionHeader icon={<ImageIcon />} text="Export Legend as Image" />
-          <div style={{ paddingLeft:'10px' }}>
-            <Grid container alignItems="flex-start" spacing={1}>
-              <Grid item>
-                <FormControl>
-                  <FormLabel>Size:</FormLabel>
-                  <RadioGroup row value={this.state.legendSize.value}>
-                    <ImageRadio label="Small"  value={ImageSize.SMALL.value}  onClick={handleSize} />
-                    <ImageRadio label="Medium" value={ImageSize.MEDIUM.value} onClick={handleSize} />
-                    <ImageRadio label="Large"  value={ImageSize.LARGE.value}  onClick={handleSize} />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </div>
-          <div className='share-button-popover-buttons'>
-            <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportLegend()}>
-              Export Legend
-            </Button>
-          </div>
-        </div>
-      );
-    };
+      </div>
+    );
 
     return (
       <>
         <ShareLinkForm />
         <Divider />
         <ExportImageForm />
-        <Divider />
-        <ExportLegendForm />
       </>
     );
   }
