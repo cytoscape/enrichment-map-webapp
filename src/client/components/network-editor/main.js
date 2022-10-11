@@ -1,22 +1,37 @@
-import _ from 'lodash';
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
+import _ from 'lodash';
 
 import { CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import SearchField from './search-field';
-import { GeneListPanel } from './gene-list-panel';
+import GeneListPanel from './gene-list-panel';
+import StyleLegend from './legend';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { Drawer, Divider, List } from '@material-ui/core';
+import { Drawer, Paper, List, Typography } from '@material-ui/core';
+import MuiAccordion from '@material-ui/core/Accordion';
+import MuiAccordionSummary from '@material-ui/core/AccordionSummary';
+import MuiAccordionDetails from '@material-ui/core/AccordionDetails';
+import SearchBar from "material-ui-search-bar";
+
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+
+const LEGEND_HEADER_HEIGHT = 48;
+const LEGEND_CONTENT_HEIGHT = 160;
 
 export class Main extends Component {
 
   constructor(props) {
     super(props);
+
+    this.state = {
+      searchValue: "",
+      searchResult: null,
+    };
 
     this.controller = this.props.controller;
     this.cy = this.controller.cy;
@@ -74,7 +89,68 @@ export class Main extends Component {
   render() {
     const { controller } = this;
     const { classes, showControlPanel, drawerVariant, onContentClick } = this.props;
+    const { searchValue, searchResult } = this.state;
     
+    // const debounceSearch = _.debounce(val => {
+    //   const query = val.trim();
+    //   if (query.length > 0) {
+    //     const res = controller.searchGenes(query);
+    //     this.setState({ searchResult: res });
+    //   }
+    // }, 500);
+    const cancelSearch = () => {
+      this.setState({ searchValue: "", searchResult: null });
+    };
+    const search = val => {
+      // this.setState({ searchValue: val });
+      const query = val.trim();
+
+      if (val.length > 0) {
+        // debounceSearch(val);
+        const res = controller.searchGenes(query);
+        this.setState({ searchValue: val, searchResult: res });
+      } else {
+        cancelSearch();
+      }
+    };
+
+    const Legend = withStyles({
+      root: {
+        boxShadow: 'none',
+        '&:before': {
+          display: 'none',
+        },
+        '&$expanded': {
+          margin: 0,
+          padding: 0,
+        },
+      },
+      expanded: {},
+    })(MuiAccordion);
+
+    const LegendSummary = withStyles({
+      root: {
+        minHeight: LEGEND_HEADER_HEIGHT,
+        '&$expanded': {
+          minHeight: LEGEND_HEADER_HEIGHT,
+        },
+      },
+      content: {
+        '&$expanded': {
+          margin: 0,
+          padding: 0,
+        },
+      },
+      expanded: {},
+    })(MuiAccordionSummary);
+
+    const LegendDetails = withStyles({
+      root: {
+        padding: 0,
+        margin: 0,
+      },
+    })(MuiAccordionDetails);
+
     const LeftDrawer = () => {
       return (
         <Drawer
@@ -82,17 +158,44 @@ export class Main extends Component {
           variant={drawerVariant}
           anchor="left"
           open={showControlPanel}
+          PaperProps={{
+            style: {
+              overflow: "hidden"
+            }
+          }}
           classes={{
             paper: classes.drawerPaper,
           }}
         >
-          <div className={classes.drawerHeader}>
-            <SearchField controller={controller} />
+          <div className={classes.drawerContent}>
+            <header className={classes.drawerHeader}>
+              {/* <SearchField controller={controller} onChange={onSearchChange} /> */}
+              <Paper component="form" className={classes.root}>
+                <SearchBar
+                  autoFocus
+                  className={classes.input}
+                  value={searchValue}
+                  onChange={val => search(val)}
+                  onCancelSearch={() => cancelSearch()}
+                />
+              </Paper>
+            </header>
+            <section className={classes.drawerSection}>
+              <List className={classes.geneList}>
+                <GeneListPanel controller={controller} searchResult={searchResult} />
+              </List>
+            </section>
+            <footer className={classes.drawerFooter}>
+              <Legend defaultExpanded>
+                <LegendSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography>Legend</Typography>
+                </LegendSummary>
+                <LegendDetails>
+                  <StyleLegend controller={controller} width={CONTROL_PANEL_WIDTH - 1} height={LEGEND_CONTENT_HEIGHT} />
+                </LegendDetails>
+              </Legend>
+            </footer>
           </div>
-          <Divider />
-          <List>
-            <GeneListPanel controller={controller} />
-          </List>
         </Drawer>
       );
     };
@@ -143,27 +246,38 @@ class NetworkBackground extends Component {
 }
 
 const useStyles = theme => ({
-  root: {
-    padding: '2px 4px',
-    display: 'flex',
-    alignItems: 'center',
-    width: 400,
-  },
-  input: {
-    marginLeft: theme.spacing(1),
-    flex: 1,
-  },
-  iconButton: {
-    padding: 10,
-  },
   drawer: {
     background: theme.palette.background.default,
     width: CONTROL_PANEL_WIDTH,
     flexShrink: 0,
   },
+  drawerContent: {
+    display: 'flex',
+    flexFlow: 'column',
+    height: '100%',
+  },
   drawerPaper: {
     width: CONTROL_PANEL_WIDTH,
     background: theme.palette.background.default,
+  },
+  drawerHeader: {
+    flex: '0 1 auto',
+    borderColor: theme.palette.divider,
+    borderWidth: '2px',
+    borderStyle: 'hidden hidden solid hidden',
+  },
+  drawerSection: {
+    flex: '1 1 auto', overflowY: 'auto',
+  },
+  drawerFooter: {
+    flex: '0 1 auto',
+    width: CONTROL_PANEL_WIDTH,
+    borderColor: theme.palette.divider,
+    borderWidth: '1px',
+    borderStyle: 'solid solid hidden hidden',
+  },
+  geneList: {
+    overflowY: "auto",
   },
   cy: {
     position: 'absolute',

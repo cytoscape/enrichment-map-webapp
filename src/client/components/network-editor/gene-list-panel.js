@@ -1,24 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import _ from 'lodash';
+
 import { NetworkEditorController } from './controller';
 import theme from '../../theme';
-
-import _ from 'lodash';
 
 import { makeStyles } from '@material-ui/core/styles';
 
 import { List, ListSubheader, ListItem, ListItemText } from '@material-ui/core';
-import { Grid, Typography, Divider } from '@material-ui/core';
+import { Grid, Typography, Link, Divider } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
-const PRECISION = 4;
+import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
+import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 
 const CHART_WIDTH = 180;
 const CHART_HEIGHT = 14;
-const UP_RANK_COLOR = theme.palette.text.disabled;
-const DOWN_RANK_COLOR = theme.palette.action.disabled;
+
 const RANK_RANGE_COLOR = theme.palette.background.focus;
+const UP_RANK_COLOR = '#f1a340';
+const DOWN_RANK_COLOR = '#998ec3';
+// (rank colors from: https://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3)
+
+const linkoutProps = { target: "_blank",  rel: "noreferrer", color: "textSecondary", underline: "always" };
 
 const useStyles = makeStyles((theme) => ({
   title: {
@@ -44,33 +49,47 @@ const useStyles = makeStyles((theme) => ({
     width: CHART_WIDTH,
     padding: '0 8px',
   },
+  listItemtemIcon: {
+    cursor: 'pointer',
+  },
+  geneName: {
+    '&:hover': {
+      textDecoration: 'none',
+      color: theme.palette.primary.light,
+    }
+  },
+  geneDesc: {
+    fontSize: '1.0em',
+    marginTop: '0.25em',
+    marginLeft: '0.6em',
+    padding: '0.75em 0 0 0.75em',
+    borderWidth: 1,
+    borderColor: theme.palette.divider,
+    borderStyle: 'hidden hidden hidden solid',
+  },
+  linkout: {
+    fontSize: '0.9em',
+  }
 }));
 
-export function GeneListPanel({ controller }) {
+export function GeneListPanel({ controller, searchResult }) {
   const [clusterName, setClusterName] = useState(null);
   const [geneSetNames, setGeneSetNames] = useState([]);
   const [genes, setGenes] = useState([]);
-  const [minRank, setMinRank] = useState(0);
-  const [maxRank, setMaxRank] = useState(0);
+  const [selectedGene, setSelectedGene] = useState(0);
+  const [geneDescription, setGeneDescription] = useState(0);
   
-  const totalGenes = genes.length;
-  let rankedGenes = genes.filter(g => g.rank);
-
   const classes = useStyles();
 
   const fetchGeneList = async (geneSetNames) => {
     const res = await controller.fetchGeneList(geneSetNames);
     const genes = res ? res.genes : [];
-    const minRank = res ? res.minRank : 0;
-    const maxRank = res ? res.maxRank : 0;
-    setMinRank(minRank);
-    setMaxRank(maxRank);
+
     setGenes(genes);
   };
 
   const fetchAllRankedGenes = async () => {
-    // TODO: Better call another function/endpoint...
-    fetchGeneList(null, []);
+    fetchGeneList([]);
   };
 
   const fetchGeneListFromNodeOrEdge = async (ele) => {
@@ -104,28 +123,43 @@ export function GeneListPanel({ controller }) {
     setClusterName(null);
     setGeneSetNames([]);
     setGenes([]);
-    setMinRank(0);
-    setMaxRank(0);
 
-    const eles = controller.cy.$(':selected');
+    if (controller.isGeneListIndexed()) {
+      const eles = controller.cy.$(':selected');
 
-    if (eles.length > 0) {
-      fetchGeneListFromNodeOrEdge(eles[eles.length - 1]);
-    } else {
-      fetchAllRankedGenes();
+      if (eles.length > 0) {
+        fetchGeneListFromNodeOrEdge(eles[eles.length - 1]);
+      } else {
+        fetchAllRankedGenes();
+      }
     }
   }, 250);
 
-  const selectionHandler = () => {
+  const onGeneListIndexed = () => {
+    debouncedSelectionHandler();
+  };
+
+  const onCySelectionChanged = () => {
     debouncedSelectionHandler();
   };
 
   useEffect(() => {
-    controller.cy.on('select unselect', selectionHandler);
-    debouncedSelectionHandler();
+    controller.bus.on('geneListIndexed', onGeneListIndexed);
+    controller.cy.on('select unselect', onCySelectionChanged);
+
+    if (controller.isGeneListIndexed()) {
+      if (searchResult) {
+        setClusterName(null);
+        setGeneSetNames([]);
+        setGenes(searchResult);
+      } else {
+        debouncedSelectionHandler();
+      }
+    }
 
     return function cleanup() {
-      controller.cy.removeListener('select unselect', selectionHandler);
+      controller.cy.removeListener('select unselect', onCySelectionChanged);
+      controller.cy.removeListener('geneListIndexed', onGeneListIndexed);
     };
   }, []);
 
@@ -147,12 +181,14 @@ export function GeneListPanel({ controller }) {
     );
   };
 
-  const renderGeneRow = (gene, rank, idx) => {
+  const renderGeneRow = (name, rank, idx) => {
     let data;
 
     if (rank) {
       data = [];
-      const desc = 'rank: ' + rank; //rank.toFixed(PRECISION); // TODO: Should we round it?
+      const minRank = controller.minRank;
+      const maxRank = controller.maxRank;
+      const desc = 'rank: ' + rank;
       
       if (rank < 0) {
         // Low regulated genes
@@ -175,13 +211,60 @@ export function GeneListPanel({ controller }) {
       }
     }
 
+    const toggleGeneDetails = async (name) => {
+      setSelectedGene(selectedGene !== name ? name : null);
+      setGeneDescription(null);
+
+      if (selectedGene === name) {
+        return;
+      }
+
+      setGeneDescription(
+        <>
+          <Link
+            href={`https://www.ncbi.nlm.nih.gov/gene?term=(${name}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
+            className={classes.linkout}
+            {...linkoutProps}
+          >
+            NCBI Gene
+          </Link>
+          <Link
+            href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${name}`}
+            className={classes.linkout}
+            style={{marginLeft: '2em', marginRight: '2em'}}
+            {...linkoutProps}
+          >
+            Ensembl
+          </Link>
+          <Link
+            href={`http://genemania.org/search/human/${name}`}
+            className={classes.linkout}
+            {...linkoutProps}
+          >
+            GeneMANIA
+          </Link>
+        </>
+      );
+    };
+
+    const isSelected = selectedGene === name;
+
     return (
       <ListItem key={idx} alignItems="flex-start">
         <ListItemText
           primary={
             <Grid container direction="row" justifyContent="space-between" alignItems='center'>
-              <Grid item>
-                  <Typography display="inline" variant="body2" color="textPrimary">{gene}</Typography>
+              <Grid item onClick={() => toggleGeneDetails(name)}>
+                <Grid container direction="row" justifyContent="flex-start" alignItems='center'>
+                  { isSelected ?
+                    <KeyboardArrowDownIcon fontSize="small" className={classes.listItemtemIcon} />
+                  :
+                    <KeyboardArrowRightIcon fontSize="small" className={classes.listItemtemIcon} />
+                  }
+                  <Link component="button" variant="body2" color="textPrimary" className={classes.geneName}>
+                    {name}
+                  </Link>
+                </Grid>
               </Grid>
               <Grid item className={classes.chartContainer}>
                 {data && (
@@ -190,9 +273,11 @@ export function GeneListPanel({ controller }) {
               </Grid>
             </Grid>
           }
-          // secondary={
-          //   "TODO: Gene description..."
-          // }
+          secondary={isSelected && (
+            <Typography variant="body2" color="textSecondary" className={classes.geneDesc}>
+              { geneDescription ? geneDescription : 'Loading...' }
+            </Typography>
+          )}
         />
       </ListItem>
     );
@@ -221,6 +306,9 @@ export function GeneListPanel({ controller }) {
       </ListItem>
     );
   };
+
+  const totalGenes = genes.length;
+  const emptySearchResult = searchResult != null && searchResult.length === 0;
 
   return (
     <div>
@@ -252,9 +340,9 @@ export function GeneListPanel({ controller }) {
         subheader={
           <ListSubheader component="div">
             <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
-              Ranked Genes&nbsp;
+              Genes&nbsp;
               <Typography display="inline" variant="body2" color="textSecondary">
-                ({totalGenes > 0 ? `${rankedGenes.length} of ${totalGenes}` : (<em>loading...</em>)})
+                ({!searchResult && totalGenes === 0 ? <em>loading...</em> : totalGenes})
               </Typography>
               :
             </Typography>
@@ -262,8 +350,8 @@ export function GeneListPanel({ controller }) {
           </ListSubheader>
         }
       >
-        {totalGenes > 0 ?
-          rankedGenes.map(({gene, rank}, idx) => renderGeneRow(gene, rank, idx))
+        {totalGenes > 0 || emptySearchResult ?
+          genes.map(({gene, rank}, idx) => renderGeneRow(gene, rank, idx))
         :
           _.range(0, 30).map((idx) => renderGeneSkeletonRow(idx))
         }
@@ -273,7 +361,8 @@ export function GeneListPanel({ controller }) {
 }
 
 GeneListPanel.propTypes = {
-  controller: PropTypes.instanceOf(NetworkEditorController),
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  searchResult: PropTypes.array,
 };
 
 export default GeneListPanel;
