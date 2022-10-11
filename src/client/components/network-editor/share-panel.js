@@ -1,16 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 
 import { NetworkEditorController } from './controller';
 
-import { Button, ClickAwayListener, FormLabel, Grid, TextField, Tooltip } from '@material-ui/core';
-import { RadioGroup, Radio, FormControlLabel, FormControl, Divider } from '@material-ui/core';
+import { Button, ClickAwayListener, TextField, Tooltip, Divider } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
 
 import LinkIcon from '@material-ui/icons/Link';
 import EmailIcon from '@material-ui/icons/Email';
 import FileCopyIcon from '@material-ui/icons/FileCopy';
 import ImageIcon from '@material-ui/icons/Image';
+
+
+const useStyles = makeStyles((theme) => ({
+  popoverHeading: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: '2px',
+    fontSize: '1.25em',
+    fontWeight: 'bold',
+    paddingBottom: '0.5em',
+    marginLeft: '-0.5em',
+    marginRight: '-0.5em',
+    paddingLeft: '1em',
+    paddingRight: '1em',
+    alignItems: 'center'
+  },
+  popoverContent: {
+    width: '450px',
+    padding: '10px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px'
+  },
+  popoverButtons: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: '5px'
+  }
+}));
+
 
 const ImageSize = {
   SMALL:  { value:'SMALL',  scale: 0.3 },
@@ -23,181 +53,96 @@ const ImageArea = {
   VIEW: 'view',
 };
 
-export class SharePanel extends React.Component {
 
-  constructor(props) {
-    super(props);
-    this.url = window.location.href;
-    this.controller = props.controller;
-    this.state = {
-      tooltipOpen: false,
-      imageSize: ImageSize.MEDIUM,
-      imageArea: ImageArea.VIEW,
-      legendSize: ImageSize.MEDIUM,
-    };
+function handleOpenEmail() {
+  const subject = "Sharing Network from EnrichmentMap";
+  const body = "Here is the network: " + window.location.href;
+  window.location=`mailto:?subject=${subject}&body=${body}`;
+}
+
+function handleCopyToClipboard() {
+  navigator.clipboard.writeText(window.location.href);
+}
+
+async function handleExportImage(controller, imageSize, imageArea) {
+  const blob = await controller.cy.png({
+    output:'blob-promise',
+    bg: 'white',
+    full: imageArea === ImageArea.FULL,
+    scale: imageSize.scale,
+  });
+
+  saveAs(blob, 'enrichment_map.png');
+}
+
+function handleExportLegend(controller, imageSize) {
+  controller.bus.emit('exportLegend', imageSize.scale);
+}
+
+
+
+function SharePanel({ controller }) {
+  const [ tooltipOpen, setTooltipOpen ] = useState(false);
+
+  const classes = useStyles();
+
+  // eslint-disable-next-line react/prop-types
+  function SectionHeader({ icon, text }) {
+    return <div className={classes.popoverHeading}> {icon} &nbsp; {text} </div>;
   }
 
-  handleOpenEmail() {
-    const subject = "Sharing Network from Cytoscape Explore";
-    const body = "Here is the network: " + this.url;
-    window.location=`mailto:?subject=${subject}&body=${body}`;
-  }
-
-  handleCopyToClipboard() {
-    navigator.clipboard.writeText(this.url);
-  }
-
-  async handleExportImage() {
-    const { cy } = this.controller;
-    const { imageSize, imageArea } = this.state;
-
-    const blob = await cy.png({
-      output:'blob-promise',
-      bg: 'white',
-      full: imageArea === ImageArea.FULL,
-      scale: imageSize.scale,
-    });
-
-    saveAs(blob, 'enrichment_map.png');
-  }
-
-  handleExportLegend() {
-    this.controller.bus.emit('exportLegend', this.state.legendSize.scale);
-  }
-
-  handlePopoverOpen() {
-    this.setState({
-      tooltipOpen: false 
-    });
-  }
-
-  handlePopoverClose() {
-    this.setState({
-      tooltipOpen: false 
-    });
-  }
-
-  handleTooltip(tooltipOpen) {
-    this.setState({ tooltipOpen });
-  }
-
-  render() {
-    const SectionHeader = ({ icon, text }) => 
-      <div className='share-button-popover-heading'> {icon} &nbsp; {text} </div>;
-
-    const ShareLinkForm = () => (
-      <div className='share-button-popover-content'>
-        <SectionHeader icon={<LinkIcon/>} text="Share Link to Network" />
-        <TextField defaultValue={this.url} variant="outlined" size="small" />
-        <div className='share-button-popover-buttons'>
-          <Button variant='contained' startIcon={<EmailIcon />} onClick={() => this.handleOpenEmail()}>
-            Send by email
-          </Button>
-          <ClickAwayListener onClickAway={() => this.handleTooltip(false)}>
-            <div> 
-              <Tooltip arrow disableFocusListener disableHoverListener disableTouchListener
-                PopperProps={{ disablePortal: true }}
-                onClose={() => this.handleTooltip(false)}
-                open={this.state.tooltipOpen}
-                placement="right"
-                title="Copied!"
-              >
-                <Button variant='contained' startIcon={<FileCopyIcon />} onClick={() => { this.handleCopyToClipboard(); this.handleTooltip(true); }}> 
-                  Copy to Clipboard
-                </Button>
-              </Tooltip>
-            </div>
-          </ClickAwayListener>
-        </div>
+  const ShareLinkForm = () => (
+    <div className={classes.popoverContent}>
+      <SectionHeader icon={<LinkIcon/>} text="Share Link to Network" />
+      <TextField defaultValue={window.location.href} variant="outlined" size="small" />
+      <div className={classes.popoverButtons}>
+        <Button variant='contained' startIcon={<EmailIcon />} onClick={handleOpenEmail}>
+          Send by email
+        </Button>
+        <ClickAwayListener onClickAway={() => setTooltipOpen(false)}>
+          <div> 
+            <Tooltip arrow disableFocusListener disableHoverListener disableTouchListener
+              PopperProps={{ disablePortal: true }}
+              onClose={() => setTooltipOpen(false)}
+              open={tooltipOpen}
+              placement="right"
+              title="Copied!"
+            >
+              <Button variant='contained' 
+                startIcon={<FileCopyIcon />} 
+                onClick={() => { handleCopyToClipboard(); setTooltipOpen(true); }}> 
+                Copy to Clipboard
+              </Button>
+            </Tooltip>
+          </div>
+        </ClickAwayListener>
       </div>
-    );
+    </div>
+  );
 
-    const ExportImageForm = () => {
-      const handleSize = imageSize => this.setState({ imageSize: ImageSize[imageSize] });
-      const handleArea = imageArea => this.setState({ imageArea });
-      const ImageRadio = ({ label, value, onClick }) =>
-        <FormControlLabel label={label} value={value} control={<Radio size='small' onClick={() => onClick(value)}/>} />;
-      
-      // Note: For some reason the RadioGroup.onChange handler does not fire, using Radio.onClick instead.
-      // May have something to do with this: https://github.com/mui/material-ui/issues/9336
-      return (
-        <div className='share-button-popover-content'>
-          <SectionHeader icon={<ImageIcon />} text="Export Network as Image" />
-          <div style={{ paddingLeft:'10px' }}>
-            <Grid container alignItems="flex-start" spacing={1}>
-              <Grid item>
-                <FormControl>
-                  <FormLabel>Size:</FormLabel>
-                  <RadioGroup row value={this.state.imageSize.value}>
-                    <ImageRadio label="Small"  value={ImageSize.SMALL.value}  onClick={handleSize} />
-                    <ImageRadio label="Medium" value={ImageSize.MEDIUM.value} onClick={handleSize} />
-                    <ImageRadio label="Large"  value={ImageSize.LARGE.value}  onClick={handleSize} />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
-              <Grid item>
-                <FormControl>
-                  <FormLabel>Area:</FormLabel>
-                  <RadioGroup row value={this.state.imageArea}>
-                    <ImageRadio label="Visible Area"   value={ImageArea.VIEW} onClick={handleArea} />
-                    <ImageRadio label="Entire Network" value={ImageArea.FULL} onClick={handleArea} />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </div>
-          <div className='share-button-popover-buttons'>
-            <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportImage()}>
-              Export Network
-            </Button>
-          </div>
-        </div>
-      );
-    };
+  const ExportImageForm = () => (
+    <div className={classes.popoverContent}>
+      <SectionHeader icon={<ImageIcon />} text="Export Image" />
+      <div className={classes.popoverButtons}>
+        <Button variant='contained' 
+          startIcon={<ImageIcon />} 
+          onClick={() => handleExportImage(controller, ImageSize.LARGE, ImageArea.FULL)}>
+          Export Network
+        </Button>
+        <Button variant='contained' 
+          startIcon={<ImageIcon />} 
+          onClick={() => handleExportLegend(controller, ImageSize.MEDIUM)}>
+          Export Legend
+        </Button>
+      </div>
+    </div>
+  );
 
-    const ExportLegendForm = () => {
-      const handleSize = legendSize => this.setState({ legendSize: ImageSize[legendSize] });
-      const ImageRadio = ({ label, value, onClick }) =>
-        <FormControlLabel label={label} value={value} control={<Radio size='small' onClick={() => onClick(value)}/>} />;
-      
-      // Note: For some reason the RadioGroup.onChange handler does not fire, using Radio.onClick instead.
-      // May have something to do with this: https://github.com/mui/material-ui/issues/9336
-      return (
-        <div className='share-button-popover-content'>
-          <SectionHeader icon={<ImageIcon />} text="Export Legend as Image" />
-          <div style={{ paddingLeft:'10px' }}>
-            <Grid container alignItems="flex-start" spacing={1}>
-              <Grid item>
-                <FormControl>
-                  <FormLabel>Size:</FormLabel>
-                  <RadioGroup row value={this.state.legendSize.value}>
-                    <ImageRadio label="Small"  value={ImageSize.SMALL.value}  onClick={handleSize} />
-                    <ImageRadio label="Medium" value={ImageSize.MEDIUM.value} onClick={handleSize} />
-                    <ImageRadio label="Large"  value={ImageSize.LARGE.value}  onClick={handleSize} />
-                  </RadioGroup>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </div>
-          <div className='share-button-popover-buttons'>
-            <Button variant='contained' startIcon={<ImageIcon />} onClick={() => this.handleExportLegend()}>
-              Export Legend
-            </Button>
-          </div>
-        </div>
-      );
-    };
-
-    return (
-      <>
-        <ShareLinkForm />
-        <Divider />
-        <ExportImageForm />
-        <Divider />
-        <ExportLegendForm />
-      </>
-    );
-  }
+  return <>
+    <ShareLinkForm />
+    <Divider />
+    <ExportImageForm />
+  </>;
 }
 
 SharePanel.propTypes = {
