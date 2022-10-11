@@ -4,14 +4,14 @@ import _ from 'lodash';
 import MiniSearch from 'minisearch';
 import { DEFAULT_PADDING } from './defaults';
 
-const MAX_INITIAL_METADATA_CACHE_SIZE = 1000;
-
 /**
  * The network editor controller contains all high-level model operations that the network
  * editor view can perform.
  *
  * @property {Cytoscape.Core} cy The graph instance
  * @property {EventEmitter} bus The event bus that the controller emits on after every operation
+ * @property {Number} minRank The minimum rank value of the current network
+ * @property {Number} maxRank The maximum rank value of the current network
  */
 export class NetworkEditorController {
   /**
@@ -20,13 +20,14 @@ export class NetworkEditorController {
    * @param {EventEmitter} bus The event bus that the controller emits on after every operation
    */
   constructor(cy, bus) {
-    this.networkLoaded = false;
-
     /** @type {Cytoscape.Core} */
     this.cy = cy;
-
     /** @type {EventEmitter} */
     this.bus = bus || new EventEmitter();
+    /** @type {Number} */
+    this.minRank = 0;
+    /** @type {Number} */
+    this.maxRank = 0;
 
     this.networkIDStr = cy.data('id');
     
@@ -42,18 +43,21 @@ export class NetworkEditorController {
       }
     };
 
-    this.metadatadaCache = new Map();
+    this.networkLoaded = false;
+    this.geneListIndexed = false;
 
     this.bus.on('networkLoaded', () => {
       this.networkLoaded = true;
-      console.log("LOADED...");
-      console.log(cy.nodes().length);
-      this.indexGeneList();
+      this._indexGeneList();
     });
   }
 
   isNetworkLoaded() {
     return this.networkLoaded;
+  }
+
+  isGeneListIndexed() {
+    return this.geneListIndexed;
   }
 
   /**
@@ -99,40 +103,40 @@ export class NetworkEditorController {
 
   searchGenes(query) {
     if (query && query.length > 0) {
-      return this.geneMiniSearch.search(query, { fields: ['symbol'], prefix: true });
+      return this.geneMiniSearch.search(query, { fields: ['gene'], prefix: true });
     }
     
     return [];
   }
 
-  async indexGeneList() {
+  getGene(name) {
+    if (!this.isGeneListIndexed()) {
+      throw "The gene list hasn't been fecthed yet!";
+    }
+
+    const res = this.geneMiniSearch.search(name, { fields: ['gene'], prefix: true });
+
+    return res.length > 0 ? res[0] : {};
+  }
+
+  async _indexGeneList() {
     const res = await this.fetchGeneList([]);
     const genes = res ? res.genes : [];
+    this.minRank = res ? res.minRank : 0;
+    this.maxRank = res ? res.maxRank : 0;
 
     if (genes && genes.length > 0) {
-      console.log(genes);
-
       this.geneMiniSearch = new MiniSearch({
-        fields: ['symbol', 'description'], // fields to index for full-text search
-        storeFields: ['symbol', 'geneId', 'description'] // fields to return with search results
+        idField: 'gene',
+        fields: ['gene'], // fields to index for full-text search
+        storeFields: ['gene', 'rank'] // fields to return with search results
       });
+      this.geneMiniSearch.addAll(genes);
 
-      const docs = [];
-      let id = 0;
-
-      for (const g of genes) {
-        const obj = await this.fetchGeneMetadata(g.gene);
-
-        if (obj && !obj.error) {
-          docs.push({id: ++id, symbol: obj.symbol, geneId: obj.geneId, description: obj.description });
-        }
-      }
-
-      console.log(docs);
-      this.geneMiniSearch.addAll(docs);
-      // console.log('>>> SEARCH: ' + this.geneMiniSearch.documentCount);
-      // const searchRes = this.geneMiniSearch.search("NE", { fields: ['symbol'], prefix: true });
-      // console.log(searchRes);
+      this.lastGeneSet = res;
+      this.lastGeneSetNames = [];
+      this.geneListIndexed = true;
+      this.bus.emit('geneListIndexed');
     }
   }
 
@@ -151,98 +155,15 @@ export class NetworkEditorController {
       });
       if (res.ok) {
         const geneSet = await res.json();
+        const rankedGenes = geneSet.genes.filter(g => g.rank);
+        geneSet.genes = rankedGenes;
+        
         this.lastGeneSet = geneSet;
         this.lastGeneSetNames = nameSet;
         return geneSet;
       }
     } else {
       return this.lastGeneSet;
-    }
-  }
-
-  async fetchGeneMetadata(symbol) {
-    let md = this.metadatadaCache.get(symbol);
-
-    if (md == null) {
-      // New query...
-      try {
-        const res = await fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbol}/taxon/9606`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        
-        if (!res.ok) {
-          throw 'Unable to fetch gene metadata';
-        }
-
-        const data = await res.json();
-        const gene = data.genes[0].gene;
-        const geneId = gene['gene_id'];
-        const description = gene.description;
-        
-        md = { geneId, symbol, description };
-        this.metadatadaCache.set(symbol, md);
-        
-        return md;
-      } catch (error) {
-        console.error(error);
-        return { error };
-      }
-    } else {
-      console.log(". CACHED: " + symbol);
-    }
-
-    return md;
-  }
-
-  /**
-   * Just fetch gene metadata (description, NCBI id) and save it into the memory cache.
-   * @param {Array} genes array of genes.
-   */
-  async prefetchGeneMetadata(genes) {
-    if (genes != null) {
-      const fetchSymbols = async (symbols) => {
-        const newSymbols = symbols.filter(s => !this.metadatadaCache.has(s));
-        
-        if (newSymbols.length === 0) {
-          return;
-        }
-        
-        const symbolsStr = newSymbols.join(',');
-        console.log("-- Will fetch " + newSymbols.length + " of " + symbols.length);
-        console.log(symbolsStr);
-    
-        try {
-          fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbolsStr}/taxon/9606`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-          })
-          .then(res => {
-            return res.ok ? res.json() : {};
-          })
-          .then(data => {
-            if (data.genes && data.genes.length > 0) {
-              data.genes.forEach(entry => {
-                const gene = entry.gene;
-                const md = { symbol: gene.symbol, geneId: gene['gene_id'], description: gene.description };
-                this.metadatadaCache.set(gene.symbol, md);
-              });
-            }
-          })
-          .catch(err => console.error(err));
-        } catch (err) {
-          console.error(err);
-        }
-      };
-
-      const chunkSize = 10;
-      const total = Math.min(genes.length, MAX_INITIAL_METADATA_CACHE_SIZE);
-
-      for (let i = 0; i < total; i += chunkSize) {
-          const chunk = genes.slice(i, i + chunkSize);
-          const symbols = chunk.map(obj => obj.gene);
-          await fetchSymbols(symbols);
-      }
     }
   }
 }

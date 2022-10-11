@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import PropTypes, { object } from 'prop-types';
+import PropTypes from 'prop-types';
 import _ from 'lodash';
 
 import { NetworkEditorController } from './controller';
@@ -14,7 +14,6 @@ import HSBar from "react-horizontal-stacked-bar-chart";
 
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
-import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
 
 const CHART_WIDTH = 180;
 const CHART_HEIGHT = 14;
@@ -77,32 +76,16 @@ export function GeneListPanel({ controller, searchResult }) {
   const [clusterName, setClusterName] = useState(null);
   const [geneSetNames, setGeneSetNames] = useState([]);
   const [genes, setGenes] = useState([]);
-  const [totalGenes, setTotalGenes] = useState(0);
-  const [minRank, setMinRank] = useState(0);
-  const [maxRank, setMaxRank] = useState(0);
   const [selectedGene, setSelectedGene] = useState(0);
   const [geneDescription, setGeneDescription] = useState(0);
   
   const classes = useStyles();
 
-  const debouncedPrefetchGeneMetadata = _.debounce((array) => controller.prefetchGeneMetadata(array), 1000);
-
   const fetchGeneList = async (geneSetNames) => {
     const res = await controller.fetchGeneList(geneSetNames);
-    const minRank = res ? res.minRank : 0;
-    const maxRank = res ? res.maxRank : 0;
     const genes = res ? res.genes : [];
-    const total = genes.length;
-    const rankedGenes = genes.filter(g => g.rank); // We only want the ranked genes
-    
-    setMinRank(minRank);
-    setMaxRank(maxRank);
-    setTotalGenes(total);
-    setGenes(rankedGenes);
 
-    if (rankedGenes && rankedGenes.length > 0) {
-      debouncedPrefetchGeneMetadata(rankedGenes);
-    }
+    setGenes(genes);
   };
 
   const fetchAllRankedGenes = async () => {
@@ -139,46 +122,44 @@ export function GeneListPanel({ controller, searchResult }) {
   const debouncedSelectionHandler = _.debounce(() => {
     setClusterName(null);
     setGeneSetNames([]);
-    setTotalGenes(0);
     setGenes([]);
-    setMinRank(0);
-    setMaxRank(0);
 
-    const eles = controller.cy.$(':selected');
+    if (controller.isGeneListIndexed()) {
+      const eles = controller.cy.$(':selected');
 
-    if (eles.length > 0) {
-      fetchGeneListFromNodeOrEdge(eles[eles.length - 1]);
-    } else {
-      fetchAllRankedGenes();
+      if (eles.length > 0) {
+        fetchGeneListFromNodeOrEdge(eles[eles.length - 1]);
+      } else {
+        fetchAllRankedGenes();
+      }
     }
   }, 250);
 
-  const selectionHandler = () => {
+  const onGeneListIndexed = () => {
+    debouncedSelectionHandler();
+  };
+
+  const onCySelectionChanged = () => {
     debouncedSelectionHandler();
   };
 
   useEffect(() => {
-    controller.cy.on('select unselect', selectionHandler);
+    controller.bus.on('geneListIndexed', onGeneListIndexed);
+    controller.cy.on('select unselect', onCySelectionChanged);
 
-    if (searchResult) {
-      setClusterName(null);
-      setGeneSetNames([]);
-      searchResult.forEach(obj => {
-        // TODO Standardize object fields and field names!!!
-        obj.gene = obj.symbol;
-        obj['gene_id'] = obj.geneId;
-        obj.rank = Math.random(); // TODO cache ranks
-      });
-      setTotalGenes(searchResult.length);
-      setGenes(searchResult);
-      setMinRank(0); // TODO
-      setMaxRank(0); // TODO
-    } else {
-      debouncedSelectionHandler();
+    if (controller.isGeneListIndexed()) {
+      if (searchResult) {
+        setClusterName(null);
+        setGeneSetNames([]);
+        setGenes(searchResult);
+      } else {
+        debouncedSelectionHandler();
+      }
     }
 
     return function cleanup() {
-      controller.cy.removeListener('select unselect', selectionHandler);
+      controller.cy.removeListener('select unselect', onCySelectionChanged);
+      controller.cy.removeListener('geneListIndexed', onGeneListIndexed);
     };
   }, []);
 
@@ -200,12 +181,14 @@ export function GeneListPanel({ controller, searchResult }) {
     );
   };
 
-  const renderGeneRow = (gene, rank, idx) => {
+  const renderGeneRow = (name, rank, idx) => {
     let data;
 
     if (rank) {
       data = [];
-      const desc = 'rank: ' + rank; //rank.toFixed(PRECISION); // TODO: Should we round it?
+      const minRank = controller.minRank;
+      const maxRank = controller.maxRank;
+      const desc = 'rank: ' + rank;
       
       if (rank < 0) {
         // Low regulated genes
@@ -228,61 +211,50 @@ export function GeneListPanel({ controller, searchResult }) {
       }
     }
 
-    const toggleGeneDetails = async (symbol) => {
-      setSelectedGene(selectedGene !== symbol ? symbol : null);
+    const toggleGeneDetails = async (name) => {
+      setSelectedGene(selectedGene !== name ? name : null);
       setGeneDescription(null);
 
-      if (selectedGene === symbol) {
+      if (selectedGene === name) {
         return;
       }
 
-      const obj = await controller.fetchGeneMetadata(symbol);
-
-      if (obj && !obj.error) {
-        setGeneDescription(
-          <>
-            { obj.description }<br />
-            <Link
-              href={`https://www.ncbi.nlm.nih.gov/gene/${obj.geneId}`}
-              className={classes.linkout}
-              {...linkoutProps}
-            >
-              NCBI Gene
-            </Link>
-            <Link
-              href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${obj.geneId}`}
-              className={classes.linkout}
-              style={{marginLeft: '2em', marginRight: '2em'}}
-              {...linkoutProps}
-            >
-              Ensembl
-            </Link>
-            <Link
-              href={`http://genemania.org/search/human/${symbol}`}
-              className={classes.linkout}
-              {...linkoutProps}
-            >
-              GeneMANIA
-            </Link>
-          </>
-        );
-      } else {
-        setGeneDescription(
-          <span style={{color: theme.palette.error.main, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', height: '20px'}}>
-            <ErrorOutlineIcon fontSize="small" style={{marginRight: '10px'}} /> Error: {obj.error.message ? obj.error.message : 'Unable to fetch description'}
-          </span>
-        );
-      }
+      setGeneDescription(
+        <>
+          <Link
+            href={`https://www.ncbi.nlm.nih.gov/gene?term=(${name}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
+            className={classes.linkout}
+            {...linkoutProps}
+          >
+            NCBI Gene
+          </Link>
+          <Link
+            href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${name}`}
+            className={classes.linkout}
+            style={{marginLeft: '2em', marginRight: '2em'}}
+            {...linkoutProps}
+          >
+            Ensembl
+          </Link>
+          <Link
+            href={`http://genemania.org/search/human/${name}`}
+            className={classes.linkout}
+            {...linkoutProps}
+          >
+            GeneMANIA
+          </Link>
+        </>
+      );
     };
 
-    const isSelected = selectedGene === gene;
+    const isSelected = selectedGene === name;
 
     return (
       <ListItem key={idx} alignItems="flex-start">
         <ListItemText
           primary={
             <Grid container direction="row" justifyContent="space-between" alignItems='center'>
-              <Grid item onClick={() => toggleGeneDetails(gene)}>
+              <Grid item onClick={() => toggleGeneDetails(name)}>
                 <Grid container direction="row" justifyContent="flex-start" alignItems='center'>
                   { isSelected ?
                     <KeyboardArrowDownIcon fontSize="small" className={classes.listItemtemIcon} />
@@ -290,7 +262,7 @@ export function GeneListPanel({ controller, searchResult }) {
                     <KeyboardArrowRightIcon fontSize="small" className={classes.listItemtemIcon} />
                   }
                   <Link component="button" variant="body2" color="textPrimary" className={classes.geneName}>
-                    {gene}
+                    {name}
                   </Link>
                 </Grid>
               </Grid>
@@ -335,12 +307,8 @@ export function GeneListPanel({ controller, searchResult }) {
     );
   };
 
+  const totalGenes = genes.length;
   const emptySearchResult = searchResult != null && searchResult.length === 0;
-  let totalInfo = totalGenes;
-
-  if (searchResult == null) {
-    totalInfo = totalGenes > 0 ? (`${genes.length} of ${totalGenes}`) : (<em>loading...</em>);
-  }
 
   return (
     <div>
@@ -372,9 +340,9 @@ export function GeneListPanel({ controller, searchResult }) {
         subheader={
           <ListSubheader component="div">
             <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
-              Ranked Genes&nbsp;
+              Genes&nbsp;
               <Typography display="inline" variant="body2" color="textSecondary">
-                ({totalInfo})
+                ({!searchResult && totalGenes === 0 ? <em>loading...</em> : totalGenes})
               </Typography>
               :
             </Typography>
