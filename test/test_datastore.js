@@ -24,22 +24,18 @@ describe('Gene Set Queries', () => {
     expect(network.network.elements.edges.length).to.eql(4);
   });
 
-  it('gets individual gene ranks', async () => {
-    const geneAAA = await Datastore.getGeneRank(networkID, 'AAA');
-    expect(geneAAA).to.eql({ gene: 'AAA', rank: 1.0 });
-    const geneBBB = await Datastore.getGeneRank(networkID, 'BBB');
-    expect(geneBBB).to.eql({ gene: 'BBB', rank: 2.0 });
-  });
-
-  it('gets a gene set', async () => {
-    const geneset1 = await Datastore.getGeneSet(GENESET_DB, 'GENESET_1');
-    expect(geneset1.name).to.eql('GENESET_1');
-    expect(geneset1.description).to.eql('the first geneset');
-    expect(geneset1.genes).to.eql(['AAA','BBB','CCC','DDD']);
-    const geneset3 = await Datastore.getGeneSet(GENESET_DB, 'GENESET_3');
-    expect(geneset3.name).to.eql('GENESET_3');
-    expect(geneset3.description).to.eql('the third geneset');
-    expect(geneset3.genes).to.eql(['AAA','BBB','CCC','GGG','HHH']);
+  it('get a gene sets', async () => {
+    const results = await Datastore.getGeneSets(GENESET_DB, ['GENESET_1', 'GENESET_2']);
+    expect(results).to.eql([
+      { name: "GENESET_1",
+        description: "the first geneset",
+        genes: ["AAA","BBB","CCC","DDD"]
+      },
+      { name:"GENESET_2",
+        description:"the second geneset",
+        genes: ["AAA","BBB","CCC","DDD","EEE","FFF"]
+      }
+    ]);
   });
 
   it('gets a geneset with ranks', async () => {
@@ -52,8 +48,8 @@ describe('Gene Set Queries', () => {
         { gene: "JJJ", rank: 10 },
         { gene: "BBB", rank: 2 },
         { gene: "AAA", rank: 1 },
-        { gene: "ADF" },
-        { gene: "ZZZ" }
+        // { gene: "ADF" },
+        // { gene: "ZZZ" }
       ]
     });
   });
@@ -91,6 +87,28 @@ describe('Gene Set Queries', () => {
         { gene: "CCC", rank: 3 },
         { gene: "BBB", rank: 2 },
         { gene: "AAA", rank: 1 }
+      ]
+    });
+  });
+
+  it('gets the ranked gene list', async () => {
+    const results = await Datastore.getRankedGeneList(networkID);
+    console.log(JSON.stringify(results));
+    expect(results).to.eql({ 
+      min: 1,
+      max: 11,
+      genes: [
+        { gene: "AAA", rank: 1 },
+        { gene: "BBB", rank: 2 },
+        { gene: "CCC", rank: 3 },
+        { gene: "DDD", rank: 4 },
+        { gene: "EEE", rank: 5 },
+        { gene: "FFF", rank: 6 },
+        { gene: "GGG", rank: 7 },
+        { gene: "HHH", rank: 8 },
+        { gene: "III", rank: 9 },
+        { gene: "JJJ", rank: 10 },
+        { gene: "LLL", rank: 11 }
       ]
     });
   });

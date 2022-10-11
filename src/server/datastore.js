@@ -195,8 +195,6 @@ class Datastore {
     return geneListID.string;
   }
 
-
-
   /**
    * Returns the entire network document. 
    */
@@ -210,44 +208,33 @@ class Datastore {
   }
 
   /**
-   * Returns the rank of a gene.
+   * Returns the entire gene/ranks document. 
    */
-  async getGeneRank(networkIDString, geneName) {
+   async getRankedGeneList(networkIDString) {
     const networkID = makeID(networkIDString);
-
-    const matches = await this.db
+    const network = await this.db
       .collection(GENE_LISTS_COLLECTION)
-      .find({ networkID: networkID.bson })
-      .project({ genes: { $elemMatch: { gene: geneName } } })
-      .toArray();
+      .findOne(
+        { networkID: networkID.bson },
+        { projection: { _id: 0, min: 1, max: 1, genes: 1 } }
+      );
 
-    if (matches && matches.length > 0)
-      return matches[0].genes[0];
+    return network;
   }
+
 
   /**
    * Returns the contents of a gene set, including the name,
    * description and gene list.
    */
-  async getGeneSet(geneSetCollection, geneSetName) {
+  async getGeneSets(geneSetCollection, geneSetNames) {
     return await this.db
       .collection(geneSetCollection)
-      .findOne({ name: geneSetName });
+      .find({ name: { $in: geneSetNames } })
+      .project({ _id: 0 })
+      .toArray();
   }
 
-  /**
-   * Returns the name and description of a gene set. 
-   * Does not return the gene list.
-   */
-  // TODO Is this needed? Aren't the name and description available as node attributes?
-  async getGeneSetInfo(geneSetCollection, geneSetName) {
-    return await this.db
-      .collection(geneSetCollection)
-      .findOne(
-        { name: geneSetName },
-        { name: 1, description: 1 }
-      );
-  }
   
 
   /**
@@ -304,6 +291,7 @@ class Datastore {
             }
           },
           { $project: { _id: 0, gene: "$gene", rank: { $first: "$newField.rank" } } },
+          { $match: { rank: { $exists: true } } },
           { $sort: { rank: -1, gene: 1 } }
         ])
         .toArray();

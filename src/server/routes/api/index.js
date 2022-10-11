@@ -80,37 +80,22 @@ http.get('/:netid', async function(req, res, next) {
 });
 
 
-/*
- * Returns the rank of an individual gene.
+/**
+ * Returns the contents of multiple gene sets, not including ranks.
  */
-http.get('/:netid/gene/:gene', async function(req, res, next) {
+ http.post('/genesets', async function(req, res, next) {
   try {
-    const { netid, gene } = req.params;
-    const geneInfo = await Datastore.getGeneRank(netid, gene);
+    const { geneSets } = req.body;
+    if(!Array.isArray(geneSets)) {
+      res.sendStatus(404);
+      return;
+    }
+
+    const geneInfo = await Datastore.getGeneSets(DB_1, geneSets);
     if(!geneInfo) {
       res.sendStatus(404);
     } else {
       res.send(JSON.stringify(geneInfo));
-    }
-  } catch (err) {
-    next(err);
-  }
-});
-
-
-/*
- * Returns the contents of a geneset given its name.
- * TODO: Add a query parameter that specifies the geneset database name.
- */
-http.get('/geneset/:name', async function(req, res, next) {
-  try {
-    const { name } = req.params;
-    const geneSet = await Datastore.getGeneSet(DB_1, name);
-    console.log("here is the gene set: " + geneSet);
-    if(geneSet) {
-      res.send(JSON.stringify(geneSet));
-    } else {
-      res.sendStatus(404);
     }
   } catch (err) {
     next(err);
@@ -119,24 +104,9 @@ http.get('/geneset/:name', async function(req, res, next) {
 
 
 /**
- * Returns the contents of a geneset, including ranks.
+ * Returns the contents of multiple gene sets, including ranks.
  */
-http.get('/:netid/geneset/:name', async function(req, res, next) {
-  try {
-    const { netid, name } = req.params;
-    const geneInfo = await Datastore.getGenesWithRanks(DB_1, netid, [name]);
-    if(!geneInfo) {
-      res.sendStatus(404);
-    } else {
-      res.send(JSON.stringify(geneInfo));
-    }
-  } catch (err) {
-    next(err);
-  }
-});
-
-
-http.post('/:netid/genesets', async function(req, res, next) {
+ http.post('/:netid/genesets', async function(req, res, next) {
   try {
     const { netid } = req.params;
     const { geneSets } = req.body;
@@ -157,6 +127,28 @@ http.post('/:netid/genesets', async function(req, res, next) {
 });
 
 
+/**
+ * Returns a ranked gene list.
+ */
+ http.get('/:netid/ranks', async function(req, res, next) {
+  try {
+    const { netid } = req.params;
+
+    const rankedGeneList = await Datastore.getRankedGeneList(netid);
+    if(!rankedGeneList) {
+      res.sendStatus(404);
+    } else {
+      res.send(JSON.stringify(rankedGeneList));
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+/**
+ * Uses mongo do to a gene search.
+ */
 http.post('/:netid/genesearch', async function(req, res, next) {
   try {
     const { netid } = req.params;
