@@ -159,7 +159,7 @@ export function GeneListPanel({ controller, searchResult }) {
 
     return function cleanup() {
       controller.cy.removeListener('select unselect', onCySelectionChanged);
-      controller.cy.removeListener('geneListIndexed', onGeneListIndexed);
+      controller.bus.removeListener('geneListIndexed', onGeneListIndexed);
     };
   }, []);
 

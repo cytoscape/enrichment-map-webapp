@@ -6,7 +6,6 @@ import _ from 'lodash';
 import { CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
-import SearchField from './search-field';
 import GeneListPanel from './gene-list-panel';
 import StyleLegend from './legend';
 
@@ -31,14 +30,22 @@ export class Main extends Component {
     this.state = {
       searchValue: "",
       searchResult: null,
+      networkLoaded: false,
+      geneListIndexed: false,
     };
 
     this.controller = this.props.controller;
     this.cy = this.controller.cy;
     this.cyEmitter = new EventEmitterProxy(this.cy);
+
+    this._onNetworkLoaded = this._onNetworkLoaded.bind(this);
+    this._onGeneListIndexed = this._onGeneListIndexed.bind(this);
   }
 
   componentDidMount() {
+    this.controller.bus.on('networkLoaded', this._onNetworkLoaded);
+    this.controller.bus.on('geneListIndexed', this._onGeneListIndexed);
+
     const container = document.getElementById('cy');
     this.cy.mount(container);
     this.cy.resize();
@@ -83,30 +90,23 @@ export class Main extends Component {
   }
 
   componentWillUnmount() {
+    this.controller.bus.removeListener('networkLoaded', this._onNetworkLoaded);
+    this.controller.bus.removeListener('geneListIndexed', this._onGeneListIndexed);
     this.cyEmitter.removeAllListeners();
   }
 
   render() {
     const { controller } = this;
     const { classes, showControlPanel, drawerVariant, onContentClick } = this.props;
-    const { searchValue, searchResult } = this.state;
+    const { searchValue, searchResult, networkLoaded, geneListIndexed } = this.state;
     
-    // const debounceSearch = _.debounce(val => {
-    //   const query = val.trim();
-    //   if (query.length > 0) {
-    //     const res = controller.searchGenes(query);
-    //     this.setState({ searchResult: res });
-    //   }
-    // }, 500);
     const cancelSearch = () => {
       this.setState({ searchValue: "", searchResult: null });
     };
     const search = val => {
-      // this.setState({ searchValue: val });
       const query = val.trim();
 
       if (val.length > 0) {
-        // debounceSearch(val);
         const res = controller.searchGenes(query);
         this.setState({ searchValue: val, searchResult: res });
       } else {
@@ -169,10 +169,10 @@ export class Main extends Component {
         >
           <div className={classes.drawerContent}>
             <header className={classes.drawerHeader}>
-              {/* <SearchField controller={controller} onChange={onSearchChange} /> */}
               <Paper component="form" className={classes.root}>
                 <SearchBar
                   autoFocus
+                  disabled={!networkLoaded || !geneListIndexed}
                   className={classes.input}
                   value={searchValue}
                   onChange={val => search(val)}
@@ -182,18 +182,22 @@ export class Main extends Component {
             </header>
             <section className={classes.drawerSection}>
               <List className={classes.geneList}>
-                <GeneListPanel controller={controller} searchResult={searchResult} />
+                {networkLoaded && geneListIndexed && (
+                  <GeneListPanel controller={controller} searchResult={searchResult} />
+                )}
               </List>
             </section>
             <footer className={classes.drawerFooter}>
-              <Legend defaultExpanded>
-                <LegendSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography>Legend</Typography>
-                </LegendSummary>
-                <LegendDetails>
-                  <StyleLegend controller={controller} width={CONTROL_PANEL_WIDTH - 1} height={LEGEND_CONTENT_HEIGHT} />
-                </LegendDetails>
-              </Legend>
+              {networkLoaded && (
+                <Legend defaultExpanded>
+                  <LegendSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography>Legend</Typography>
+                  </LegendSummary>
+                  <LegendDetails>
+                    <StyleLegend controller={controller} width={CONTROL_PANEL_WIDTH - 1} height={LEGEND_CONTENT_HEIGHT} />
+                  </LegendDetails>
+                </Legend>
+              )}  
             </footer>
           </div>
         </Drawer>
@@ -216,6 +220,14 @@ export class Main extends Component {
         </div>
       </div>
     );
+  }
+
+  _onNetworkLoaded() {
+    this.setState({ networkLoaded: true });
+  }
+
+  _onGeneListIndexed() {
+    this.setState({ geneListIndexed: true });
   }
 }
 

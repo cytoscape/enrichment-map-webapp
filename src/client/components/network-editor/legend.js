@@ -1,6 +1,8 @@
 import React, { useEffect, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
+
 import { NetworkEditorController } from './controller';
+
 import { makeStyles } from '@material-ui/core/styles';
 import Cytoscape from 'cytoscape';
 import { saveAs } from 'file-saver';
@@ -161,6 +163,7 @@ export function StyleLegend({ controller, width, height }) {
 
     controller.bus.on('networkLoaded', setLoaded);
     controller.bus.on('exportLegend', handleExport);
+
     return () => {
       controller.bus.removeListener('networkLoaded', setLoaded);
       controller.bus.removeListener('exportLegend', handleExport);
