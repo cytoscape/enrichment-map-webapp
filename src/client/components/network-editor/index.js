@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape';
 
@@ -24,6 +25,7 @@ export class NetworkEditor extends Component {
 
     const id = _.get(props, ['match', 'params', 'id'], _.get(props, 'id'));
     const secret = _.get(props, ['match', 'params', 'secret'], _.get(props, 'secret'));
+    const { summary } = props;
 
     // TODO temporary
     this.secret = secret;
@@ -49,7 +51,6 @@ export class NetworkEditor extends Component {
     this.onCyEvents = this.onCyEvents.bind(this);
 
     const loadNetwork = async () => {
-      console.log('Starting to enable sync in editor');
       console.log('Loading...');
 
       const res = await fetch(`/api/${id}`);
@@ -59,14 +60,17 @@ export class NetworkEditor extends Component {
       }
 
       const result = await res.json();
-      this.addClusterNodesToNetworkJSON(result);
 
-      this.cy.add(result.network.elements);
-      this.cy.data({ parameters: result.parameters });
+      if(summary && result.summaryNetwork) {
+        this.setClusterNodeNamesForSummaryNetwork(result);
+        this.cy.add(result.summaryNetwork.elements);
+      } else {
+        this.addClusterNodesToNetworkJSON(result);
+        this.cy.add(result.network.elements);
+      }
 
       const maxQVal = this.getMaxQValue();
-      this.cy.data({ maxQVal });
-      console.log("Max q-value: " + maxQVal);
+      this.cy.data({ parameters: result.parameters, maxQVal });
 
       // Set network style
       this.cy.style().fromJson(DEFAULT_NETWORK_STYLE(maxQVal));
@@ -104,6 +108,20 @@ export class NetworkEditor extends Component {
     window.addEventListener("resize", this.handleResize);
   }
 
+  setClusterNodeNamesForSummaryNetwork(result) {
+    const { summaryNetwork } = result;
+    const clusterLabelMap = this.getClusterLabels(result);
+
+    summaryNetwork.elements.nodes.forEach(node => {
+      const clusterID = node.data['mcode_cluster_id'];
+      if(clusterID) {
+        const name = clusterLabelMap.get(clusterID);
+        node.data['label'] = name;
+        node.data['summary'] = true;
+      }
+    });
+  }
+
   addClusterNodesToNetworkJSON(result) {
     const { network } = result;
     const clusterLabelMap = this.getClusterLabels(result);
@@ -122,8 +140,8 @@ export class NetworkEditor extends Component {
     });
 
     clusterMap.forEach((nodes, clusterID) => {
-      const name = clusterLabelMap.get(clusterID);
-      network.elements.nodes.push({ data: { id: clusterID, name } });
+      const label = clusterLabelMap.get(clusterID);
+      network.elements.nodes.push({ data: { id: clusterID, label } });
       nodes.forEach(node => {
         node.data['parent'] = clusterID;
       });
@@ -144,7 +162,13 @@ export class NetworkEditor extends Component {
   getClusterLabels(result) {
     if(!result.clusterLabels)
       return new Map();
-    const { labels } = result.clusterLabels;
+    
+    let labels;
+    if(Array.isArray(result.clusterLabels))
+      labels = result.clusterLabels[result.clusterLabels.length - 1].labels;
+    else
+      labels = result.clusterLabels.labels;
+      
     return new Map(labels.map(obj => [obj.clusterId, obj.label]));
   }
 
@@ -242,6 +266,7 @@ export class Demo extends Component {
 }
 
 NetworkEditor.propTypes = {
+  summary: PropTypes.bool
 };
 
 export default NetworkEditor;

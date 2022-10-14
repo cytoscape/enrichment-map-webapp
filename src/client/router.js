@@ -26,6 +26,15 @@ export const Router = () => (
           <NetworkEditor {...props} />
         )}
       />
+
+      {/* TEMPORARY, to test summary network */}
+      <Route
+        path='/summary/:id'
+        render={(props) => (
+          <NetworkEditor {...props} summary />
+        )}
+      />
+
       <Route status={404} exact component={PageNotFound} />
     </Switch>
   </BrowserRouter>

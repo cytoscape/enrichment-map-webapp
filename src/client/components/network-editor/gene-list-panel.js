@@ -114,22 +114,25 @@ export function GeneListPanel({ controller, searchResult }) {
   const fetchGeneListFromNodeOrEdge = async (ele) => {
     const gsNames = [];
     let cName = null;
+    const getNames = ele => ele.data('name').split(',');
 
     if (ele.group() === 'nodes') {
       const children = ele.children();
      
       if (children.length > 0) { // Compound node (cluster)...
         cName = ele.data('name');
-        children.forEach(n => gsNames.push(n.data('name')));
+        children.forEach(n => gsNames.push(...getNames(n)));
       } else { // Regular node (gene set)...
-        gsNames.push(ele.data('name'));
+        gsNames.push(...getNames(ele));
       }
     } else if (ele.group() === 'edges') {
       // Edge (get overlapping genes)...
-      gsNames.push(ele.source().data('name'));
-      gsNames.push(ele.target().data('name'));
+      gsNames.push(...getNames(ele.source()));
+      gsNames.push(...getNames(ele.target()));
     }
     
+    console.log(gsNames);
+
     setClusterName(cName);
 
     if (gsNames.length > 0) {

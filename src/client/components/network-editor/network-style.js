@@ -22,9 +22,23 @@ export const DEFAULT_NETWORK_STYLE = (maxQVal) => [
     }
   },
   {
+    selector: 'node[label]',
+    style: {
+      'label': 'data(label)', // If there's a 'label' attribute, that overrides the 'name' attribute
+    }
+  },
+  {
     selector: 'node[padj]',
     style: {
       'background-color': `mapData(padj, 0.0, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`,
+    }
+  },
+  {
+    selector: 'node[summary]',
+    style: {
+      'width':  60, //ele => ele.data('gs_size') / 10,
+      'height': 60, // ele => ele.data('gs_size') / 10,
+      'background-color': 'gray'
     }
   },
   {
