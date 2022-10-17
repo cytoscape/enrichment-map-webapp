@@ -39,11 +39,10 @@ export class NetworkEditor extends Component {
     });
 
     this.cy.data({ id });
-    this.controller = new NetworkEditorController(this.cy, this.cySyncher, this.bus);
+    this.controller = new NetworkEditorController(this.cy, this.bus);
 
     if (NODE_ENV !== 'production') {
       window.cy = this.cy;
-      window.cySyncher = this.cySyncher;
       window.controller = this.controller;
     }
 
@@ -60,25 +59,28 @@ export class NetworkEditor extends Component {
       this.cy.add(result.network.elements);
       this.cy.data({ parameters: result.parameters });
 
+      const minQVal = this.getMinQValue();
       const maxQVal = this.getMaxQValue();
-      this.cy.data({ maxQVal });
+      this.cy.data({ minQVal, maxQVal });
       console.log("Max q-value: " + maxQVal);
 
       // Set network style
-      this.cy.style().fromJson(DEFAULT_NETWORK_STYLE(maxQVal));
+      this.cy.style().fromJson(DEFAULT_NETWORK_STYLE(minQVal, maxQVal));
 
       // Notify listeners that the network has been loaded
       console.log('Loaded');
       this.cy.data({ loaded: true });
       this.controller.bus.emit('networkLoaded');
 
-      this.cy.fit(DEFAULT_PADDING);
-      this.cy.layout({ 
-        name: 'fcose',
-        idealEdgeLength: 100,
-        nodeSeparation: 150,
-        animate: false,
-      }).run();
+      // this.cy.fit(DEFAULT_PADDING);
+      // this.cy.layout({ 
+      //   name: 'fcose',
+      //   idealEdgeLength: 100,
+      //   nodeSeparation: 150,
+      //   animate: false,
+      // }).run();
+
+      this.controller.applyLayout();
 
       console.log('Successful load from DB');
       console.log('End of editor sync initial phase');
@@ -126,15 +128,12 @@ export class NetworkEditor extends Component {
     });
   }
 
+  getMinQValue() {
+    return this.cy.nodes().min(n => n.data('padj')).value;
+  }
+
   getMaxQValue() {
-    return this.cy.nodes().reduce(
-      (prevVal, node) => {
-        if(typeof prevVal === 'undefined')
-          return 0;
-        const qval = node.data('padj');
-        return qval ? Math.max(qval, prevVal) : prevVal;
-      }
-    );
+    return this.cy.nodes().max(n => n.data('padj')).value;
   }
 
   getClusterLabels(result) {

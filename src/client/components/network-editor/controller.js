@@ -24,35 +24,104 @@ export class NetworkEditorController {
     this.bus = bus || new EventEmitter();
 
     this.networkIDStr = cy.data('id');
-    
-    // Save the last used layout optionst
-    this.layoutOptions = {
-      fcose: {
-        name: 'fcose',
-        idealEdgeLength: 50,
-        nodeSeparation: 75,
-        randomize: true,
-        animate: false,
-        padding: DEFAULT_PADDING
-      }
-    };
   }
 
   /**
    * Stops the currently running layout, if there is one, and apply the new layout options.
    * @param {*} options
    */
-  applyLayout(options) {
+  applyLayout() {
     if (this.layout) {
       this.layout.stop();
     }
 
     // Save the values of the last used layout options
-    const { name } = options;
-    this.layoutOptions[name] = options;
+    const fcoseOptions = {
+      name: 'fcose',
+      idealEdgeLength: 100,
+      nodeSeparation: 150,
+      animate: false,
+      padding: DEFAULT_PADDING
+    };
+
+    // this.cy.nodes().children().move({ parent: null });
+
+    let clusterN = 1;
+    let clusterNameToIntID = new Map();
+
+    const clusterIntID = node => {
+      const clusterName = node.data('mcode_cluster_id');
+      const hasExistingID = clusterNameToIntID.has(clusterName);
+      const hasClusterName = clusterName != null && clusterName !== '';
+      
+      if (!hasClusterName) {
+        return null;
+      } else if (hasExistingID) {
+        return clusterNameToIntID.get(clusterName);
+      } else {
+        const id = clusterN;
+
+        clusterNameToIntID.set(clusterName, id);
+        clusterN += 1;
+
+        return id;
+      }
+    };
+
+    const ciseOptions = {
+      name: 'cise',
+      clusters: clusterIntID,
+      idealInterClusterEdgeLengthCoefficient: 6.5
+    };
+
+    // parents.restore();
+
+    const options = ciseOptions;
+
+    const getClusterName = node => node.data('mcode_cluster_id');
+    const hasACluster = node => getClusterName(node) != null;
+    
+    const edgeIsWithinCluster = edge => {
+      const srcClusterName = getClusterName(edge.source());
+      const tgtClusterName = getClusterName(edge.target());
+
+      return srcClusterName != null && srcClusterName === tgtClusterName;
+    };
+
+    const nodes = this.cy.nodes();
+
+    nodes.orphans().filter(node => {
+      if (node.isParent()) {
+        return false; // leave top-level cluster nodes
+      } else if (node.connectedEdges().empty()) {
+        return true; // remove disconnected nodes
+      } else if (_.uniq(node.neighborhood().nodes().map(getClusterName).filter(clusterName => clusterName != null)).length >= 2) {
+        return false; // leave nodes that connect clusters
+      } else {
+        return true; // remove nodes that aren't connecting clusters 
+      }
+    }).remove();
+
+    const edges = this.cy.edges();
+    const withinClusterEdges = edges.filter(edgeIsWithinCluster);
+
+    withinClusterEdges.addClass('within-cluster');
+
     // Apply the layout
     this.layout = this.cy.layout(options);
     this.layout.run();
+
+    edges.not(withinClusterEdges).forEach(edge => {
+      const src = edge.source();
+      const tgt = edge.target();
+
+      edge.move({
+        source: src.isChild() ? src.parent().id() : src.id(),
+        target: tgt.isChild() ? tgt.parent().id() : tgt.id()
+      });
+    });
+
+    this.cy.fit(DEFAULT_PADDING);
   }
 
   /**

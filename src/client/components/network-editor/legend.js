@@ -54,7 +54,7 @@ function createCy(maxQVal) {
     panningEnabled: false,
 
     style: [ 
-      ...DEFAULT_NETWORK_STYLE(0.1),
+      ...DEFAULT_NETWORK_STYLE(0.1, 0.2),
       { selector: 'node',
         style: {
           'width': 30,
@@ -99,7 +99,7 @@ function createCy(maxQVal) {
 
       { data: { id: 'b', padj: 0.1 } },
       { data: { id: 'b-lab', label: 'Node Color' } },
-      { data: { id: 'b-exp', label: `q-value, white (0.0) to red (${maxQVal.toFixed(2)})` } },
+      { data: { id: 'b-exp', label: `q-value` } },
 
       { data: { id: 'c', name: 'Label' } },
       { data: { id: 'c-lab', label: 'Node Label' } },

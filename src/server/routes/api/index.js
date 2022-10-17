@@ -180,16 +180,30 @@ http.post('/:netid/genesearch', async function(req, res, next) {
 
 
 async function runFGSEA(ranksTSV) {
+  console.log(FGSEA_SERVICE_URL);
+  console.log(ranksTSV);
+
   const response = await fetch(FGSEA_SERVICE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/tab-separated-values' },
     body: ranksTSV
   });
   if(!response.ok) {
+    console.error(response.status);
+    console.error(response.statusText);
+    console.error(response.size);
+    
+    const body = await response.text();
+
+    console.error(body);
+
     throw new Error("Error running fgsea service.");
   }
 
   const enrichmentsJson = await response.json();
+
+  console.log(enrichmentsJson);
+
   return enrichmentsJson;
 }
 
@@ -217,6 +231,14 @@ async function runEM(fgseaResults) {
     body: JSON.stringify(body)
   });
   if(!response.ok) {
+    console.error(response.status);
+    console.error(response.statusText);
+    console.error(response.size);
+    
+    const body = await response.text();
+
+    console.error(body);
+
     throw new Error("Error running em service.");
   }
   const networkJson = await response.json();
