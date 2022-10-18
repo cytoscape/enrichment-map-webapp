@@ -12,7 +12,7 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 const HEADER_HEIGHT = 48;
 
-const CollapsiblePanel = ({ title, defaultExpanded, children }) => {
+const CollapsiblePanel = ({ title, defaultExpanded, onChange, children }) => {
   const Accordion = withStyles((theme) => ({
     root: {
       borderColor: theme.palette.divider,
@@ -55,7 +55,7 @@ const CollapsiblePanel = ({ title, defaultExpanded, children }) => {
   })(MuiAccordionDetails);
 
   return (
-    <Accordion defaultExpanded={defaultExpanded}>
+    <Accordion defaultExpanded={defaultExpanded} onChange={onChange}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Typography>{title}</Typography>
       </AccordionSummary>
@@ -69,6 +69,7 @@ const CollapsiblePanel = ({ title, defaultExpanded, children }) => {
 CollapsiblePanel.propTypes = {
   title: PropTypes.string.isRequired,
   defaultExpanded: PropTypes.bool,
+  onChange: PropTypes.func,
   children: PropTypes.element.isRequired,
 };
 

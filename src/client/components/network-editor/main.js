@@ -128,6 +128,8 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
   const [geneSetNames, setGeneSetNames] = useState([]);
   const [genes, setGenes] = useState(null);
   const [sort, setSort] = useState('down');
+  const [geneSetsExpanded, setGeneSetsExpanded] = useState(true);
+  const [legendExpanded, setLegendExpanded] = useState(false);
 
   const searchValueRef = useRef(searchValue);
   searchValueRef.current = searchValue;
@@ -369,12 +371,12 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
           </section>
           <footer className={classes.drawerFooter}>
             {geneSetNames.length > 0 && (
-              <CollapsiblePanel title="Gene Sets" defaultExpanded>
+              <CollapsiblePanel title="Gene Sets" defaultExpanded={geneSetsExpanded} onChange={(evt, b) => setGeneSetsExpanded(b)}>
                 <GeneSetListPanel geneSetNames={geneSetNames} />
               </CollapsiblePanel>
             )}
             {networkLoaded && (
-              <CollapsiblePanel title="Legend">
+              <CollapsiblePanel title="Legend" defaultExpanded={legendExpanded} onChange={(evt, b) => setLegendExpanded(b)}>
                 <StyleLegend controller={controller} width={CONTROL_PANEL_WIDTH - 1} height={LEGEND_CONTENT_HEIGHT} />
               </CollapsiblePanel>
             )}  
