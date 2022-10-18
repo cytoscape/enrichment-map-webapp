@@ -8,7 +8,7 @@ import theme from '../../theme';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { List, ListSubheader, ListItem, ListItemText } from '@material-ui/core';
+import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 import { Grid, Typography, Link, Divider, Tooltip } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import Skeleton from '@material-ui/lab/Skeleton';
@@ -17,6 +17,7 @@ import HSBar from "react-horizontal-stacked-bar-chart";
 import SortByAlphaIcon from '@material-ui/icons/SortByAlpha';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
+import GSBulletIcon from '@material-ui/icons/FiberManualRecord';
 import DoubleArrowIcon from '@material-ui/icons/DoubleArrow';
 
 const CHART_WIDTH = 160;
@@ -27,7 +28,21 @@ const UP_RANK_COLOR = '#f1a340';
 const DOWN_RANK_COLOR = '#998ec3';
 // (rank colors from: https://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3)
 
-const linkoutProps = { target: "_blank",  rel: "noreferrer", color: "textSecondary", underline: "hover" };
+const GS_DB_LINKS = [
+  { db: 'BIOCYC',          url: (id) => `https://biocyc.org/HUMAN/NEW-IMAGE?type=PATHWAY&object=${id}&detail-level=0` },
+  { db: 'HUMANCYC',        url: (id) => `https://humancyc.org/HUMAN/NEW-IMAGE?type=PATHWAY&object=${id}&detail-level=0` },
+  { db: 'GOBP',            url: (id) => `https://www.ebi.ac.uk/QuickGO/term/${id}` },
+  // { db: 'IOB',             url: (id) => `https://www.???/${id}` }, // TODO e.g. ALPHA6BETA4INTEGRIN%IOB%ALPHA6BETA4INTEGRIN
+  { db: 'MSIGDB_C2',       url: (id) => `https://www.gsea-msigdb.org/gsea/msigdb/geneset_page.jsp?geneSetName=${id}` },
+  { db: 'PANTHER PATHWAY', url: (id) => `http://www.pantherdb.org/pathway/pathDetail.do?clsAccession=${id}` },
+  { db: 'PATHWHIZ',        url: (id) => `https://smpdb.ca/pathwhiz/pathways/${id}` },
+  { db: 'REACTOME',        url: (id) => `https://reactome.org/content/detail/${id}` },
+  { db: 'REACTOME DATABASE ID RELEASE 80', url: (id) => `https://reactome.org/content/detail/${id}` },
+  { db: 'SMPDB',           url: (id) => `https://smpdb.ca/view/${id}` },
+  { db: 'WIKIPATHWAYS_20220510', url: (id) => `https://www.wikipathways.org/index.php/Pathway:${id.replace('%HOMO SAPIENS', '')}` },
+];
+
+const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "hover" };
 
 const orderBy = {
   alpha: { iteratees: ['gene'],       orders: ['asc'] },
@@ -51,22 +66,38 @@ const useStyles = makeStyles((theme) => ({
     paddingBottom: '1.0em',
     paddingLeft: '0.75em',
   },
-  gsName: {
-    textTransform: 'capitalize',
-    paddingBottom: '0.5em',
-  },
   chartContainer: {
     width: CHART_WIDTH,
     padding: '0 8px',
   },
-  listItemtemIcon: {
-    fontSize: '16px',
+  gsLink: {
+    fontSize: '0.875rem',
+    textTransform: 'capitalize',
+    color: theme.palette.link.main,
+    "&[disabled]": {
+      color: theme.palette.text.primary,
+      cursor: "default",
+      "&:hover": {
+        textDecoration: "none"
+      }
+    }
+  },
+  gsListItemIcon: {
+    marginTop: '8px',
+    minWidth: '24px',
+  },
+  geneListItemIcon: {
+    marginTop: 'auto',
+    marginBottom: 'auto',
+    minWidth: '24px',
+  },
+  bulletIcon: {
+    fontSize: '0.875rem',
     color: theme.palette.divider,
   },
   geneName: {
-    marginLeft: '0.5em',
     '&:hover': {
-      color: theme.palette.primary.light,
+      color: theme.palette.link.main,
     }
   },
   geneDesc: {
@@ -83,13 +114,13 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-export function GeneListPanel({ controller, searchResult }) {
-  const cy = controller.cy;
-
+const GeneListPanel = ({ controller, searchResult }) => {
   const [clusterName, setClusterName] = useState(null);
   const [geneSetNames, setGeneSetNames] = useState([]);
   const [genes, setGenes] = useState([]);
   const [sort, setSort] = useState('down');
+
+  const cy = controller.cy;
 
   const sortRef = useRef(sort);
   sortRef.current = sort;
@@ -120,7 +151,7 @@ export function GeneListPanel({ controller, searchResult }) {
       const children = ele.children();
      
       if (children.length > 0) { // Compound node (cluster)...
-        cName = ele.data('name');
+        cName = ele.data('label');
         children.forEach(n => gsNames.push(...getNames(n)));
       } else { // Regular node (gene set)...
         gsNames.push(...getNames(ele));
@@ -131,9 +162,7 @@ export function GeneListPanel({ controller, searchResult }) {
       gsNames.push(...getNames(ele.target()));
     }
     
-    console.log(gsNames);
-
-    setClusterName(cName);
+    // setClusterName(cName);
 
     if (gsNames.length > 0) {
       setGeneSetNames(gsNames);
@@ -172,7 +201,7 @@ export function GeneListPanel({ controller, searchResult }) {
     cyEmitter.on('select unselect', onCySelectionChanged);
 
     if (controller.isGeneListIndexed()) {
-      if (searchResult) {
+      if (searchResult != null) {
         setClusterName(null);
         setGeneSetNames([]);
         setGenes(sortGenes(searchResult, 'alpha'));
@@ -189,17 +218,39 @@ export function GeneListPanel({ controller, searchResult }) {
   }, []);
 
   const renderGeneSetRow = (gsName, idx) => {
+    let href = null;
+
+    for (const { db, url } of GS_DB_LINKS) {
+      const token = `%${db}%`;
+
+      if (gsName.indexOf(token) >= 0) {
+        const id = gsName.substring(gsName.lastIndexOf(token) + token.length, gsName.length);
+        href = url(id);
+        break;
+      }
+    }
+
     if (gsName.indexOf('%') >= 0) {
       gsName = gsName.substring(0, gsName.indexOf('%')).toLowerCase();
     }
 
     return (
-      <ListItem key={idx} alignItems="flex-start">
+      <ListItem key={idx} alignItems="flex-start" dense>
+        <ListItemIcon className={classes.gsListItemIcon}>
+          <GSBulletIcon className={classes.bulletIcon} />
+        </ListItemIcon>
         <ListItemText
           primary={
-            <Typography display="inline" variant="body2" color="textPrimary" className={classes.gsName}>
-              &#8226; {gsName}
-            </Typography>
+            <Link
+              href={href}
+              disabled={href == null}
+              variant="body2"
+              color="textPrimary"
+              className={classes.gsLink}
+              {...linkoutProps}
+            >
+              {gsName}
+            </Link>
           }
         />
       </ListItem>
@@ -238,22 +289,22 @@ export function GeneListPanel({ controller, searchResult }) {
 
     return (
       <ListItem key={idx} alignItems="flex-start">
+        <ListItemIcon className={classes.geneListItemIcon}>
+          <DoubleArrowIcon className={classes.bulletIcon} />
+        </ListItemIcon>
         <ListItemText
           primary={
             <Grid container direction="row" justifyContent="space-between" alignItems='center'>
               <Grid item>
-                <Grid container direction="row" justifyContent="flex-start" alignItems='center'>
-                  <DoubleArrowIcon className={classes.listItemtemIcon} />
-                  <Link
-                    href={`https://www.ncbi.nlm.nih.gov/gene?term=(${name}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
-                    variant="body2"
-                    color="textPrimary"
-                    className={classes.geneName}
-                    {...linkoutProps}
-                  >
-                    {name}
-                  </Link>
-                </Grid>
+                <Link
+                  href={`https://www.ncbi.nlm.nih.gov/gene?term=(${name}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
+                  variant="body2"
+                  color="textPrimary"
+                  className={classes.geneName}
+                  {...linkoutProps}
+                >
+                  {name}
+                </Link>
               </Grid>
               <Grid item className={classes.chartContainer}>
                 {data && (
@@ -375,7 +426,7 @@ export function GeneListPanel({ controller, searchResult }) {
       </List>
     </div>
   );
-}
+};
 
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
