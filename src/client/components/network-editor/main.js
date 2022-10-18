@@ -6,21 +6,44 @@ import _ from 'lodash';
 import { CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
+import CollapsiblePanel from './collapsible-panel';
 import GeneListPanel from './gene-list-panel';
+import GeneSetListPanel from './geneset-list-panel';
 import StyleLegend from './legend';
 
-import { makeStyles, withStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/core/styles';
 
-import { Drawer, Paper, List, Typography } from '@material-ui/core';
-import MuiAccordion from '@material-ui/core/Accordion';
-import MuiAccordionSummary from '@material-ui/core/AccordionSummary';
-import MuiAccordionDetails from '@material-ui/core/AccordionDetails';
+import { Drawer, Paper, Grid, Typography, Tooltip } from '@material-ui/core';
+import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
+
 import SearchBar from "material-ui-search-bar";
 
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import SortByAlphaIcon from '@material-ui/icons/SortByAlpha';
+import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 
-const LEGEND_HEADER_HEIGHT = 48;
 const LEGEND_CONTENT_HEIGHT = 160;
+
+const sortOptions = {
+  alpha: {
+    label: 'Sort by gene NAME',
+    icon: <SortByAlphaIcon />,
+    iteratees: ['gene'],
+    orders: ['asc'] 
+  },
+  up: {
+    label: 'Sort by RANK (from lowest to highest)',
+    icon: <KeyboardArrowUpIcon />,
+    iteratees: ['rank', 'gene'],
+    orders: ['asc', 'asc']
+  },
+  down: {
+    label: 'Sort by RANK (from highest to lowest)',
+    icon: <KeyboardArrowDownIcon />,
+    iteratees: ['rank', 'gene'],
+    orders: ['desc', 'asc']
+  },
+};
 
 const useStyles = makeStyles((theme) => ({
   drawer: {
@@ -39,19 +62,22 @@ const useStyles = makeStyles((theme) => ({
   },
   drawerHeader: {
     flex: '0 1 auto',
-    borderColor: theme.palette.divider,
-    borderWidth: '2px',
-    borderStyle: 'hidden hidden solid hidden',
   },
   drawerSection: {
-    flex: '1 1 auto', overflowY: 'auto',
+    flex: '1 1 auto',
+    overflowY: 'auto',
   },
   drawerFooter: {
     flex: '0 1 auto',
     width: CONTROL_PANEL_WIDTH,
+  },
+  searchBar: {
     borderColor: theme.palette.divider,
     borderWidth: '1px',
-    borderStyle: 'solid solid hidden hidden',
+    borderStyle: 'hidden hidden solid hidden',
+  },
+  header: {
+    padding: '0.5em',
   },
   geneList: {
     overflowY: "auto",
@@ -95,15 +121,89 @@ const NetworkBackground = ({ controller }) => {
 };
 
 const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) => {
-  const [searchValue, setSearchValue] = useState('');
-  const [searchResult, setSearchResult] = useState(null);
   const [networkLoaded, setNetworkLoaded] = useState(false);
   const [geneListIndexed, setGeneListIndexed] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [searchResult, setSearchResult] = useState(null);
+  const [geneSetNames, setGeneSetNames] = useState([]);
+  const [genes, setGenes] = useState(null);
+  const [sort, setSort] = useState('down');
+
+  const searchValueRef = useRef(searchValue);
+  searchValueRef.current = searchValue;
+
+  const sortRef = useRef(sort);
+  sortRef.current = sort;
 
   const cy = controller.cy;
   const cyEmitter = new EventEmitterProxy(cy);
 
   const classes = useStyles();
+
+  const sortGenes = (genes, sort) => {
+    const args = sortOptions[sort];
+    return _.orderBy(genes, args.iteratees, args.orders);
+  };
+
+  const fetchGeneList = async (geneSetNames) => {
+    const res = await controller.fetchGeneList(geneSetNames);
+    const genes = res ? res.genes : [];
+    setGenes(sortGenes(genes, sortRef.current));
+  };
+
+  const fetchAllRankedGenes = async () => {
+    fetchGeneList([]);
+  };
+
+  const fetchGeneListFromNodeOrEdge = async (ele) => {
+    const gsNames = [];
+    const getNames = ele => ele.data('name').split(',');
+
+    if (ele.group() === 'nodes') {
+      const children = ele.children();
+     
+      if (children.length > 0) { // Compound node (cluster)...
+        children.forEach(n => gsNames.push(...getNames(n)));
+      } else { // Regular node (gene set)...
+        gsNames.push(...getNames(ele));
+      }
+    } else if (ele.group() === 'edges') {
+      // Edge (get overlapping genes)...
+      gsNames.push(...getNames(ele.source()));
+      gsNames.push(...getNames(ele.target()));
+    }
+    
+    if (gsNames.length > 0) {
+      setGeneSetNames(gsNames);
+      fetchGeneList(gsNames);
+    }
+  };
+
+  const debouncedSelectionHandler = _.debounce(() => {
+    const eles = cy.$(':selected');
+
+    if (eles.length > 0) {
+      setGeneSetNames([]);
+      setGenes(null);
+      fetchGeneListFromNodeOrEdge(eles[eles.length - 1]);
+    } else if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
+      setGeneSetNames([]);
+      setGenes(null);
+      fetchAllRankedGenes();
+    }
+  }, 250);
+
+  const onNetworkLoaded = () => {
+    setNetworkLoaded(true);
+  };
+  const onGeneListIndexed = () => {
+    setGeneListIndexed(true);
+    debouncedSelectionHandler();
+  };
+
+  const onCySelectionChanged = () => {
+    debouncedSelectionHandler();
+  };
 
   const cancelSearch = () => {
     setSearchValue('');
@@ -119,13 +219,6 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
     } else {
       cancelSearch();
     }
-  };
-
-  const onNetworkLoaded = () => {
-    setNetworkLoaded(true);
-  };
-  const onGeneListIndexed = () => {
-    setGeneListIndexed(true);
   };
 
   useEffect(() => {
@@ -170,6 +263,8 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
       cancelSearch();
     }, 128);
 
+    cyEmitter.on('select unselect', onCySelectionChanged);
+
     cyEmitter.on('select', () => {
       updateSelectionClass();
       clearSearch();
@@ -180,48 +275,62 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
     });
 
     return function cleanup() {
+      cyEmitter.removeAllListeners();
       controller.bus.removeListener('networkLoaded', onNetworkLoaded);
       controller.bus.removeListener('geneListIndexed', onGeneListIndexed);
-      cyEmitter.removeAllListeners();
     };
   }, []);
 
-  const Legend = withStyles({
-    root: {
-      boxShadow: 'none',
-      '&:before': {
-        display: 'none',
-      },
-      '&$expanded': {
-        margin: 0,
-        padding: 0,
-      },
-    },
-    expanded: {},
-  })(MuiAccordion);
+  useEffect(() => {
+    if (searchResult != null) {
+      setGeneSetNames([]);
+      setGenes(sortGenes(searchResult, 'alpha'));
+      setSort('alpha');
+    } else {
+      debouncedSelectionHandler();
+    }
+  }, [searchResult]);
 
-  const LegendSummary = withStyles({
-    root: {
-      minHeight: LEGEND_HEADER_HEIGHT,
-      '&$expanded': {
-        minHeight: LEGEND_HEADER_HEIGHT,
-      },
-    },
-    content: {
-      '&$expanded': {
-        margin: 0,
-        padding: 0,
-      },
-    },
-    expanded: {},
-  })(MuiAccordionSummary);
+  const GeneListHeader = () => {
+    const handleSort = (evt, value) => {
+      if (value != null) {
+        setSort(value);
+        setGenes(sortGenes(genes, value));
+      }
+    };
 
-  const LegendDetails = withStyles({
-    root: {
-      padding: 0,
-      margin: 0,
-    },
-  })(MuiAccordionDetails);
+    const totalGenes = genes != null ? genes.length : -1;
+    const sortDisabled = totalGenes <= 0;
+
+    return (
+      <Grid container direction="row" justifyContent="space-between" alignItems='center' className={classes.header}>
+        <Grid item>
+          <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
+            Genes&nbsp;
+            <Typography display="inline" variant="body2" color="textSecondary">
+              ({totalGenes === -1 ? <em>loading...</em> : totalGenes})
+            </Typography>
+            :
+          </Typography>
+        </Grid>
+        <Grid item>
+          <ToggleButtonGroup
+            value={sort}
+            exclusive
+            onChange={handleSort}
+          >
+            {Object.entries(sortOptions).map(([k, { label, icon }]) => (
+              <ToggleButton key={k} value={k} disabled={sortDisabled} size="small">
+                <Tooltip arrow placement="top" title={label}>
+                  {icon}
+                </Tooltip>
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </Grid>
+      </Grid>
+    );
+  };
 
   const LeftDrawer = () => {
     return (
@@ -245,30 +354,29 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
               <SearchBar
                 autoFocus
                 disabled={!networkLoaded || !geneListIndexed}
-                className={classes.input}
+                className={classes.searchBar}
                 value={searchValue}
                 onChange={val => search(val)}
                 onCancelSearch={() => cancelSearch()}
               />
             </Paper>
+            <GeneListHeader />
           </header>
           <section className={classes.drawerSection}>
-            <List className={classes.geneList}>
-              {networkLoaded && geneListIndexed && (
-                <GeneListPanel controller={controller} searchResult={searchResult} />
-              )}
-            </List>
+            {networkLoaded && geneListIndexed && (
+              <GeneListPanel controller={controller} genes={genes} />
+            )}
           </section>
           <footer className={classes.drawerFooter}>
+            {geneSetNames.length > 0 && (
+              <CollapsiblePanel title="Gene Sets" defaultExpanded>
+                <GeneSetListPanel geneSetNames={geneSetNames} />
+              </CollapsiblePanel>
+            )}
             {networkLoaded && (
-              <Legend defaultExpanded>
-                <LegendSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography>Legend</Typography>
-                </LegendSummary>
-                <LegendDetails>
-                  <StyleLegend controller={controller} width={CONTROL_PANEL_WIDTH - 1} height={LEGEND_CONTENT_HEIGHT} />
-                </LegendDetails>
-              </Legend>
+              <CollapsiblePanel title="Legend">
+                <StyleLegend controller={controller} width={CONTROL_PANEL_WIDTH - 1} height={LEGEND_CONTENT_HEIGHT} />
+              </CollapsiblePanel>
             )}  
           </footer>
         </div>
