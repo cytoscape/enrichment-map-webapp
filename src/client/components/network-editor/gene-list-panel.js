@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 
@@ -13,7 +13,9 @@ import { Grid, Typography, Link } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
-import DoubleArrowIcon from '@material-ui/icons/DoubleArrow';
+import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
+import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
+import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 
 const CHART_WIDTH = 160;
 const CHART_HEIGHT = 14;
@@ -27,36 +29,66 @@ const useStyles = makeStyles((theme) => ({
   root: {
     width: '100%',
   },
-  chartContainer: {
-    width: CHART_WIDTH,
-    padding: '0 8px',
-  },
-  geneListItemIcon: {
-    marginTop: 'auto',
-    marginBottom: 'auto',
-    minWidth: '24px',
-  },
-  bulletIcon: {
-    fontSize: '0.875rem',
-    color: theme.palette.divider,
-  },
-  geneName: {
+  listItem: {
+    cursor: 'pointer',
     '&:hover': {
       color: theme.palette.link.main,
     }
   },
-  geneDesc: {
+  bulletIcon: {
+    marginRight: '4px',
+    color: 'inherit',
+  },
+  geneName: {
+    color: 'inherit',
+  },
+  chartContainer: {
+    width: CHART_WIDTH,
+    padding: '0 8px',
+  },
+  geneMetadata: {
     fontSize: '1.0em',
     marginTop: '0.25em',
     marginLeft: '0.6em',
-    padding: '0.75em 0 0 0.75em',
+    padding: '0.5em 1.2em 0 1.05em',
     borderWidth: 1,
     borderColor: theme.palette.divider,
     borderStyle: 'hidden hidden hidden solid',
   },
+  linkout: {
+    fontSize: '0.75rem',
+    color: theme.palette.link.main,
+  },
 }));
 
+const fetchGeneMetadata = async(symbol) => {
+  try {
+    const res = await fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbol}/taxon/9606`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!res.ok) {
+      throw 'Unable to fetch gene metadata';
+    }
+
+    const data = await res.json();
+    const gene = data.genes[0].gene;
+    const geneId = gene['gene_id'];
+    const description = gene.description;
+    const md = { geneId, symbol, description };
+    
+    return md;
+  } catch (error) {
+    console.error(error);
+    return { error };
+  }
+};
+
 const GeneListPanel = ({ controller, genes }) => {
+  const [selectedGene, setSelectedGene] = useState(0);
+  const [geneMatadata, setGeneMatadata] = useState(0);
+  
   const classes = useStyles();
 
   const renderGeneRow = (name, rank, idx) => {
@@ -89,30 +121,104 @@ const GeneListPanel = ({ controller, genes }) => {
       }
     }
 
+    const toggleGeneDetails = async (name) => {
+      setSelectedGene(selectedGene !== name ? name : null);
+      setGeneMatadata(null);
+
+      if (selectedGene === name) {
+        return;
+      }
+
+      const obj = await fetchGeneMetadata(name);
+      console.log(obj);
+
+      if (obj && !obj.error) {
+        setGeneMatadata(
+          <>
+            <Grid item xs={12}>
+            { obj.description }
+            </Grid>
+            <Grid item xs={12}>  
+              <Grid container direction="row" justifyContent="space-between" alignItems='center'>
+                <Grid item>
+                  <Link
+                    href={`https://www.ncbi.nlm.nih.gov/gene/${obj.geneId}`}
+                    className={classes.linkout}
+                    {...linkoutProps}
+                  >
+                    NCBI Gene
+                  </Link>
+                </Grid>
+                <Grid item>
+                  <Link
+                    href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${obj.geneId}`}
+                    className={classes.linkout}
+                    style={{marginLeft: '2em', marginRight: '2em'}}
+                    {...linkoutProps}
+                  >
+                    Ensembl
+                  </Link>
+                </Grid>
+                <Grid item>
+                  <Link
+                    href={`http://genemania.org/search/human/${name}`}
+                    className={classes.linkout}
+                    {...linkoutProps}
+                  >
+                    GeneMANIA
+                  </Link>
+                </Grid>
+              </Grid>
+            </Grid>
+          </>
+        );
+      } else {
+        setGeneMatadata(
+          <span style={{color: theme.palette.error.main, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', height: '20px'}}>
+            <ErrorOutlineIcon fontSize="small" style={{marginRight: '10px'}} /> Error: {obj.error.message ? obj.error.message : 'Unable to fetch description'}
+          </span>
+        );
+      }
+    };
+
+    const isSelected = selectedGene === name;
+
     return (
       <ListItem key={idx} alignItems="flex-start">
-        <ListItemIcon className={classes.geneListItemIcon}>
-          <DoubleArrowIcon className={classes.bulletIcon} />
-        </ListItemIcon>
         <ListItemText
           primary={
-            <Grid container direction="row" justifyContent="space-between" alignItems='center'>
-              <Grid item>
-                <Link
-                  href={`https://www.ncbi.nlm.nih.gov/gene?term=(${name}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
-                  variant="body2"
-                  color="textPrimary"
-                  className={classes.geneName}
-                  {...linkoutProps}
+            <Grid container direction="column" alignItems='flex-start'>
+                <Grid
+                  container
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems='center'
+                  className={classes.listItem}
+                  onClick={() => toggleGeneDetails(name)}
                 >
-                  {name}
-                </Link>
-              </Grid>
-              <Grid item className={classes.chartContainer}>
-                {data && (
-                  <HSBar data={data} height={CHART_HEIGHT} />
-                )}
-              </Grid>
+                  <Grid item>
+                    <Grid container direction="row" justifyContent="flex-start" alignItems='center'>
+                      { isSelected ?
+                        <KeyboardArrowDownIcon fontSize="small" className={classes.bulletIcon} />
+                      :
+                        <KeyboardArrowRightIcon fontSize="small" className={classes.bulletIcon} />
+                      }
+                      <Typography variant="body2" color="textPrimary" className={classes.geneName}>
+                        {name}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                  <Grid item className={classes.chartContainer}>
+                    {data && (
+                      <HSBar data={data} height={CHART_HEIGHT} />
+                    )}
+                  </Grid>
+                </Grid>
+              {isSelected && (
+                <Grid container color="textSecondary" className={classes.geneMetadata}>
+                  { geneMatadata ? geneMatadata : 'Loading...' }
+                </Grid>
+              )}
             </Grid>
           }
         />

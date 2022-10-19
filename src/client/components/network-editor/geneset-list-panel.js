@@ -30,7 +30,15 @@ const useStyles = makeStyles((theme) => ({
     maxHeight: '240px',
     overflowY: 'auto',
   },
-  gsLink: {
+  listItemIcon: {
+    marginTop: '8px',
+    minWidth: '24px',
+  },
+  bulletIcon: {
+    fontSize: '0.875rem',
+    color: theme.palette.divider,
+  },
+  linkout: {
     fontSize: '0.875rem',
     textTransform: 'capitalize',
     color: theme.palette.link.main,
@@ -41,19 +49,6 @@ const useStyles = makeStyles((theme) => ({
         textDecoration: "none"
       }
     }
-  },
-  gsListItemIcon: {
-    marginTop: '8px',
-    minWidth: '24px',
-  },
-  geneListItemIcon: {
-    marginTop: 'auto',
-    marginBottom: 'auto',
-    minWidth: '24px',
-  },
-  bulletIcon: {
-    fontSize: '0.875rem',
-    color: theme.palette.divider,
   },
 }));
 
@@ -79,7 +74,7 @@ const GeneSetListPanel = ({ geneSetNames }) => {
 
     return (
       <ListItem key={idx} alignItems="flex-start" dense>
-        <ListItemIcon className={classes.gsListItemIcon}>
+        <ListItemIcon className={classes.listItemIcon}>
           <GSBulletIcon className={classes.bulletIcon} />
         </ListItemIcon>
         <ListItemText
@@ -89,7 +84,7 @@ const GeneSetListPanel = ({ geneSetNames }) => {
               disabled={href == null}
               variant="body2"
               color="textPrimary"
-              className={classes.gsLink}
+              className={classes.linkout}
               {...linkoutProps}
             >
               {gsName}
