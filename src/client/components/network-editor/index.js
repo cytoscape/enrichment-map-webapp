@@ -1,6 +1,8 @@
 import _ from 'lodash';
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { QueryClient, QueryClientProvider } from "react-query";
+
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape';
 
@@ -17,6 +19,8 @@ import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 
 const CY_EVENTS = 'data add remove move layoutstop viewport';
+
+const queryClient = new QueryClient();
 
 export class NetworkEditor extends Component {
 
@@ -234,23 +238,25 @@ export class NetworkEditor extends Component {
     const drawerVariant = isMobile ? 'temporary' : 'persistent';
 
     return (
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <div className="network-editor">
-          <Header
-            controller={controller}
-            showControlPanel={showControlPanel}
-            drawerVariant={drawerVariant}
-            onShowControlPanel={this.onShowControlPanel}
-          />
-          <Main
-            controller={controller}
-            showControlPanel={showControlPanel}
-            drawerVariant={drawerVariant}
-            onContentClick={onContentClick}
-          />
-        </div>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <div className="network-editor">
+            <Header
+              controller={controller}
+              showControlPanel={showControlPanel}
+              drawerVariant={drawerVariant}
+              onShowControlPanel={this.onShowControlPanel}
+            />
+            <Main
+              controller={controller}
+              showControlPanel={showControlPanel}
+              drawerVariant={drawerVariant}
+              onContentClick={onContentClick}
+            />
+          </div>
+        </ThemeProvider>
+      </QueryClientProvider>
     );
   }
 }

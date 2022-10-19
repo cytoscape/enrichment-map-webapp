@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 
+import { useQuery } from "react-query";
 import { linkoutProps } from './defaults';
 import theme from '../../theme';
 import { NetworkEditorController } from './controller';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import { List, ListItem, ListItemText } from '@material-ui/core';
 import { Grid, Typography, Link } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
@@ -59,39 +60,124 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '0.75rem',
     color: theme.palette.link.main,
   },
+  loadingMsg: {
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    color: theme.palette.text.disabled,
+  },
+  errorMsg: {
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    color: theme.palette.error.main,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  }
 }));
 
-const fetchGeneMetadata = async(symbol) => {
-  try {
-    const res = await fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbol}/taxon/9606`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    
-    if (!res.ok) {
-      throw 'Unable to fetch gene metadata';
-    }
+const GeneMetadataPanel = ({ symbol }) => {
+  const classes = useStyles();
 
-    const data = await res.json();
-    const gene = data.genes[0].gene;
-    const geneId = gene['gene_id'];
-    const description = gene.description;
-    const md = { geneId, symbol, description };
-    
-    return md;
-  } catch (error) {
-    console.error(error);
-    return { error };
+  const query = useQuery(
+    ['gene-metadata', symbol],
+    () =>
+      fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbol}/taxon/9606`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    .then(res => res.json()),
+    {
+      retry: 2,
+      retryDelay: 3000,
+      staleTime: 24 * 3600000, // After 24 hours, the cached data becomes stale and a refetch can happen
+    }
+  );
+
+  const data = query.data;
+  const isLoading = query.isLoading;
+  let error = query.error;
+
+  let description, ncbiId, ensemblId;
+  
+  if (!isLoading && !error && data) {
+    const entry = data.genes && data.genes.length > 0 ? data.genes[0] : {};
+
+    if (entry.warnings && entry.warnings.length > 0) {
+      error = { message: entry.warnings[0].reason };
+    } else {
+      const gene = entry.gene;
+
+      if (gene) {
+        description = gene.description;
+        ncbiId = gene['gene_id'];
+        
+        const ensemblGeneIds = gene['ensembl_gene_ids'];
+        ensemblId = ensemblGeneIds && ensemblGeneIds.length > 0 ? ensemblGeneIds[0] : null;
+      }
+    }
   }
+
+  return (
+    <Grid container color="textSecondary" className={classes.geneMetadata}>
+      {isLoading && (
+        <Typography className={classes.loadingMsg}>Loading...</Typography>
+      )}
+      {error && (
+        <span className={classes.errorMsg}>
+            <ErrorOutlineIcon fontSize="small" style={{marginRight: '10px'}} /> {error.message ? error.message : 'Unable to fetch description'}
+        </span>
+      )}
+      {!error && description && (
+        <Grid item xs={12}>
+          { description }
+        </Grid>
+      )}
+      <Grid item xs={12}>  
+        <Grid container direction="row" justifyContent="space-between" alignItems='center'>
+          <Grid item>
+            <Link
+              href={ncbiId ? `https://www.ncbi.nlm.nih.gov/gene/${ncbiId}` : `https://www.ncbi.nlm.nih.gov/gene?term=(${symbol}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
+              className={classes.linkout}
+              {...linkoutProps}
+            >
+              NCBI Gene
+            </Link>
+          </Grid>
+          <Grid item>
+            <Link
+              href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${ensemblId ? ensemblId : symbol}`}
+              className={classes.linkout}
+              style={{marginLeft: '2em', marginRight: '2em'}}
+              {...linkoutProps}
+            >
+              Ensembl
+            </Link>
+          </Grid>
+          <Grid item>
+            <Link
+              href={`http://genemania.org/search/human/${symbol}`}
+              className={classes.linkout}
+              {...linkoutProps}
+            >
+              GeneMANIA
+            </Link>
+          </Grid>
+        </Grid>
+      </Grid>
+    </Grid>
+  );
 };
 
 const GeneListPanel = ({ controller, genes }) => {
   const [selectedGene, setSelectedGene] = useState(0);
-  const [geneMatadata, setGeneMatadata] = useState(0);
   
   const classes = useStyles();
 
-  const renderGeneRow = (name, rank, idx) => {
+  const toggleGeneDetails = async (symbol) => {
+    setSelectedGene(selectedGene !== symbol ? symbol : null);
+  };
+
+  const renderGeneRow = (symbol, rank, idx) => {
     let data;
 
     if (rank) {
@@ -121,67 +207,7 @@ const GeneListPanel = ({ controller, genes }) => {
       }
     }
 
-    const toggleGeneDetails = async (name) => {
-      setSelectedGene(selectedGene !== name ? name : null);
-      setGeneMatadata(null);
-
-      if (selectedGene === name) {
-        return;
-      }
-
-      const obj = await fetchGeneMetadata(name);
-      console.log(obj);
-
-      if (obj && !obj.error) {
-        setGeneMatadata(
-          <>
-            <Grid item xs={12}>
-            { obj.description }
-            </Grid>
-            <Grid item xs={12}>  
-              <Grid container direction="row" justifyContent="space-between" alignItems='center'>
-                <Grid item>
-                  <Link
-                    href={`https://www.ncbi.nlm.nih.gov/gene/${obj.geneId}`}
-                    className={classes.linkout}
-                    {...linkoutProps}
-                  >
-                    NCBI Gene
-                  </Link>
-                </Grid>
-                <Grid item>
-                  <Link
-                    href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${obj.geneId}`}
-                    className={classes.linkout}
-                    style={{marginLeft: '2em', marginRight: '2em'}}
-                    {...linkoutProps}
-                  >
-                    Ensembl
-                  </Link>
-                </Grid>
-                <Grid item>
-                  <Link
-                    href={`http://genemania.org/search/human/${name}`}
-                    className={classes.linkout}
-                    {...linkoutProps}
-                  >
-                    GeneMANIA
-                  </Link>
-                </Grid>
-              </Grid>
-            </Grid>
-          </>
-        );
-      } else {
-        setGeneMatadata(
-          <span style={{color: theme.palette.error.main, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', height: '20px'}}>
-            <ErrorOutlineIcon fontSize="small" style={{marginRight: '10px'}} /> Error: {obj.error.message ? obj.error.message : 'Unable to fetch description'}
-          </span>
-        );
-      }
-    };
-
-    const isSelected = selectedGene === name;
+    const isSelected = selectedGene === symbol;
 
     return (
       <ListItem key={idx} alignItems="flex-start">
@@ -194,7 +220,7 @@ const GeneListPanel = ({ controller, genes }) => {
                   justifyContent="space-between"
                   alignItems='center'
                   className={classes.listItem}
-                  onClick={() => toggleGeneDetails(name)}
+                  onClick={() => toggleGeneDetails(symbol)}
                 >
                   <Grid item>
                     <Grid container direction="row" justifyContent="flex-start" alignItems='center'>
@@ -204,7 +230,7 @@ const GeneListPanel = ({ controller, genes }) => {
                         <KeyboardArrowRightIcon fontSize="small" className={classes.bulletIcon} />
                       }
                       <Typography variant="body2" color="textPrimary" className={classes.geneName}>
-                        {name}
+                        {symbol}
                       </Typography>
                     </Grid>
                   </Grid>
@@ -215,9 +241,7 @@ const GeneListPanel = ({ controller, genes }) => {
                   </Grid>
                 </Grid>
               {isSelected && (
-                <Grid container color="textSecondary" className={classes.geneMetadata}>
-                  { geneMatadata ? geneMatadata : 'Loading...' }
-                </Grid>
+                <GeneMetadataPanel symbol={symbol} />
               )}
             </Grid>
           }
@@ -263,6 +287,9 @@ const GeneListPanel = ({ controller, genes }) => {
   );
 };
 
+GeneMetadataPanel.propTypes = {
+  symbol: PropTypes.string.isRequired,
+};
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   genes: PropTypes.array,
