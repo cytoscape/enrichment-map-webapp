@@ -91,6 +91,14 @@ export const DEFAULT_NETWORK_STYLE = (minQVal, maxQVal) => [
     }
   },
   {
+    selector: 'node:selected',
+    style: {
+      'border-width': 6,
+      'border-color': '#aadafa',
+      'border-opacity': 0.666
+    }
+  },
+  {
     selector: 'node.eh-preview',
     style: {
       'overlay-opacity': 0.2

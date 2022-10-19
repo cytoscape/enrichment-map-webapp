@@ -248,7 +248,8 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
 
     const updateSelectionClass = _.debounce(() => {
       const allEles = cy.elements();
-      const selectedEles = allEles.filter(':selected');
+      const targetEle = allEles.filter(':selected'); // 1 ele
+      const selectedEles = targetEle.isNode() ? targetEle.closedNeighborhood() : targetEle.add(targetEle.connectedNodes());
       const unselectedEles = allEles.subtract(selectedEles);
 
       cy.batch(() => {
