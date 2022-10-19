@@ -31,7 +31,7 @@ function createCy(maxQVal) {
     panningEnabled: false,
 
     style: [ 
-      ...DEFAULT_NETWORK_STYLE(0.1),
+      ...DEFAULT_NETWORK_STYLE(0.1, 0.2),
       { selector: 'node',
         style: {
           'width': 25,
@@ -46,7 +46,9 @@ function createCy(maxQVal) {
           'border-opacity': 0,
           'width': 1,
           'text-valign': 'center',
-          'text-halign': 'right'
+          'text-halign': 'right',
+          'color': '#000',
+          'text-outline-opacity': 0
       }},
       { selector: 'node[hidden]', 
         style: {
@@ -72,7 +74,7 @@ function createCy(maxQVal) {
 
       { data: { id: 'b', padj: 0.1 } },
       { data: { id: 'b-lab', label: 'Node Color:' } },
-      { data: { id: 'b-exp', label: `q-value, white (0.0) to red (${maxQVal.toFixed(2)})` } },
+      { data: { id: 'b-exp', label: `q-value, brighter is more sig.` } },
 
       { data: { id: 'e-source', hidden: true } },
       { data: { id: 'e-target', hidden: true } },
