@@ -1,3 +1,4 @@
+import _ from 'lodash';
 
 export const NODE_BG_COLOR = {
   start: '#3baa71', // best nodes (low p-val)
