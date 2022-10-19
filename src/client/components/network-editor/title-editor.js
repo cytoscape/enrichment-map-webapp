@@ -100,20 +100,26 @@ export class TitleEditor extends Component {
         [theme.breakpoints.up('sm')]: {
           textAlign: 'left',
         },
-        '&:hover': {
-          border: `1px solid ${theme.palette.secondary.main}`,
-        },
+        // TODO: Uncomment if network name editing feature is implemented
+        // '&:hover': {
+        //   border: `1px solid ${theme.palette.secondary.main}`,
+        // },
         '&:focus': {
           border: `1px solid ${theme.palette.primary.main}`,
           backgroundColor: theme.palette.background.focus,
           fontWeight: 'normal',
         },
+        // TODO: Remove if network name editing feature is implemented
+        '&[disabled]': {
+          color: theme.palette.text.primary,
+        },
       },
     }));
 
     return (
-      <Tooltip arrow placement="bottom" title="Rename Network">
+      // <Tooltip arrow placement="bottom" title="Rename Network">
         <CssInputBase
+          disabled // TODO: enable if network name editing feature is implemented
           fullWidth={true}
           defaultValue={networkName || 'Untitled Network'}
           onFocus={() => this.handleNetworkNameFocus()}
@@ -121,7 +127,7 @@ export class TitleEditor extends Component {
           onKeyDown={(evt) => this.handleNetworkNameKeyDown(evt)}
           inputRef={ref => (this.input = ref)}
         />
-      </Tooltip>
+      // </Tooltip>
     );
   }
 }
