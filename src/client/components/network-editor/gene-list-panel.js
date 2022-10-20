@@ -30,11 +30,23 @@ const useStyles = makeStyles((theme) => ({
   root: {
     width: '100%',
   },
-  listItem: {
+  listItemText: {
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  listItemHeader: {
+    margin: 0,
     cursor: 'pointer',
     '&:hover': {
       color: theme.palette.link.main,
-    }
+    },
+    "&[disabled]": {
+      color: theme.palette.divider,
+      cursor: "default",
+      "&:hover": {
+        textDecoration: "none"
+      }
+    },
   },
   bulletIcon: {
     marginRight: '4px',
@@ -49,12 +61,27 @@ const useStyles = makeStyles((theme) => ({
   },
   geneMetadata: {
     fontSize: '1.0em',
-    marginTop: '0.25em',
     marginLeft: '0.6em',
-    padding: '0.5em 1.2em 0 1.05em',
+    padding: '0 1.2em 0 1.05em',
     borderWidth: 1,
     borderColor: theme.palette.divider,
     borderStyle: 'hidden hidden hidden solid',
+  },
+  geneRankCollapsed: {
+    fontSize: '0.75rem',
+    fontFamily: 'monospace',
+    color: theme.palette.text.disabled,
+    marginTop: '-0.25em',
+    paddingRight: '0.75em',
+  },
+  geneRankExpanded: {
+    fontSize: '0.75rem',
+    fontFamily: 'monospace',
+    textAlign: 'right',
+    color: theme.palette.text.disabled,
+    marginTop: '-0.25em',
+    marginBottom: '0.75em',
+    paddingRight: '0.05em',
   },
   linkout: {
     fontSize: '0.75rem',
@@ -75,7 +102,7 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-const GeneMetadataPanel = ({ symbol }) => {
+const GeneMetadataPanel = ({ symbol, rank }) => {
   const classes = useStyles();
 
   const query = useQuery(
@@ -119,8 +146,12 @@ const GeneMetadataPanel = ({ symbol }) => {
 
   return (
     <Grid container color="textSecondary" className={classes.geneMetadata}>
+      <Grid container direction="row" justifyContent="space-between" alignItems='center' className={classes.geneRankExpanded}>
+        <Grid item>Rank: </Grid>
+        <Grid item>{ rank }</Grid>
+      </Grid>
       {isLoading && (
-        <Typography className={classes.loadingMsg}>Loading...</Typography>
+        <Typography variant="body2" className={classes.loadingMsg}>Loading...</Typography>
       )}
       {error && (
         <span className={classes.errorMsg}>
@@ -129,7 +160,7 @@ const GeneMetadataPanel = ({ symbol }) => {
       )}
       {!error && description && (
         <Grid item xs={12}>
-          { description }
+          <Typography variant="body2" color="textSecondary">{ description }</Typography>
         </Grid>
       )}
       <Grid item xs={12}>  
@@ -170,14 +201,15 @@ const GeneMetadataPanel = ({ symbol }) => {
 
 const GeneListPanel = ({ controller, genes }) => {
   const [selectedGene, setSelectedGene] = useState(0);
-  
   const classes = useStyles();
+
+  const totalGenes = genes != null ? genes.length : -1;
 
   const toggleGeneDetails = async (symbol) => {
     setSelectedGene(selectedGene !== symbol ? symbol : null);
   };
 
-  const renderGeneRow = (symbol, rank, idx) => {
+  const renderGeneRow = ({ symbol, rank, idx }) => {
     let data;
 
     if (rank) {
@@ -207,81 +239,64 @@ const GeneListPanel = ({ controller, genes }) => {
       }
     }
 
-    const isSelected = selectedGene === symbol;
+    const loading = totalGenes === -1;
+    const isSelected = !loading && selectedGene === symbol;
 
     return (
       <ListItem key={idx} alignItems="flex-start">
         <ListItemText
+          className={classes.listItemText}
           primary={
             <Grid container direction="column" alignItems='flex-start'>
-                <Grid
-                  container
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems='center'
-                  className={classes.listItem}
-                  onClick={() => toggleGeneDetails(symbol)}
-                >
-                  <Grid item>
-                    <Grid container direction="row" justifyContent="flex-start" alignItems='center'>
-                      { isSelected ?
-                        <KeyboardArrowDownIcon fontSize="small" className={classes.bulletIcon} />
-                      :
-                        <KeyboardArrowRightIcon fontSize="small" className={classes.bulletIcon} />
-                      }
-                      <Typography variant="body2" color="textPrimary" className={classes.geneName}>
-                        {symbol}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                  <Grid item className={classes.chartContainer}>
-                    {data && (
-                      <HSBar data={data} height={CHART_HEIGHT} />
-                    )}
+              <Grid
+                container
+                direction="row"
+                justifyContent="space-between"
+                alignItems='center'
+                disabled={loading}
+                className={classes.listItemHeader}
+                onClick={() => { if (!loading) toggleGeneDetails(symbol); }}
+              >
+                <Grid item>
+                  <Grid container direction="row" justifyContent="flex-start" alignItems='center'>
+                    {isSelected ?
+                      <KeyboardArrowDownIcon fontSize="small" className={classes.bulletIcon} />
+                    :
+                      <KeyboardArrowRightIcon fontSize="small" className={classes.bulletIcon} />
+                    }
+                    <Typography variant="body2" color="textPrimary" className={classes.geneName}>
+                      {loading ? <Skeleton variant="text" width={72} /> : symbol }
+                    </Typography>
                   </Grid>
                 </Grid>
-              {isSelected && (
-                <GeneMetadataPanel symbol={symbol} />
-              )}
+                <Grid item className={classes.chartContainer}>
+                  {loading ?
+                    <Skeleton variant="rect" height={CHART_HEIGHT} />
+                    :
+                    data && <HSBar data={data} height={CHART_HEIGHT} />
+                  }
+                </Grid>
+              </Grid>
+              {isSelected ?
+                <GeneMetadataPanel symbol={symbol} rank={rank} />
+                :
+                <Grid container direction="row" justifyContent="flex-end" alignItems='center' className={classes.geneRankCollapsed}>
+                  {loading ? <Skeleton variant="text" width={115} /> : rank }
+                </Grid>
+              }
             </Grid>
           }
         />
       </ListItem>
     );
   };
-
-  const renderGeneSkeletonRow = (idx) => {
-    let w = Math.round(Math.random() * 100);
-    w = Math.min(60, Math.max(40, w));
-
-    return (
-      <ListItem key={idx} alignItems="flex-start">
-        <ListItemText
-          primary={
-            <Grid container direction="row" justifyContent="space-between" alignItems='center'>
-              <Grid item>
-                <Typography display="inline" variant="body2" color="textPrimary">
-                  <Skeleton variant="text" width={w} />
-                </Typography>
-              </Grid>
-              <Grid item className={classes.chartContainer}>
-                <Skeleton variant="rect" height={CHART_HEIGHT} />
-              </Grid>
-            </Grid>
-          }
-        />
-      </ListItem>
-    );
-  };
-
-  const totalGenes = genes != null ? genes.length : -1;
-
+  
   return (
     <List dense className={classes.root}>
       {totalGenes >= 0 ?
-        genes.map(({gene, rank}, idx) => renderGeneRow(gene, rank, idx))
+        genes.map(({gene, rank}, idx) => renderGeneRow({ symbol: gene, rank, idx }))
       :
-        _.range(0, 30).map((idx) => renderGeneSkeletonRow(idx))
+        _.range(0, 30).map((idx) => renderGeneRow({ idx }))
       }
     </List>
   );
@@ -289,6 +304,7 @@ const GeneListPanel = ({ controller, genes }) => {
 
 GeneMetadataPanel.propTypes = {
   symbol: PropTypes.string.isRequired,
+  rank: PropTypes.number.isRequired,
 };
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
