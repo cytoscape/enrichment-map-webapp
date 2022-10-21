@@ -17,8 +17,10 @@ export class TitleEditor extends Component {
     this.controller = props.controller;
     this.state = {
       networkName: this.controller.cy.data('name'),
+      disabled: !this.controller.isNetworkLoaded(),
     };
 
+    this.onNetworkLoaded = this.onNetworkLoaded.bind(this);
     this.onDataChanged = this.onDataChanged.bind(this);
   }
 
@@ -32,11 +34,17 @@ export class TitleEditor extends Component {
   }
 
   addCyListeners() {
+    this.controller.bus.on('networkLoaded', this.onNetworkLoaded);
     this.controller.cy.on('data', this.onDataChanged);
   }
 
   removeCyListeners() {
+    this.controller.bus.removeListener('networkLoaded', this.onNetworkLoaded);
     this.controller.cy.removeListener('data', this.onDataChanged);
+  }
+
+  onNetworkLoaded() {
+    this.setState({ disabled: false });
   }
 
   /**
@@ -70,7 +78,10 @@ export class TitleEditor extends Component {
 
   handleNetworkNameBlur() {
     const networkName = this.input.value;
-    this.renameNetwork(networkName);
+
+    if (networkName !== this.state.networkName) {
+      this.renameNetwork(networkName);
+    }
   }
 
   cancelNetworkNameChange() {
@@ -80,10 +91,16 @@ export class TitleEditor extends Component {
   renameNetwork(newName) {
     const networkName = newName != null ? newName.trim() : null;
     this.controller.cy.data({ name: networkName });
+
+    fetch(`/api/${this.controller.networkIDStr}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ networkName: networkName })
+    });
   }
 
   render() {
-    const { networkName } = this.state;
+    const { networkName, disabled } = this.state;
     
     const CssInputBase = styled(InputBase)(({ theme }) => ({
       '& .MuiInputBase-input': {
@@ -100,40 +117,47 @@ export class TitleEditor extends Component {
         [theme.breakpoints.up('sm')]: {
           textAlign: 'left',
         },
-        // TODO: Uncomment if network name editing feature is implemented
-        // '&:hover': {
-        //   border: `1px solid ${theme.palette.secondary.main}`,
-        // },
+        '&:hover': {
+          border: `1px solid ${theme.palette.secondary.main}`,
+        },
         '&:focus': {
           border: `1px solid ${theme.palette.primary.main}`,
           backgroundColor: theme.palette.background.focus,
           fontWeight: 'normal',
         },
-        // TODO: Remove if network name editing feature is implemented
         '&[disabled]': {
           color: theme.palette.text.primary,
+          '&:hover': {
+            border: '1px solid transparent !important',
+          },
         },
       },
     }));
 
     return (
-      // <Tooltip arrow placement="bottom" title="Rename Network">
+      <Tooltip
+        arrow
+        placement="bottom"
+        title="Rename Network"
+        disableHoverListener={disabled}
+        disableTouchListener={disabled}
+      >
         <CssInputBase
-          disabled // TODO: enable if network name editing feature is implemented
           fullWidth={true}
           defaultValue={networkName || 'Untitled Network'}
+          disabled={disabled}
           onFocus={() => this.handleNetworkNameFocus()}
           onBlur={() => this.handleNetworkNameBlur()}
           onKeyDown={(evt) => this.handleNetworkNameKeyDown(evt)}
           inputRef={ref => (this.input = ref)}
         />
-      // </Tooltip>
+      </Tooltip>
     );
   }
 }
 
 TitleEditor.propTypes = {
-  controller: PropTypes.instanceOf(NetworkEditorController),
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
 };
 
 export default TitleEditor;

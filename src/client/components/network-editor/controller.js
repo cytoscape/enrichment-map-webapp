@@ -12,6 +12,7 @@ import { DEFAULT_PADDING } from './defaults';
  * @property {EventEmitter} bus The event bus that the controller emits on after every operation
  * @property {Number} minRank The minimum rank value of the current network
  * @property {Number} maxRank The maximum rank value of the current network
+ * @property {String} networkIDStr The network UUID
  */
 export class NetworkEditorController {
   /**
@@ -28,7 +29,7 @@ export class NetworkEditorController {
     this.minRank = 0;
     /** @type {Number} */
     this.maxRank = 0;
-
+    /** @type {String} */
     this.networkIDStr = cy.data('id');
     
     // Save the last used layout optionst
