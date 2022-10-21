@@ -216,25 +216,24 @@ const GeneListPanel = ({ controller, genes }) => {
       data = [];
       const minRank = controller.minRank;
       const maxRank = controller.maxRank;
-      const desc = 'rank: ' + rank;
       
       if (rank < 0) {
         // Low regulated genes
         if (minRank < 0 && minRank !== rank) {
-          data.push({ value: -(minRank - rank), color: RANK_RANGE_COLOR, description: desc });
+          data.push({ value: -(minRank - rank), color: RANK_RANGE_COLOR });
         }
-        data.push({ value: -rank, color: DOWN_RANK_COLOR, description: desc });
+        data.push({ value: -rank, color: DOWN_RANK_COLOR });
         if (maxRank > 0) {
-          data.push({ value: maxRank, color: RANK_RANGE_COLOR, description: desc });
+          data.push({ value: maxRank, color: RANK_RANGE_COLOR });
         }
       } else {
         // Up regulated genes
         if (minRank < 0) {
-          data.push({ value: -minRank, color: RANK_RANGE_COLOR, description: desc });
+          data.push({ value: -minRank, color: RANK_RANGE_COLOR });
         }
-        data.push({ value: rank, color: UP_RANK_COLOR, description: desc });
+        data.push({ value: rank, color: UP_RANK_COLOR });
         if (maxRank > 0 && maxRank !== rank) {
-          data.push({ value: (maxRank - rank), color: RANK_RANGE_COLOR, description: desc });
+          data.push({ value: (maxRank - rank), color: RANK_RANGE_COLOR });
         }
       }
     }

@@ -48,7 +48,7 @@ const useStyles = makeStyles((theme) => ({
       "&:hover": {
         textDecoration: "none"
       }
-    }
+    },
   },
 }));
 

@@ -94,7 +94,7 @@ http.put('/:netid', async function(req, res, next) {
   }
 });
 
-/**
+/*
  * Returns the contents of multiple gene sets, not including ranks.
  */
  http.post('/genesets', async function(req, res, next) {
@@ -116,8 +116,7 @@ http.put('/:netid', async function(req, res, next) {
   }
 });
 
-
-/**
+/*
  * Returns the contents of multiple gene sets, including ranks.
  */
  http.post('/:netid/genesets', async function(req, res, next) {
@@ -140,8 +139,7 @@ http.put('/:netid', async function(req, res, next) {
   }
 });
 
-
-/**
+/*
  * Returns a ranked gene list.
  */
  http.get('/:netid/ranks', async function(req, res, next) {
@@ -159,8 +157,7 @@ http.put('/:netid', async function(req, res, next) {
   }
 });
 
-
-/**
+/*
  * Uses mongo do to a gene search.
  */
 http.post('/:netid/genesearch', async function(req, res, next) {

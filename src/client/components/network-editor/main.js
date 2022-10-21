@@ -215,6 +215,10 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
     const query = val.trim();
 
     if (val.length > 0) {
+      // Unselect Cy elements first
+      const selectedEles = cy.elements().filter(':selected');
+      selectedEles.unselect();
+      // Now execute the search
       const res = controller.searchGenes(query);
       setSearchValue(val);
       setSearchResult(res);
@@ -309,10 +313,11 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
         <Grid item>
           <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
             Genes&nbsp;
-            <Typography display="inline" variant="body2" color="textSecondary">
-              ({totalGenes === -1 ? <em>loading...</em> : totalGenes})
-            </Typography>
-            :
+            {totalGenes >= 0 && (
+              <Typography display="inline" variant="body2" color="textSecondary">
+                 ({ totalGenes })
+              </Typography>
+            )}
           </Typography>
         </Grid>
         <Grid item>

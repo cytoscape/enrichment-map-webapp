@@ -19,9 +19,6 @@ function makeID(string) {
   return { string, bson };
 }
 
-
-// TODO reformat this file, should be using two spaces for indentation
-
 class Datastore {
   // mongo; // mongo connection obj
   // db; // app db
@@ -35,7 +32,7 @@ class Datastore {
 
     const mongo = this.mongo = await MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true });
     const db = this.db = mongo.db(MONGO_ROOT_NAME);
-    const queries = this.queries = db.collection(MONGO_COLLECTION_QUERIES);
+    this.queries = db.collection(MONGO_COLLECTION_QUERIES);
     console.info('Connected to MongoDB');
   }
 
@@ -371,7 +368,6 @@ class Datastore {
       genes: geneListWithRanksAndGeneSets
     };
   }
-
 }
 
 const ds = new Datastore(); // singleton
