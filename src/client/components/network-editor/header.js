@@ -12,7 +12,7 @@ import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Toolbar } from '@material-ui/core';
 import { Divider } from '@material-ui/core';
-import { Popover, Menu, MenuList, MenuItem} from "@material-ui/core";
+import { Popover, Menu, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
 import { IconButton, Box } from '@material-ui/core';
 
@@ -42,9 +42,23 @@ export class Header extends Component {
       mobileMoreAnchorEl: null,
       anchorEl: null,
       dialogId: null,
+      networkLoaded: this.controller.isNetworkLoaded(),
     };
 
     this.showMobileMenu = this.showMobileMenu.bind(this);
+    this.onNetworkLoaded = this.onNetworkLoaded.bind(this);
+  }
+
+  componentDidMount() {
+    this.controller.bus.on('networkLoaded', this.onNetworkLoaded);
+  }
+
+  componentWillUnmount() {
+    this.controller.bus.removeListener('networkLoaded', this.onNetworkLoaded);
+  }
+
+  onNetworkLoaded() {
+    this.setState({ networkLoaded: true });
   }
 
   showMenu(menuName, target) {
@@ -71,7 +85,7 @@ export class Header extends Component {
   }
 
   render() {
-    const { anchorEl, menuName } = this.state;
+    const { anchorEl, menuName, networkLoaded } = this.state;
     const { classes, showControlPanel, drawerVariant, onShowControlPanel } = this.props;
     const { controller } = this;
 
@@ -126,7 +140,7 @@ export class Header extends Component {
               </Tooltip>
             </Box>
             <ToolbarDivider unrelated />
-            <TitleEditor controller={controller} />
+            <TitleEditor controller={controller} disabled={!networkLoaded} />
             <ToolbarDivider unrelated />
             <div className={classes.sectionDesktop}>
               { buttonsDef.map(({title, icon, onClick, unrelated}, idx) =>
@@ -134,6 +148,7 @@ export class Header extends Component {
                   <ToolbarButton
                     title={title}
                     icon={icon}
+                    disabled={!networkLoaded}
                     onClick={onClick}
                   />
                   <ToolbarDivider unrelated={unrelated} />
@@ -193,11 +208,18 @@ export class Header extends Component {
 
 class ToolbarButton extends Component {
   render() {
-    const { title, icon, color, className, onClick } = this.props;
+    const { title, icon, color, className, disabled, onClick } = this.props;
 
     return (
       <Tooltip arrow placement="bottom" title={title}>
-        <IconButton size="small" color={color || 'inherit'} className={className} onClick={onClick}>
+        <IconButton
+          disabled={disabled}
+          component={disabled ? "div" : undefined} // To prevent error: 'Material-UI: You are providing a disabled `button` child to the Tooltip component.'
+          size="small"
+          color={color || 'inherit'}
+          className={className}
+          onClick={onClick}
+        >
           { icon }
         </IconButton>
       </Tooltip>
@@ -252,6 +274,7 @@ ToolbarButton.propTypes = {
   icon: PropTypes.element.isRequired,
   color: PropTypes.string,
   className: PropTypes.string,
+  disabled: PropTypes.bool,
   onClick: PropTypes.func.isRequired,
 };
 

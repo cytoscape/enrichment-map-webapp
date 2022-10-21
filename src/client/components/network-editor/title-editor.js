@@ -17,10 +17,8 @@ export class TitleEditor extends Component {
     this.controller = props.controller;
     this.state = {
       networkName: this.controller.cy.data('name'),
-      disabled: !this.controller.isNetworkLoaded(),
     };
-
-    this.onNetworkLoaded = this.onNetworkLoaded.bind(this);
+    
     this.onDataChanged = this.onDataChanged.bind(this);
   }
 
@@ -34,17 +32,11 @@ export class TitleEditor extends Component {
   }
 
   addCyListeners() {
-    this.controller.bus.on('networkLoaded', this.onNetworkLoaded);
     this.controller.cy.on('data', this.onDataChanged);
   }
 
   removeCyListeners() {
-    this.controller.bus.removeListener('networkLoaded', this.onNetworkLoaded);
     this.controller.cy.removeListener('data', this.onDataChanged);
-  }
-
-  onNetworkLoaded() {
-    this.setState({ disabled: false });
   }
 
   /**
@@ -100,7 +92,8 @@ export class TitleEditor extends Component {
   }
 
   render() {
-    const { networkName, disabled } = this.state;
+    const { disabled } = this.props;
+    const { networkName } = this.state;
     
     const CssInputBase = styled(InputBase)(({ theme }) => ({
       '& .MuiInputBase-input': {
@@ -119,17 +112,14 @@ export class TitleEditor extends Component {
         },
         '&:hover': {
           border: `1px solid ${theme.palette.secondary.main}`,
+          '&[disabled]': {
+            border: '1px solid transparent !important',
+          },
         },
         '&:focus': {
           border: `1px solid ${theme.palette.primary.main}`,
           backgroundColor: theme.palette.background.focus,
           fontWeight: 'normal',
-        },
-        '&[disabled]': {
-          color: theme.palette.text.primary,
-          '&:hover': {
-            border: '1px solid transparent !important',
-          },
         },
       },
     }));
@@ -158,6 +148,7 @@ export class TitleEditor extends Component {
 
 TitleEditor.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  disabled: PropTypes.bool,
 };
 
 export default TitleEditor;
