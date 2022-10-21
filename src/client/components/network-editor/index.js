@@ -74,7 +74,7 @@ export class NetworkEditor extends Component {
       }
 
       const maxQVal = this.getMaxQValue();
-      this.cy.data({ parameters: result.parameters, maxQVal });
+      this.cy.data({ name: result.networkName, parameters: result.parameters, maxQVal });
 
       // Set network style
       this.cy.style().fromJson(DEFAULT_NETWORK_STYLE(maxQVal));

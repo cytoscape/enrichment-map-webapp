@@ -79,6 +79,20 @@ http.get('/:netid', async function(req, res, next) {
   }
 });
 
+/* 
+ * Update the network data given its ID--right now, this only supports updating the 'networkName'.
+ */
+http.put('/:netid', async function(req, res, next) {
+  try {
+    const { netid } = req.params;
+    const { networkName } = req.body;
+    const updated = await Datastore.updateNetwork(netid, { networkName });
+    
+    res.sendStatus(updated ? 204 : 409);
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * Returns the contents of multiple gene sets, not including ranks.

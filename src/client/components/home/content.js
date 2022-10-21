@@ -21,6 +21,7 @@ const STEP = {
   ERROR:'ERROR'
 };
 
+const FILE_EXT_REGEX = /\.[^/.]+$/;
 
 export class Content extends Component {
 
@@ -38,7 +39,7 @@ export class Content extends Component {
     location.href = `/document/${id}`;
   }
 
-  async sendRankedGeneListToEMService(ranksTSV) {
+  async sendRankedGeneListToEMService(ranksTSV, networkName) {
     const res = await fetch('/api/create', {
       method: 'POST',
       headers: { 'Content-Type': 'text/tab-separated-values' },
@@ -46,7 +47,15 @@ export class Content extends Component {
     });
 
     if(res.ok) {
+      // Update the network name
       const netID = await res.text();
+      
+      await fetch(`/api/${netID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ networkName: networkName })
+      });
+
       return { netID };
     } else {
       return { errors: ["Error running EnrichmentMap service."]};
@@ -60,9 +69,8 @@ export class Content extends Component {
 
     this.setState({ step: STEP.LOADING });
 
-    const url = size == 'small' 
-      ? '/sample-data/brca_hd_tep_ranks_100.rnk' 
-      : '/sample-data/brca_hd_tep_ranks.rnk';
+    const name = size == 'small'  ? 'brca_hd_tep_ranks_100' : 'brca_hd_tep_ranks';
+    const url = `/sample-data/${name}.rnk`;
 
     const sdRes = await fetch(url);
     if(!sdRes.ok) {
@@ -71,7 +79,7 @@ export class Content extends Component {
     }
 
     const ranks = await sdRes.text();
-    const emRes = await this.sendRankedGeneListToEMService(ranks);
+    const emRes = await this.sendRankedGeneListToEMService(ranks, name);
     if(emRes.errors) {
       this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
       return;
@@ -97,7 +105,7 @@ export class Content extends Component {
       return;
     } 
 
-    const emRes = await this.sendRankedGeneListToEMService(contents);
+    const emRes = await this.sendRankedGeneListToEMService(contents, file.name.replace(FILE_EXT_REGEX, ''));
     if(emRes.errors) {
       this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
       return;
@@ -138,7 +146,6 @@ export class Content extends Component {
     if(errors && errors.length > 0)
       return errors; // otherwise fall off end and return undefined
   }
-
 
 
   render() {

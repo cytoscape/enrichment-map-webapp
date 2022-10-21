@@ -128,6 +128,22 @@ class Datastore {
 
     return networkID.string;
   }
+  
+  /**
+   * Updates a network document--only the 'networkName' can be updated.
+   * @returns true if the network has been found and updated, false otherwise.
+   */
+  async updateNetwork(networkIDString, { networkName }) {
+    const networkID = makeID(networkIDString);
+    const filter = { '_id': networkID.bson };
+    const updateDoc = { $set: { networkName: networkName } };
+    
+    const res = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .updateOne(filter, updateDoc);
+
+    return res.modifiedCount > 0;
+  }
 
   /**
    * Inserts a ranked gene list document into the "geneLists" collection.
