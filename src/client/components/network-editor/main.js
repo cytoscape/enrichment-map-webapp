@@ -361,7 +361,6 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
           <header className={classes.drawerHeader}>
             <Paper component="form" className={classes.root}>
               <SearchBar
-                autoFocus
                 disabled={!networkLoaded || !geneListIndexed}
                 className={classes.searchBar}
                 value={searchValue}
