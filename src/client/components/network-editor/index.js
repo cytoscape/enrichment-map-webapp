@@ -73,11 +73,12 @@ export class NetworkEditor extends Component {
         this.cy.add(result.network.elements);
       }
 
+      const minQVal = this.getMinQValue();
       const maxQVal = this.getMaxQValue();
       this.cy.data({ name: result.networkName, parameters: result.parameters, maxQVal });
 
       // Set network style
-      this.cy.style().fromJson(DEFAULT_NETWORK_STYLE(maxQVal));
+      this.cy.style().fromJson(DEFAULT_NETWORK_STYLE(minQVal, maxQVal));
 
       // Notify listeners that the network has been loaded
       console.log('Loaded');
@@ -152,15 +153,12 @@ export class NetworkEditor extends Component {
     });
   }
 
+  getMinQValue() {
+    return this.cy.nodes().min(n => n.data('padj')).value;
+  }
+
   getMaxQValue() {
-    return this.cy.nodes().reduce(
-      (prevVal, node) => {
-        if(typeof prevVal === 'undefined')
-          return 0;
-        const qval = node.data('padj');
-        return qval ? Math.max(qval, prevVal) : prevVal;
-      }
-    );
+    return this.cy.nodes().max(n => n.data('padj')).value;
   }
 
   getClusterLabels(result) {
