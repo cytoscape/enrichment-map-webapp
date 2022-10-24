@@ -1,36 +1,45 @@
+import _ from 'lodash';
 
 export const NODE_BG_COLOR = {
-  start: 'rgb(239,138,98)',
-  end: 'rgb(178,24,43)'
+  start: '#3baa71', // best nodes (low p-val)
+  end: '#72877c' // worst nodes
 };
 
-export const DEFAULT_NETWORK_STYLE = (maxQVal) => [
+const nodeLabel = _.memoize(node => {
+  const text = node.data('label') ?? node.data('name');
+  const percent = text.indexOf('%');
+
+  if (percent > 0) {
+    return text.substring(0, percent).toLowerCase();
+  } else {
+    return text;
+  }
+}, node => node.id());
+
+export const DEFAULT_NETWORK_STYLE = (minQVal, maxQVal) => [
   {
     selector: 'node',
     style: {
-      'opacity': 0.8,
-      'border-color': '#333333',
-      'border-width': 1,
+      'opacity': 1,
+      'border-width': 0,
       'border-opacity': 0.7,
-      'label': 'data(name)',
+      'label': nodeLabel,
       'width':  40, //ele => ele.data('gs_size') / 10,
       'height': 40, // ele => ele.data('gs_size') / 10,
-      'font-size': '6px',
+      'font-size': '8px',
       'text-valign': 'center',
       'text-wrap': 'wrap',
       'text-max-width': 80,
-    }
-  },
-  {
-    selector: 'node[label]',
-    style: {
-      'label': 'data(label)', // If there's a 'label' attribute, that overrides the 'name' attribute
+      'text-outline-width': 1.5,
+      'text-outline-opacity': 1,
+      'color': '#fff'
     }
   },
   {
     selector: 'node[padj]',
     style: {
-      'background-color': `mapData(padj, 0.0, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`,
+      'background-color': `mapData(padj, ${minQVal || 0}, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`,
+      'text-outline-color': `mapData(padj, ${minQVal || 0}, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`
     }
   },
   {
@@ -38,15 +47,17 @@ export const DEFAULT_NETWORK_STYLE = (maxQVal) => [
     style: {
       'width':  60, //ele => ele.data('gs_size') / 10,
       'height': 60, // ele => ele.data('gs_size') / 10,
-      'background-color': 'gray'
+      'background-color': 'gray',
+      'text-outline-color': 'gray'
     }
   },
   {
     selector: 'edge',
     style: {
-      'line-color' : '#a6cee3', //'#404040',
+      'line-color' : '#b1d6d8',
       'line-opacity': 0.6,
-      'curve-style': 'bezier',
+      'curve-style': 'haystack',
+      'haystack-radius': 0,
       'width': ele => ele.data('similarity_coefficient') * 6,
     }
   },
@@ -63,6 +74,9 @@ export const DEFAULT_NETWORK_STYLE = (maxQVal) => [
       'border-color': '#2B65EC',
       'font-size': '24px',
       'text-valign':'top',
+      'text-outline-width': 0,
+      'text-outline-opacity': 0,
+      'color': '#000'
     }
   },
   {
@@ -75,6 +89,14 @@ export const DEFAULT_NETWORK_STYLE = (maxQVal) => [
     selector: 'edge.unselected',
     style: {
       'opacity': 0.1
+    }
+  },
+  {
+    selector: 'node:selected',
+    style: {
+      'border-width': 6,
+      'border-color': '#aadafa',
+      'border-opacity': 0.666
     }
   },
   {
