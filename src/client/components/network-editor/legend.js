@@ -70,7 +70,7 @@ function createCy(maxQVal) {
     elements: [
       { data: { id: 'a' } },
       { data: { id: 'a-lab', label: 'Node:' } },
-      { data: { id: 'a-exp', label: 'Gene Set:' } },
+      { data: { id: 'a-exp', label: 'Gene Set' } },
 
       { data: { id: 'b', padj: 0.1 } },
       { data: { id: 'b-lab', label: 'Node Color:' } },

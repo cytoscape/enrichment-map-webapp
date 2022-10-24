@@ -266,34 +266,8 @@ const useStyles = theme => ({
   container: {
     overflow: 'auto',
   },
-  paper: {
-    padding: theme.spacing(2),
-    whiteSpace: 'nowrap',
-  },
-  divider: {
-    margin: theme.spacing(2, 0),
-  },
-  item: {
-    margin: 0,
-  },
-  button: {
-    margin: 0,
-    textTransform: 'unset',
-  },
-  startIcon: {
-    marginLeft: 0,
-    marginRight: 0,
-  },
-  emptyButtonLabel: {
-    flexDirection: 'column',
-    paddingTop: 25,
-  },
   h5: {
     flexGrow: 1,
-  },
-  subtitle1: {
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
   body1: {
     marginTop: theme.spacing(6),
