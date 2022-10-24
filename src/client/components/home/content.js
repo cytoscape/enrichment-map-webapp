@@ -154,6 +154,7 @@ export class Content extends Component {
     const RanksDropArea = () =>
       <DropzoneArea
         //acceptedFiles={['text/plain']} // no idea how to get this to accept .rnk files
+        classes={{root: classes.dropzone}}
         filesLimit={1}
         onChange={files => this.onDropzoneFileLoad(files)}
         dropzoneText='Drag and drop a ranked-gene-list file, or click.'
@@ -186,7 +187,7 @@ export class Content extends Component {
           <Grid container direction="column" alignItems="stretch" alignContent="stretch" justifyContent="flex-start">
             { /* === TOP Panel ==================================================================== */ }
             <Grid item>
-              <Grid container direction="row" alignItems="stretch" alignContent="stretch" justifyContent="center" spacing={3}>
+              <Grid container direction="row" alignItems="stretch" alignContent="stretch" justifyContent="center">
                 { /* === LEFT Panel ===================================================== */ }
                 <Grid item className={classes.root}>
                   <Container direction="column" className={classes.container}>
@@ -194,7 +195,7 @@ export class Content extends Component {
                       Create EnrichmentMap networks with This Website. <br />
                       <br />
                     </Typography>
-                    <div style={{ width: '550px', height: '300px'}}>
+                    <div>
                       { {'WAITING': () => <RanksDropArea />,
                          'LOADING': () => <LoadingProgress />,
                          'ERROR':   () => <ErrorReport errorMessages={this.state.errorMessages} />
@@ -259,17 +260,10 @@ export class Content extends Component {
 
 
 const useStyles = theme => ({
-  spinner: {
-    paddingTop: theme.spacing(6),
-    textAlign: 'center',
-    verticalAligh: 'middle',
-  },
   root: {
     alignContent: 'center',
   },
   container: {
-    margin: theme.spacing(1),
-    padding: theme.spacing(2),
     overflow: 'auto',
   },
   paper: {
@@ -305,6 +299,14 @@ const useStyles = theme => ({
     marginTop: theme.spacing(6),
     textAlign: 'center',
     lineHeight: '200%',
+  },
+  dropzone: {
+    padding: theme.spacing(1),
+  },
+  spinner: {
+    paddingTop: theme.spacing(6),
+    textAlign: 'center',
+    verticalAligh: 'middle',
   },
 });
 
