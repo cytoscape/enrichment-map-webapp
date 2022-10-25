@@ -199,7 +199,8 @@ const GeneMetadataPanel = ({ symbol, rank }) => {
   );
 };
 
-const GeneListPanel = ({ controller, genes, selectedGene, setSelectedGene }) => {
+const GeneListPanel = ({ controller, genes }) => {
+  const [selectedGene, setSelectedGene] = useState(null);
   const classes = useStyles();
 
   const totalGenes = genes != null ? genes.length : -1;
@@ -307,8 +308,6 @@ GeneMetadataPanel.propTypes = {
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   genes: PropTypes.array,
-  selectedGene: PropTypes.string,
-  setSelectedGene: PropTypes.func.isRequired,
 };
 
 export default GeneListPanel;

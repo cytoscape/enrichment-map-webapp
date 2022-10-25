@@ -128,7 +128,6 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
   const [geneSetNames, setGeneSetNames] = useState([]);
   const [genes, setGenes] = useState(null);
   const [sort, setSort] = useState('down');
-  const [selectedGene, setSelectedGene] = useState(null);
   const [geneSetsExpanded, setGeneSetsExpanded] = useState(true);
   const [legendExpanded, setLegendExpanded] = useState(false);
 
@@ -372,7 +371,7 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
           </header>
           <section className={classes.drawerSection}>
             {networkLoaded && geneListIndexed && (
-              <GeneListPanel controller={controller} genes={genes} selectedGene={selectedGene} setSelectedGene={setSelectedGene} />
+              <GeneListPanel controller={controller} genes={genes} />
             )}
           </section>
           <footer className={classes.drawerFooter}>
