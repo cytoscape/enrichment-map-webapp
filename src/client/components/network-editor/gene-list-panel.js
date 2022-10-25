@@ -20,6 +20,7 @@ import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 
 const CHART_WIDTH = 160;
 const CHART_HEIGHT = 14;
+const GENE_RANK_ROUND_DIGITS = 2;
 
 const RANK_RANGE_COLOR = theme.palette.background.focus;
 const UP_RANK_COLOR = '#f1a340';
@@ -51,6 +52,7 @@ const useStyles = makeStyles((theme) => ({
   bulletIcon: {
     marginRight: '4px',
     color: 'inherit',
+    opacity: 0.5
   },
   geneName: {
     color: 'inherit',
@@ -99,6 +101,17 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-start',
+  },
+  rankBarParent: {
+    position: 'relative'
+  },
+  rankBarText: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    fontSize: "0.8em",
+    marginLeft: "0.25em",
+    color: "#333"
   }
 }));
 
@@ -146,10 +159,6 @@ const GeneMetadataPanel = ({ symbol, rank }) => {
 
   return (
     <Grid container color="textSecondary" className={classes.geneMetadata}>
-      <Grid container direction="row" justifyContent="space-between" alignItems='center' className={classes.geneRankExpanded}>
-        <Grid item>Rank: </Grid>
-        <Grid item>{ rank }</Grid>
-      </Grid>
       {isLoading && (
         <Typography variant="body2" className={classes.loadingMsg}>Loading...</Typography>
       )}
@@ -240,6 +249,9 @@ const GeneListPanel = ({ controller, genes, selectedGene, setSelectedGene }) => 
     const loading = totalGenes === -1;
     const isSelected = !loading && selectedGene === symbol;
 
+    const roundDigits = GENE_RANK_ROUND_DIGITS;
+    const roundedRank = Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits);
+
     return (
       <ListItem key={idx} alignItems="flex-start">
         <ListItemText
@@ -271,16 +283,19 @@ const GeneListPanel = ({ controller, genes, selectedGene, setSelectedGene }) => 
                   {loading ?
                     <Skeleton variant="rect" height={CHART_HEIGHT} />
                     :
-                    data && <HSBar data={data} height={CHART_HEIGHT} />
+                    data && (
+                      <div className={classes.rankBarParent}>
+                        <HSBar data={data} height={CHART_HEIGHT} />
+                        <span className={classes.rankBarText}>{roundedRank}</span>
+                      </div>
+                    )
                   }
                 </Grid>
               </Grid>
               {isSelected ?
                 <GeneMetadataPanel symbol={symbol} rank={rank} />
                 :
-                <Grid container direction="row" justifyContent="flex-end" alignItems='center' className={classes.geneRankCollapsed}>
-                  {loading ? <Skeleton variant="text" width={115} /> : rank }
-                </Grid>
+                null
               }
             </Grid>
           }
