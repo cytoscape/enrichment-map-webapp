@@ -23,8 +23,8 @@ const CHART_HEIGHT = 14;
 const GENE_RANK_ROUND_DIGITS = 2;
 
 const RANK_RANGE_COLOR = theme.palette.background.focus;
-const UP_RANK_COLOR = '#f1a340';
-const DOWN_RANK_COLOR = '#998ec3';
+const UP_RANK_COLOR = '#b8bf8f';
+const DOWN_RANK_COLOR = '#bf8f9f';
 // (rank colors from: https://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3)
 
 const useStyles = makeStyles((theme) => ({
