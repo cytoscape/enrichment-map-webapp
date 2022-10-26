@@ -20,6 +20,7 @@ import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 
 const CHART_WIDTH = 160;
 const CHART_HEIGHT = 14;
+const GENE_RANK_ROUND_DIGITS = 2;
 
 const RANK_RANGE_COLOR = theme.palette.background.focus;
 const UP_RANK_COLOR = '#f1a340';
@@ -51,6 +52,7 @@ const useStyles = makeStyles((theme) => ({
   bulletIcon: {
     marginRight: '4px',
     color: 'inherit',
+    opacity: 0.5
   },
   geneName: {
     color: 'inherit',
@@ -99,8 +101,38 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-start',
+  },
+  rankBarParent: {
+    position: 'relative'
+  },
+  rankBarText: {
+    position: "absolute",
+    top: 0,
+    fontSize: "0.8em",
+    color: "#999",
+    mixBlendMode: 'difference',
+    marginLeft: '0.125em',
+    marginRight: '0.125em'
   }
 }));
+
+const rankBarTextStyle = (rank, minRank, maxRank) => {
+  if (minRank > 0 && maxRank > 0) { // all positive => bars start at left and go right
+    return { left: 0 };
+  } else if (minRank < 0 && maxRank < 0) { // all negative => bars start at right and go left
+    return { right: 0 };
+  } else if (rank < 0) { // neg. rank should be shifted right by the size of the pos. max. bar size
+    let offset = Math.abs(maxRank) / (Math.abs(minRank) + Math.abs(maxRank)) * 100;
+
+    return {
+      right: `${offset}%`
+    };
+  } else { // pos. rank should be shifted left by the size of the neg. max. bar size
+    let offset = Math.abs(minRank) / (Math.abs(minRank) + Math.abs(maxRank)) * 100;
+
+    return { left: `${offset}%` };
+  }
+};
 
 const GeneMetadataPanel = ({ symbol, rank }) => {
   const classes = useStyles();
@@ -146,10 +178,6 @@ const GeneMetadataPanel = ({ symbol, rank }) => {
 
   return (
     <Grid container color="textSecondary" className={classes.geneMetadata}>
-      <Grid container direction="row" justifyContent="space-between" alignItems='center' className={classes.geneRankExpanded}>
-        <Grid item>Rank: </Grid>
-        <Grid item>{ rank }</Grid>
-      </Grid>
       {isLoading && (
         <Typography variant="body2" className={classes.loadingMsg}>Loading...</Typography>
       )}
@@ -209,13 +237,13 @@ const GeneListPanel = ({ controller, genes }) => {
     setSelectedGene(selectedGene !== symbol ? symbol : null);
   };
 
+  const { minRank, maxRank } = controller;
+
   const renderGeneRow = ({ symbol, rank, idx }) => {
     let data;
 
     if (rank) {
       data = [];
-      const minRank = controller.minRank;
-      const maxRank = controller.maxRank;
       
       if (rank < 0) {
         // Low regulated genes
@@ -240,6 +268,9 @@ const GeneListPanel = ({ controller, genes }) => {
 
     const loading = totalGenes === -1;
     const isSelected = !loading && selectedGene === symbol;
+
+    const roundDigits = GENE_RANK_ROUND_DIGITS;
+    const roundedRank = Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits);
 
     return (
       <ListItem key={idx} alignItems="flex-start">
@@ -272,16 +303,19 @@ const GeneListPanel = ({ controller, genes }) => {
                   {loading ?
                     <Skeleton variant="rect" height={CHART_HEIGHT} />
                     :
-                    data && <HSBar data={data} height={CHART_HEIGHT} />
+                    data && (
+                      <div className={classes.rankBarParent}>
+                        <HSBar data={data} height={CHART_HEIGHT} />
+                        <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank}</span>
+                      </div>
+                    )
                   }
                 </Grid>
               </Grid>
               {isSelected ?
                 <GeneMetadataPanel symbol={symbol} rank={rank} />
                 :
-                <Grid container direction="row" justifyContent="flex-end" alignItems='center' className={classes.geneRankCollapsed}>
-                  {loading ? <Skeleton variant="text" width={115} /> : rank }
-                </Grid>
+                null
               }
             </Grid>
           }
