@@ -107,13 +107,32 @@ const useStyles = makeStyles((theme) => ({
   },
   rankBarText: {
     position: "absolute",
-    left: 0,
     top: 0,
     fontSize: "0.8em",
-    marginLeft: "0.25em",
-    color: "#333"
+    color: "#999",
+    mixBlendMode: 'difference',
+    marginLeft: '0.125em',
+    marginRight: '0.125em'
   }
 }));
+
+const rankBarTextStyle = (rank, minRank, maxRank) => {
+  if (minRank > 0 && maxRank > 0) { // all positive => bars start at left and go right
+    return { left: 0 };
+  } else if (minRank < 0 && maxRank < 0) { // all negative => bars start at right and go left
+    return { right: 0 };
+  } else if (rank < 0) { // neg. rank should be shifted right by the size of the pos. max. bar size
+    let offset = Math.abs(maxRank) / (Math.abs(minRank) + Math.abs(maxRank)) * 100;
+
+    return {
+      right: `${offset}%`
+    };
+  } else { // pos. rank should be shifted left by the size of the neg. max. bar size
+    let offset = Math.abs(minRank) / (Math.abs(minRank) + Math.abs(maxRank)) * 100;
+
+    return { left: `${offset}%` };
+  }
+};
 
 const GeneMetadataPanel = ({ symbol, rank }) => {
   const classes = useStyles();
@@ -217,13 +236,13 @@ const GeneListPanel = ({ controller, genes, selectedGene, setSelectedGene }) => 
     setSelectedGene(selectedGene !== symbol ? symbol : null);
   };
 
+  const { minRank, maxRank } = controller;
+
   const renderGeneRow = ({ symbol, rank, idx }) => {
     let data;
 
     if (rank) {
       data = [];
-      const minRank = controller.minRank;
-      const maxRank = controller.maxRank;
       
       if (rank < 0) {
         // Low regulated genes
@@ -286,7 +305,7 @@ const GeneListPanel = ({ controller, genes, selectedGene, setSelectedGene }) => 
                     data && (
                       <div className={classes.rankBarParent}>
                         <HSBar data={data} height={CHART_HEIGHT} />
-                        <span className={classes.rankBarText}>{roundedRank}</span>
+                        <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank}</span>
                       </div>
                     )
                   }
