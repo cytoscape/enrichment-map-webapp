@@ -68,7 +68,8 @@ http.post('/create', tsvParser, async function(req, res, next) {
 http.get('/:netid', async function(req, res, next) {
   try {
     const { netid } = req.params;
-    const network = await Datastore.getNetwork(netid);
+    const { full } = req.query;
+    const network = await Datastore.getNetwork(netid, full);
     if(!network) {
       res.sendStatus(404);
     } else {

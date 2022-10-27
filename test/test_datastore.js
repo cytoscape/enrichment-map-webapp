@@ -18,7 +18,7 @@ describe('Gene Set Queries', () => {
   });
 
   it('gets a network', async () => {
-    const network = await Datastore.getNetwork(networkID);
+    const network = await Datastore.getNetwork(networkID, true);
     expect(network.networkIDStr).to.eql(networkID);
     expect(network.network.elements.nodes.length).to.eql(5);
     expect(network.network.elements.edges.length).to.eql(4);
@@ -93,7 +93,6 @@ describe('Gene Set Queries', () => {
 
   it('gets the ranked gene list', async () => {
     const results = await Datastore.getRankedGeneList(networkID);
-    console.log(JSON.stringify(results));
     expect(results).to.eql({ 
       min: 1,
       max: 11,

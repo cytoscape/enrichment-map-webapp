@@ -211,12 +211,15 @@ class Datastore {
   /**
    * Returns the entire network document. 
    */
-  async getNetwork(networkIDString) {
+  async getNetwork(networkIDString, full) {
     const networkID = makeID(networkIDString);
     const network = await this.db
       .collection(NETWORKS_COLLECTION)
-      .findOne({ _id: networkID.bson });
-
+      .findOne(
+        { _id: networkID.bson },
+        full ? {} : { projection: { network: false } }
+      );
+      
     return network;
   }
 

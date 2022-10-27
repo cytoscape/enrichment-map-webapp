@@ -26,10 +26,7 @@ export class NetworkEditor extends Component {
 
   constructor(props) {
     super(props);
-
-    const id = _.get(props, ['match', 'params', 'id'], _.get(props, 'id'));
-    const secret = _.get(props, ['match', 'params', 'secret'], _.get(props, 'secret'));
-    const { summary } = props;
+    const { id, secret, full } = props;
 
     // TODO temporary
     this.secret = secret;
@@ -57,7 +54,7 @@ export class NetworkEditor extends Component {
     const loadNetwork = async () => {
       console.log('Loading...');
 
-      const res = await fetch(`/api/${id}`);
+      const res = await fetch(`/api/${id}` + (full ? '?full=true' : ''));
       if(!res.ok) {
         location.href = '/';
         return;
@@ -65,12 +62,12 @@ export class NetworkEditor extends Component {
 
       const result = await res.json();
 
-      if(summary && result.summaryNetwork) {
-        this.setClusterNodeNamesForSummaryNetwork(result);
-        this.cy.add(result.summaryNetwork.elements);
-      } else {
+      if(full) {
         this.addClusterNodesToNetworkJSON(result);
         this.cy.add(result.network.elements);
+      } else {
+        this.setClusterNodeNamesForSummaryNetwork(result);
+        this.cy.add(result.summaryNetwork.elements);
       }
 
       const minQVal = this.getMinQValue();
@@ -270,7 +267,9 @@ export class Demo extends Component {
 }
 
 NetworkEditor.propTypes = {
-  summary: PropTypes.bool
+  id: PropTypes.string,
+  secret: PropTypes.string,
+  full: PropTypes.bool
 };
 
 export default NetworkEditor;
