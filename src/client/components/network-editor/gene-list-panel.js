@@ -335,6 +335,7 @@ const GeneListPanel = ({ controller, genes }) => {
     <Virtuoso
       totalCount={totalGenes}
       itemContent={idx => renderGeneRow(idx)}
+      overscan={200}
     />
   );
 };
