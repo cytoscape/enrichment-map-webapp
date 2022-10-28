@@ -9,7 +9,8 @@ import { NetworkEditorController } from './controller';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { List, ListItem, ListItemText } from '@material-ui/core';
+import { Virtuoso } from 'react-virtuoso';
+import { ListItem, ListItemText } from '@material-ui/core';
 import { Grid, Typography, Link } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
@@ -25,11 +26,14 @@ const GENE_RANK_ROUND_DIGITS = 2;
 const RANK_RANGE_COLOR = theme.palette.background.focus;
 const UP_RANK_COLOR = '#b8bf8f';
 const DOWN_RANK_COLOR = '#bf8f9f';
-// (rank colors from: https://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3)
 
 const useStyles = makeStyles((theme) => ({
   root: {
     width: '100%',
+  },
+  listItem: {
+    paddingTop: 4,
+    paddingBottom: 0,
   },
   listItemText: {
     marginTop: 0,
@@ -64,7 +68,8 @@ const useStyles = makeStyles((theme) => ({
   geneMetadata: {
     fontSize: '1.0em',
     marginLeft: '0.6em',
-    padding: '0 1.2em 0 1.05em',
+    marginBottom: '0.25em',
+    padding: '0.25em 1.2em 0 1.05em',
     borderWidth: 1,
     borderColor: theme.palette.divider,
     borderStyle: 'hidden hidden hidden solid',
@@ -134,7 +139,7 @@ const rankBarTextStyle = (rank, minRank, maxRank) => {
   }
 };
 
-const GeneMetadataPanel = ({ symbol, rank }) => {
+const GeneMetadataPanel = ({ symbol }) => {
   const classes = useStyles();
 
   const query = useQuery(
@@ -231,18 +236,20 @@ const GeneListPanel = ({ controller, genes }) => {
   const [selectedGene, setSelectedGene] = useState(null);
   const classes = useStyles();
 
-  const totalGenes = genes != null ? genes.length : -1;
-
   const toggleGeneDetails = async (symbol) => {
     setSelectedGene(selectedGene !== symbol ? symbol : null);
   };
 
   const { minRank, maxRank } = controller;
 
-  const renderGeneRow = ({ symbol, rank, idx }) => {
+  const renderGeneRow = (idx) => {
+    const g = genes != null && genes.length > 0 ? genes[idx] : null;
+    const symbol = g ? g.gene : null;
+    const rank = g ? g.rank : null;
+
     let data;
 
-    if (rank) {
+    if (rank != null) {
       data = [];
       
       if (rank < 0) {
@@ -266,14 +273,14 @@ const GeneListPanel = ({ controller, genes }) => {
       }
     }
 
-    const loading = totalGenes === -1;
-    const isSelected = !loading && selectedGene === symbol;
+    const loading = genes == null;
+    const isSelected = !loading && selectedGene != null && selectedGene === symbol;
 
     const roundDigits = GENE_RANK_ROUND_DIGITS;
-    const roundedRank = Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits);
+    const roundedRank = rank != null ? (Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits)) : 0;
 
     return (
-      <ListItem key={idx} alignItems="flex-start">
+      <ListItem key={idx} alignItems="flex-start" className={classes.listItem}>
         <ListItemText
           className={classes.listItemText}
           primary={
@@ -295,7 +302,7 @@ const GeneListPanel = ({ controller, genes }) => {
                       <KeyboardArrowRightIcon fontSize="small" className={classes.bulletIcon} />
                     }
                     <Typography variant="body2" color="textPrimary" className={classes.geneName}>
-                      {loading ? <Skeleton variant="text" width={72} /> : symbol }
+                      {loading ? <Skeleton variant="text" width={72} height="1.5rem" /> : symbol }
                     </Typography>
                   </Grid>
                 </Grid>
@@ -312,32 +319,29 @@ const GeneListPanel = ({ controller, genes }) => {
                   }
                 </Grid>
               </Grid>
-              {isSelected ?
-                <GeneMetadataPanel symbol={symbol} rank={rank} />
-                :
-                null
-              }
+              {isSelected && (
+                <GeneMetadataPanel symbol={symbol} />
+              )}
             </Grid>
           }
         />
       </ListItem>
     );
   };
+
+  const totalGenes = genes != null ? genes.length : 30/*(for then loading Skeletons)*/;
   
   return (
-    <List dense className={classes.root}>
-      {totalGenes >= 0 ?
-        genes.map(({gene, rank}, idx) => renderGeneRow({ symbol: gene, rank, idx }))
-      :
-        _.range(0, 30).map((idx) => renderGeneRow({ idx }))
-      }
-    </List>
+    <Virtuoso
+      totalCount={totalGenes}
+      itemContent={idx => renderGeneRow(idx)}
+      overscan={200}
+    />
   );
 };
 
 GeneMetadataPanel.propTypes = {
   symbol: PropTypes.string.isRequired,
-  rank: PropTypes.number.isRequired,
 };
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
