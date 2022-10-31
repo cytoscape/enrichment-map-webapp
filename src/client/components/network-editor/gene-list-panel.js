@@ -219,7 +219,7 @@ const GeneMetadataPanel = ({ symbol }) => {
           </Grid>
           <Grid item>
             <Link
-              href={`http://genemania.org/search/human/${symbol}`}
+              href={`https://genemania.org/search/human/${symbol}`}
               className={classes.linkout}
               {...linkoutProps}
             >
