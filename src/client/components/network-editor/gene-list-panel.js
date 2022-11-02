@@ -95,9 +95,12 @@ const useStyles = makeStyles((theme) => ({
     color: theme.palette.link.main,
   },
   loadingMsg: {
-    fontFamily: 'inherit',
-    fontSize: 'inherit',
     color: theme.palette.text.disabled,
+    animationName: '$blinker',
+    animationDuration: '1000ms',
+    animationIterationCount: 'infinite',
+    animationDirection: 'alternate',
+    animationTimingFunction: 'ease-in-out',
   },
   errorMsg: {
     fontFamily: 'inherit',
@@ -118,7 +121,15 @@ const useStyles = makeStyles((theme) => ({
     mixBlendMode: 'difference',
     marginLeft: '0.125em',
     marginRight: '0.125em'
-  }
+  },
+  '@keyframes blinker': {
+    from: {
+      opacity: 0.5,
+    },
+    to: {
+      opacity: 0.25,
+    },
+  },
 }));
 
 const rankBarTextStyle = (rank, minRank, maxRank) => {
@@ -183,17 +194,16 @@ const GeneMetadataPanel = ({ symbol }) => {
 
   return (
     <Grid container color="textSecondary" className={classes.geneMetadata}>
-      {isLoading && (
-        <Typography variant="body2" className={classes.loadingMsg}>Loading...</Typography>
-      )}
       {error && (
         <span className={classes.errorMsg}>
             <ErrorOutlineIcon fontSize="small" style={{marginRight: '10px'}} /> {error.message ? error.message : 'Unable to fetch description'}
         </span>
       )}
-      {!error && description && (
+      {!error && (
         <Grid item xs={12}>
-          <Typography variant="body2" color="textSecondary">{ description }</Typography>
+          <Typography variant="body2" color="textSecondary" className={isLoading ? classes.loadingMsg : null}>
+            {isLoading ? 'Loading...' : description }
+          </Typography>
         </Grid>
       )}
       <Grid item xs={12}>  
