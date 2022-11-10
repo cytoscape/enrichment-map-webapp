@@ -117,7 +117,7 @@ const NetworkBackground = ({ controller }) => {
     };
   }, []);
   
-  return <div id="cy-background" style={{ backgroundColor: bgColor }} />;
+  return <div style={{ position: 'absolute', zIndex: -1, width: '100%', height: '100%', backgroundColor: bgColor }} />;
 };
 
 const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) => {
@@ -401,7 +401,7 @@ const Main = ({ controller, showControlPanel, drawerVariant, onContentClick }) =
       <LeftDrawer />
       <div className={classes.cy}>
         <div className={clsx(classes.cy, { [classes.cyShift]: shiftCy })}>
-          <div id="cy" className={classes.cy} />
+          <div id="cy" className={classes.cy} style={{ zIndex: 1, width: '100%', height: '100%' }} />
           <NetworkBackground controller={controller} />
         </div>
       </div>

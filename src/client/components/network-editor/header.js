@@ -126,7 +126,6 @@ export class Header extends Component {
               title="Control Panel"
               icon={<MenuIcon />}
               edge="start"
-              className={classes.menuButton}
               onClick={() => onShowControlPanel(!showControlPanel)}
             />
             <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
