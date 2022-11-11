@@ -230,8 +230,6 @@ export class NetworkEditor extends Component {
       }
     };
 
-    const drawerVariant = isMobile ? 'temporary' : 'persistent';
-
     return (
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
@@ -240,13 +238,13 @@ export class NetworkEditor extends Component {
             <Header
               controller={controller}
               showControlPanel={showControlPanel}
-              drawerVariant={drawerVariant}
+              isMobile={isMobile}
               onShowControlPanel={this.onShowControlPanel}
             />
             <Main
               controller={controller}
               showControlPanel={showControlPanel}
-              drawerVariant={drawerVariant}
+              isMobile={isMobile}
               onContentClick={onContentClick}
             />
           </div>

@@ -86,7 +86,7 @@ export class Header extends Component {
 
   render() {
     const { anchorEl, menuName, networkLoaded } = this.state;
-    const { classes, showControlPanel, drawerVariant, onShowControlPanel } = this.props;
+    const { classes, showControlPanel, isMobile, onShowControlPanel } = this.props;
     const { controller } = this;
 
     const showShareMenu = (event) => {
@@ -112,7 +112,7 @@ export class Header extends Component {
       return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
     };
 
-    const shiftAppBar = showControlPanel && drawerVariant === 'persistent';
+    const shiftAppBar = showControlPanel && !isMobile;
     
     return (
       <>
@@ -280,8 +280,8 @@ ToolbarButton.propTypes = {
 Header.propTypes = {
   classes: PropTypes.object.isRequired,
   controller: PropTypes.instanceOf(NetworkEditorController),
-  drawerVariant: PropTypes.string.isRequired,
   showControlPanel: PropTypes.bool.isRequired,
+  isMobile: PropTypes.bool.isRequired,
   onShowControlPanel: PropTypes.func.isRequired,
 };
 
