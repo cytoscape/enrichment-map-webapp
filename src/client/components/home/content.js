@@ -39,21 +39,32 @@ export class Content extends Component {
     location.href = `/document/${id}`;
   }
 
-  async sendRankedGeneListToEMService(ranksTSV, networkName) {
-    const res = await fetch('/api/create', {
+  async sendDataToEMService(dataTSV, type, networkName, classes) {
+    const init = {
       method: 'POST',
       headers: { 'Content-Type': 'text/tab-separated-values' },
-      body: ranksTSV
-    });
+      body: dataTSV
+    };
+
+    let res;
+    if(type === 'ranks') {
+      res = await fetch('/api/create/preranked', init);
+    } else if(type === 'expr') {
+      const url =  '/api/create/rnaseq?' + new URLSearchParams({ classes });
+      console.log(url);
+      res = await fetch(url, init);
+    } 
 
     if(res.ok) {
       // Update the network name
       const netID = await res.text();
       
+      // TODO We should pass the network name as a query parameter to the first
+      // fetch call above, then this extra fetch won't be necessary.
       await fetch(`/api/${netID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ networkName: networkName })
+        body: JSON.stringify({ networkName })
       });
 
       return { netID };
@@ -63,23 +74,31 @@ export class Content extends Component {
   }
 
 
-  async onLoadSampleNetwork(size) {
+  async onLoadSampleNetwork(type, size) {
     if(this.state.step == STEP.LOADING)
       return;
 
     this.setState({ step: STEP.LOADING });
 
-    const name = size == 'small'  ? 'brca_hd_tep_ranks_100' : 'brca_hd_tep_ranks';
-    const url = `/sample-data/${name}.rnk`;
+    let name, classes;
+    if(type === 'ranks') {
+      name = size == 'small'  ? 'brca_hd_tep_ranks_100.rnk' : 'brca_hd_tep_ranks.rnk';
+    } else if(type === 'expr') {
+      name = 'FakeExpression.txt';
+      classes = 'A,A,A,B,B,B';
+    }
 
-    const sdRes = await fetch(url);
+    const dataurl = `/sample-data/${name}`;
+
+    const sdRes = await fetch(dataurl);
     if(!sdRes.ok) {
       this.setState({ step: STEP.ERROR, errorMessages: ["Error loading sample network"] });
       return;
     }
+    
+    const data = await sdRes.text();
 
-    const ranks = await sdRes.text();
-    const emRes = await this.sendRankedGeneListToEMService(ranks, name);
+    const emRes = await this.sendDataToEMService(data, type, name, classes);
     if(emRes.errors) {
       this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
       return;
@@ -90,6 +109,7 @@ export class Content extends Component {
 
 
   async onDropzoneFileLoad(files) {
+    // This is just for ranks TSV for now
     if(this.state.step == STEP.LOADING)
       return;
     const file = files && files.length > 0 ? files[0] : null;
@@ -105,7 +125,8 @@ export class Content extends Component {
       return;
     } 
 
-    const emRes = await this.sendRankedGeneListToEMService(contents, file.name.replace(FILE_EXT_REGEX, ''));
+    const name = file.name.replace(FILE_EXT_REGEX, '');
+    const emRes = await this.sendDataToEMService(contents, "ranks", name);
     if(emRes.errors) {
       this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
       return;
@@ -205,13 +226,18 @@ export class Content extends Component {
                     { this.state.loading ? null :
                       <div>
                         <Typography variant="body1" gutterBottom className={classes.body1}>
-                          Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('small')}>
+                          Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('ranks', 'small')}>
                             sample network (small)
                           </Link>
                         </Typography>
                         <Typography variant="body1" gutterBottom className={classes.body1}>
-                          Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('large')}>
+                          Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('ranks', 'large')}>
                             sample network (large)
+                          </Link>
+                        </Typography>
+                        <Typography variant="body1" gutterBottom className={classes.body1}>
+                          Test <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('expr', 'large')}>
+                            sample network from RNA-seq
                           </Link>
                         </Typography>
                       </div>

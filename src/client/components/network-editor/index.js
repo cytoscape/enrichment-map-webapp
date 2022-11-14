@@ -90,6 +90,12 @@ export class NetworkEditor extends Component {
         animate: false,
       }).run();
 
+      // Lays out the nodes in a grid sorted by q-value
+      // this.cy.nodes()
+      //   .sort((a,b) => a.data('padj') - b.data('padj'))
+      //   .layout({ name: 'grid' })
+      //   .run();
+
       console.log('Successful load from DB');
       console.log('End of editor sync initial phase');
     };

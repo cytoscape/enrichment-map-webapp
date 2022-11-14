@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 export const NODE_BG_COLOR = {
   start: '#3baa71', // best nodes (low p-val)
-  end: '#72877c' // worst nodes
+  end: '#EEEEEE' // worst nodes
 };
 
 const nodeLabel = _.memoize(node => {
@@ -38,19 +38,19 @@ export const DEFAULT_NETWORK_STYLE = (minQVal, maxQVal) => [
   {
     selector: 'node[padj]',
     style: {
-      'background-color': `mapData(padj, ${minQVal || 0}, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`,
+      'background-color':   `mapData(padj, ${minQVal || 0}, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`,
       'text-outline-color': `mapData(padj, ${minQVal || 0}, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`
     }
   },
-  {
-    selector: 'node[summary]',
-    style: {
-      'width':  60, //ele => ele.data('gs_size') / 10,
-      'height': 60, // ele => ele.data('gs_size') / 10,
-      'background-color': 'gray',
-      'text-outline-color': 'gray'
-    }
-  },
+  // {
+  //   selector: 'node[summary]',
+  //   style: {
+  //     'width':  60, //ele => ele.data('gs_size') / 10,
+  //     'height': 60, // ele => ele.data('gs_size') / 10,
+  //     'background-color': 'gray',
+  //     'text-outline-color': 'gray'
+  //   }
+  // },
   {
     selector: 'edge',
     style: {

@@ -142,18 +142,13 @@ class Datastore {
     return res.modifiedCount > 0;
   }
 
+
   /**
-   * Inserts a ranked gene list document into the "geneLists" collection.
-   * Inserts gene documents into the "geneRanks" collection.
-   * @returns The id of the created document in the geneLists collection.
+   * Converts a ranked gene list in TSV format into the document
+   * format we want for mongo.
    */
-  async createRankedGeneList(rankedGeneListTSV, networkIDString) {
-    const networkID = makeID(networkIDString);
-    const geneListID = makeID();
-
+  rankedGeneListTSVToDocument(rankedGeneListTSV) {
     const genes = [];
-    const geneRankMap = new Map();
-
     var [min, max] = [Infinity, -Infinity];
 
     rankedGeneListTSV.split("\n").slice(1).forEach(line => {
@@ -168,9 +163,41 @@ class Datastore {
           max = Math.max(max, rank);
           genes.push({ gene, rank });
         }
-        geneRankMap.set(gene, rank);
       }
     });
+
+    return { genes, min, max };
+  }
+
+
+  /**
+   * Converts a JSON object in the format { "GENENAME1": rank1, "GENENAME2": rank2, ... }
+   * into the document format we want for mongo.
+   */
+  fgseaServiceGeneRanksToDocument(rankedGeneListObject) {
+    const genes = [];
+    var [min, max] = [Infinity, -Infinity];
+
+    for(const [gene, rank] of Object.entries(rankedGeneListObject)) {
+      min = Math.min(min, rank);
+      max = Math.max(max, rank);
+      genes.push({ gene, rank });
+    }
+
+    return { genes, min, max };
+  }
+
+
+  /**
+   * Inserts a ranked gene list document into the "geneLists" collection.
+   * Inserts gene documents into the "geneRanks" collection.
+   * @returns The id of the created document in the geneLists collection.
+   */
+  async createRankedGeneList(rankedGeneListDocument, networkIDString) {
+    const networkID  = makeID(networkIDString);
+    const geneListID = makeID();
+
+    const { min, max, genes } = rankedGeneListDocument;
 
     const geneListDocument = {
       _id: geneListID.bson,

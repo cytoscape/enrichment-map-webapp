@@ -3,7 +3,13 @@ import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
 
 import Datastore, { DB_1 } from '../../datastore.js';
-import { EM_SERVICE_URL, FGSEA_SERVICE_URL } from '../../env.js';
+
+import { 
+  EM_SERVICE_URL, 
+  FGSEA_PRERANKED_SERVICE_URL, 
+  FGSEA_RNASEQ_SERVICE_URL 
+} from '../../env.js';
+
 
 
 const http = Express.Router();
@@ -33,29 +39,60 @@ http.get('/iamerror', async function(req, res) {
  * Runs the FGSEA/EnrichmentMap algorithms, saves the 
  * created network, then returns its ID.
  */
-http.post('/create', tsvParser, async function(req, res, next) {
+http.post('/create/preranked', tsvParser, async function(req, res, next) {
   try {
-    console.log('Running /create endpoint.');
-    console.time('create_endpoint');
+    const tag = Date.now();
+    console.log('/create/preranked' + tag);
+    console.time('/create/preranked ' + tag);
     const rankedGeneListTSV = req.body;
 
-    console.time('fgsea_service');
-    const fgseaResultJson = await runFGSEA(rankedGeneListTSV);
-    console.timeEnd('fgsea_service');
+    console.log('fgsea_preranked_service ' + tag);
+    console.time('fgsea_preranked_service ' + tag);
+    const { pathways } = await runFGSEApreranked(rankedGeneListTSV);
+    console.timeEnd('fgsea_preranked_service ' + tag);
 
-    console.time('em_service');
-    const networkJson = await runEM(fgseaResultJson);
-    console.timeEnd('em_service');
+    console.log('em_service ' + tag);
+    console.time('em_service ' + tag);
+    const networkJson = await runEM(pathways);
+    console.timeEnd('em_service ' + tag);
 
-    console.log();
-    console.time('mongo_create');
+    console.time('mongo ' + tag);
     const netID = await Datastore.createNetwork(networkJson);
-    await Datastore.createRankedGeneList(rankedGeneListTSV, netID);
-    console.timeEnd('mongo_create');
+    const rankedGeneList = Datastore.rankedGeneListTSVToDocument(rankedGeneListTSV);
+    await Datastore.createRankedGeneList(rankedGeneList, netID);
 
     res.send(netID);
-    console.timeEnd('create_endpoint');
-    console.log("Running /create endpoint - DONE. Network ID: " + netID);
+    console.timeEnd('/create/preranked ' + tag);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/*
+ * Runs the FGSEA/EnrichmentMap algorithms, saves the 
+ * created network, then returns its ID.
+ */
+http.post('/create/rnaseq', tsvParser, async function(req, res, next) {
+  try {
+    const tag = Date.now();
+    console.time('/create/rnaseq ' + tag);
+    const rnaSeqCountsTSV = req.body;
+    const classes = req.query.classes;
+
+    console.time('fgsea_rnaseq_service ' + tag);
+    const { ranks, pathways } = await runFGSEArnaseq(rnaSeqCountsTSV, classes);
+    console.timeEnd('fgsea_rnaseq_service ' + tag);
+
+    console.time('em_service ' + tag);
+    const networkJson = await runEM(pathways);
+    console.timeEnd('em_service ' + tag);
+
+    const netID = await Datastore.createNetwork(networkJson);
+    const rankedGeneList = Datastore.fgseaServiceGeneRanksToDocument(ranks);
+    await Datastore.createRankedGeneList(rankedGeneList, netID);
+
+    res.send(netID);
+    console.timeEnd('/create/preranked ' + tag);
   } catch (err) {
     next(err);
   }
@@ -183,18 +220,35 @@ http.post('/:netid/genesearch', async function(req, res, next) {
 });
 
 
-async function runFGSEA(ranksTSV) {
-  const response = await fetch(FGSEA_SERVICE_URL, {
+async function runFGSEApreranked(ranksTSV) {
+  const response = await fetch(FGSEA_PRERANKED_SERVICE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/tab-separated-values' },
     body: ranksTSV
   });
   if(!response.ok) {
-    throw new Error("Error running fgsea service.");
+    const text = await response.text();
+    console.log(text);
+    throw new Error("Error running fgsea preranked service.");
   }
+  return await response.json();
+}
 
-  const enrichmentsJson = await response.json();
-  return enrichmentsJson;
+
+async function runFGSEArnaseq(countsTSV, classes) {
+  const url = FGSEA_RNASEQ_SERVICE_URL + '?' + new URLSearchParams({ classes });
+  console.log(url);
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/tab-separated-values' },
+    body: countsTSV
+  });
+  if(!response.ok) {
+    const text = await response.text();
+    console.log(text);
+    throw new Error("Error running fgsea rnaseq service.");
+  }
+  return await response.json();
 }
 
 
