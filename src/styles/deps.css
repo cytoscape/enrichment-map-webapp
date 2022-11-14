@@ -1,7 +1,6 @@
 /* css entry point for dependencies bundle */
 
 @import "normalize.css";
-@import "./vars.css";
 
 /* fonts */
 
