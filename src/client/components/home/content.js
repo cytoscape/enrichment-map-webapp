@@ -26,11 +26,9 @@ const STEP = {
 
 const FILE_EXT_REGEX = /\.[^/.]+$/;
 
-const SAMPLE_RANK_FILES = [
-  'brca_hd_tep_ranks_100.rnk',
-  'brca_hd_tep_ranks.rnk',
-  'mesenvs-immuno-xsm.rnk'
-];
+// globally cached
+let sampleFiles = [];
+let sampleRankFiles = [];
 
 export class Content extends Component {
 
@@ -39,8 +37,26 @@ export class Content extends Component {
 
     this.state = {
       step: STEP.WAITING,
-      errorMessages: null
+      errorMessages: null,
+      sampleFiles,
+      sampleRankFiles
     };
+  }
+
+  componentDidMount() {
+    this.loadSampleFiles();
+  }
+
+  async loadSampleFiles() {
+    if (sampleFiles.length > 0) { return; } // already loaded
+
+    const res = await fetch('/api/sample-data');
+    const files = await res.json();
+
+    sampleFiles = files;
+    sampleRankFiles = files.filter(f => f.endsWith('.rnk'));
+
+    this.setState({ sampleFiles, sampleRankFiles }); // re-render on load
   }
 
   showNetwork(id, secret) {
@@ -194,6 +210,7 @@ export class Content extends Component {
 
   render() {
     const { classes } = this.props;
+    const { sampleRankFiles } = this.state;
 
     const DropArea = () =>
       <DropzoneArea
@@ -305,9 +322,11 @@ export class Content extends Component {
           <h3>Example rank input files</h3>
           <ul>
             {
-              SAMPLE_RANK_FILES.map(file => (
+              sampleRankFiles.length > 0 ?
+              sampleRankFiles.map(file => (
                 <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
-              ))
+              )) :
+              <li>Loading...</li>
             }
           </ul>
         </DebugMenu>
