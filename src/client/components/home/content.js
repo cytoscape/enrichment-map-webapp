@@ -6,19 +6,20 @@ import RecentNetworksGrid from './recent-networks-grid';
 import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Button, Toolbar } from '@material-ui/core';
+import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import { Grid, Container } from '@material-ui/core';
 import { Tooltip, Typography, Link } from '@material-ui/core';
 import { CircularProgress, IconButton } from '@material-ui/core';
 import { DropzoneArea } from 'material-ui-dropzone';
 import WarningIcon from '@material-ui/icons/Warning';
 import { AppLogoIcon } from '../svg-icons';
-import CSVFileValidator from 'csv-file-validator';
 
 
 const STEP = {
-  WAITING:'WAITING',
-  LOADING:'LOADING',
-  ERROR:'ERROR'
+  WAITING: 'WAITING',
+  LOADING: 'LOADING',
+  CLASSES: 'CLASSES',
+  ERROR:   'ERROR'
 };
 
 const FILE_EXT_REGEX = /\.[^/.]+$/;
@@ -39,7 +40,7 @@ export class Content extends Component {
     location.href = `/document/${id}`;
   }
 
-  async sendDataToEMService(dataTSV, type, networkName, classes) {
+  async sendDataToEMService(dataTSV, type, networkName, classesArr) {
     const init = {
       method: 'POST',
       headers: { 'Content-Type': 'text/tab-separated-values' },
@@ -49,7 +50,8 @@ export class Content extends Component {
     let res;
     if(type === 'ranks') {
       res = await fetch('/api/create/preranked', init);
-    } else if(type === 'expr') {
+    } else if(type === 'rnaseq') {
+      const classes = classesArr.join(',');
       const url =  '/api/create/rnaseq?' + new URLSearchParams({ classes });
       console.log(url);
       res = await fetch(url, init);
@@ -83,13 +85,12 @@ export class Content extends Component {
     let name, classes;
     if(type === 'ranks') {
       name = size == 'small'  ? 'brca_hd_tep_ranks_100.rnk' : 'brca_hd_tep_ranks.rnk';
-    } else if(type === 'expr') {
+    } else if(type === 'rnaseq') {
       name = 'FakeExpression.txt';
-      classes = 'A,A,A,B,B,B';
+      classes = ['A','A','A','B','B','B'];
     }
 
     const dataurl = `/sample-data/${name}`;
-
     const sdRes = await fetch(dataurl);
     if(!sdRes.ok) {
       this.setState({ step: STEP.ERROR, errorMessages: ["Error loading sample network"] });
@@ -97,7 +98,6 @@ export class Content extends Component {
     }
     
     const data = await sdRes.text();
-
     const emRes = await this.sendDataToEMService(data, type, name, classes);
     if(emRes.errors) {
       this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
@@ -112,6 +112,7 @@ export class Content extends Component {
     // This is just for ranks TSV for now
     if(this.state.step == STEP.LOADING)
       return;
+
     const file = files && files.length > 0 ? files[0] : null;
     if(!file)
       return;
@@ -119,20 +120,42 @@ export class Content extends Component {
     this.setState({ step: STEP.LOADING });
 
     const contents = await this.readTextFile(file);
-    const errors   = await this.validateRanks(contents);
+    let { type, columns, errors } = await this.validateRnaseqOrRanks(contents);
+
     if(errors) {
       this.setState({ step: STEP.ERROR, errorMessages: errors });
       return;
-    } 
-
-    const name = file.name.replace(FILE_EXT_REGEX, '');
-    const emRes = await this.sendDataToEMService(contents, "ranks", name);
-    if(emRes.errors) {
-      this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
-      return;
     }
 
-    this.showNetwork(emRes.netID);
+    const name = file.name.replace(FILE_EXT_REGEX, '');
+
+    if(type === 'ranks') {
+      const emRes = await this.sendDataToEMService(contents, "ranks", name);
+      if(emRes.errors) {
+        this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
+        return;
+      }
+      this.showNetwork(emRes.netID);
+
+    } else {
+      const classes = columns.map((c,i) => i < columns.length / 2 ? 'A' : 'B');
+      console.log(columns);
+      console.log(classes);
+      this.setState({ step: STEP.CLASSES, columns, classes, contents, name });
+    }
+  }
+
+
+  async onRnaseqClassSubmit() {
+      const { classes, contents, name } = this.state;
+      this.setState({ step: STEP.LOADING });
+      
+      const emRes = await this.sendDataToEMService(contents, 'rnaseq', name, classes);
+      if(emRes.errors) {
+        this.setState({ step: STEP.ERROR, errorMessages: emRes.errors, contents: null });
+        return;
+      }
+      this.showNetwork(emRes.netID);
   }
 
 
@@ -146,39 +169,31 @@ export class Content extends Component {
   }
 
 
-  async validateRanks(contents) {
-    const headerError = (val, name) => {
-      if(name == 'gene')
-        return 'The header name for the first column should be "gene".';
-      else if(name == 'rank')
-        return 'The header name for the second column should be "rank".';
-    };
+  async validateRnaseqOrRanks(contents) {
+    const firstLine = contents.split('\n', 1)[0];
+    const headers = firstLine.split('\t');
+    const columns = headers.filter(h => !(h == "Description" || h == "description" || h == "Name" || h == "name"));
 
-    const config = {
-      delimiter: '\t',
-      headers: [
-        { name: 'gene', inputName: 'gene', required: true, headerError }, 
-        { name: 'rank', inputName: 'rank', required: true, headerError }
-      ]
-    };
-
-    const csvData = await CSVFileValidator(contents, config);
-    const errors = csvData.inValidData.map(({message}) => message);
-    if(errors && errors.length > 0)
-      return errors; // otherwise fall off end and return undefined
+    if(headers.length == 2) {
+      return { type: 'ranks', columns };
+    }
+    if(headers.length > 2) {
+      return { type: 'rnaseq', columns };
+    }
+    return { errors: ['Not an expression or ranks file.'] };
   }
 
 
   render() {
     const { classes } = this.props;
 
-    const RanksDropArea = () =>
+    const DropArea = () =>
       <DropzoneArea
         //acceptedFiles={['text/plain']} // no idea how to get this to accept .rnk files
         classes={{root: classes.dropzone}}
         filesLimit={1}
         onChange={files => this.onDropzoneFileLoad(files)}
-        dropzoneText='Drag and drop a ranked-gene-list file, or click.'
+        dropzoneText='Provide a RNA-seq expression file or ranked-gene-list file. Drag and Drop or click.'
         showPreviews={false}
         showPreviewsInDropzone={false}
       />;
@@ -187,6 +202,31 @@ export class Content extends Component {
       <div className={classes.spinner}>
         <CircularProgress />
         <Typography>Running Enrichment Analysis and Building Network.</Typography>
+      </div>;
+
+    const handleClass = (newClass, index) => {
+      const classes = this.state.classes.map((c, i) => i == index ? newClass : c);
+      this.setState({ classes });
+    };
+
+    const ClassSelector = () =>
+      <div>
+        Choose Classes
+        { this.state.columns.map((col, i) =>
+            <div key={col}>
+              { col } &nbsp;
+              <ToggleButtonGroup 
+                exclusive
+                value={this.state.classes[i]} 
+                onChange={(e, newClass) =>
+                  this.setState({ classes: this.state.classes.map((c, i2) => i == i2 ? newClass : c) })
+                }>
+                <ToggleButton value='A'>A</ToggleButton>
+                <ToggleButton value='B'>B</ToggleButton>
+              </ToggleButtonGroup>
+            </div>
+        )}
+        <Button onClick={() => this.onRnaseqClassSubmit()}>Submit</Button>
       </div>;
 
     const ErrorReport = ({ errorMessages }) =>
@@ -217,8 +257,9 @@ export class Content extends Component {
                       <br />
                     </Typography>
                     <div>
-                      { {'WAITING': () => <RanksDropArea />,
+                      { {'WAITING': () => <DropArea />,
                          'LOADING': () => <LoadingProgress />,
+                         'CLASSES': () => <ClassSelector />,
                          'ERROR':   () => <ErrorReport errorMessages={this.state.errorMessages} />
                         }[this.state.step]()
                       }
@@ -236,7 +277,7 @@ export class Content extends Component {
                           </Link>
                         </Typography>
                         <Typography variant="body1" gutterBottom className={classes.body1}>
-                          Test <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('expr', 'large')}>
+                          Test <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('rnaseq', 'large')}>
                             sample network from RNA-seq
                           </Link>
                         </Typography>
