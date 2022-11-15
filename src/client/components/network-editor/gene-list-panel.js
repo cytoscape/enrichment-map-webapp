@@ -120,7 +120,8 @@ const useStyles = makeStyles((theme) => ({
     color: "#999",
     mixBlendMode: 'difference',
     marginLeft: '0.125em',
-    marginRight: '0.125em'
+    marginRight: '0.125em',
+    lineHeight: '1.7em'
   },
   '@keyframes blinker': {
     from: {
