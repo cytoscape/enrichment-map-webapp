@@ -172,7 +172,7 @@ export class Content extends Component {
   async validateRnaseqOrRanks(contents) {
     const firstLine = contents.split('\n', 1)[0];
     const headers = firstLine.split('\t');
-    const columns = headers.filter(h => !(h == "Description" || h == "description" || h == "Name" || h == "name"));
+    const columns = headers.filter(h => h.toLowerCase() != "description" && h.toLowerCase() != "name");
 
     if(headers.length == 2) {
       return { type: 'ranks', columns };
@@ -192,6 +192,7 @@ export class Content extends Component {
         //acceptedFiles={['text/plain']} // no idea how to get this to accept .rnk files
         classes={{root: classes.dropzone}}
         filesLimit={1}
+        maxFileSize={31457280}
         onChange={files => this.onDropzoneFileLoad(files)}
         dropzoneText='Provide a RNA-seq expression file or ranked-gene-list file. Drag and Drop or click.'
         showPreviews={false}
@@ -204,14 +205,9 @@ export class Content extends Component {
         <Typography>Running Enrichment Analysis and Building Network.</Typography>
       </div>;
 
-    const handleClass = (newClass, index) => {
-      const classes = this.state.classes.map((c, i) => i == index ? newClass : c);
-      this.setState({ classes });
-    };
-
     const ClassSelector = () =>
       <div>
-        Choose Classes
+        <b>Choose Classes</b>
         { this.state.columns.map((col, i) =>
             <div key={col}>
               { col } &nbsp;
@@ -223,16 +219,19 @@ export class Content extends Component {
                 }>
                 <ToggleButton value='A'>A</ToggleButton>
                 <ToggleButton value='B'>B</ToggleButton>
+                <ToggleButton value='X'>X</ToggleButton>
               </ToggleButtonGroup>
             </div>
         )}
-        <Button onClick={() => this.onRnaseqClassSubmit()}>Submit</Button>
+        <Button variant='outlined' onClick={() => this.onRnaseqClassSubmit()}>
+          Submit
+        </Button>
       </div>;
 
-    const ErrorReport = ({ errorMessages }) =>
+    const ErrorReport = () =>
       <div className={classes.spinner}>
         <WarningIcon fontSize='large'/>
-        { errorMessages.slice(0,7).map((message, index) =>
+        { this.state.errorMessages.slice(0,7).map((message, index) =>
           <Typography key={index}>{message}</Typography>
         )}
         <br />
@@ -260,7 +259,7 @@ export class Content extends Component {
                       { {'WAITING': () => <DropArea />,
                          'LOADING': () => <LoadingProgress />,
                          'CLASSES': () => <ClassSelector />,
-                         'ERROR':   () => <ErrorReport errorMessages={this.state.errorMessages} />
+                         'ERROR':   () => <ErrorReport />
                         }[this.state.step]()
                       }
                     </div>
