@@ -10,11 +10,11 @@ import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import { Grid, Container } from '@material-ui/core';
 import { Tooltip, Typography, Link } from '@material-ui/core';
 import { CircularProgress, IconButton } from '@material-ui/core';
-import { DropzoneArea } from 'material-ui-dropzone';
 import WarningIcon from '@material-ui/icons/Warning';
 import { AppLogoIcon } from '../svg-icons';
 import CSVFileValidator from 'csv-file-validator';
 import { DebugMenu } from '../../debug-menu';
+import classNames from 'classnames';
 
 
 const STEP = {
@@ -39,7 +39,8 @@ export class Content extends Component {
       step: STEP.WAITING,
       errorMessages: null,
       sampleFiles,
-      sampleRankFiles
+      sampleRankFiles,
+      isDroppingFile: false
     };
   }
 
@@ -207,27 +208,85 @@ export class Content extends Component {
     return { errors: ['Not an expression or ranks file.'] };
   }
 
+  async onDropUpload(event) {
+    event.preventDefault();
+
+    const files = (
+      Array.from(event.dataTransfer.items)
+        .filter(item => item.kind === 'file')
+        .map(item => item.getAsFile())
+    );
+
+    this.setState({ isDroppingFile: false });
+
+    await this.onDropzoneFileLoad(files);
+  }
+
+  onDragOverUpload(event) {
+    event.preventDefault();
+
+    this.setState({ isDroppingFile: true });
+  }
+
+  onDragEndUpload(event) {
+    event.preventDefault();
+
+    this.setState({ isDroppingFile: false });
+  }
+
+  async showFileDialog() {
+    var input = document.createElement('input');
+    input.type = 'file';
+
+    return await new Promise(resolve => {
+      input.addEventListener('change', () => {
+        const files = input.files;
+  
+        resolve(files);
+      });
+  
+      input.click();
+    });
+  }
+
+  async onClickUpload(event) {
+    const files = await this.showFileDialog();
+
+    await this.onDropzoneFileLoad(files);
+  }
+
 
   render() {
     const { classes } = this.props;
-    const { sampleRankFiles } = this.state;
+    const { isDroppingFile } = this.state;
 
-    const DropArea = () =>
-      <DropzoneArea
-        //acceptedFiles={['text/plain']} // no idea how to get this to accept .rnk files
-        classes={{root: classes.dropzone}}
-        filesLimit={1}
-        maxFileSize={31457280}
-        onChange={files => this.onDropzoneFileLoad(files)}
-        dropzoneText='Provide a RNA-seq expression file or ranked-gene-list file. Drag and Drop or click.'
-        showPreviews={false}
-        showPreviewsInDropzone={false}
-      />;
+    return (
+      <div className={classNames({ [classes.root]: true, [classes.rootDropping]: isDroppingFile })}>
+        { this.renderMain() }
+        { this.renderDebug() }
+      </div>
+    );
+  }
+
+  renderMain() {
+    const { classes } = this.props;
+    
+    const RanksDropArea = () => (
+      <div className={classes.dropzone}>
+        <div className={classes.header}>
+          <AppLogoIcon className={classes.logo} fontSize="large" />
+        </div>
+
+        <p className={classes.tagline}>Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA-Seq experiment.</p>
+        
+        <Button className={classes.uploadButton} onClick={e => this.onClickUpload(e)} variant="outlined" color="primary">Enrich my RNA-Seq data</Button>
+      </div>
+    );
 
     const LoadingProgress = () => 
       <div className={classes.spinner}>
-        <CircularProgress />
-        <Typography>Running Enrichment Analysis and Building Network.</Typography>
+        <CircularProgress color="secondary" />
+        <p>Preparing your figure.</p>
       </div>;
 
     const ClassSelector = () =>
@@ -256,81 +315,38 @@ export class Content extends Component {
     const ErrorReport = () =>
       <div className={classes.spinner}>
         <WarningIcon fontSize='large'/>
-        { this.state.errorMessages.slice(0,7).map((message, index) =>
-          <Typography key={index}>{message}</Typography>
-        )}
-        <br />
-        <Button variant='outlined' onClick={() => this.setState({ step: STEP.WAITING, errorMessages: null })}>
-          Retry
-        </Button>
+        <p>We were unable to process your experimental data.  Please ensure that your data is formatted properly, either in differential expression format or in ranked gene format.</p>
+        <Button variant='outlined' onClick={() => this.setState({ step: STEP.WAITING, errorMessages: null })}>OK</Button>
       </div>;
 
     return (
-      <div className={classes.root} style={{ height: '100%' }}>
-        { this.renderHeader() }
-        <div className={classes.root} style={{ height: '100%', overflowY: 'scroll' }}>
-          <Grid container direction="column" alignItems="stretch" alignContent="stretch" justifyContent="flex-start">
-            { /* === TOP Panel ==================================================================== */ }
-            <Grid item>
-              <Grid container direction="row" alignItems="stretch" alignContent="stretch" justifyContent="center">
-                { /* === LEFT Panel ===================================================== */ }
-                <Grid item className={classes.root}>
-                  <Container direction="column" className={classes.container}>
-                    <Typography variant="body1" gutterBottom className={classes.body1}>
-                      Create EnrichmentMap networks with This Website. <br />
-                      <br />
-                    </Typography>
-                    <div>
-                      { {'WAITING': () => <DropArea />,
-                         'LOADING': () => <LoadingProgress />,
-                         'CLASSES': () => <ClassSelector />,
-                         'ERROR':   () => <ErrorReport />
-                        }[this.state.step]()
-                      }
-                    </div>
-                    { this.state.loading ? null :
-                      <div>
-                        <Typography variant="body1" gutterBottom className={classes.body1}>
-                          Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('ranks', 'small')}>
-                            sample network (small)
-                          </Link>
-                        </Typography>
-                        <Typography variant="body1" gutterBottom className={classes.body1}>
-                          Try this <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('ranks', 'large')}>
-                            sample network (large)
-                          </Link>
-                        </Typography>
-                        <Typography variant="body1" gutterBottom className={classes.body1}>
-                          Test <Link component="a" style={{ cursor: 'pointer' }} onClick={() => this.onLoadSampleNetwork('rnaseq', 'large')}>
-                            sample network from RNA-seq
-                          </Link>
-                        </Typography>
-                      </div>
-                    }
-                  </Container>
-                </Grid>
-              </Grid>
-            </Grid>
-            { /* === BOTTOM Panel ================================================================= */ }
-            {/* <Grid item>
-              <RecentNetworksGrid />
-            </Grid> */}
-          </Grid>
-        </div>
-
-        <DebugMenu>
-          <h3>Example rank input files</h3>
-          <ul>
-            {
-              sampleRankFiles.length > 0 ?
-              sampleRankFiles.map(file => (
-                <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
-              )) :
-              <li>Loading...</li>
-            }
-          </ul>
-        </DebugMenu>
+      <div className={classes.main} onDrop={e => this.onDropUpload(e)} onDragOver={e => this.onDragOverUpload(e)} onDragLeave={e => this.onDragEndUpload(e)} onDragEnd={e => this.onDragEndUpload(e)}>
+        { {'WAITING': () => <RanksDropArea />,
+            'CLASSES': () => <ClassSelector />,
+            'LOADING': () => <LoadingProgress />,
+            'ERROR':   () => <ErrorReport errorMessages={this.state.errorMessages ?? []} />
+          }[this.state.step]()
+        }
       </div>
+    );
+  }
+
+  renderDebug() {
+    const { sampleRankFiles } = this.state;
+
+    return (
+      <DebugMenu>
+        <h3>Example rank input files</h3>
+        <ul>
+          {
+            sampleRankFiles.length > 0 ?
+            sampleRankFiles.map(file => (
+              <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
+            )) :
+            <li>Loading...</li>
+          }
+        </ul>
+      </DebugMenu>
     );
   }
 
@@ -366,26 +382,58 @@ export class Content extends Component {
 const useStyles = theme => ({
   root: {
     alignContent: 'center',
+    height: '100%',
+    width: '100%',
+    position: 'absolute',
+    display: 'flex',
+    flexDirection: 'column',
+    border: '4px solid transparent'
   },
-  container: {
-    overflow: 'auto',
+  rootDropping: {
+    borderColor: 'rgb(54, 102, 209)'
   },
-  h5: {
+  header: {
+
+  },
+  main: {
+    // backgroundColor: 'cyan',
+    padding: theme.spacing(1),
     flexGrow: 1,
-  },
-  body1: {
-    marginTop: theme.spacing(6),
-    textAlign: 'center',
-    lineHeight: '200%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dropzone: {
-    padding: theme.spacing(1),
+    // backgroundColor: 'yellow',
+    display: 'flex',
+    flexDirection: 'column',
+    alignContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center'
   },
   spinner: {
-    paddingTop: theme.spacing(6),
-    textAlign: 'center',
-    verticalAligh: 'middle',
+    display: 'flex',
+    flexDirection: 'column',
+    alignContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: '20em',
+    textAlign: 'center'
   },
+  uploadButton: {
+    fontSize: '1.25em',
+    marginTop: '1.5em'
+  },
+  logo: {
+    transform: 'scale(2)'
+  },
+  tagline: {
+    // maxWidth: '18em',
+    // background: 'red'
+  }
 });
 
 Content.propTypes = {
