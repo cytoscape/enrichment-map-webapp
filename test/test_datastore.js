@@ -4,7 +4,8 @@ import { expect } from 'chai';
 
 const GENESET_DB = 'geneset_database.gmt';
 
-describe('Gene Set Queries', () => {
+// TODO: update the tests once the services have stable api
+describe.skip('Gene Set Queries', () => {
 
   let networkID;
 
