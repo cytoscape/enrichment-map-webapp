@@ -13,6 +13,8 @@ import { CircularProgress, IconButton } from '@material-ui/core';
 import { DropzoneArea } from 'material-ui-dropzone';
 import WarningIcon from '@material-ui/icons/Warning';
 import { AppLogoIcon } from '../svg-icons';
+import CSVFileValidator from 'csv-file-validator';
+import { DebugMenu } from '../../debug-menu';
 
 
 const STEP = {
@@ -23,6 +25,12 @@ const STEP = {
 };
 
 const FILE_EXT_REGEX = /\.[^/.]+$/;
+
+const SAMPLE_RANK_FILES = [
+  'brca_hd_tep_ranks_100.rnk',
+  'brca_hd_tep_ranks.rnk',
+  'mesenvs-immuno-xsm.rnk'
+];
 
 export class Content extends Component {
 
@@ -292,6 +300,17 @@ export class Content extends Component {
             </Grid> */}
           </Grid>
         </div>
+
+        <DebugMenu>
+          <h3>Example rank input files</h3>
+          <ul>
+            {
+              SAMPLE_RANK_FILES.map(file => (
+                <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
+              ))
+            }
+          </ul>
+        </DebugMenu>
       </div>
     );
   }
