@@ -4,8 +4,7 @@ import { expect } from 'chai';
 
 const GENESET_DB = 'geneset_database.gmt';
 
-// TODO: update the tests once the services have stable api
-describe.skip('Gene Set Queries', () => {
+describe('Gene Set Queries', () => {
 
   let networkID;
 
@@ -15,7 +14,8 @@ describe.skip('Gene Set Queries', () => {
     await Datastore.dropCollectionIfExists(GENESET_DB);
     await Datastore.initializeGeneSetDB('./test/resources/', GENESET_DB);
     networkID = await Datastore.createNetwork(network);
-    await Datastore.createRankedGeneList(ranks, networkID);
+    const ranksDoc = await Datastore.rankedGeneListTSVToDocument(ranks);
+    await Datastore.createRankedGeneList(ranksDoc, networkID);
   });
 
   it('gets a network', async () => {
