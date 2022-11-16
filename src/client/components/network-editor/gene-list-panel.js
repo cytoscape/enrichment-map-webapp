@@ -103,8 +103,6 @@ const useStyles = makeStyles((theme) => ({
     animationTimingFunction: 'ease-in-out',
   },
   errorMsg: {
-    fontFamily: 'inherit',
-    fontSize: 'inherit',
     color: theme.palette.error.main,
     display: 'flex',
     alignItems: 'center',
@@ -197,7 +195,10 @@ const GeneMetadataPanel = ({ symbol }) => {
     <Grid container color="textSecondary" className={classes.geneMetadata}>
       {error && (
         <span className={classes.errorMsg}>
-            <ErrorOutlineIcon fontSize="small" style={{marginRight: '10px'}} /> {error.message ? error.message : 'Unable to fetch description'}
+            <ErrorOutlineIcon fontSize="small" style={{marginRight: '10px'}} />
+            <Typography variant="body2">
+              {error.message ? error.message : 'Unable to fetch description'}
+            </Typography>
         </span>
       )}
       {!error && (
