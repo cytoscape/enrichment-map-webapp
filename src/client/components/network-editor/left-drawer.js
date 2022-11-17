@@ -20,7 +20,7 @@ import SortByAlphaIcon from '@material-ui/icons/SortByAlpha';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 
-const LEGEND_CONTENT_HEIGHT = 160;
+const LEGEND_CONTENT_HEIGHT = 120;
 
 const sortOptions = {
   alpha: {

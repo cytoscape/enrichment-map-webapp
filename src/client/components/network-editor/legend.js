@@ -81,13 +81,6 @@ function createCy(maxQVal) {
       { data: { id: 'e', source: 'e-source', target: 'e-target' } },
       { data: { id: 'e-lab', label: 'Edge Width:' } },
       { data: { id: 'e-exp', label: 'Gene Set Overlap' } },
-
-      { data: { id: 'p' } },
-      { data: { id: 'p-1', parent: 'p', child: true } },
-      { data: { id: 'p-2', parent: 'p', child: true } },
-      { data: { id: 'p-3', parent: 'p', child: true } },
-      { data: { id: 'p-lab', label: 'Cluster:' } },
-      { data: { id: 'p-exp', label: 'Gene Sets with High Overlap' } },
     ],
   });
 
@@ -123,15 +116,6 @@ function createCy(maxQVal) {
   cy.nodes('#e-target').position({ x: epos.x+15, y: epos.y-12 });
   cy.nodes('#e-lab').position(pos(1,row));
   cy.nodes('#e-exp').position(pos(2,row));
-
-  row++;
-  const cpos = pos(0,row);
-  cy.nodes('#0').position(pos(0,row));
-  cy.nodes('#p-1').position({ x: cpos.x-8,  y: cpos.y+6 });
-  cy.nodes('#p-2').position({ x: cpos.x+12, y: cpos.y+2 });
-  cy.nodes('#p-3').position({ x: cpos.x+2,  y: cpos.y-4 });
-  cy.nodes('#p-lab').position(pos(1,row));
-  cy.nodes('#p-exp').position(pos(2,row));
 
   return cy;
 }
