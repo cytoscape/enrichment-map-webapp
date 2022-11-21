@@ -29,6 +29,7 @@ const FILE_EXT_REGEX = /\.[^/.]+$/;
 // globally cached
 let sampleFiles = [];
 let sampleRankFiles = [];
+let sampleExpressionFiles = [];
 
 export class Content extends Component {
 
@@ -40,6 +41,7 @@ export class Content extends Component {
       errorMessages: null,
       sampleFiles,
       sampleRankFiles,
+      sampleExpressionFiles,
       isDroppingFile: false
     };
   }
@@ -56,8 +58,9 @@ export class Content extends Component {
 
     sampleFiles = files;
     sampleRankFiles = files.filter(f => f.endsWith('.rnk'));
+    sampleExpressionFiles = files.filter(f => !f.endsWith('.rnk'));
 
-    this.setState({ sampleFiles, sampleRankFiles }); // re-render on load
+    this.setState({ sampleFiles, sampleRankFiles, sampleExpressionFiles }); // re-render on load
   }
 
   showNetwork(id, secret) {
@@ -101,19 +104,17 @@ export class Content extends Component {
   }
 
 
-  async onLoadSampleNetwork(type, size) {
+  async onLoadSampleNetwork(file) {
     if(this.state.step == STEP.LOADING)
       return;
 
     this.setState({ step: STEP.LOADING });
 
-    let name, classes;
-    if(type === 'ranks') {
-      name = size == 'small'  ? 'brca_hd_tep_ranks_100.rnk' : 'brca_hd_tep_ranks.rnk';
-    } else if(type === 'rnaseq') {
-      name = 'FakeExpression.txt';
-      classes = ['A','A','A','B','B','B'];
-    }
+    const ext = file.split('.').pop();
+    const type = ext === 'rnk' ? 'ranks' : 'rnaseq';
+
+    const name = file;
+    const classes = ['A','A','A','B','B','B'];
 
     const dataurl = `/sample-data/${name}`;
     const sdRes = await fetch(dataurl);
@@ -341,6 +342,16 @@ export class Content extends Component {
           {
             sampleRankFiles.length > 0 ?
             sampleRankFiles.map(file => (
+              <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
+            )) :
+            <li>Loading...</li>
+          }
+        </ul>
+        <h3>Example expression input files</h3>
+        <ul>
+          {
+            sampleExpressionFiles.length > 0 ?
+            sampleExpressionFiles.map(file => (
               <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
             )) :
             <li>Loading...</li>
