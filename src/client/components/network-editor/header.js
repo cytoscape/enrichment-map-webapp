@@ -95,7 +95,7 @@ export class Header extends Component {
 
     const buttonsDef = [
       {
-        title: "Fit Network",
+        title: "Fit Figure to Screen",
         icon: <FitScreenIcon />,
         onClick: () => controller.cy.fit(DEFAULT_PADDING),
         unrelated: true,
@@ -129,7 +129,7 @@ export class Header extends Component {
               onClick={() => onShowControlPanel(!showControlPanel)}
             />
             <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
-              <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
+              <Tooltip arrow placement="bottom" title="Home">
                 <IconButton 
                   aria-label='close' 
                   onClick={() => location.href = '/'}

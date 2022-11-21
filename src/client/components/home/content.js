@@ -371,7 +371,7 @@ export class Content extends Component {
             <Grid item>
               <Grid container alignItems='center'>
                 <Grid item>
-                  <Tooltip arrow placement="bottom" title="EnrichmentMap Home">
+                  <Tooltip arrow placement="bottom" title="Home">
                     <IconButton aria-label='close' onClick={() => location.href = '/'} >
                       <AppLogoIcon fontSize="large" />
                     </IconButton>
