@@ -2,17 +2,16 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
 import RecentNetworksGrid from './recent-networks-grid';
+import ClassSelector from './class-selector';
 
 import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Button, Toolbar } from '@material-ui/core';
-import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import { Grid, Container } from '@material-ui/core';
 import { Tooltip, Typography, Link } from '@material-ui/core';
 import { CircularProgress, IconButton } from '@material-ui/core';
 import WarningIcon from '@material-ui/icons/Warning';
 import { AppLogoIcon } from '../svg-icons';
-import CSVFileValidator from 'csv-file-validator';
 import { DebugMenu } from '../../debug-menu';
 import classNames from 'classnames';
 
@@ -164,16 +163,13 @@ export class Content extends Component {
       this.showNetwork(emRes.netID);
 
     } else {
-      const classes = columns.map((c,i) => i < columns.length / 2 ? 'A' : 'B');
-      console.log(columns);
-      console.log(classes);
-      this.setState({ step: STEP.CLASSES, columns, classes, contents, name });
+      this.setState({ step: STEP.CLASSES, columns, contents, name });
     }
   }
 
 
-  async onRnaseqClassSubmit() {
-      const { classes, contents, name } = this.state;
+  async onRnaseqClassSubmit(classes) {
+      const { contents, name } = this.state;
       this.setState({ step: STEP.LOADING });
       
       const emRes = await this.sendDataToEMService(contents, 'rnaseq', name, classes);
@@ -290,29 +286,6 @@ export class Content extends Component {
         <p>Preparing your figure.</p>
       </div>;
 
-    const ClassSelector = () =>
-      <div>
-        <b>Choose Classes</b>
-        { this.state.columns.map((col, i) =>
-            <div key={col}>
-              { col } &nbsp;
-              <ToggleButtonGroup 
-                exclusive
-                value={this.state.classes[i]} 
-                onChange={(e, newClass) =>
-                  this.setState({ classes: this.state.classes.map((c, i2) => i == i2 ? newClass : c) })
-                }>
-                <ToggleButton value='A'>A</ToggleButton>
-                <ToggleButton value='B'>B</ToggleButton>
-                <ToggleButton value='X'>X</ToggleButton>
-              </ToggleButtonGroup>
-            </div>
-        )}
-        <Button variant='outlined' onClick={() => this.onRnaseqClassSubmit()}>
-          Submit
-        </Button>
-      </div>;
-
     const ErrorReport = () =>
       <div className={classes.spinner}>
         <WarningIcon fontSize='large'/>
@@ -323,9 +296,9 @@ export class Content extends Component {
     return (
       <div className={classes.main} onDrop={e => this.onDropUpload(e)} onDragOver={e => this.onDragOverUpload(e)} onDragLeave={e => this.onDragEndUpload(e)} onDragEnd={e => this.onDragEndUpload(e)}>
         { {'WAITING': () => <RanksDropArea />,
-            'CLASSES': () => <ClassSelector />,
             'LOADING': () => <LoadingProgress />,
-            'ERROR':   () => <ErrorReport errorMessages={this.state.errorMessages ?? []} />
+            'ERROR':   () => <ErrorReport />,
+            'CLASSES': () => <ClassSelector columns={this.state.columns} onSubmit={classes => this.onRnaseqClassSubmit(classes)} />,
           }[this.state.step]()
         }
       </div>
