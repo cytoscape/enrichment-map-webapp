@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 export const NODE_BG_COLOR = {
   start: '#3baa71', // best nodes (low p-val)
-  end: '#EEEEEE' // worst nodes
+  end: '#72877c' // worst nodes
 };
 
 const nodeLabel = _.memoize(node => {
@@ -58,7 +58,7 @@ export const DEFAULT_NETWORK_STYLE = (minQVal, maxQVal) => [
       'line-opacity': 0.6,
       'curve-style': 'haystack',
       'haystack-radius': 0,
-      'width': ele => ele.data('similarity_coefficient') * 6,
+      'width': ele => ele.data('similarity_coefficient') * 20,
     }
   },
   {

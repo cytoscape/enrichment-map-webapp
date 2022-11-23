@@ -65,28 +65,52 @@ export class NetworkEditorController {
    * Stops the currently running layout, if there is one, and apply the new layout options.
    * @param {*} options
    */
-  applyLayout(options) {
+  async applyLayout(options) {
     if (this.layout) {
       this.layout.stop();
     }
 
-    // Save the values of the last used layout options
-    const { name } = options;
-    this.layoutOptions[name] = options;
-    // Apply the layout
-    this.layout = this.cy.layout(options);
-    this.layout.run();
-  }
+    this.layout = this.cy.layout({
+      name: 'cose',
+      idealEdgeLength: edge => 50 - 40 * (edge.data('similarity_coefficient')),
+      edgeElasticity: edge => 100 / (edge.data('similarity_coefficient')),
+      nodeRepulsion: node => 10000,
+      // nodeSeparation: 75,
+      randomize: true,
+      animate: false,
+      padding: DEFAULT_PADDING
+    });
 
-  /**
-   * Returns the last used layout options for the passed layout name,
-   * or the default values if the layout has not been applied yet.
-   * @param {String} name the layout algorithm name (not the layout label!)
-   * @return {Any} object with the layout options, including the layout 'name',
-   *               or an empty object if the name is not supported
-   */
-  getLayoutOptions(name) {
-    return Object.assign({}, this.layoutOptions[name]);
+    const onStop = this.layout.promiseOn('layoutstop');
+
+    this.layout.run();
+
+    await onStop;
+
+    const allNodes = this.cy.nodes();
+    const disconnectedNodes = allNodes.filter(n => n.degree() === 0);
+    const connectedNodes = allNodes.not(disconnectedNodes);
+
+    const connectedBB = connectedNodes.boundingBox();
+
+    console.log(connectedBB);
+
+    disconnectedNodes.layout({
+      name: 'grid',
+      boundingBox: {
+        x1: connectedBB.x1,
+        x2: connectedBB.x2,
+        y1: connectedBB.y2 + DEFAULT_PADDING,
+        y2: connectedBB.y2 + DEFAULT_PADDING + 100
+      },
+      condense: true,
+      avoidOverlap: true,
+      nodeDimensionsIncludeLabels: true,
+      rows: 1,
+      fit: false
+    }).run();
+
+    this.cy.fit(DEFAULT_PADDING);
   }
 
   /**

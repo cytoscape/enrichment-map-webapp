@@ -1,6 +1,9 @@
 import Express from 'express';
 import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
+import fs from 'fs';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 import Datastore, { DB_1 } from '../../datastore.js';
 
@@ -11,6 +14,7 @@ import {
 } from '../../env.js';
 
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const http = Express.Router();
 
@@ -98,6 +102,23 @@ http.post('/create/rnaseq', tsvParser, async function(req, res, next) {
   }
 });
 
+/**
+ * Get file names of sample input data.
+ */
+http.get('/sample-data', async function(req, res, next) {
+  try {
+    const files = await fs.promises.readdir(path.join(__dirname, '../../../../', 'public/sample-data'));
+
+    const sanitizedFiles = ( files
+      .filter(f => !f.startsWith('.'))
+      .sort()
+    );
+
+    res.send(sanitizedFiles);
+  } catch (err) {
+    next(err);
+  }
+});
 
 /* 
  * Returns a network given its ID.

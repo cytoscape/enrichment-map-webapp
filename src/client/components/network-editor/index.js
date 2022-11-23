@@ -82,13 +82,7 @@ export class NetworkEditor extends Component {
       this.cy.data({ loaded: true });
       this.controller.bus.emit('networkLoaded', true);
 
-      this.cy.fit(DEFAULT_PADDING);
-      this.cy.layout({ 
-        name: 'fcose',
-        idealEdgeLength: 100,
-        nodeSeparation: 150,
-        animate: false,
-      }).run();
+      await this.controller.applyLayout();
 
       // Lays out the nodes in a grid sorted by q-value
       // this.cy.nodes()

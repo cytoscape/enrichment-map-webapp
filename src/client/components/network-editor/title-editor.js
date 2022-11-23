@@ -128,7 +128,7 @@ export class TitleEditor extends Component {
       <Tooltip
         arrow
         placement="bottom"
-        title="Rename Network"
+        title="Rename Figure"
         disableHoverListener={disabled}
         disableTouchListener={disabled}
       >

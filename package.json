@@ -79,6 +79,7 @@
     "minisearch": "^5.0.0",
     "mongodb": "^4.5.0",
     "morgan": "^1.10.0",
+    "mousetrap": "^1.6.5",
     "node-fetch": "^2.6.7",
     "prop-types": "^15.7.2",
     "react": "^16.13.1",
