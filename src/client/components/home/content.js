@@ -80,7 +80,6 @@ export class Content extends Component {
     } else if(type === 'rnaseq') {
       const classes = classesArr.join(',');
       const url =  '/api/create/rnaseq?' + new URLSearchParams({ classes });
-      console.log(url);
       res = await fetch(url, init);
     } 
 
@@ -97,8 +96,11 @@ export class Content extends Component {
       });
 
       return { netID };
+    } else if(res.status == 413) {
+      // Max file size for uploads is defined in the tsvParser in the server/routes/api/index.js file.
+      return { errors: ["The uploaded file is too large. The maximum file size is 50 MB." ] };
     } else {
-      return { errors: ["Error running EnrichmentMap service."]};
+      return { errors: [] }; // empty array shows generic error message
     }
   }
 
@@ -202,7 +204,7 @@ export class Content extends Component {
     if(headers.length > 2) {
       return { type: 'rnaseq', columns };
     }
-    return { errors: ['Not an expression or ranks file.'] };
+    return { errors: [] };
   }
 
   async onDropUpload(event) {
@@ -286,12 +288,20 @@ export class Content extends Component {
         <p>Preparing your figure.</p>
       </div>;
 
-    const ErrorReport = () =>
-      <div className={classes.spinner}>
+    const ErrorReport = () => {
+      const { errorMessages } = this.state;
+      return <div className={classes.spinner}>
         <WarningIcon fontSize='large'/>
-        <p>We were unable to process your experimental data.  Please ensure that your data is formatted properly, either in differential expression format or in ranked gene format.</p>
+        {
+          (!errorMessages || errorMessages.length == 0)
+          ? <p>We were unable to process your experimental data. Please ensure that your data is formatted properly, either in differential expression format or in ranked gene format.</p>
+          : errorMessages.slice(0,7).map((message, index) =>
+              <p key={index}>{message}</p>
+            )
+        }
         <Button variant='outlined' onClick={() => this.setState({ step: STEP.WAITING, errorMessages: null })}>OK</Button>
       </div>;
+    };
 
     return (
       <div className={classes.main} onDrop={e => this.onDropUpload(e)} onDragOver={e => this.onDragOverUpload(e)} onDragLeave={e => this.onDragEndUpload(e)} onDragEnd={e => this.onDragEndUpload(e)}>

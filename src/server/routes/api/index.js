@@ -20,7 +20,7 @@ const http = Express.Router();
 
 const tsvParser = bodyParser.text({ 
   type: "text/tab-separated-values", 
-  limit: '1mb' 
+  limit: '50mb' 
 });
 
 
@@ -46,7 +46,7 @@ http.get('/iamerror', async function(req, res) {
 http.post('/create/preranked', tsvParser, async function(req, res, next) {
   try {
     const tag = Date.now();
-    console.log('/create/preranked' + tag);
+    console.log('/create/preranked ' + tag);
     console.time('/create/preranked ' + tag);
     const rankedGeneListTSV = req.body;
 
@@ -64,6 +64,7 @@ http.post('/create/preranked', tsvParser, async function(req, res, next) {
     const netID = await Datastore.createNetwork(networkJson);
     const rankedGeneList = Datastore.rankedGeneListTSVToDocument(rankedGeneListTSV);
     await Datastore.createRankedGeneList(rankedGeneList, netID);
+    console.timeEnd('mongo ' + tag);
 
     res.send(netID);
     console.timeEnd('/create/preranked ' + tag);
@@ -91,12 +92,14 @@ http.post('/create/rnaseq', tsvParser, async function(req, res, next) {
     const networkJson = await runEM(pathways);
     console.timeEnd('em_service ' + tag);
 
+    console.time('mongo ' + tag);
     const netID = await Datastore.createNetwork(networkJson);
     const rankedGeneList = Datastore.fgseaServiceGeneRanksToDocument(ranks);
     await Datastore.createRankedGeneList(rankedGeneList, netID);
+    console.timeEnd('mongo ' + tag);
 
     res.send(netID);
-    console.timeEnd('/create/preranked ' + tag);
+    console.timeEnd('/create/rnaseq ' + tag);
   } catch (err) {
     next(err);
   }
