@@ -109,7 +109,7 @@ class Datastore {
    * Inserts a network document into the 'networks' collection.
    * @returns The id of the created document.
    */
-  async createNetwork(networkJson) {
+  async createNetwork(networkJson, networkName) {
     if (typeof (networkJson) == 'string') {
       networkJson = JSON.parse(networkJson);
     }
@@ -118,6 +118,9 @@ class Datastore {
 
     networkJson['_id'] = networkID.bson;
     networkJson['networkIDStr'] = networkID.string;
+    
+    if(networkName)
+      networkJson['networkName'] = networkName;
 
     await this.db
       .collection(NETWORKS_COLLECTION)

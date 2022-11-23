@@ -45,23 +45,22 @@ http.get('/iamerror', async function(req, res) {
  */
 http.post('/create/preranked', tsvParser, async function(req, res, next) {
   try {
+    const { networkName } = req.query;
+
     const tag = Date.now();
-    console.log('/create/preranked ' + tag);
     console.time('/create/preranked ' + tag);
     const rankedGeneListTSV = req.body;
 
-    console.log('fgsea_preranked_service ' + tag);
     console.time('fgsea_preranked_service ' + tag);
     const { pathways } = await runFGSEApreranked(rankedGeneListTSV);
     console.timeEnd('fgsea_preranked_service ' + tag);
 
-    console.log('em_service ' + tag);
     console.time('em_service ' + tag);
     const networkJson = await runEM(pathways);
     console.timeEnd('em_service ' + tag);
 
     console.time('mongo ' + tag);
-    const netID = await Datastore.createNetwork(networkJson);
+    const netID = await Datastore.createNetwork(networkJson, networkName);
     const rankedGeneList = Datastore.rankedGeneListTSVToDocument(rankedGeneListTSV);
     await Datastore.createRankedGeneList(rankedGeneList, netID);
     console.timeEnd('mongo ' + tag);
@@ -79,10 +78,11 @@ http.post('/create/preranked', tsvParser, async function(req, res, next) {
  */
 http.post('/create/rnaseq', tsvParser, async function(req, res, next) {
   try {
+    const { classes, networkName } = req.query;
+
     const tag = Date.now();
     console.time('/create/rnaseq ' + tag);
     const rnaSeqCountsTSV = req.body;
-    const classes = req.query.classes;
 
     console.time('fgsea_rnaseq_service ' + tag);
     const { ranks, pathways } = await runFGSEArnaseq(rnaSeqCountsTSV, classes);
@@ -93,7 +93,7 @@ http.post('/create/rnaseq', tsvParser, async function(req, res, next) {
     console.timeEnd('em_service ' + tag);
 
     console.time('mongo ' + tag);
-    const netID = await Datastore.createNetwork(networkJson);
+    const netID = await Datastore.createNetwork(networkJson, networkName);
     const rankedGeneList = Datastore.fgseaServiceGeneRanksToDocument(ranks);
     await Datastore.createRankedGeneList(rankedGeneList, netID);
     console.timeEnd('mongo ' + tag);

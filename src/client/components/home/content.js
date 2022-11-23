@@ -68,33 +68,22 @@ export class Content extends Component {
   }
 
   async sendDataToEMService(dataTSV, type, networkName, classesArr) {
-    const init = {
+    let url;
+    if(type === 'ranks') {
+      url = '/api/create/preranked?' + new URLSearchParams({ networkName });
+    } else if(type === 'rnaseq') {
+      const classes = classesArr.join(',');
+      url = '/api/create/rnaseq?' + new URLSearchParams({ classes, networkName });
+    } 
+
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/tab-separated-values' },
       body: dataTSV
-    };
-
-    let res;
-    if(type === 'ranks') {
-      res = await fetch('/api/create/preranked', init);
-    } else if(type === 'rnaseq') {
-      const classes = classesArr.join(',');
-      const url =  '/api/create/rnaseq?' + new URLSearchParams({ classes });
-      res = await fetch(url, init);
-    } 
+    });
 
     if(res.ok) {
-      // Update the network name
       const netID = await res.text();
-      
-      // TODO We should pass the network name as a query parameter to the first
-      // fetch call above, then this extra fetch won't be necessary.
-      await fetch(`/api/${netID}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ networkName })
-      });
-
       return { netID };
     } else if(res.status == 413) {
       // Max file size for uploads is defined in the tsvParser in the server/routes/api/index.js file.
