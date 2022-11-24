@@ -1,13 +1,13 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
-import RecentNetworksGrid from './recent-networks-grid';
+import { readDataFile } from './data-file-validator';
 import ClassSelector from './class-selector';
 
 import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Button, Toolbar } from '@material-ui/core';
-import { Grid, Container } from '@material-ui/core';
+import { Grid } from '@material-ui/core';
 import { Tooltip, Typography, Link } from '@material-ui/core';
 import { CircularProgress, IconButton } from '@material-ui/core';
 import WarningIcon from '@material-ui/icons/Warning';
@@ -134,27 +134,25 @@ export class Content extends Component {
       return;
    
     this.setState({ step: STEP.LOADING });
-
-    const contents = await this.readTextFile(file);
-    let { type, columns, errors } = await this.validateRnaseqOrRanks(contents);
-
-    if(errors) {
-      this.setState({ step: STEP.ERROR, errorMessages: errors });
-      return;
-    }
-
     const name = file.name.replace(FILE_EXT_REGEX, '');
 
-    if(type === 'ranks') {
-      const emRes = await this.sendDataToEMService(contents, "ranks", name);
-      if(emRes.errors) {
-        this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
-        return;
-      }
-      this.showNetwork(emRes.netID);
+    try {
+      const { type, columns, contents } = await readDataFile(file);
 
-    } else {
-      this.setState({ step: STEP.CLASSES, columns, contents, name });
+      if(type === 'ranks') {
+        const emRes = await this.sendDataToEMService(contents, 'ranks', name);
+        if(emRes.errors) {
+          this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
+          return;
+        }
+        this.showNetwork(emRes.netID);
+  
+      } else {
+        this.setState({ step: STEP.CLASSES, columns, contents, name });
+      }
+    } catch(e) {
+      this.setState({ step: STEP.ERROR, errorMessages: [e] });
+      return;
     }
   }
 
@@ -171,30 +169,6 @@ export class Content extends Component {
       this.showNetwork(emRes.netID);
   }
 
-
-  readTextFile(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = evt => resolve(evt.target.result);
-      reader.onerror = reject;
-      reader.readAsText(file);
-    });
-  }
-
-
-  async validateRnaseqOrRanks(contents) {
-    const firstLine = contents.split('\n', 1)[0];
-    const headers = firstLine.split('\t');
-    const columns = headers.filter(h => h.toLowerCase() != "description" && h.toLowerCase() != "name");
-
-    if(headers.length == 2) {
-      return { type: 'ranks', columns };
-    }
-    if(headers.length > 2) {
-      return { type: 'rnaseq', columns };
-    }
-    return { errors: [] };
-  }
 
   async onDropUpload(event) {
     event.preventDefault();
@@ -239,7 +213,6 @@ export class Content extends Component {
 
   async onClickUpload(event) {
     const files = await this.showFileDialog();
-
     await this.onDropzoneFileLoad(files);
   }
 
