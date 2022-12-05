@@ -53,7 +53,10 @@ export function readDataFile(file, delimiter) {
 
       if(needHeader) { // First line that isn't skipped is the header row
         needHeader = false;
-        columns = tokens.filter(h => h.toLowerCase() != "description" && h.toLowerCase() != "name");
+
+        columns = tokens
+            .slice(1) // always ignore first column
+            .filter(h => h.toLowerCase() != "description");
 
         if(columns.length == 2) {
           type = 'ranks';

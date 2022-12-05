@@ -6,7 +6,7 @@ import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
-import SharePanel from './share-panel';
+import { ShareMenu } from './share-panel';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -168,10 +168,14 @@ export class Header extends Component {
               id="menu-popover"
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
               onClose={() => this.handleMenuClose()}
             >
               {menuName === SHARE_MENU_ID && (
-                <SharePanel controller={controller} />
+                <ShareMenu controller={controller} />
               )}
             </Popover>
           )}
