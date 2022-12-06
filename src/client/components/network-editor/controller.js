@@ -70,6 +70,10 @@ export class NetworkEditorController {
       this.layout.stop();
     }
 
+    // unrestricted zoom, since the old restrictions may not apply if things have changed
+    this.cy.minZoom(-1e50);
+    this.cy.maxZoom(1e50);
+
     this.layout = this.cy.layout({
       name: 'cose',
       idealEdgeLength: edge => 50 - 40 * (edge.data('similarity_coefficient')),
@@ -111,6 +115,10 @@ export class NetworkEditorController {
     }).run();
 
     this.cy.fit(DEFAULT_PADDING);
+
+    // now that we know the zoom level when the graph fits to screen, we can use restrictions
+    this.cy.minZoom(this.cy.zoom() * 0.25);
+    this.cy.maxZoom(3);
   }
 
   /**
