@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import _ from 'lodash';
 
 import { useQuery } from "react-query";
 import { linkoutProps } from './defaults';
@@ -109,7 +108,8 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: 'flex-start',
   },
   rankBarParent: {
-    position: 'relative'
+    position: 'relative',
+    pointerEvents: 'none',
   },
   rankBarText: {
     position: "absolute",
