@@ -97,7 +97,10 @@ export class NetworkEditorController {
 
     const connectedBB = connectedNodes.boundingBox();
 
-    console.log(connectedBB);
+    const nodeWidth = disconnectedNodes.max(n => n.boundingBox({ nodeDimensionsIncludeLabels: true }).w).value;
+    const layoutWidth = connectedBB.w;
+    const avoidOverlapPadding = 10;
+    const cols = Math.floor(layoutWidth / (nodeWidth + avoidOverlapPadding));
 
     disconnectedNodes.layout({
       name: 'grid',
@@ -105,12 +108,13 @@ export class NetworkEditorController {
         x1: connectedBB.x1,
         x2: connectedBB.x2,
         y1: connectedBB.y2 + DEFAULT_PADDING,
-        y2: connectedBB.y2 + DEFAULT_PADDING + 100
+        y2: connectedBB.y2 + DEFAULT_PADDING + 10000
       },
+      avoidOverlapPadding,
+      cols,
       condense: true,
       avoidOverlap: true,
       nodeDimensionsIncludeLabels: true,
-      rows: 1,
       fit: false
     }).run();
 
