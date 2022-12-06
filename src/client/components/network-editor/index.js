@@ -62,11 +62,14 @@ export class NetworkEditor extends Component {
 
       const result = await res.json();
 
-      if(full) {
+      if(full) { 
+        // Shows entire network, no filtering, no collapsing of clusters
         this.addClusterNodesToNetworkJSON(result);
         this.cy.add(result.network.elements);
       } else {
+        // Shows the "summary" network with clusters collapsed, and limited to a max number of nodes
         this.setClusterNodeNamesForSummaryNetwork(result);
+        this.limitNodesByQValue(result.summaryNetwork.elements, 50);
         this.cy.add(result.summaryNetwork.elements);
       }
 
@@ -122,6 +125,15 @@ export class NetworkEditor extends Component {
         node.data['summary'] = true;
       }
     });
+  }
+
+  limitNodesByQValue(elements, max) {
+    // Take top nodes sorted by q-value
+    elements.nodes.sort((a,b) => a.data.padj - b.data.padj);
+    elements.nodes = elements.nodes.slice(0, max);
+
+    const nodeIDs = new Set(elements.nodes.map(n => n.data.id));
+    elements.edges = elements.edges.filter(e => nodeIDs.has(e.data.source) && nodeIDs.has(e.data.target));
   }
 
   addClusterNodesToNetworkJSON(result) {
