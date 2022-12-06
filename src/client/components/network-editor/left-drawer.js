@@ -253,8 +253,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
   useEffect(() => {
     if (searchResult != null) {
       setGeneSetNames([]);
-      setGenes(sortGenes(searchResult, 'alpha'));
-      setSort('alpha');
+      setGenes(sortGenes(searchResult, sortRef.current));
     } else {
       debouncedSelectionHandler();
     }
