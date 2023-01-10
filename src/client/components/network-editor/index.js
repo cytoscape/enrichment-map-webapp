@@ -73,12 +73,12 @@ export class NetworkEditor extends Component {
         this.cy.add(result.summaryNetwork.elements);
       }
 
-      const minQVal = this.getMinQValue();
-      const maxQVal = this.getMaxQValue();
-      this.cy.data({ name: result.networkName, parameters: result.parameters, maxQVal });
+      this.cy.data({ name: result.networkName, parameters: result.parameters });
+
+      this.setLogMappedQValues();
 
       // Set network style
-      this.cy.style().fromJson(DEFAULT_NETWORK_STYLE(minQVal, maxQVal));
+      this.cy.style().fromJson(DEFAULT_NETWORK_STYLE(this.getMinLogQValue(), this.getMaxLogQValue()));
 
       // Notify listeners that the network has been loaded
       console.log('Loaded');
@@ -168,6 +168,30 @@ export class NetworkEditor extends Component {
 
   getMaxQValue() {
     return this.cy.nodes().max(n => n.data('padj')).value;
+  }
+
+  setLogMappedQValues() {
+    const nodes = this.cy.nodes();
+    const qMax = this.getMaxQValue();
+    const log2 = x => Math.log2(x);
+    const scale = q => 1 + q * 127; // [0, 1] => [1, 128]
+
+    this.cy.batch(() => {
+      for (const node of nodes) {
+        const q = node.data('padj');
+        const qLog = log2(scale(q)) / log2(scale(qMax));
+
+        node.data('padjLog', qLog);
+      }
+    });
+  }
+
+  getMinLogQValue() {
+    return this.cy.nodes().min(n => n.data('padjLog')).value;
+  }
+
+  getMaxLogQValue() {
+    return this.cy.nodes().max(n => n.data('padjLog')).value;
   }
 
   getClusterLabels(result) {

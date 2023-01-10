@@ -36,10 +36,10 @@ export const DEFAULT_NETWORK_STYLE = (minQVal, maxQVal) => [
     }
   },
   {
-    selector: 'node[padj]',
+    selector: 'node[padjLog]',
     style: {
-      'background-color':   `mapData(padj, ${minQVal || 0}, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`,
-      'text-outline-color': `mapData(padj, ${minQVal || 0}, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`
+      'background-color':   `mapData(padjLog, ${minQVal || 0}, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`,
+      'text-outline-color': `mapData(padjLog, ${minQVal || 0}, ${maxQVal || 1.0}, ${NODE_BG_COLOR.start}, ${NODE_BG_COLOR.end})`
     }
   },
   // {

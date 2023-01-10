@@ -22,7 +22,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-function createCy(maxQVal) {
+function createCy() {
   const cy = new Cytoscape({
     headless: true,
     styleEnabled: true,
@@ -135,8 +135,7 @@ export function StyleLegend({ controller, width, height }) {
 
   useEffect(() => {
     if (!loading) {
-      const maxQVal = controller.cy.data('maxQVal');
-      cyRef.current = createCy(maxQVal); 
+      cyRef.current = createCy(); 
     }
   }, [loading]); 
 
