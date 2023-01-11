@@ -249,9 +249,7 @@ export class Content extends Component {
         <div className={classes.header}>
           <AppLogoIcon className={classes.logo} fontSize="large" />
         </div>
-
         <p className={classes.tagline}>Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA-Seq experiment.</p>
-        
         <Button className={classes.uploadButton} onClick={e => this.onClickUpload(e)} variant="outlined" color="primary">Enrich my RNA-Seq data</Button>
       </div>
     );
@@ -277,12 +275,23 @@ export class Content extends Component {
       </div>;
     };
 
+    const Classes = () =>
+      <ClassSelector 
+        columns={this.state.columns} 
+        onSubmit={classes => this.onRnaseqClassSubmit(classes)} 
+        onCancel={() => this.setState({ step: STEP.WAITING, columns:null, contents:null, name:null, errorMessages:null })} />;
+
     return (
-      <div className={classes.main} onDrop={e => this.onDropUpload(e)} onDragOver={e => this.onDragOverUpload(e)} onDragLeave={e => this.onDragEndUpload(e)} onDragEnd={e => this.onDragEndUpload(e)}>
-        { {'WAITING': () => <RanksDropArea />,
+      <div className={classes.main} 
+        onDrop={e => this.onDropUpload(e)} 
+        onDragOver={e => this.onDragOverUpload(e)} 
+        onDragLeave={e => this.onDragEndUpload(e)} 
+        onDragEnd={e => this.onDragEndUpload(e)} >
+        { 
+          { 'WAITING': () => <RanksDropArea />,
             'LOADING': () => <LoadingProgress />,
             'ERROR':   () => <ErrorReport />,
-            'CLASSES': () => <ClassSelector columns={this.state.columns} onSubmit={classes => this.onRnaseqClassSubmit(classes)} />,
+            'CLASSES': () => <Classes />,
           }[this.state.step]()
         }
       </div>

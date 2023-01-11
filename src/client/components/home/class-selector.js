@@ -25,14 +25,14 @@ const useStyles = makeStyles((theme) => ({
     overflow: 'hidden',
     textOverflow: 'ellipsis'
   },
-  submitButton: {
+  submitButtons: {
     textAlign: 'center',
     marginTop: '15px'
   }
 }));
 
 
-function ClassSelector({ columns, onSubmit }) {
+function ClassSelector({ columns, onSubmit, onCancel }) {
   
   const [ groups, setGroups ] = useState(() => {
     return columns.map((c,i) => i < columns.length / 2 ? 'A' : 'B');
@@ -46,9 +46,7 @@ function ClassSelector({ columns, onSubmit }) {
 
   return <div className={classes.container}>
     <div className={classes.header}>
-      <p>
-        <b>Please define two sample groups that will be compared <br/> against each other (Group A vs Group B).</b>
-      </p>
+      <p><b>Please define two sample groups that will be compared <br/> against each other (Group A vs Group B).</b></p>
     </div>
       { columns.map((column, i) => 
         <div className={classes.row} key={i}>
@@ -67,11 +65,17 @@ function ClassSelector({ columns, onSubmit }) {
           </div>
         </div>
       )}
-    <div className={classes.submitButton}>
+    <div className={classes.submitButtons}>
       <Button 
         variant='contained' 
         onClick={() => onSubmit(groups)}>
         Submit
+      </Button>
+      &nbsp;&nbsp;&nbsp;
+      <Button 
+        variant='contained'
+        onClick={() => onCancel()}>
+        Cancel
       </Button>
     </div>
   </div>;
@@ -80,6 +84,7 @@ function ClassSelector({ columns, onSubmit }) {
 ClassSelector.propTypes = {
   columns: PropTypes.array,
   onSubmit: PropTypes.func,
+  onCancel: PropTypes.func,
 };
 
 export default ClassSelector;
