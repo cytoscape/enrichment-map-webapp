@@ -3,18 +3,20 @@ import PropTypes from 'prop-types';
 
 import { readExcelFileAsTSV, readTSVFile } from './data-file-reader';
 import ClassSelector from './class-selector';
+import { InfoPanel } from './info-panel';
+import { DebugMenu } from '../../debug-menu';
 
 import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Button, Toolbar } from '@material-ui/core';
 import { Grid } from '@material-ui/core';
 import { Tooltip, Typography, Link } from '@material-ui/core';
+
 import { CircularProgress, IconButton } from '@material-ui/core';
 import WarningIcon from '@material-ui/icons/Warning';
 import { AppLogoIcon } from '../svg-icons';
-import { DebugMenu } from '../../debug-menu';
-import classNames from 'classnames';
 
+import classNames from 'classnames';
 
 const STEP = {
   WAITING: 'WAITING',
@@ -246,11 +248,17 @@ export class Content extends Component {
     
     const RanksDropArea = () => (
       <div className={classes.dropzone}>
-        <div className={classes.header}>
-          <AppLogoIcon className={classes.logo} fontSize="large" />
-        </div>
+        <Grid container className={classes.header} direction="row" alignItems="center" justifyContent="center" spacing={2}>
+          <Grid item>
+            <AppLogoIcon className={classes.logo} />
+          </Grid>
+          <Grid item>
+            Enrichment Map
+          </Grid>
+        </Grid>
         <p className={classes.tagline}>Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA-Seq experiment.</p>
-        <Button className={classes.uploadButton} onClick={e => this.onClickUpload(e)} variant="outlined" color="primary">Enrich my RNA-Seq data</Button>
+        <InfoPanel />
+        <Button className={classes.uploadButton} onClick={e => this.onClickUpload(e)} variant="contained" color="primary">Upload RNA-Seq data</Button>
       </div>
     );
 
@@ -370,10 +378,10 @@ const useStyles = theme => ({
     borderColor: 'rgb(54, 102, 209)'
   },
   header: {
-
+    fontSize: '1.5em',
+    fontWeight: 'bold',
   },
   main: {
-    // backgroundColor: 'cyan',
     padding: theme.spacing(1),
     flexGrow: 1,
     display: 'flex',
@@ -383,7 +391,6 @@ const useStyles = theme => ({
     justifyContent: 'center',
   },
   dropzone: {
-    // backgroundColor: 'yellow',
     display: 'flex',
     flexDirection: 'column',
     alignContent: 'center',
@@ -402,14 +409,15 @@ const useStyles = theme => ({
   },
   uploadButton: {
     fontSize: '1.25em',
-    marginTop: '1.5em'
+    marginTop: '1.5em',
+    textTransform: 'unset',
   },
   logo: {
-    transform: 'scale(2)'
+    fontSize: 48,
   },
   tagline: {
-    // maxWidth: '18em',
-    // background: 'red'
+    fontSize: '1rem',
+    color: theme.palette.secondary.main,
   }
 });
 
