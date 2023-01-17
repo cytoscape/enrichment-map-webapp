@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
-import { readDataFile } from './data-file-validator';
+import { readExcelFileAsTSV, readTSVFile } from './data-file-reader';
 import ClassSelector from './class-selector';
 import { InfoPanel } from './info-panel';
 import { DebugMenu } from '../../debug-menu';
@@ -26,6 +26,8 @@ const STEP = {
 };
 
 const FILE_EXT_REGEX = /\.[^/.]+$/;
+const TSV_EXTS = ['txt', 'TXT', 'rnk', 'RNK', 'tsv', 'TSV'];
+const EXCEL_EXTS = ['xls', 'XLS', 'xlsx', 'XLSX'];
 
 // globally cached
 let sampleFiles = [];
@@ -105,10 +107,10 @@ export class Content extends Component {
     const ext = file.split('.').pop();
     const type = ext === 'rnk' ? 'ranks' : 'rnaseq';
 
-    const name = file;
+    const networkName = file;
     const classes = ['A','A','A','B','B','B'];
 
-    const dataurl = `/sample-data/${name}`;
+    const dataurl = `/sample-data/${networkName}`;
     const sdRes = await fetch(dataurl);
     if(!sdRes.ok) {
       this.setState({ step: STEP.ERROR, errorMessages: ["Error loading sample network"] });
@@ -116,7 +118,7 @@ export class Content extends Component {
     }
     
     const data = await sdRes.text();
-    const emRes = await this.sendDataToEMService(data, type, name, classes);
+    const emRes = await this.sendDataToEMService(data, type, networkName, classes);
     if(emRes.errors) {
       this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
       return;
@@ -137,21 +139,31 @@ export class Content extends Component {
    
     this.setState({ step: STEP.LOADING });
     const name = file.name.replace(FILE_EXT_REGEX, '');
+    const ext = file.name.split('.').pop();
 
     try {
-      const { type, columns, contents } = await readDataFile(file);
-
-      if(type === 'ranks') {
-        const emRes = await this.sendDataToEMService(contents, 'ranks', name);
-        if(emRes.errors) {
-          this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
-          return;
-        }
-        this.showNetwork(emRes.netID);
+      if(TSV_EXTS.includes(ext)) {
+        const { type, columns, contents } = await readTSVFile(file);
+        console.log(`Reading TSV file as ${type}, columns: ${columns}`);
   
-      } else {
+        if(type === 'ranks') {
+          const emRes = await this.sendDataToEMService(contents, 'ranks', name);
+          if(emRes.errors) {
+            this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
+            return;
+          }
+          this.showNetwork(emRes.netID);
+    
+        } else {
+          this.setState({ step: STEP.CLASSES, columns, contents, name });
+        }
+
+      } else if(EXCEL_EXTS.includes(ext)) {
+        const { columns, contents } = await readExcelFileAsTSV(file);
+        console.log(`Reading Excel file, columns: ${columns}`);
         this.setState({ step: STEP.CLASSES, columns, contents, name });
       }
+
     } catch(e) {
       this.setState({ step: STEP.ERROR, errorMessages: [e] });
       return;
@@ -271,12 +283,23 @@ export class Content extends Component {
       </div>;
     };
 
+    const Classes = () =>
+      <ClassSelector 
+        columns={this.state.columns} 
+        onSubmit={classes => this.onRnaseqClassSubmit(classes)} 
+        onCancel={() => this.setState({ step: STEP.WAITING, columns:null, contents:null, name:null, errorMessages:null })} />;
+
     return (
-      <div className={classes.main} onDrop={e => this.onDropUpload(e)} onDragOver={e => this.onDragOverUpload(e)} onDragLeave={e => this.onDragEndUpload(e)} onDragEnd={e => this.onDragEndUpload(e)}>
-        { {'WAITING': () => <RanksDropArea />,
+      <div className={classes.main} 
+        onDrop={e => this.onDropUpload(e)} 
+        onDragOver={e => this.onDragOverUpload(e)} 
+        onDragLeave={e => this.onDragEndUpload(e)} 
+        onDragEnd={e => this.onDragEndUpload(e)} >
+        { 
+          { 'WAITING': () => <RanksDropArea />,
             'LOADING': () => <LoadingProgress />,
             'ERROR':   () => <ErrorReport />,
-            'CLASSES': () => <ClassSelector columns={this.state.columns} onSubmit={classes => this.onRnaseqClassSubmit(classes)} />,
+            'CLASSES': () => <Classes />,
           }[this.state.step]()
         }
       </div>
