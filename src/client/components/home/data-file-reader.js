@@ -1,5 +1,6 @@
 import LineReader from 'browser-line-reader';
 import * as XLSX from "xlsx";
+import { NumberOfColumnsError } from '../../../model/errors';
 
 /**
  * EM app code that does the same thing...
@@ -76,6 +77,9 @@ export function readTSVFile(file, delimiter = '\t') {
         if(header.type == 'error') {
           lineReader.emit('error', 'File format error: cannot determine the number of data columns.');
           return;
+
+          // e.g. 
+          // throw new NumberOfColumnsError(header.columns);
         }
         columns = header.columns;
         type = header.type;
