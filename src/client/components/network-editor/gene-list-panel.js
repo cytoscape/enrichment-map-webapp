@@ -19,7 +19,7 @@ import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 
 const CHART_WIDTH = 160;
-const CHART_HEIGHT = 14;
+const CHART_HEIGHT = 16;
 const GENE_RANK_ROUND_DIGITS = 2;
 
 const RANK_RANGE_COLOR = theme.palette.background.focus;
@@ -58,7 +58,10 @@ const useStyles = makeStyles((theme) => ({
     opacity: 0.5
   },
   geneName: {
-    color: 'inherit',
+    color: 'inherit', 
+    whiteSpace:'nowrap', 
+    overflow:'hidden', 
+    textOverflow:'ellipsis'
   },
   chartContainer: {
     width: CHART_WIDTH,
@@ -149,7 +152,7 @@ const rankBarTextStyle = (rank, minRank, maxRank) => {
   }
 };
 
-const GeneMetadataPanel = ({ symbol }) => {
+const GeneMetadataPanel = ({ symbol, showSymbol }) => {
   const classes = useStyles();
 
   const query = useQuery(
@@ -193,6 +196,11 @@ const GeneMetadataPanel = ({ symbol }) => {
 
   return (
     <Grid container color="textSecondary" className={classes.geneMetadata}>
+      { showSymbol && showSymbol() && (
+        <Typography variant="body2" color="textPrimary" className={classes.geneName}>
+          {symbol}
+        </Typography>
+      )}
       {error && (
         <span className={classes.errorMsg}>
             <ErrorOutlineIcon fontSize="small" style={{marginRight: '10px'}} />
@@ -285,11 +293,26 @@ const GeneListPanel = ({ controller, genes }) => {
       }
     }
 
+    const isGeneTextOverflowing = (id) => {
+      const elem = document.getElementById(id);
+      const { overflow } = elem.style;
+
+      if(!overflow || overflow === "visible" )
+          elem.style.overflow = "hidden";
+
+      const isOverflowing = elem.clientWidth < elem.scrollWidth || elem.clientHeight < elem.scrollHeight;
+      elem.style.overflow = overflow;
+
+      return isOverflowing;
+    };
+
     const loading = genes == null;
     const isSelected = !loading && selectedGene != null && selectedGene === symbol;
 
     const roundDigits = GENE_RANK_ROUND_DIGITS;
     const roundedRank = rank != null ? (Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits)) : 0;
+
+    const geneTextElemId = `gene_${idx}`;
 
     return (
       <ListItem key={idx} alignItems="flex-start" className={classes.listItem}>
@@ -306,16 +329,20 @@ const GeneListPanel = ({ controller, genes }) => {
                 className={classes.listItemHeader}
                 onClick={() => { if (!loading) toggleGeneDetails(symbol); }}
               >
-                <Grid item>
-                  <Grid container direction="row" justifyContent="flex-start" alignItems='center'>
-                    {isSelected ?
-                      <KeyboardArrowDownIcon fontSize="small" className={classes.bulletIcon} />
-                    :
-                      <KeyboardArrowRightIcon fontSize="small" className={classes.bulletIcon} />
-                    }
-                    <Typography variant="body2" color="textPrimary" className={classes.geneName}>
-                      {loading ? <Skeleton variant="text" width={72} height="1.5rem" /> : symbol }
-                    </Typography>
+                <Grid item style={{ width: '40%' }}>
+                  <Grid container direction="row" justifyContent="flex-start">
+                    <Grid item xs={3}>
+                      {isSelected ?
+                        <KeyboardArrowDownIcon fontSize="small" className={classes.bulletIcon} />
+                      :
+                        <KeyboardArrowRightIcon fontSize="small" className={classes.bulletIcon} />
+                      }
+                    </Grid>
+                    <Grid item xs={9}>
+                      <Typography id={geneTextElemId} variant="body2" color="textPrimary" className={classes.geneName}>
+                        {loading ? <Skeleton variant="text" width={72} height="1.5rem" /> : symbol }
+                      </Typography>
+                    </Grid>
                   </Grid>
                 </Grid>
                 <Grid item className={classes.chartContainer}>
@@ -332,7 +359,7 @@ const GeneListPanel = ({ controller, genes }) => {
                 </Grid>
               </Grid>
               {isSelected && (
-                <GeneMetadataPanel symbol={symbol} />
+                <GeneMetadataPanel symbol={symbol} showSymbol={() => isGeneTextOverflowing(geneTextElemId)} />
               )}
             </Grid>
           }
@@ -354,6 +381,7 @@ const GeneListPanel = ({ controller, genes }) => {
 
 GeneMetadataPanel.propTypes = {
   symbol: PropTypes.string.isRequired,
+  showSymbol: PropTypes.func
 };
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
