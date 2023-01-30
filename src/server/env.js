@@ -8,6 +8,7 @@
  */
 
 export const NODE_ENV = process.env.NODE_ENV;
+export const PROD = NODE_ENV === 'production';
 export const PORT = parseInt(process.env.PORT, 10);
 export const LOG_LEVEL = process.env.LOG_LEVEL;
 export const BASE_URL = process.env.BASE_URL;
