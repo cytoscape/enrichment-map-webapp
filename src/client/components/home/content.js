@@ -6,6 +6,8 @@ import ClassSelector from './class-selector';
 import { InfoPanel } from './info-panel';
 import { DebugMenu } from '../../debug-menu';
 
+import { PROD } from '../../env';
+
 import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Button, Toolbar } from '@material-ui/core';
@@ -15,6 +17,8 @@ import { Tooltip, Typography, Link } from '@material-ui/core';
 import { CircularProgress, IconButton } from '@material-ui/core';
 import WarningIcon from '@material-ui/icons/Warning';
 import { AppLogoIcon } from '../svg-icons';
+
+import * as Sentry from "@sentry/browser";
 
 import classNames from 'classnames';
 
@@ -33,6 +37,21 @@ const EXCEL_EXTS = ['xls', 'XLS', 'xlsx', 'XLSX'];
 let sampleFiles = [];
 let sampleRankFiles = [];
 let sampleExpressionFiles = [];
+
+class NondescriptiveHandledError extends Error { // since we don't have well-defined errors
+  constructor(message) {
+    message = message ?? 'A non-descriptive error occurred.  Check the attached file.';
+
+    super(message);
+  }
+}
+
+const captureNondescriptiveErrorInSentry = (errorMessage) => {
+  if (PROD) {
+    Sentry.captureException(new NondescriptiveHandledError(errorMessage));
+    console.error('Reporting browser error to Sentry: ' + errorMessage);
+  }
+};
 
 export class Content extends Component {
 
@@ -114,6 +133,7 @@ export class Content extends Component {
     const sdRes = await fetch(dataurl);
     if(!sdRes.ok) {
       this.setState({ step: STEP.ERROR, errorMessages: ["Error loading sample network"] });
+      captureNondescriptiveErrorInSentry('Error loading sample network');
       return;
     }
     
@@ -121,6 +141,7 @@ export class Content extends Component {
     const emRes = await this.sendDataToEMService(data, type, networkName, classes);
     if(emRes.errors) {
       this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
+      captureNondescriptiveErrorInSentry('Error in EM service with sample file');
       return;
     }
 
@@ -141,6 +162,18 @@ export class Content extends Component {
     const name = file.name.replace(FILE_EXT_REGEX, '');
     const ext = file.name.split('.').pop();
 
+    if (PROD) {
+      const attachmentName = file.name;
+      const attachmentContentType = file.type;
+      const arrayBuffer = await file.arrayBuffer();
+      const attachmentData = new Uint8Array(arrayBuffer);
+
+      Sentry.configureScope(scope => {
+        scope.clearAttachments();
+        scope.addAttachment({ filename: attachmentName, data: attachmentData, contentType: attachmentContentType });
+      });
+    }
+
     try {
       if(TSV_EXTS.includes(ext)) {
         const { type, columns, contents } = await readTSVFile(file);
@@ -150,6 +183,7 @@ export class Content extends Component {
           const emRes = await this.sendDataToEMService(contents, 'ranks', name);
           if(emRes.errors) {
             this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
+            captureNondescriptiveErrorInSentry('Error in EM service with uploaded rank file');
             return;
           }
           this.showNetwork(emRes.netID);
@@ -166,6 +200,7 @@ export class Content extends Component {
 
     } catch(e) {
       this.setState({ step: STEP.ERROR, errorMessages: [e] });
+      captureNondescriptiveErrorInSentry('Some error in handling uploaded file:' + e.message);
       return;
     }
   }
@@ -178,6 +213,7 @@ export class Content extends Component {
       const emRes = await this.sendDataToEMService(contents, 'rnaseq', name, classes);
       if(emRes.errors) {
         this.setState({ step: STEP.ERROR, errorMessages: emRes.errors, contents: null });
+        captureNondescriptiveErrorInSentry('Error in sending uploaded RNASEQ data to service');
         return;
       }
       this.showNetwork(emRes.netID);
