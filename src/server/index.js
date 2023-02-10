@@ -13,8 +13,10 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+import * as Sentry from "@sentry/node";
+import * as Tracing from "@sentry/tracing";
 
-import { NODE_ENV, PORT, UPLOAD_LIMIT, TESTING } from './env.js';
+import { NODE_ENV, PORT, UPLOAD_LIMIT, TESTING, PROD } from './env.js';
 import indexRouter from './routes/index.js';
 import apiRouter from './routes/api/index.js';
 import { registerCytoscapeExtensions } from '../model/cy-extensions.js';
@@ -32,6 +34,31 @@ registerCytoscapeExtensions();
 const debugLog = debug('enrichment-map');
 const app = express();
 const server = http.createServer(app);
+
+if (PROD) {
+  Sentry.init({
+    dsn: 'https://91d6fea963a1453abc1075637d2e7c76@o4504571938603008.ingest.sentry.io/4504571946467328',
+    integrations: [
+      // enable HTTP calls tracing
+      new Sentry.Integrations.Http({ tracing: true }),
+      // enable Express.js middleware tracing
+      new Tracing.Integrations.Express({ app }),
+    ],
+
+    // Set tracesSampleRate to 1.0 to capture 100%
+    // of transactions for performance monitoring.
+    // We recommend adjusting this value in production
+    tracesSampleRate: 1.0,
+  });
+}
+
+// RequestHandler creates a separate execution context using domains, so that every
+// transaction/span/breadcrumb is attached to its own Hub instance
+if (PROD) {
+  app.use(Sentry.Handlers.requestHandler());
+  // TracingHandler creates a trace for every incoming request
+  app.use(Sentry.Handlers.tracingHandler());
+}
 
 // view engine setup
 app.set('views', path.join(__dirname, '../', 'views'));
@@ -68,6 +95,11 @@ app.use(express.static(path.join(__dirname, '../..', 'public')));
 
 app.use('/api', apiRouter);
 app.use('/', indexRouter);
+
+// The error handler must be before any other error middleware and after all controllers
+if (PROD) {
+  app.use(Sentry.Handlers.errorHandler());
+}
 
 // catch 404 and forward to error handler
 app.use(function(req, res) {
