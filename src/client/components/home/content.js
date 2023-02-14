@@ -117,19 +117,8 @@ export class Content extends Component {
   }
 
 
-  async onLoadSampleNetwork(file) {
-    if(this.state.step == STEP.LOADING)
-      return;
-
-    this.setState({ step: STEP.LOADING });
-
-    const ext = file.split('.').pop();
-    const type = ext === 'rnk' ? 'ranks' : 'rnaseq';
-
-    const networkName = file;
-    const classes = ['A','A','A','B','B','B'];
-
-    const dataurl = `/sample-data/${networkName}`;
+  async onLoadSampleNetwork(fileName) {
+    const dataurl = `/sample-data/${fileName}`;
     const sdRes = await fetch(dataurl);
     if(!sdRes.ok) {
       this.setState({ step: STEP.ERROR, errorMessages: ["Error loading sample network"] });
@@ -138,14 +127,9 @@ export class Content extends Component {
     }
     
     const data = await sdRes.text();
-    const emRes = await this.sendDataToEMService(data, type, networkName, classes);
-    if(emRes.errors) {
-      this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
-      captureNondescriptiveErrorInSentry('Error in EM service with sample file');
-      return;
-    }
 
-    this.showNetwork(emRes.netID);
+    const file = new File([data], fileName, { type: 'text/plain' });
+    await this.onDropzoneFileLoad([file]);
   }
 
 
