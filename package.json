@@ -49,7 +49,6 @@
     "@sentry/tracing": "^7.33.0",
     "@tippyjs/react": "^4.2.0",
     "body-parser": "^1.19.0",
-    "browser-line-reader": "^0.3.0",
     "btoa": "^1.2.1",
     "chart.js": "^3.9.1",
     "chartjs-plugin-annotation": "^1.0.2",

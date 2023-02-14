@@ -1,4 +1,3 @@
-import LineReader from 'browser-line-reader';
 import * as XLSX from "xlsx";
 
 /**
@@ -9,6 +8,7 @@ import * as XLSX from "xlsx";
 
 function processHeader(headerLine, delimiter) {
   let columns = headerLine.split(delimiter || '\t');
+  console.log("columns: " + JSON.stringify(columns));
   if(columns.length == 2) {
     return { type: 'ranks', columns };
   } else {
@@ -24,10 +24,21 @@ function processHeader(headerLine, delimiter) {
   }
 }
 
-function firstLine(str) {
-  const i = str.indexOf("\n");
-  return str.substring(0, i > -1 ? i : undefined);
+
+function getLineBreakChar(s) {
+  const i = s.indexOf('\n');
+  if(i === -1) {
+    if(s.indexOf('\r') !== -1) {
+      return '\r';
+    }
+    return '\n';
+  }
+  if(s[i-1] === '\r') {
+    return '\r\n';
+  }
+  return '\n';
 }
+
 
 /**
  * Reads a Ranks or Expression file in TSV format.
@@ -42,53 +53,38 @@ function firstLine(str) {
  */
 export function readTSVFile(file, delimiter = '\t') {
   return new Promise((resolve, reject) => {
-    // Internal bookkeeping
-    let first = true;
-    let skipNext = false;
-    let needHeader = true;
+    const reader = new FileReader();
+    reader.onerror = reject;
 
-    // These fields get returned
-    let type;
-    let columns = [];
-    let lines = [];
+    reader.onload = evt => {
+      const text = reader.result;
 
-    const lineReader = new LineReader(file);
+      const lineBreakChar = getLineBreakChar(text);
+      const lines = text.split(lineBreakChar);
 
-    lineReader.readLines(line => {
-      const isFirst = first;
-      first = false;
-
-      if(skipNext) {
-        skipNext = false;
-        return;
+      if(lines[0].trim() === '#1.2') { // GCT files start with this line
+        lines.shift();
+        lines.shift(); // second line of GCT file needs to be skipped as well
       }
-      if(isFirst && line.trim() === '#1.2') { // GCT files start with this line
-        skipNext = true; // second line of GCT file needs to be skipped
-        return;
+
+      while(lines[0][0] === '#') { // skip comment lines
+        lines.shift();
       }
-      if(line[0] === '#') { // skip comment lines
+
+      const header = processHeader(lines[0], delimiter);
+
+      if(header.type == 'error') {
+        reject('File format error: cannot determine the number of data columns.');
         return;
       }
 
-      if(needHeader) { // First line that isn't skipped is the header row
-        needHeader = false;
-        const header = processHeader(line, delimiter);
-        if(header.type == 'error') {
-          lineReader.emit('error', 'File format error: cannot determine the number of data columns.');
-          return;
-        }
-        columns = header.columns;
-        type = header.type;
-      }
-
-      // TODO Check that all columns other than "Name", "Gene" or "Description" have valid numeric values.
-      lines.push(line);
-    })
-    .then(() => {
+      const { type, columns } = header;
       const contents = lines.join('\n');
+
       resolve({ type, columns, contents });
-    })
-    .catch(reject);
+    };
+    
+    reader.readAsText(file);
   });
 }
 
@@ -104,8 +100,14 @@ export function readTSVFile(file, delimiter = '\t') {
  * }
  */
 export function readExcelFileAsTSV(file, delimiter = '\t') {
+  const firstLine = str => {
+    const i = str.indexOf("\n");
+    return str.substring(0, i > -1 ? i : undefined);
+  };
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onerror = reject;
     
     reader.onload = evt => {
       // Parse data
@@ -128,8 +130,6 @@ export function readExcelFileAsTSV(file, delimiter = '\t') {
 
       resolve({ type, columns, contents });
     };
-
-    reader.onerror = reject;
 
     reader.readAsBinaryString(file);
   });
