@@ -30,7 +30,7 @@ const STEP = {
 };
 
 const FILE_EXT_REGEX = /\.[^/.]+$/;
-const TSV_EXTS = ['txt', 'TXT', 'rnk', 'RNK', 'tsv', 'TSV'];
+const TSV_EXTS = ['txt', 'TXT', 'rnk', 'RNK', 'tsv', 'TSV', 'gct', 'GCT'];
 const EXCEL_EXTS = ['xls', 'XLS', 'xlsx', 'XLSX'];
 
 // globally cached
