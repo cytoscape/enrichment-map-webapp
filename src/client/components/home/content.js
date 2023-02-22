@@ -277,7 +277,7 @@ export class Content extends Component {
           </Grid>
         </Grid>
         <p className={classes.tagline}>Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA-Seq experiment.</p>
-        <InfoPanel />
+        {/* <InfoPanel /> */}
         <Button className={classes.uploadButton} onClick={e => this.onClickUpload(e)} variant="contained" color="primary">Upload RNA-Seq data</Button>
       </div>
     );
