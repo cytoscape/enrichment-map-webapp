@@ -1,4 +1,5 @@
 import Express from 'express';
+import * as Sentry from "@sentry/node";
 import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
 import fs from 'fs';
@@ -85,8 +86,10 @@ http.post('/create/rnaseq', tsvParser, async function(req, res, next) {
     const rnaSeqCountsTSV = req.body;
 
     console.time('fgsea_rnaseq_service ' + tag);
-    const { ranks, pathways } = await runFGSEArnaseq(rnaSeqCountsTSV, classes);
+    const { ranks, pathways, messages } = await runFGSEArnaseq(rnaSeqCountsTSV, classes);
     console.timeEnd('fgsea_rnaseq_service ' + tag);
+
+    processMessages('fgsea', messages);
 
     console.time('em_service ' + tag);
     const networkJson = await runEM(pathways);
@@ -244,6 +247,25 @@ http.post('/:netid/genesearch', async function(req, res, next) {
 });
 
 
+function processMessages(service, messages) {
+  if(!messages || messages.length == 0)
+    return;
+
+  for(const message of messages) {
+    const { level, type, text, data } = message;
+    
+    const event = {
+      level,
+      tags: { message_type:type, service },
+      message: "Service Message: " + text,
+      extra: data,
+    };
+
+    Sentry.captureEvent(event);
+  }
+}
+
+
 async function runFGSEApreranked(ranksTSV) {
   const response = await fetch(FGSEA_PRERANKED_SERVICE_URL, {
     method: 'POST',
@@ -251,8 +273,6 @@ async function runFGSEApreranked(ranksTSV) {
     body: ranksTSV
   });
   if(!response.ok) {
-    const text = await response.text();
-    console.log(text);
     throw new Error("Error running fgsea preranked service.");
   }
   return await response.json();
@@ -268,11 +288,10 @@ async function runFGSEArnaseq(countsTSV, classes) {
     body: countsTSV
   });
   if(!response.ok) {
-    const text = await response.text();
-    console.log(text);
     throw new Error("Error running fgsea rnaseq service.");
   }
-  return await response.json();
+  const json = await response.json();
+  return json;
 }
 
 

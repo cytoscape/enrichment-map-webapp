@@ -8,16 +8,17 @@ import { registerCytoscapeExtensions } from '../model/cy-extensions';
 import { fixOldFashionedScrollStyle } from './scroll';
 import * as Sentry from "@sentry/browser";
 import { BrowserTracing } from "@sentry/tracing";
-import { PROD } from './env';
+import { SENTRY, SENTRY_ENVIRONMENT } from './env';
 
 if( debug.enabled() ){
   debug.init();
 }
 
-if (PROD) {
+if (SENTRY) {
   Sentry.init({
     dsn: "https://996aac9eb02a4419b5e7babe8163696e@o4504571938603008.ingest.sentry.io/4504572057812992",
     integrations: [new BrowserTracing()],
+    environment: SENTRY_ENVIRONMENT,
   
     // Set tracesSampleRate to 1.0 to capture 100%
     // of transactions for performance monitoring.
