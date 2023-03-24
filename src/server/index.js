@@ -16,7 +16,7 @@ const __dirname = dirname(__filename);
 import * as Sentry from "@sentry/node";
 import * as Tracing from "@sentry/tracing";
 
-import { NODE_ENV, PORT, UPLOAD_LIMIT, TESTING, PROD } from './env.js';
+import { NODE_ENV, PORT, UPLOAD_LIMIT, TESTING, SENTRY, SENTRY_ENVIRONMENT } from './env.js';
 import indexRouter from './routes/index.js';
 import apiRouter from './routes/api/index.js';
 import { registerCytoscapeExtensions } from '../model/cy-extensions.js';
@@ -35,9 +35,10 @@ const debugLog = debug('enrichment-map');
 const app = express();
 const server = http.createServer(app);
 
-if (PROD) {
+if (SENTRY) {
   Sentry.init({
     dsn: 'https://91d6fea963a1453abc1075637d2e7c76@o4504571938603008.ingest.sentry.io/4504571946467328',
+    environment: SENTRY_ENVIRONMENT,
     integrations: [
       // enable HTTP calls tracing
       new Sentry.Integrations.Http({ tracing: true }),
@@ -49,12 +50,22 @@ if (PROD) {
     // of transactions for performance monitoring.
     // We recommend adjusting this value in production
     tracesSampleRate: 1.0,
+
+    // Delete the HTTP body data sent from the client because it can be very
+    // large and Sentry might reject it. The client sends the user's data to Sentry
+    // as attachments so we don't need to record it here.
+    beforeSend: (event) => {
+      delete event.request.data;
+      return event;
+    },
   });
+
+  console.log("Sentry initalized, environment: " + SENTRY_ENVIRONMENT);
 }
 
 // RequestHandler creates a separate execution context using domains, so that every
 // transaction/span/breadcrumb is attached to its own Hub instance
-if (PROD) {
+if (SENTRY) {
   app.use(Sentry.Handlers.requestHandler());
   // TracingHandler creates a trace for every incoming request
   app.use(Sentry.Handlers.tracingHandler());
@@ -97,7 +108,7 @@ app.use('/api', apiRouter);
 app.use('/', indexRouter);
 
 // The error handler must be before any other error middleware and after all controllers
-if (PROD) {
+if (SENTRY) {
   app.use(Sentry.Handlers.errorHandler());
 }
 

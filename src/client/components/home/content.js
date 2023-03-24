@@ -6,7 +6,7 @@ import ClassSelector from './class-selector';
 import { InfoPanel } from './info-panel';
 import { DebugMenu } from '../../debug-menu';
 
-import { PROD } from '../../env';
+import { SENTRY } from '../../env';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -41,13 +41,12 @@ let sampleExpressionFiles = [];
 class NondescriptiveHandledError extends Error { // since we don't have well-defined errors
   constructor(message) {
     message = message ?? 'A non-descriptive error occurred.  Check the attached file.';
-
     super(message);
   }
 }
 
 const captureNondescriptiveErrorInSentry = (errorMessage) => {
-  if (PROD) {
+  if (SENTRY) {
     Sentry.captureException(new NondescriptiveHandledError(errorMessage));
     console.error('Reporting browser error to Sentry: ' + errorMessage);
   }
@@ -146,7 +145,7 @@ export class Content extends Component {
     const name = file.name.replace(FILE_EXT_REGEX, '');
     const ext = file.name.split('.').pop();
 
-    if (PROD) {
+    if (SENTRY) {
       const attachmentName = file.name;
       const attachmentContentType = file.type;
       const arrayBuffer = await file.arrayBuffer();

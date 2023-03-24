@@ -10,6 +10,9 @@
  */
 
 export const NODE_ENV = process.env.NODE_ENV;
-export const PROD = NODE_ENV === 'production';
 export const PORT = parseInt(process.env.PORT, 10);
 export const NDEX_API_URL = process.env.NDEX_API_URL;
+
+// Sentry config
+export const SENTRY_ENVIRONMENT = process.env.SENTRY_ENVIRONMENT;
+export const SENTRY = NODE_ENV === 'production' || (SENTRY_ENVIRONMENT && SENTRY_ENVIRONMENT.startsWith('test'));
