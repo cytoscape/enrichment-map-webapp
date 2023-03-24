@@ -68,6 +68,7 @@ The following environment variables can be used to configure the server:
 - `EM_SERVICE_URL`: the pull path of the [Java service](https://github.com/cytoscape/enrichmentmap-service) (i.e. for a query, not the root URL)
 - `MONGO_ROOT_NAME`: the name of the app's DB in Mongo
 - `MONGO_COLLECTION_QUERIES`: the name of the query collection
+- `SENTRY_ENVIRONMENT`: the Sentry environment name to use (automatic in prod mode, set to `test*` like `test_joe` to get Sentry reports in debug instances)
 
 ## Run targets
 
