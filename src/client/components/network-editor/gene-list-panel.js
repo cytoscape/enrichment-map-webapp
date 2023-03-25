@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { useQuery } from "react-query";
 import { linkoutProps } from './defaults';
 import theme from '../../theme';
+import { NES_COLOR_RANGE } from './network-style';
 import { NetworkEditorController } from './controller';
 
 import { makeStyles } from '@material-ui/core/styles';
@@ -23,8 +24,8 @@ const CHART_HEIGHT = 16;
 const GENE_RANK_ROUND_DIGITS = 2;
 
 const RANK_RANGE_COLOR = theme.palette.background.focus;
-const UP_RANK_COLOR = '#b8bf8f';
-const DOWN_RANK_COLOR = '#bf8f9f';
+const UP_RANK_COLOR   = NES_COLOR_RANGE.range5[3];
+const DOWN_RANK_COLOR = NES_COLOR_RANGE.range5[1];
 
 const useStyles = makeStyles((theme) => ({
   root: {

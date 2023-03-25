@@ -78,7 +78,9 @@ export class NetworkEditor extends Component {
       this.setLogMappedQValues();
 
       // Set network style
-      this.cy.style().fromJson(DEFAULT_NETWORK_STYLE(this.getMinLogQValue(), this.getMaxLogQValue()));
+      const { min:minNES, max:maxNES } = this.getMinMaxValues('NES');
+
+      this.cy.style().fromJson(DEFAULT_NETWORK_STYLE({minNES, maxNES}));
 
       // Notify listeners that the network has been loaded
       console.log('Loaded');
@@ -186,12 +188,11 @@ export class NetworkEditor extends Component {
     });
   }
 
-  getMinLogQValue() {
-    return this.cy.nodes().min(n => n.data('padjLog')).value;
-  }
-
-  getMaxLogQValue() {
-    return this.cy.nodes().max(n => n.data('padjLog')).value;
+  getMinMaxValues(attr) {
+    return {
+      min: this.cy.nodes().min(n => n.data(attr)).value,
+      max: this.cy.nodes().max(n => n.data(attr)).value
+    };
   }
 
   getClusterLabels(result) {
