@@ -147,9 +147,11 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     const eles = cy.$(':selected');
 
     if (eles.length > 0) {
+      const ele = eles[eles.length - 1];
       setGeneSetNames([]);
       setGenes(null);
-      fetchGeneListFromNodeOrEdge(eles[eles.length - 1]);
+      setSort(ele.data('NES') < 0 ? 'up' : 'down');
+      fetchGeneListFromNodeOrEdge(ele);
     } else if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
       setGeneSetNames([]);
       setGenes(null);
