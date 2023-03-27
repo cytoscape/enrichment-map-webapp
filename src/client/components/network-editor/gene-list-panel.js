@@ -24,8 +24,8 @@ const CHART_HEIGHT = 16;
 const GENE_RANK_ROUND_DIGITS = 2;
 
 const RANK_RANGE_COLOR = theme.palette.background.focus;
-const UP_RANK_COLOR   = NES_COLOR_RANGE.range5[3];
-const DOWN_RANK_COLOR = NES_COLOR_RANGE.range5[1];
+const UP_RANK_COLOR   = NES_COLOR_RANGE.up;
+const DOWN_RANK_COLOR = NES_COLOR_RANGE.down;
 
 const useStyles = makeStyles((theme) => ({
   root: {

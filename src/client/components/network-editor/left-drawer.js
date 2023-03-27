@@ -16,30 +16,30 @@ import { Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from "material-ui-search-bar";
 
-import SortByAlphaIcon from '@material-ui/icons/SortByAlpha';
-import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
-import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
+// import SortByAlphaIcon from '@material-ui/icons/SortByAlpha';
+// import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
+// import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 
 const LEGEND_CONTENT_HEIGHT = 120;
 
 const sortOptions = {
-  alpha: {
-    label: 'Sort by gene NAME',
-    icon: <SortByAlphaIcon />,
-    iteratees: ['gene'],
-    orders: ['asc'] 
+  // alpha: {
+  //   label: 'Sort by gene NAME',
+  //   icon: <SortByAlphaIcon />,
+  //   iteratees: ['gene'],
+  //   orders: ['asc'] 
+  // },
+  down: {
+    label: 'Sort by RANK (from highest to lowest)',
+    icon: <Typography>UP</Typography>,
+    iteratees: ['rank', 'gene'],
+    orders: ['desc', 'asc']
   },
   up: {
     label: 'Sort by RANK (from lowest to highest)',
-    icon: <KeyboardArrowUpIcon />,
+    icon: <Typography >DOWN</Typography>,
     iteratees: ['rank', 'gene'],
     orders: ['asc', 'asc']
-  },
-  down: {
-    label: 'Sort by RANK (from highest to lowest)',
-    icon: <KeyboardArrowDownIcon />,
-    iteratees: ['rank', 'gene'],
-    orders: ['desc', 'asc']
   },
 };
 
@@ -291,7 +291,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             onChange={handleSort}
           >
             {Object.entries(sortOptions).map(([k, { label, icon }]) => (
-              <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small">
+              <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" style={{width:70}}>
                 <Tooltip arrow placement="top" title={label}>
                   {icon}
                 </Tooltip>

@@ -15,13 +15,13 @@ const nodeLabel = _.memoize(node => {
 
 
 export const NES_COLOR_RANGE = (() => {
-  const PRGn = ['#7b3294', '#c2a5cf', '#f7f7f7', '#a6dba0', '#008837']; // PRGn
-  const negative = PRGn[0];
-  const zero = PRGn[2];
-  const positive = PRGn[4]; 
-  const range3 = [ negative, zero, positive ];
-  const range5 = PRGn;
-  return { negative, zero, positive, range3, range5 };
+  const colors = ['#7b3294', '#c2a5cf', '#f7f7f7', '#a6dba0', '#008837']; // PRGn
+  const down = colors[1];
+  const zero = colors[2];
+  const up = colors[3];
+  const range3 = [ colors[0], zero, colors[4] ];
+  const range5 = colors;
+  return { down, zero, up, range3, range5 };
 })();
 
 
