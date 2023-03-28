@@ -52,6 +52,7 @@
     "btoa": "^1.2.1",
     "chart.js": "^3.9.1",
     "chartjs-plugin-annotation": "^1.0.2",
+    "chroma-js": "^2.4.2",
     "classnames": "^2.2.6",
     "color": "^3.1.2",
     "color-convert": "^2.0.1",

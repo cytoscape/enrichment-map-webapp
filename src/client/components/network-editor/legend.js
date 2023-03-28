@@ -31,7 +31,7 @@ function createCy() {
     panningEnabled: false,
 
     style: [ 
-      ...DEFAULT_NETWORK_STYLE(0.1, 0.2),
+      ...DEFAULT_NETWORK_STYLE({minNES: -1, maxNES: 1}),
       { selector: 'node',
         style: {
           'width': 25,
