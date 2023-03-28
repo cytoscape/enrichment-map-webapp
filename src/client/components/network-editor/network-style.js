@@ -2,18 +2,6 @@ import _ from 'lodash';
 import chroma from 'chroma-js';
 
 
-const nodeLabel = _.memoize(node => {
-  const text = node.data('label') ?? node.data('name');
-  const percent = text.indexOf('%');
-
-  if (percent > 0) {
-    return text.substring(0, percent).toLowerCase();
-  } else {
-    return text;
-  }
-}, node => node.id());
-
-
 export const NES_COLOR_RANGE = (() => {
   const colors = ['#7b3294', '#c2a5cf', '#f7f7f7', '#a6dba0', '#008837']; // PRGn
   const down = colors[1];
@@ -30,7 +18,16 @@ export const DEFAULT_NETWORK_STYLE = (netStats) => {
   const magNES = Math.max(Math.abs(maxNES), Math.abs(minNES));
 
   const nesColorScale = chroma.scale(NES_COLOR_RANGE.range3).domain([-magNES, 0, magNES]);
-  const getBGColor = ele => nesColorScale(ele.data('NES')).toString();
+  
+  const getBGColor = _.memoize(node => {
+    return nesColorScale(node.data('NES')).toString();
+  }, node => node.id());
+
+  const nodeLabel = _.memoize(node => {
+    const text = node.data('label') ?? node.data('name');
+    const percent = text.indexOf('%');
+    return (percent > 0 ? text.substring(0, percent) : text).toLowerCase();
+  }, node => node.id());
 
   return [
     {
