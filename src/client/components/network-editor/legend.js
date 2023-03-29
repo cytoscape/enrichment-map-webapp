@@ -1,171 +1,82 @@
-import React, { useEffect, useReducer, useRef } from 'react';
+import React, { useEffect, useReducer } from 'react';
 import PropTypes from 'prop-types';
-
-import { NetworkEditorController } from './controller';
-
 import { makeStyles } from '@material-ui/core/styles';
-import Cytoscape from 'cytoscape';
+import { Typography } from '@material-ui/core';
 import { saveAs } from 'file-saver';
+import { NetworkEditorController } from './controller';
+import { NodeColorLegend, EdgeWidthLegend, getSVGString } from './legend-svg';
 
-import DEFAULT_NETWORK_STYLE from './network-style';
 
-import { LinearProgress } from '@material-ui/core';
+async function exportLegend(svgTagID) {
+  const svg = getSVGString(svgTagID);
+  console.log("here");
+  console.log(svg);
+  const blob = new Blob([svg], {type: "text/plain;charset=utf-8"});
+  saveAs(blob, 'enrichment_map_legend.svg');
+}
+
 
 const useStyles = makeStyles((theme) => ({
-  cyContainer: {
-    backgroundColor: '#f5f5f5',
+  legend: {
+    backgroundColor: '#f0f0f0',
     padding: 0,
+    display: 'flex',
   },
-  progressBar: {
-    backgroundColor: theme.palette.secondary.main,
-    height: 6,
+  legendSection: {
+  },
+  loading: {
+    padding: 10
   },
 }));
 
-function createCy() {
-  const cy = new Cytoscape({
-    headless: true,
-    styleEnabled: true,
-    boxSelectionEnabled: false,
-    zoomingEnabled: false,
-    panningEnabled: false,
 
-    style: [ 
-      ...DEFAULT_NETWORK_STYLE({minNES: -1, maxNES: 1}),
-      { selector: 'node',
-        style: {
-          'width': 25,
-          'height': 25
-      }},
-      { selector: 'node[label]',
-        style: {
-          'label': 'data(label)',
-          'font-size': '12px',
-          'text-wrap': 'none',
-          'background-opacity': 0,
-          'border-opacity': 0,
-          'width': 1,
-          'text-valign': 'center',
-          'text-halign': 'right',
-          'color': '#000',
-          'text-outline-opacity': 0
-      }},
-      { selector: 'node[hidden]', 
-        style: {
-          'opacity': 0,
-          'width': 2,
-          'height': 2
-      }},
-      { selector: '#e',
-        style: {
-          'width': 5
-      }},
-      { selector: 'node[child]',
-        style: {
-          'width': 8,
-          'height': 8
-      }},
-    ],
-
-    elements: [
-      { data: { id: 'a' } },
-      { data: { id: 'a-lab', label: 'Node:' } },
-      { data: { id: 'a-exp', label: 'Gene Set' } },
-
-      { data: { id: 'b', padj: 0.1 } },
-      { data: { id: 'b-lab', label: 'Node Color:' } },
-      { data: { id: 'b-exp', label: `q-value, brighter is more sig.` } },
-
-      { data: { id: 'e-source', hidden: true } },
-      { data: { id: 'e-target', hidden: true } },
-      { data: { id: 'e', source: 'e-source', target: 'e-target' } },
-      { data: { id: 'e-lab', label: 'Edge Width:' } },
-      { data: { id: 'e-exp', label: 'Gene Set Overlap' } },
-    ],
-  });
-
-  cy.elements().forEach(ele => {
-    if (!ele.data('name'))
-      ele.data('name', '');
-  });
-
-  cy.mount(document.getElementById('cy-style-legend'));
-  cy.resize();
-  cy.nodes().ungrabify();
-
-  // Have to manually position because this needs to run after the mount/resize.
-  const pos = (col, row) => {
-    const xs = [30, 60, 140];
-    const padTop = 25, ySep = 35;
-    return { x: xs[col], y: padTop + row * ySep };
-  };
-  
-  let row = 0;
-  cy.nodes('#a').position(pos(0,row));
-  cy.nodes('#a-lab').position(pos(1,row));
-  cy.nodes('#a-exp').position(pos(2,row));
-
-  row++;
-  cy.nodes('#b').position(pos(0,row));
-  cy.nodes('#b-lab').position(pos(1,row));
-  cy.nodes('#b-exp').position(pos(2,row));
-
-  row++;
-  const epos = pos(0,row);
-  cy.nodes('#e-source').position({ x: epos.x-15, y: epos.y+12 });
-  cy.nodes('#e-target').position({ x: epos.x+15, y: epos.y-12 });
-  cy.nodes('#e-lab').position(pos(1,row));
-  cy.nodes('#e-exp').position(pos(2,row));
-
-  return cy;
-}
-
-async function exportLegend(cy, scale) {
-  const blob = await cy.png({
-    output:'blob-promise',
-    bg: 'white',
-    scale
-  });
-  saveAs(blob, 'enrichment_map_legend.png');
-}
-
-export function StyleLegend({ controller, width, height }) {
-  const cyRef = useRef();
+export function StyleLegend({ controller, width=100, height=100 }) {
   const [ loading, setLoaded ] = useReducer(() => false, true);
 
-  useEffect(() => {
-    if (!loading) {
-      cyRef.current = createCy(); 
-    }
-  }, [loading]); 
+  console.log("width " + width);
+  console.log("Height:" + height);
 
   useEffect(() => {
-    const handleExport = scale => exportLegend(cyRef.current, scale);
-    
-    if (controller.isNetworkLoaded()) {
-      setLoaded(true);
-    }
-
-    controller.bus.on('networkLoaded', setLoaded);
+    const handleExport = () => exportLegend('node-color-legend-svg');
+    console.log("register exportLegend listener");
     controller.bus.on('exportLegend', handleExport);
-
     return () => {
-      controller.bus.removeListener('networkLoaded', setLoaded);
+      console.log("unregister exportLegend listener");
       controller.bus.removeListener('exportLegend', handleExport);
     };
   }, []);
 
+  useEffect(() => {
+    if (controller.isNetworkLoaded()) {
+      setLoaded();
+    }
+    controller.bus.on('networkLoaded', setLoaded);
+    return () => controller.bus.removeListener('networkLoaded', setLoaded);
+  }, []);
+
   const classes = useStyles();
 
-  return (
+  const Loading = () => 
+    <div className={classes.loading}>
+      <Typography>Loading...</Typography>
+    </div>;
+
+  const Legend = () =>
     <div className={classes.legend}>
-        <div className={classes.cyContainer}>
-          <div id='cy-style-legend' style={{width: width, height: height}}>
-            {loading && (
-              <LinearProgress className={classes.progressBar} />
-            )}
-          </div>
-        </div>
+      <div className={classes.legendSection}>
+        <NodeColorLegend svgID='node-color-legend-svg' width={width/2} height={height} magNES={controller.style.magNES} /> 
+      </div>
+      <div className={classes.legendSection}>
+        <EdgeWidthLegend svgID='edge-width-legend-svg' width={width/2} height={height} />
+      </div>
+    </div>;
+
+  return (
+    <div style={{width, height}}>
+      { loading 
+        ? <Loading />
+        : <Legend />
+      }
     </div>
   );
 }

@@ -16,19 +16,10 @@ import { Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from "material-ui-search-bar";
 
-// import SortByAlphaIcon from '@material-ui/icons/SortByAlpha';
-// import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
-// import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 
-const LEGEND_CONTENT_HEIGHT = 120;
+const LEGEND_CONTENT_HEIGHT = 160;
 
 const sortOptions = {
-  // alpha: {
-  //   label: 'Sort by gene NAME',
-  //   icon: <SortByAlphaIcon />,
-  //   iteratees: ['gene'],
-  //   orders: ['asc'] 
-  // },
   down: {
     label: 'Sort by RANK (from highest to lowest)',
     icon: <Typography>UP</Typography>,
@@ -37,7 +28,7 @@ const sortOptions = {
   },
   up: {
     label: 'Sort by RANK (from lowest to highest)',
-    icon: <Typography >DOWN</Typography>,
+    icon: <Typography>DOWN</Typography>,
     iteratees: ['rank', 'gene'],
     orders: ['asc', 'asc']
   },
@@ -91,7 +82,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
   const [genes, setGenes] = useState(null);
   const [sort, setSort] = useState('down');
   const [geneSetsExpanded, setGeneSetsExpanded] = useState(true);
-  const [legendExpanded, setLegendExpanded] = useState(false);
+  const [legendExpanded, setLegendExpanded] = useState(true);
 
   const searchValueRef = useRef(searchValue);
   searchValueRef.current = searchValue;
