@@ -10,7 +10,7 @@ export function getSVGString(id) {
   let xmlString = serializer.serializeToString(svg);
 
   // add namespaces
-  if(!xmlString.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)) {
+  if(!xmlString.match(/^<svg[^>]+"http:\/\/www\.w3\.org\/1999\/xlink"/)) {
     // JSX doesn't allow namespace tags, so we have to add it here
     xmlString = xmlString.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"'); 
   }
