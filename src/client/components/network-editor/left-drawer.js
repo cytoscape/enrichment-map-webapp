@@ -8,7 +8,6 @@ import { NetworkEditorController } from './controller';
 import CollapsiblePanel from './collapsible-panel';
 import GeneListPanel from './gene-list-panel';
 import GeneSetListPanel from './geneset-list-panel';
-import StyleLegend from './legend';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -16,8 +15,6 @@ import { Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from "material-ui-search-bar";
 
-
-const LEGEND_CONTENT_HEIGHT = 160;
 
 const sortOptions = {
   down: {
@@ -82,7 +79,6 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
   const [genes, setGenes] = useState(null);
   const [sort, setSort] = useState('down');
   const [geneSetsExpanded, setGeneSetsExpanded] = useState(true);
-  const [legendExpanded, setLegendExpanded] = useState(true);
 
   const searchValueRef = useRef(searchValue);
   searchValueRef.current = searchValue;
@@ -333,11 +329,6 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
                 <GeneSetListPanel geneSetNames={geneSetNames} />
               </CollapsiblePanel>
             )}
-            {networkLoaded && (
-              <CollapsiblePanel title="Legend" defaultExpanded={legendExpanded} onChange={(evt, b) => setLegendExpanded(b)}>
-                <StyleLegend controller={controller} width={CONTROL_PANEL_WIDTH - 1} height={LEGEND_CONTENT_HEIGHT} />
-              </CollapsiblePanel>
-            )}  
           </div>
         </div>
       </Drawer>

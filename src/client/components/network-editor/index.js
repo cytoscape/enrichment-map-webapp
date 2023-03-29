@@ -7,7 +7,6 @@ import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape';
 
 import { NODE_ENV } from '../../env';
-import { DEFAULT_PADDING } from './defaults';
 import { NetworkEditorController } from './controller';
 import theme from '../../theme';
 import Header from './header';
@@ -17,6 +16,7 @@ import createNetworkStyle from './network-style';
 
 import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
+import LegendActionButton from './legend-button';
 
 const CY_EVENTS = 'data add remove move layoutstop viewport';
 
@@ -237,6 +237,7 @@ export class NetworkEditor extends Component {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
+          <LegendActionButton controller={controller} />
           <div className="network-editor">
             <Header
               controller={controller}
