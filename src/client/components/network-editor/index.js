@@ -7,16 +7,16 @@ import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape';
 
 import { NODE_ENV } from '../../env';
-import { DEFAULT_PADDING } from './defaults';
 import { NetworkEditorController } from './controller';
 import theme from '../../theme';
 import Header from './header';
 import Main from './main';
 
-import DEFAULT_NETWORK_STYLE from './network-style';
+import createNetworkStyle from './network-style';
 
 import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
+import LegendActionButton from './legend-button';
 
 const CY_EVENTS = 'data add remove move layoutstop viewport';
 
@@ -41,11 +41,10 @@ export class NetworkEditor extends Component {
     });
 
     this.cy.data({ id });
-    this.controller = new NetworkEditorController(this.cy, this.cySyncher, this.bus);
+    this.controller = new NetworkEditorController(this.cy, this.bus, this.style);
 
     if (NODE_ENV !== 'production') {
       window.cy = this.cy;
-      window.cySyncher = this.cySyncher;
       window.controller = this.controller;
     }
 
@@ -75,12 +74,10 @@ export class NetworkEditor extends Component {
 
       this.cy.data({ name: result.networkName, parameters: result.parameters });
 
-      this.setLogMappedQValues();
-
       // Set network style
-      const { min:minNES, max:maxNES } = this.getMinMaxValues('NES');
-
-      this.cy.style().fromJson(DEFAULT_NETWORK_STYLE({minNES, maxNES}));
+      const style = createNetworkStyle(this.cy);
+      this.cy.style().fromJson(style.cyJSON);
+      this.controller.style = style; // Make available to components
 
       // Notify listeners that the network has been loaded
       console.log('Loaded');
@@ -164,37 +161,6 @@ export class NetworkEditor extends Component {
     });
   }
 
-  getMinQValue() {
-    return this.cy.nodes().min(n => n.data('padj')).value;
-  }
-
-  getMaxQValue() {
-    return this.cy.nodes().max(n => n.data('padj')).value;
-  }
-
-  setLogMappedQValues() {
-    const nodes = this.cy.nodes();
-    const qMax = this.getMaxQValue();
-    const log2 = x => Math.log2(x);
-    const scale = q => 1 + q * 127; // [0, 1] => [1, 128]
-
-    this.cy.batch(() => {
-      for (const node of nodes) {
-        const q = node.data('padj');
-        const qLog = log2(scale(q)) / log2(scale(qMax));
-
-        node.data('padjLog', qLog);
-      }
-    });
-  }
-
-  getMinMaxValues(attr) {
-    return {
-      min: this.cy.nodes().min(n => n.data(attr)).value,
-      max: this.cy.nodes().max(n => n.data(attr)).value
-    };
-  }
-
   getClusterLabels(result) {
     if(!result.clusterLabels)
       return new Map();
@@ -271,6 +237,7 @@ export class NetworkEditor extends Component {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
+          <LegendActionButton controller={controller} />
           <div className="network-editor">
             <Header
               controller={controller}
