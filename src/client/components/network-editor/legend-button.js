@@ -9,7 +9,9 @@ import { Tooltip } from '@material-ui/core';
 
 const LEGEND_HEIGHT = 220;
 const LEGEND_WIDTH  = 120;
-const BUTTON_COLOR  = '#2b8cbe';
+const BACKGROUND_COLOR  = '#F6F6F6';
+const BORDER_COLOR = '#bbb';
+const BUTTON_ICON_COLOR = '#999';
 
 const useStyles = makeStyles((theme) => ({
   menu: {
@@ -24,15 +26,16 @@ const useStyles = makeStyles((theme) => ({
     whiteSpace: 'nowrap',
     color: '#464448',
     overflow: 'hidden',
-    background: BUTTON_COLOR,
+    border: '1px solid ' + BORDER_COLOR,
+    background: BACKGROUND_COLOR,
     borderRadius: '50%',
     boxShadow: '0 3px 10px -2px rgba(0, 0, 0, 0.25)',
     transition: '0.2s',
     zIndex: 20, 
   },
   menuOpen: {
-    background: 'white',
-    border: '1px solid #ccc',
+    background: BACKGROUND_COLOR,
+    border: '1px solid ' + BORDER_COLOR,
     width: LEGEND_WIDTH + 'px',
     height: LEGEND_HEIGHT + 'px',
     borderRadius: '2px'
@@ -41,10 +44,10 @@ const useStyles = makeStyles((theme) => ({
     fontWeight: 400,
     border: 0,
     background: 'none',
-    color: 'white',
+    color: BUTTON_ICON_COLOR,
     position: 'absolute',
     top: '7px',
-    right: '11px',
+    right: '10px',
     fontSize: '34px',
     padding: 0,
     width: '20px',
@@ -53,9 +56,9 @@ const useStyles = makeStyles((theme) => ({
     transition: '0.2s',
     userSelect: 'none'
   },
-  menuOpenMenuButton: {
+  menuButtonOpen: {
     top: '16px',
-    color: '#999',
+    color: BUTTON_ICON_COLOR,
     transform: 'rotate(180deg)'
   },
   menuTitle: {
@@ -67,16 +70,16 @@ const useStyles = makeStyles((theme) => ({
     visibility: 'hidden',
     transition: '0.2s'
   },
-  menuOpenMenuContent: {
+  menuContentOpen: {
     opacity: 1,
-    visibility: 'visible'
+    visibility: 'visible',
   },
 }));
 
 
 async function exportLegend(svgID) {
   const svg = getSVGString(svgID);
-  const blob = new Blob([svg], {type: "text/plain;charset=utf-8"});
+  const blob = new Blob([svg], { type: 'text/plain;charset=utf-8' });
   saveAs(blob, 'enrichment_map_legend.svg');
 }
 
@@ -101,17 +104,13 @@ export function LegendActionButton({ controller }) {
   }, []);
 
   const classes = useStyles();
-
-  if(loading)
-    return null;
-
   const menuClasses = `${classes.menu} ${open ? classes.menuOpen : ''}`;
-  const buttonClasses = `${classes.menuButton} ${open ? classes.menuOpenMenuButton : ''}`;
-  const contentClasses = open ? classes.menuOpenMenuContent : classes.menuContent;
+  const buttonClasses = `${classes.menuButton} ${open ? classes.menuButtonOpen : ''}`;
+  const contentClasses = open ? classes.menuContentOpen : classes.menuContent;
 
-  return (
-    <div className={menuClasses}>
-      <div className={buttonClasses} onClick={toggleOpen}>
+  return loading ? null : (
+    <div className={menuClasses} onClick={open ? undefined : toggleOpen}>
+      <div className={buttonClasses} onClick={open ? toggleOpen : undefined}>
         <Tooltip title={open ? '' : 'Show Legend'} arrow placement='left'>
           <KeyboardArrowUpIcon />
         </Tooltip>
@@ -127,6 +126,7 @@ export function LegendActionButton({ controller }) {
     </div>
   );
 }
+
 LegendActionButton.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
 };
