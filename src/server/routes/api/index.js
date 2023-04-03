@@ -19,8 +19,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const http = Express.Router();
 
-const tsvParser = bodyParser.text({ 
-  type: "text/tab-separated-values", 
+// Endpoints accept TSV or CSV
+const dataParser = bodyParser.text({ 
+  type: ['text/tab-separated-values', 'text/csv'],
   limit: '50mb' 
 });
 
@@ -44,16 +45,19 @@ http.get('/iamerror', async function(req, res) {
  * Runs the FGSEA/EnrichmentMap algorithms, saves the 
  * created network, then returns its ID.
  */
-http.post('/create/preranked', tsvParser, async function(req, res, next) {
+http.post('/create/preranked', dataParser, async function(req, res, next) {
   try {
     const { networkName } = req.query;
-
+    const contentType = req.get('Content-Type'); // use same content type with FGSEA service
+    
     const tag = Date.now();
+
+    console.log('/create/preranked ' + tag + ', Content-Type:' + contentType);
     console.time('/create/preranked ' + tag);
-    const rankedGeneListTSV = req.body;
+    const bodyData = req.body;
 
     console.time('fgsea_preranked_service ' + tag);
-    const { pathways } = await runFGSEApreranked(rankedGeneListTSV);
+    const { pathways } = await runFGSEApreranked(bodyData, contentType);
     console.timeEnd('fgsea_preranked_service ' + tag);
 
     console.time('em_service ' + tag);
@@ -62,7 +66,8 @@ http.post('/create/preranked', tsvParser, async function(req, res, next) {
 
     console.time('mongo ' + tag);
     const netID = await Datastore.createNetwork(networkJson, networkName);
-    const rankedGeneList = Datastore.rankedGeneListTSVToDocument(rankedGeneListTSV);
+    const delimiter = contentType === 'text/csv' ? ',' : '\t';
+    const rankedGeneList = Datastore.rankedGeneListToDocument(bodyData, delimiter);
     await Datastore.createRankedGeneList(rankedGeneList, netID);
     console.timeEnd('mongo ' + tag);
 
@@ -77,16 +82,19 @@ http.post('/create/preranked', tsvParser, async function(req, res, next) {
  * Runs the FGSEA/EnrichmentMap algorithms, saves the 
  * created network, then returns its ID.
  */
-http.post('/create/rnaseq', tsvParser, async function(req, res, next) {
+http.post('/create/rnaseq', dataParser, async function(req, res, next) {
   try {
     const { classes, networkName } = req.query;
+    const contentType = req.get('Content-Type'); // use same content type with FGSEA service
 
     const tag = Date.now();
+
+    console.log('/create/rnaseq ' + tag + ', Content-Type:' + contentType);
     console.time('/create/rnaseq ' + tag);
-    const rnaSeqCountsTSV = req.body;
+    const bodyData = req.body;
 
     console.time('fgsea_rnaseq_service ' + tag);
-    const { ranks, pathways, messages } = await runFGSEArnaseq(rnaSeqCountsTSV, classes);
+    const { ranks, pathways, messages } = await runFGSEArnaseq(bodyData, classes, contentType);
     console.timeEnd('fgsea_rnaseq_service ' + tag);
 
     processMessages('fgsea', messages);
@@ -266,11 +274,11 @@ function processMessages(service, messages) {
 }
 
 
-async function runFGSEApreranked(ranksTSV) {
+async function runFGSEApreranked(ranksData, contentType) {
   const response = await fetch(FGSEA_PRERANKED_SERVICE_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/tab-separated-values' },
-    body: ranksTSV
+    headers: { 'Content-Type': contentType },
+    body: ranksData
   });
   if(!response.ok) {
     throw new Error("Error running fgsea preranked service.");
@@ -279,13 +287,13 @@ async function runFGSEApreranked(ranksTSV) {
 }
 
 
-async function runFGSEArnaseq(countsTSV, classes) {
+async function runFGSEArnaseq(countsData, classes, contentType) {
   const url = FGSEA_RNASEQ_SERVICE_URL + '?' + new URLSearchParams({ classes });
   console.log(url);
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/tab-separated-values' },
-    body: countsTSV
+    headers: { 'Content-Type': contentType },
+    body: countsData
   });
   if(!response.ok) {
     throw new Error("Error running fgsea rnaseq service.");

@@ -150,12 +150,13 @@ class Datastore {
    * Converts a ranked gene list in TSV format into the document
    * format we want for mongo.
    */
-  rankedGeneListTSVToDocument(rankedGeneListTSV) {
+  rankedGeneListToDocument(rankedGeneList, delimiter = '\t') {
     const genes = [];
     var [min, max] = [Infinity, -Infinity];
 
-    rankedGeneListTSV.split("\n").slice(1).forEach(line => {
-      const [gene, rankStr] = line.split("\t");
+    rankedGeneList.split("\n").slice(1).forEach(line => {
+      const [gene, rankStr] = line.split(delimiter);
+
       const rank = Number(rankStr);
 
       if (gene) {

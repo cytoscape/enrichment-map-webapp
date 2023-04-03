@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
-import { readExcelFileAsTSV, readTSVFile } from './data-file-reader';
+import { readTextFile, readExcelFile } from './data-file-reader';
 import ClassSelector from './class-selector';
 import { InfoPanel } from './info-panel';
 import { DebugMenu } from '../../debug-menu';
@@ -30,8 +30,8 @@ const STEP = {
 };
 
 const FILE_EXT_REGEX = /\.[^/.]+$/;
-const TSV_EXTS = ['txt', 'TXT', 'rnk', 'RNK', 'tsv', 'TSV'];
-const EXCEL_EXTS = ['xls', 'XLS', 'xlsx', 'XLSX'];
+const TSV_EXTS = ['txt', 'rnk', 'tsv', 'csv', 'gct'];
+const EXCEL_EXTS = ['xls', 'xlsx'];
 
 // globally cached
 let sampleFiles = [];
@@ -89,7 +89,7 @@ export class Content extends Component {
     location.href = `/document/${id}`;
   }
 
-  async sendDataToEMService(dataTSV, type, networkName, classesArr) {
+  async sendDataToEMService(text, format, type, networkName, classesArr) {
     let url;
     if(type === 'ranks') {
       url = '/api/create/preranked?' + new URLSearchParams({ networkName });
@@ -98,10 +98,12 @@ export class Content extends Component {
       url = '/api/create/rnaseq?' + new URLSearchParams({ classes, networkName });
     } 
 
+    const contentType = format === 'tsv' ? 'text/tab-separated-values' : 'text/csv';
+    
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/tab-separated-values' },
-      body: dataTSV
+      headers: { 'Content-Type': contentType },
+      body: text
     });
 
     if(res.ok) {
@@ -143,7 +145,7 @@ export class Content extends Component {
    
     this.setState({ step: STEP.LOADING });
     const name = file.name.replace(FILE_EXT_REGEX, '');
-    const ext = file.name.split('.').pop();
+    const ext  = file.name.split('.').pop().toLowerCase();
 
     if (SENTRY) {
       const attachmentName = file.name;
@@ -159,11 +161,12 @@ export class Content extends Component {
 
     try {
       if(TSV_EXTS.includes(ext)) {
-        const { type, columns, contents } = await readTSVFile(file);
-        console.log(`Reading TSV file as ${type}, columns: ${columns}`);
+        console.log('Reading file');
+        const { type, format, columns, contents } = await readTextFile(file);
+        console.log(`Reading ${format} file as ${type}, columns: ${columns}`);
   
         if(type === 'ranks') {
-          const emRes = await this.sendDataToEMService(contents, 'ranks', name);
+          const emRes = await this.sendDataToEMService(contents, format, 'ranks', name);
           if(emRes.errors) {
             this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
             captureNondescriptiveErrorInSentry('Error in EM service with uploaded rank file');
@@ -172,13 +175,16 @@ export class Content extends Component {
           this.showNetwork(emRes.netID);
     
         } else {
-          this.setState({ step: STEP.CLASSES, columns, contents, name });
+          this.setState({ step: STEP.CLASSES, format, columns, contents, name });
         }
 
       } else if(EXCEL_EXTS.includes(ext)) {
-        const { columns, contents } = await readExcelFileAsTSV(file);
+        const { columns, contents, format } = await readExcelFile(file);
         console.log(`Reading Excel file, columns: ${columns}`);
-        this.setState({ step: STEP.CLASSES, columns, contents, name });
+        this.setState({ step: STEP.CLASSES, format, columns, contents, name });
+      } else {
+        const exts = TSV_EXTS.join(', ') + ', ' + EXCEL_EXTS.join(', ');
+        this.setState({ step: STEP.ERROR, errorMessages: ["File extension not supported. Must be one of: " + exts]});
       }
 
     } catch(e) {
@@ -190,10 +196,10 @@ export class Content extends Component {
 
 
   async onRnaseqClassSubmit(classes) {
-      const { contents, name } = this.state;
+      const { format, contents, name } = this.state;
       this.setState({ step: STEP.LOADING });
       
-      const emRes = await this.sendDataToEMService(contents, 'rnaseq', name, classes);
+      const emRes = await this.sendDataToEMService(contents, format, 'rnaseq', name, classes);
       if(emRes.errors) {
         this.setState({ step: STEP.ERROR, errorMessages: emRes.errors, contents: null });
         captureNondescriptiveErrorInSentry('Error in sending uploaded RNASEQ data to service');

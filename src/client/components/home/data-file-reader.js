@@ -8,7 +8,6 @@ import * as XLSX from "xlsx";
 
 function processHeader(headerLine, delimiter) {
   let columns = headerLine.split(delimiter || '\t');
-  console.log("columns: " + JSON.stringify(columns));
   if(columns.length == 2) {
     return { type: 'ranks', columns };
   } else {
@@ -25,33 +24,39 @@ function processHeader(headerLine, delimiter) {
 }
 
 
-function getLineBreakChar(s) {
-  const i = s.indexOf('\n');
+function getLineBreakChar(text) {
+  const i = text.indexOf('\n');
   if(i === -1) {
-    if(s.indexOf('\r') !== -1) {
+    if(text.indexOf('\r') !== -1) {
       return '\r';
     }
     return '\n';
   }
-  if(s[i-1] === '\r') {
+  if(text[i-1] === '\r') {
     return '\r\n';
   }
   return '\n';
 }
 
+function getDelimiter(line) {
+  const tabTokens   = line.split('\t').length;
+  const commaTokens = line.split(',').length;
+  return commaTokens > tabTokens ? ',' : '\t';
+}
 
 /**
- * Reads a Ranks or Expression file in TSV format.
+ * Reads a Ranks or Expression file in TSV or CSV format.
  * Comment lines are ignored and removed from the output.
  * 
  * Returns a Promise that resolves to an object with the following fields...
  * {
  *   columns: array of column headers,
  *   type: 'ranks' or 'rnaseq' (for expressions),
+ *   format: 'tsv' or 'csv',
  *   contents: string that contains the file contents as TSV with comment lines removed,
  * }
  */
-export function readTSVFile(file, delimiter = '\t') {
+export function readTextFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = reject;
@@ -66,11 +71,11 @@ export function readTSVFile(file, delimiter = '\t') {
         lines.shift();
         lines.shift(); // second line of GCT file needs to be skipped as well
       }
-
       while(lines[0][0] === '#') { // skip comment lines
         lines.shift();
       }
 
+      const delimiter = getDelimiter(lines[0]);
       const header = processHeader(lines[0], delimiter);
 
       if(header.type == 'error') {
@@ -80,8 +85,9 @@ export function readTSVFile(file, delimiter = '\t') {
 
       const { type, columns } = header;
       const contents = lines.join('\n');
+      const format = delimiter === ',' ? 'csv' : 'tsv';
 
-      resolve({ type, columns, contents });
+      resolve({ type, format, columns, contents });
     };
     
     reader.readAsText(file);
@@ -90,16 +96,18 @@ export function readTSVFile(file, delimiter = '\t') {
 
 
 /**
- * Reads an Excel file, and converts the first worksheet to TSV format.
+ * Reads an Excel file, and converts the first worksheet to TSV or CSV format
+ * (TSV is the default).
  * 
  * Returns a Promise that resolves to an object with the following fields...
  * {
  *   columns: array of column headers,
  *   type: 'ranks' or 'rnaseq' (for expressions),
+ *   format: 'tsv' or 'csv'
  *   contents: string that contains the file contents as TSV
  * }
  */
-export function readExcelFileAsTSV(file, delimiter = '\t') {
+export function readExcelFile(file, format = 'tsv') {
   const firstLine = str => {
     const i = str.indexOf("\n");
     return str.substring(0, i > -1 ? i : undefined);
@@ -119,8 +127,9 @@ export function readExcelFileAsTSV(file, delimiter = '\t') {
       const ws = wb.Sheets[wsname];
 
       // convert to TSV
+      const delimiter = format === 'tsv' ? '\t' : ',';
       const contents = XLSX.utils.sheet_to_csv(ws, { FS: delimiter });
-      const headerLine = firstLine(contents, delimiter);
+      const headerLine = firstLine(contents);
       
       const { type, columns } = processHeader(headerLine, delimiter);
       if(type == 'error') {
@@ -128,7 +137,7 @@ export function readExcelFileAsTSV(file, delimiter = '\t') {
         return;
       }
 
-      resolve({ type, columns, contents });
+      resolve({ type, format, columns, contents });
     };
 
     reader.readAsBinaryString(file);
