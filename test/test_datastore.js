@@ -14,7 +14,7 @@ describe('Gene Set Queries', () => {
     await Datastore.dropCollectionIfExists(GENESET_DB);
     await Datastore.initializeGeneSetDB('./test/resources/', GENESET_DB);
     networkID = await Datastore.createNetwork(network);
-    const ranksDoc = await Datastore.rankedGeneListTSVToDocument(ranks);
+    const ranksDoc = await Datastore.rankedGeneListToDocument(ranks);
     await Datastore.createRankedGeneList(ranksDoc, networkID);
   });
 
