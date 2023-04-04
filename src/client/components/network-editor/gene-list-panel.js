@@ -259,9 +259,10 @@ const GeneListPanel = ({ controller, genes, sort }) => {
   const classes = useStyles();
   const virtuoso = useRef(null);
   
+  // Resets the scroll position when either the gene list or the sort has changed
   useEffect(() => {
     setResetScroll(true);
-  }, [sort]);
+  }, [genes, sort]);
 
   useEffect(() => {
     if (resetScroll) {
