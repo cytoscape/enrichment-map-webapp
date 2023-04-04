@@ -85,7 +85,7 @@ app.engine('html', function (filePath, options, callback){
 
 app.set('view engine', 'html');
 
-app.use(favicon(path.join(__dirname, '../..', 'public', 'icon.png')));
+app.use(favicon(path.join(__dirname, '../..', 'public', 'favicon-32.png')));
 
 if (!TESTING) {
   app.use(morgan('dev', {
