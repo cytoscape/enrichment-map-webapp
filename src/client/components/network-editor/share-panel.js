@@ -7,7 +7,7 @@ import { MenuList, MenuItem, ListItemIcon, ListItemText } from '@material-ui/cor
 import { getSVGString } from './legend-svg';
 import { NODE_COLOR_SVG_ID } from './legend-button';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
-//import LinkIcon from '@material-ui/icons/Link';
+import LinkIcon from '@material-ui/icons/Link';
 
 
 const ImageSize = {
@@ -66,33 +66,45 @@ async function handleExportImageArchive(controller) {
 }
 
 
-// async function handleShareURL() {
-//   const url = window.location.href;
-//   window.navigator.share({
-//     title: "EnrichmentMap Network",
-//     url
-//   });
-// }
+function handleCopyToClipboard() {
+  const url = window.location.href;
+  navigator.clipboard.writeText(url);
+}
 
 
-export function ShareMenu({ controller }) {
-  return <MenuList>
-      {/* <MenuItem onClick={handleShareURL}>
+export function ShareMenu({ controller, onClose = ()=>null, showMessage = ()=>null }) {
+  const handleCopyLink = async () => {
+    await handleCopyToClipboard(); 
+    onClose();
+    showMessage("Link copied!");
+  };
+
+  const handleExportImages = async () => {
+    await handleExportImageArchive(controller); 
+    onClose();
+  };
+
+  return (
+    <MenuList>
+      <MenuItem onClick={handleCopyLink}>
         <ListItemIcon>
           <LinkIcon />
         </ListItemIcon>
-        <ListItemText>Share Link</ListItemText>
-      </MenuItem> */}
-      <MenuItem onClick={() => handleExportImageArchive(controller)}>
+        <ListItemText>Share Link to Network</ListItemText>
+      </MenuItem>
+      <MenuItem onClick={handleExportImages}>
         <ListItemIcon>
           <CloudDownloadIcon />
         </ListItemIcon>
-        <ListItemText>Save Images</ListItemText>
+        <ListItemText>Save Network Images</ListItemText>
       </MenuItem>
-    </MenuList>;
+    </MenuList>
+  );
 }
 ShareMenu.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  onClose: PropTypes.func,
+  showMessage: PropTypes.func
 };
 
 export default ShareMenu;

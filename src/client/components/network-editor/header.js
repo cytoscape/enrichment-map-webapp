@@ -10,7 +10,7 @@ import { ShareMenu } from './share-panel';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { AppBar, Toolbar } from '@material-ui/core';
+import { AppBar, Snackbar, Toolbar } from '@material-ui/core';
 import { Divider } from '@material-ui/core';
 import { Popover, Menu, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
@@ -43,6 +43,8 @@ export class Header extends Component {
       anchorEl: null,
       dialogId: null,
       networkLoaded: this.controller.isNetworkLoaded(),
+      snackOpen: false,
+      snackMessage: ""
     };
 
     this.showMobileMenu = this.showMobileMenu.bind(this);
@@ -93,6 +95,10 @@ export class Header extends Component {
       this.showMenu(SHARE_MENU_ID, event.currentTarget);
     };
 
+    const showSnackbar = (open, message ) => {
+      this.setState({ snackOpen: open, snackMessage: message });
+    };
+
     const buttonsDef = [
       {
         title: "Fit Figure to Screen",
@@ -122,6 +128,13 @@ export class Header extends Component {
     
     return (
       <>
+        <Snackbar 
+          style={{zIndex: 100}} 
+          open={this.state.snackOpen} 
+          autoHideDuration={4000} 
+          onClose={() => showSnackbar(false, "")} 
+          message={this.state.snackMessage}
+        />
         <AppBar
           position="relative"
           color='default'
@@ -181,7 +194,11 @@ export class Header extends Component {
               onClose={() => this.handleMenuClose()}
             >
               {menuName === SHARE_MENU_ID && (
-                <ShareMenu controller={controller} />
+                <ShareMenu 
+                  controller={controller} 
+                  onClose={() => this.handleMenuClose()}
+                  showMessage={message => showSnackbar(true, message)}
+                />
               )}
             </Popover>
           )}
