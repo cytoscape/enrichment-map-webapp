@@ -1,10 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
+import JSZip from 'jszip';
 import { NetworkEditorController } from './controller';
 import { MenuList, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
-import EmailIcon from '@material-ui/icons/Email';
-import ImageIcon from '@material-ui/icons/Image';
+import { getSVGString } from './legend-svg';
+import { NODE_COLOR_SVG_ID } from './legend-button';
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 //import LinkIcon from '@material-ui/icons/Link';
 
 
@@ -20,34 +22,57 @@ const ImageArea = {
 };
 
 
-function handleSendEmail() {
-  const subject = "Sharing Network from EnrichmentMap";
-  const body = "Use this link to access the network: " + window.location.href;
-  window.location=`mailto:?subject=${subject}&body=${body}`;
-}
-
-async function handleExportImage(controller, imageSize, imageArea) {
-  const blob = await controller.cy.png({
-    output:'blob-promise',
+async function createNetworkImageBlob(controller, imageSize, imageArea=ImageArea.FULL) {
+  return await controller.cy.png({
+    output: 'blob-promise',
     bg: 'white',
     full: imageArea === ImageArea.FULL,
     scale: imageSize.scale,
   });
-
-  saveAs(blob, 'enrichment_map.png');
 }
 
-async function handleShareURL() {
-  const url = window.location.href;
-  window.navigator.share({
-    title: "EnrichmentMap Network",
-    url
-  });
+async function createSVGLegendBlob(svgID) {
+  const svg = getSVGString(svgID);
+  return new Blob([svg], { type: 'text/plain;charset=utf-8' });
 }
 
-function handleExportLegend(controller, imageSize) {
-  controller.bus.emit('exportLegend', imageSize.scale);
+async function clearSelectionStyle(controller) {
+  const eles = controller.cy.elements('.unselected');
+  eles.removeClass('unselected');
+  return async () => eles.addClass('unselected');
 }
+
+async function handleExportImageArchive(controller) {
+  const restoreStyle = await clearSelectionStyle(controller);
+
+  const blobs = await Promise.all([
+    createNetworkImageBlob(controller, ImageSize.SMALL),
+    createNetworkImageBlob(controller, ImageSize.MEDIUM),
+    createNetworkImageBlob(controller, ImageSize.LARGE),
+    createSVGLegendBlob(NODE_COLOR_SVG_ID),
+  ]);
+
+  restoreStyle();
+
+  const zip = new JSZip();
+  zip.file('enrichment_map_small.png',  blobs[0]);
+  zip.file('enrichment_map_medium.png', blobs[1]);
+  zip.file('enrichment_map_large.png',  blobs[2]);
+  zip.file('node_color_legend.svg',     blobs[3]);
+
+  const archiveBlob = await zip.generateAsync({ type: 'blob' });
+
+  await saveAs(archiveBlob, 'enrichment_map_images.zip');
+}
+
+
+// async function handleShareURL() {
+//   const url = window.location.href;
+//   window.navigator.share({
+//     title: "EnrichmentMap Network",
+//     url
+//   });
+// }
 
 
 export function ShareMenu({ controller }) {
@@ -58,28 +83,14 @@ export function ShareMenu({ controller }) {
         </ListItemIcon>
         <ListItemText>Share Link</ListItemText>
       </MenuItem> */}
-      <MenuItem onClick={handleSendEmail}>
+      <MenuItem onClick={() => handleExportImageArchive(controller)}>
         <ListItemIcon>
-          <EmailIcon />
+          <CloudDownloadIcon />
         </ListItemIcon>
-        <ListItemText>Send by email</ListItemText>
+        <ListItemText>Save Images</ListItemText>
       </MenuItem>
-      <MenuItem onClick={() => handleExportImage(controller, ImageSize.LARGE, ImageArea.FULL)}>
-        <ListItemIcon>
-          <ImageIcon />
-        </ListItemIcon>
-        <ListItemText>Save Network Image</ListItemText>
-      </MenuItem>
-      {/* <MenuItem onClick={() => handleExportLegend(controller, ImageSize.MEDIUM)}>
-        <ListItemIcon>
-          <ImageIcon />
-        </ListItemIcon>
-        <ListItemText>Save Legend Image</ListItemText>
-      </MenuItem> */}
     </MenuList>;
 }
-
-
 ShareMenu.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
 };
