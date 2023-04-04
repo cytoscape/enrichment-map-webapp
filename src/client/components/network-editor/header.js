@@ -97,7 +97,13 @@ export class Header extends Component {
       {
         title: "Fit Figure to Screen",
         icon: <FitScreenIcon />,
-        onClick: () => controller.cy.fit(DEFAULT_PADDING),
+        onClick: () => {
+          controller.cy.animate({
+            fit: { padding: DEFAULT_PADDING },
+            easing: 'spring(480, 36)',
+            duration: 750,
+          });
+        },
         unrelated: true,
       },
       {
