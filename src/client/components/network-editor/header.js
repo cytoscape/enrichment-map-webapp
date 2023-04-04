@@ -1,6 +1,7 @@
 import React, { Component, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
+import Mousetrap from 'mousetrap';
 
 import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
@@ -21,9 +22,15 @@ import MenuIcon from '@material-ui/icons/Menu';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
+import { Add, Remove } from '@material-ui/icons';
 
 const MOBILE_MENU_ID = "menu-mobile";
 const SHARE_MENU_ID = "menu-share";
+
+const zoomButtonFactor = 2;
+const panFactor = 200;
+const viewportAnimationEasing = 'ease-out';
+const viewportAnimationDuration = 400;
 
 /**
  * The network editor's header or app bar.
@@ -51,10 +58,14 @@ export class Header extends Component {
 
   componentDidMount() {
     this.controller.bus.on('networkLoaded', this.onNetworkLoaded);
+
+    this.addKeyboardShortcuts();
   }
 
   componentWillUnmount() {
     this.controller.bus.removeListener('networkLoaded', this.onNetworkLoaded);
+
+    this.removeKeyboardShortcuts();
   }
 
   onNetworkLoaded() {
@@ -84,6 +95,94 @@ export class Header extends Component {
     this.setState({ mobileMoreAnchorEl: null });
   }
 
+  zoomByFactor(factor) {
+    const cy = this.controller.cy;
+    const container = cy.container();
+    const x = container.clientWidth / 2;
+    const y = container.clientHeight / 2;
+    const zoom = cy.zoom() * factor;
+
+    cy.stop().animate({
+      zoom: {
+        level: zoom,
+        renderedPosition: { x, y }
+      },
+      easing: viewportAnimationEasing,
+      duration: viewportAnimationDuration,
+    });
+  }
+
+  fit() {
+    const cy = this.controller.cy;
+
+    cy.stop().animate({
+      fit: { padding: DEFAULT_PADDING },
+      easing: viewportAnimationEasing,
+      duration: viewportAnimationDuration,
+    });
+  }
+
+  panBy(x, y) {
+    const cy = this.controller.cy;
+    const z = 1;
+
+    cy.stop().animate({
+      panBy: { x: x * z, y: y * z },
+      easing: viewportAnimationEasing,
+      duration: viewportAnimationDuration,
+    });
+  }
+
+  panLeft() {
+    this.panBy(panFactor, 0);
+  }
+
+  panRight() {
+    this.panBy(-panFactor, 0);
+  }
+
+  panUp() {
+    this.panBy(0, panFactor);
+  }
+
+  panDown() {
+    this.panBy(0, -panFactor);
+  }
+
+  zoomOut() {
+    this.zoomByFactor(1 / zoomButtonFactor);
+  }
+
+  zoomIn() {
+    this.zoomByFactor(zoomButtonFactor);
+  }
+
+  addKeyboardShortcuts() {
+    Mousetrap.bind('-', () => this.zoomOut());
+    Mousetrap.bind('_', () => this.zoomOut());
+    Mousetrap.bind('=', () => this.zoomIn());
+    Mousetrap.bind('+', () => this.zoomIn());
+    Mousetrap.bind('up', () => this.panUp());
+    Mousetrap.bind('down', () => this.panDown());
+    Mousetrap.bind('left', () => this.panLeft());
+    Mousetrap.bind('right', () => this.panRight());
+    Mousetrap.bind('f', () => this.fit());
+    Mousetrap.bind('space', () => this.fit());
+  }
+
+  removeKeyboardShortcuts() {
+    Mousetrap.unbind('-');
+    Mousetrap.unbind('_');
+    Mousetrap.unbind('=');
+    Mousetrap.unbind('+');
+    Mousetrap.unbind('up');
+    Mousetrap.unbind('down');
+    Mousetrap.unbind('left');
+    Mousetrap.unbind('right');
+    Mousetrap.unbind('f');
+    Mousetrap.unbind('space');
+  }
+
   render() {
     const { anchorEl, menuName, networkLoaded } = this.state;
     const { classes, showControlPanel, isMobile, onShowControlPanel } = this.props;
@@ -95,14 +194,26 @@ export class Header extends Component {
 
     const buttonsDef = [
       {
+        title: "Zoom In",
+        icon: <Add />,
+        onClick: () => {
+          this.zoomIn();
+        },
+        unrelated: true,
+      },
+      {
+        title: "Zoom Out",
+        icon: <Remove />,
+        onClick: () => {
+          this.zoomOut();
+        },
+        unrelated: true,
+      },
+      {
         title: "Fit Figure to Screen",
         icon: <FitScreenIcon />,
         onClick: () => {
-          controller.cy.animate({
-            fit: { padding: DEFAULT_PADDING },
-            easing: 'spring(480, 36)',
-            duration: 750,
-          });
+          this.fit();
         },
         unrelated: true,
       },

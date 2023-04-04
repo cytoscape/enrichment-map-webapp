@@ -76,9 +76,9 @@ export class NetworkEditorController {
 
     this.layout = this.cy.layout({
       name: 'cose',
-      idealEdgeLength: edge => 50 - 40 * (edge.data('similarity_coefficient')),
-      edgeElasticity: edge => 100 / (edge.data('similarity_coefficient')),
-      nodeRepulsion: node => 10000,
+      idealEdgeLength: edge => 30 - 25 * (edge.data('similarity_coefficient')),
+      edgeElasticity: edge => 10 / (edge.data('similarity_coefficient')),
+      nodeRepulsion: node => 1000,
       // nodeSeparation: 75,
       randomize: true,
       animate: false,
@@ -102,7 +102,9 @@ export class NetworkEditorController {
     const avoidOverlapPadding = 10;
     const cols = Math.floor(layoutWidth / (nodeWidth + avoidOverlapPadding));
 
-    disconnectedNodes.layout({
+    const cmpByNES = (a, b) => b.data('NES') - a.data('NES'); // up then down
+
+    disconnectedNodes.sort(cmpByNES).layout({
       name: 'grid',
       boundingBox: {
         x1: connectedBB.x1,
@@ -122,7 +124,7 @@ export class NetworkEditorController {
 
     // now that we know the zoom level when the graph fits to screen, we can use restrictions
     this.cy.minZoom(this.cy.zoom() * 0.25);
-    this.cy.maxZoom(3);
+    this.cy.maxZoom(2);
   }
 
   /**
