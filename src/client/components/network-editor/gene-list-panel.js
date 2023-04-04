@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import { useQuery } from "react-query";
@@ -253,11 +253,28 @@ const GeneMetadataPanel = ({ symbol, showSymbol }) => {
   );
 };
 
-const GeneListPanel = ({ controller, genes }) => {
+const GeneListPanel = ({ controller, genes, sort }) => {
   const [selectedGene, setSelectedGene] = useState(null);
+  const [resetScroll, setResetScroll] = useState(true);
   const classes = useStyles();
+  const virtuoso = useRef(null);
+  
+  useEffect(() => {
+    setResetScroll(true);
+  }, [sort]);
+
+  useEffect(() => {
+    if (resetScroll) {
+      virtuoso.current.scrollToIndex({
+        index: 0,
+        align: 'center',
+        behavior: 'smooth',
+      });
+    }
+  });
 
   const toggleGeneDetails = async (symbol) => {
+    setResetScroll(false);
     setSelectedGene(selectedGene !== symbol ? symbol : null);
   };
 
@@ -373,6 +390,7 @@ const GeneListPanel = ({ controller, genes }) => {
   
   return (
     <Virtuoso
+      ref={virtuoso}
       totalCount={totalGenes}
       itemContent={idx => renderGeneRow(idx)}
       overscan={200}
@@ -387,6 +405,7 @@ GeneMetadataPanel.propTypes = {
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   genes: PropTypes.array,
+  sort: PropTypes.string,
 };
 
 export default GeneListPanel;
