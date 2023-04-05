@@ -42,6 +42,20 @@ async function clearSelectionStyle(controller) {
   return async () => eles.addClass('unselected');
 }
 
+
+function getZipFileName(controller) {
+  const networkName = controller.cy.data('name');
+  if(networkName) {
+    // eslint-disable-next-line no-control-regex
+    const reserved = /[<>:"/\\|?*\u0000-\u001F]/g;
+    if(!reserved.test(networkName)) {
+      return networkName + '.zip';
+    }
+  }
+  return 'enrichment_map_images.zip';
+}
+
+
 async function handleExportImageArchive(controller) {
   const restoreStyle = await clearSelectionStyle(controller);
 
@@ -61,8 +75,9 @@ async function handleExportImageArchive(controller) {
   zip.file('node_color_legend.svg',     blobs[3]);
 
   const archiveBlob = await zip.generateAsync({ type: 'blob' });
-
-  await saveAs(archiveBlob, 'enrichment_map_images.zip');
+  
+  const fileName = getZipFileName(controller);
+  await saveAs(archiveBlob, fileName);
 }
 
 
