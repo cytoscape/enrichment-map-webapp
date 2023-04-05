@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 import { makeStyles } from '@material-ui/core/styles';
@@ -6,9 +6,12 @@ import { NodeColorLegend, getSVGString } from './legend-svg';
 import { NetworkEditorController } from './controller';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import { Tooltip } from '@material-ui/core';
+import EventEmitterProxy from '../../../model/event-emitter-proxy';
 
-const LEGEND_HEIGHT = 220;
-const LEGEND_WIDTH  = 120;
+export const NODE_COLOR_SVG_ID = 'node-color-legend-svg';
+
+const LEGEND_HEIGHT = 200;
+const LEGEND_WIDTH  = 160;
 const BACKGROUND_COLOR  = '#F6F6F6';
 const BORDER_COLOR = '#bbb';
 const BUTTON_ICON_COLOR = '#999';
@@ -85,10 +88,11 @@ async function exportLegend(svgID) {
 
 
 export function LegendActionButton({ controller }) {
-  const nodeSvgID = 'node-color-legend-svg';
+  const { cy } = controller;
 
   const [ open, toggleOpen ] = useReducer(x => !x, true);
   const [ loading, setLoaded ] = useReducer(() => false, true);
+  const [ nes, setNes ] = useState();
 
   useEffect(() => {
     if (controller.isNetworkLoaded())
@@ -98,9 +102,17 @@ export function LegendActionButton({ controller }) {
   }, []);
 
   useEffect(() => {
-    const handleExport = () => exportLegend(nodeSvgID);
-    controller.bus.on('exportLegend', handleExport);
-    return () => controller.bus.removeListener('exportLegend', handleExport);
+    const cyEmitter = new EventEmitterProxy(cy);
+    cyEmitter.on('select unselect', () => {
+      const eles = cy.nodes(':selected');
+      if(eles.length > 0) {
+        const ele = eles[eles.length - 1];
+        setNes(ele.data('NES'));
+      } else {
+        setNes();
+      }
+    });
+    return () => cyEmitter.removeAllListeners();
   }, []);
 
   const classes = useStyles();
@@ -116,11 +128,12 @@ export function LegendActionButton({ controller }) {
         </Tooltip>
       </div>
       <div className={contentClasses}>
-        <h4 className={classes.menuTitle}>Legend</h4>
+        <h4 className={classes.menuTitle}>Enrichment (NES)</h4>
         <NodeColorLegend 
           svgID={nodeSvgID}
           height={LEGEND_HEIGHT * 0.75}
-          magNES={controller.style.magNES} 
+          magNES={controller.style.magNES}
+          nesVal={nes}
         />
       </div>
     </div>

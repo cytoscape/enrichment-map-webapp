@@ -1,10 +1,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import chroma from 'chroma-js';
 import { NES_COLOR_RANGE } from './network-style';
 
 
 export function getSVGString(id) {
-  var svg = document.getElementById(id);
+  var element = document.getElementById(id);
+  var svg = element.cloneNode(true);
+
+  // TODO remove the arrow elements
 
   const serializer = new XMLSerializer();
   let xmlString = serializer.serializeToString(svg);
@@ -20,12 +24,37 @@ export function getSVGString(id) {
   return xmlString;
 }
 
+function numToText(num) {
+  return (Math.round((num || 1.0) * 100) / 100).toFixed(2);
+}
 
-export function NodeColorLegend({ height, svgID, magNES }) {
-  const nesText = (Math.round((magNES || 1.0) * 100) / 100).toFixed(2);
+function mapRange(num, in_min, in_max, out_min, out_max) {
+  return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+export function NodeColorLegend({ height, svgID, magNES, nesVal }) {
+  const magNesText = numToText(magNES);
+
+  const Marker = () => {
+    if(nesVal) {
+      const nesValText = numToText(nesVal);
+      const nesValColor = chroma.scale(NES_COLOR_RANGE.range3).domain([-magNES, 0, magNES])(nesVal).toString(); // TODO get this from the style
+      const lineYPos  = mapRange(nesVal, magNES, -magNES, 120, 286);
+      const arrowYPos = mapRange(nesVal, magNES, -magNES, -9, 155);
+      return <>
+        <path 
+          d="M 25.404 130.007 H 25.404 L 25.404 121.978 L 50.697 130.356 L 25.404 138.734 L 25.404 130.705 H 25.404 V 130.007 Z" 
+          style={{fill: nesValColor, stroke: 'rgb(0, 0, 0)'}} transform={`matrix(1, 0, 0, 1, 137, ${arrowYPos})`} /> 
+        <text style={{whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'}} x="120" y={lineYPos+6}>{nesValText}</text>
+      </>;
+    } else {
+      return null;
+    }
+  };
+
   return (
     <div>
-      <svg id={svgID} height={height} viewBox="3.003 -2.42 142.521 229.382" xmlns="http://www.w3.org/2000/svg">
+      <svg height={height} id={svgID} viewBox="114.727 105.034 188.228 195.513" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="gradient-2-0" gradientUnits="userSpaceOnUse" x1="63.525" y1="36.468" x2="63.525" y2="201.138" gradientTransform="matrix(1, 0, 0, 1, 0, 0)" xlinkHref="#gradient-2"/>
           <linearGradient id="gradient-2">
@@ -34,19 +63,22 @@ export function NodeColorLegend({ height, svgID, magNES }) {
             <stop offset="1"   style={{stopColor: NES_COLOR_RANGE.downMax}}/>
           </linearGradient>
         </defs>
-        <rect x="39.862" y="36.468" width="47.326" height="164.67" style={{stroke: 'rgb(0, 0, 0)', fill: 'url(#gradient-2-0)'}} transform="matrix(1, 0, 0.007991, 1, -13.546245, 6.003267)"/>
-        <text style={{whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'}} x="83.301" y="56.061">{nesText}</text>
-        <text style={{whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'}} x="83.9"   y="130.228">0.0</text>
-        <text style={{whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'}} x="79.277" y="203.049">-{nesText}</text>
-        <text style={{whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'}} x="5" y="25.722">Enrichment (NES)</text>
+        <rect x="39.862" y="36" width="47.326" height="165" transform="matrix(1, 0, 0, 1, 146.654709, 85.195206)" 
+          style={{stroke: 'rgb(0, 0, 0)', fill: 'url(#gradient-2-0)'}}/>
+        <text x="243.502" y="135.253" style={{whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'}}>{magNesText}</text>
+        <text x="244.101" y="209.42"  style={{whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'}}>0.0</text>
+        <text x="239.478" y="282.241" style={{whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'}}>-{magNesText}</text>
+        <Marker />
       </svg>
     </div>
   );
+  //transform="matrix(1, 0, 0, 1, 137, 74)"
 }
 NodeColorLegend.propTypes = {
-  magNES: PropTypes.number.isRequired,
+  magNES: PropTypes.number.isRequired, 
   height: PropTypes.number,
-  svgID: PropTypes.string
+  svgID: PropTypes.string,
+  nesVal: PropTypes.number, 
 };
 
 
