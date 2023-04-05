@@ -76,7 +76,7 @@ export function ShareMenu({ controller, onClose = ()=>null, showMessage = ()=>nu
   const handleCopyLink = async () => {
     await handleCopyToClipboard(); 
     onClose();
-    showMessage("Link copied!");
+    showMessage("Link copied to clipboard");
   };
 
   const handleExportImages = async () => {
