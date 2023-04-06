@@ -296,15 +296,20 @@ const GeneListPanel = ({ controller, genes }) => {
 
     const isGeneTextOverflowing = (id) => {
       const elem = document.getElementById(id);
-      const { overflow } = elem.style;
 
-      if(!overflow || overflow === "visible" )
+      if (elem) {
+        const { overflow } = elem.style;
+
+        if (!overflow || overflow === "visible")
           elem.style.overflow = "hidden";
 
-      const isOverflowing = elem.clientWidth < elem.scrollWidth || elem.clientHeight < elem.scrollHeight;
-      elem.style.overflow = overflow;
+        const isOverflowing = elem.clientWidth < elem.scrollWidth || elem.clientHeight < elem.scrollHeight;
+        elem.style.overflow = overflow;
 
-      return isOverflowing;
+        return isOverflowing;
+      }
+
+      return false;
     };
 
     const loading = genes == null;

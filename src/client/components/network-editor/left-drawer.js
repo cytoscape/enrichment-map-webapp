@@ -5,9 +5,7 @@ import _ from 'lodash';
 import { CONTROL_PANEL_WIDTH } from './defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
-import CollapsiblePanel from './collapsible-panel';
 import GeneListPanel from './gene-list-panel';
-import GeneSetListPanel from './geneset-list-panel';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -53,10 +51,6 @@ const useStyles = makeStyles((theme) => ({
     flex: '1 1 auto',
     overflowY: 'auto',
   },
-  drawerFooter: {
-    flex: '0 1 auto',
-    width: CONTROL_PANEL_WIDTH,
-  },
   header: {
     padding: '0.5em',
   },
@@ -75,10 +69,8 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
   const [geneListIndexed, setGeneListIndexed] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [searchResult, setSearchResult] = useState(null);
-  const [geneSetNames, setGeneSetNames] = useState([]);
   const [genes, setGenes] = useState(null);
   const [sort, setSort] = useState('down');
-  const [geneSetsExpanded, setGeneSetsExpanded] = useState(true);
 
   const searchValueRef = useRef(searchValue);
   searchValueRef.current = searchValue;
@@ -125,7 +117,6 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     }
     
     if (gsNames.length > 0) {
-      setGeneSetNames(gsNames);
       fetchGeneList(gsNames);
     }
   };
@@ -135,12 +126,10 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
 
     if (eles.length > 0) {
       const ele = eles[eles.length - 1];
-      setGeneSetNames([]);
       setGenes(null);
       setSort(ele.data('NES') < 0 ? 'up' : 'down');
       fetchGeneListFromNodeOrEdge(ele);
     } else if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
-      setGeneSetNames([]);
       setGenes(null);
       fetchAllRankedGenes();
     }
@@ -241,7 +230,6 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
 
   useEffect(() => {
     if (searchResult != null) {
-      setGeneSetNames([]);
       setGenes(sortGenes(searchResult, sortRef.current));
     } else {
       debouncedSelectionHandler();
@@ -321,13 +309,6 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
           <div className={classes.drawerSection}>
             {networkLoaded && geneListIndexed && (
               <GeneListPanel controller={controller} genes={genes} />
-            )}
-          </div>
-          <div className={classes.drawerFooter}>
-            {geneSetNames.length > 0 && (
-              <CollapsiblePanel title="Gene Sets" defaultExpanded={geneSetsExpanded} onChange={(evt, b) => setGeneSetsExpanded(b)}>
-                <GeneSetListPanel geneSetNames={geneSetNames} />
-              </CollapsiblePanel>
             )}
           </div>
         </div>

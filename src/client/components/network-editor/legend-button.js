@@ -1,8 +1,7 @@
 import React, { useEffect, useReducer, useState } from 'react';
 import PropTypes from 'prop-types';
-import { saveAs } from 'file-saver';
 import { makeStyles } from '@material-ui/core/styles';
-import { NodeColorLegend, getSVGString } from './legend-svg';
+import { NodeColorLegend } from './legend-svg';
 import { NetworkEditorController } from './controller';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import { Tooltip } from '@material-ui/core';
@@ -80,13 +79,6 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 
-async function exportLegend(svgID) {
-  const svg = getSVGString(svgID);
-  const blob = new Blob([svg], { type: 'text/plain;charset=utf-8' });
-  saveAs(blob, 'enrichment_map_legend.svg');
-}
-
-
 export function LegendActionButton({ controller }) {
   const { cy } = controller;
 
@@ -130,7 +122,7 @@ export function LegendActionButton({ controller }) {
       <div className={contentClasses}>
         <h4 className={classes.menuTitle}>Enrichment (NES)</h4>
         <NodeColorLegend 
-          svgID={nodeSvgID}
+          svgID={NODE_COLOR_SVG_ID}
           height={LEGEND_HEIGHT * 0.75}
           magNES={controller.style.magNES}
           nesVal={nes}
