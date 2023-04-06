@@ -278,7 +278,7 @@ export class Content extends Component {
             <AppLogoIcon className={classes.logo} />
           </Grid>
           <Grid item>
-            Enrichment Map
+            EnrichmentMap
           </Grid>
         </Grid>
         <p className={classes.tagline}>Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA-Seq experiment.</p>
