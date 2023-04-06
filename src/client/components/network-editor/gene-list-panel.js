@@ -269,7 +269,7 @@ const GeneListPanel = ({ controller, genes, sort }) => {
       virtuoso.current.scrollToIndex({
         index: 0,
         align: 'center',
-        behavior: 'smooth',
+        behavior: 'auto',
       });
     }
   });
