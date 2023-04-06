@@ -10,7 +10,7 @@ import { ShareMenu } from './share-panel';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { AppBar, Toolbar } from '@material-ui/core';
+import { AppBar, Button, Snackbar, SnackbarContent, Toolbar } from '@material-ui/core';
 import { Divider } from '@material-ui/core';
 import { Popover, Menu, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
@@ -21,6 +21,7 @@ import MenuIcon from '@material-ui/icons/Menu';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
+import CloseIcon from '@material-ui/icons/Close';
 
 const MOBILE_MENU_ID = "menu-mobile";
 const SHARE_MENU_ID = "menu-share";
@@ -43,6 +44,8 @@ export class Header extends Component {
       anchorEl: null,
       dialogId: null,
       networkLoaded: this.controller.isNetworkLoaded(),
+      snackOpen: false,
+      snackMessage: ""
     };
 
     this.showMobileMenu = this.showMobileMenu.bind(this);
@@ -93,6 +96,10 @@ export class Header extends Component {
       this.showMenu(SHARE_MENU_ID, event.currentTarget);
     };
 
+    const showSnackbar = (open, message='') => {
+      this.setState({ snackOpen: open, snackMessage: message });
+    };
+
     const buttonsDef = [
       {
         title: "Fit Figure to Screen",
@@ -122,6 +129,23 @@ export class Header extends Component {
     
     return (
       <>
+        <Snackbar
+          className={classes.snackBar}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          open={this.state.snackOpen} 
+          autoHideDuration={4000} 
+          onClose={() => showSnackbar(false)} 
+        >
+          <SnackbarContent 
+            className={classes.snackBarContent}
+            message={<span>{this.state.snackMessage}</span>}
+            action={
+              <IconButton size='small' onClick={() => showSnackbar(false)}>
+                <CloseIcon />
+              </IconButton>
+            }
+          />
+        </Snackbar>
         <AppBar
           position="relative"
           color='default'
@@ -181,7 +205,11 @@ export class Header extends Component {
               onClose={() => this.handleMenuClose()}
             >
               {menuName === SHARE_MENU_ID && (
-                <ShareMenu controller={controller} />
+                <ShareMenu 
+                  controller={controller} 
+                  onClose={() => this.handleMenuClose()}
+                  showMessage={message => showSnackbar(true, message)}
+                />
               )}
             </Popover>
           )}
@@ -276,6 +304,14 @@ const useStyles = theme => ({
       display: 'none',
     },
   },
+  snackBar: {
+    top: '70px',
+    zOrder: 1000,
+  },
+  snackBarContent: {
+    color: 'inherit',
+    backgroundColor: 'rgb(33 33 33 / 80%)'
+  }
 });
 
 ToolbarButton.propTypes = {
