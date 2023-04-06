@@ -4,18 +4,21 @@ import chroma from 'chroma-js';
 import { NES_COLOR_RANGE } from './network-style';
 
 
-export function getSVGString(id) {
-  var element = document.getElementById(id);
+export function getSVGString(svgID) {
+  var element = document.getElementById(svgID);
   var svg = element.cloneNode(true);
 
-  // TODO remove the arrow elements
+  // Don't export the NES marker on the node color legend
+  const path = svg.getElementById(svgID + '-arrow-path');
+  const text = svg.getElementById(svgID + '-arrow-text');
+  path?.remove();
+  text?.remove();
 
   const serializer = new XMLSerializer();
   let xmlString = serializer.serializeToString(svg);
 
   // remove height attribute
   xmlString = xmlString.replace(/^<svg height="\d+"/, '<svg ');
-
   // add namespaces
   if(!xmlString.match(/^<svg[^>]+"http:\/\/www\.w3\.org\/1999\/xlink"/)) {
     xmlString = xmlString.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"'); 
@@ -23,9 +26,9 @@ export function getSVGString(id) {
   
   // add xml tag
   xmlString = '<?xml version="1.0" standalone="no"?>\r\n' + xmlString;
-
   return xmlString;
 }
+
 
 function numToText(num) {
   return (Math.round((num || 1.0) * 100) / 100).toFixed(2);
@@ -34,6 +37,7 @@ function numToText(num) {
 function mapRange(num, in_min, in_max, out_min, out_max) {
   return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
+
 
 export function NodeColorLegend({ height, svgID, magNES, nesVal }) {
   const magNesText = numToText(magNES);
@@ -46,13 +50,17 @@ export function NodeColorLegend({ height, svgID, magNES, nesVal }) {
       const arrowYPos = mapRange(nesVal, magNES, -magNES, -9, 155);
       return <>
         <path 
+          id={svgID + '-arrow-path'}
           d="M 25.404 130.007 H 25.404 L 25.404 121.978 L 50.697 130.356 L 25.404 138.734 L 25.404 130.705 H 25.404 V 130.007 Z" 
           style={{fill: nesValColor, stroke: 'rgb(0, 0, 0)'}} transform={`matrix(1, 0, 0, 1, 137, ${arrowYPos})`} /> 
-        <text style={{whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'}} x="120" y={lineYPos+6}>{nesValText}</text>
+        <text 
+          id={svgID + '-arrow-text'}
+          style={{whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'}} x="120" y={lineYPos+6}>
+            {nesValText}
+        </text>
       </>;
-    } else {
-      return null;
     }
+    return null;
   };
 
   return (
