@@ -4,13 +4,14 @@ import { makeStyles } from '@material-ui/core/styles';
 import { NodeColorLegend } from './legend-svg';
 import { NetworkEditorController } from './controller';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
-import { Tooltip } from '@material-ui/core';
+import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
+import { Chip, Tooltip } from '@material-ui/core';
 import EventEmitterProxy from '../../../model/event-emitter-proxy';
 
 export const NODE_COLOR_SVG_ID = 'node-color-legend-svg';
 
-const LEGEND_HEIGHT = 200;
-const LEGEND_WIDTH  = 160;
+const LEGEND_HEIGHT = 260;
+const LEGEND_WIDTH  = 100;
 const BACKGROUND_COLOR  = '#F6F6F6';
 const BORDER_COLOR = '#bbb';
 const BUTTON_ICON_COLOR = '#999';
@@ -20,7 +21,7 @@ const useStyles = makeStyles((theme) => ({
     position: 'absolute',
     bottom: '20px',
     right: '20px',
-    padding: '17px 15px',
+    padding: '3px 10px',
     width: '39px',
     height: '39px',
     fontSize: '13px',
@@ -65,7 +66,8 @@ const useStyles = makeStyles((theme) => ({
   },
   menuTitle: {
     fontSize: '12px',
-    margin: '0 0 13px 0'
+    margin: '6px 0 2px 0',
+    textAlign: 'center'
   },
   menuContent: {
     opacity: 0,
@@ -76,6 +78,12 @@ const useStyles = makeStyles((theme) => ({
     opacity: 1,
     visibility: 'visible',
   },
+  chip: {
+    width: '78px',
+    height: '15px',
+    paddingLeft: '15px',
+    margin: '0 0 0 0',
+  }
 }));
 
 
@@ -109,21 +117,33 @@ export function LegendActionButton({ controller }) {
 
   const classes = useStyles();
   const menuClasses = `${classes.menu} ${open ? classes.menuOpen : ''}`;
-  const buttonClasses = `${classes.menuButton} ${open ? classes.menuButtonOpen : ''}`;
   const contentClasses = open ? classes.menuContentOpen : classes.menuContent;
 
   return loading ? null : (
     <div className={menuClasses} onClick={open ? undefined : toggleOpen}>
-      <div className={buttonClasses} onClick={open ? toggleOpen : undefined}>
-        <Tooltip title={open ? '' : 'Show Legend'} arrow placement='left'>
-          <KeyboardArrowUpIcon />
-        </Tooltip>
-      </div>
+      { !open ? null :
+        <Chip 
+          icon={<KeyboardArrowDownIcon />} 
+          onClick={toggleOpen} 
+          variant='outlined'
+          color='secondary'
+          className={classes.chip}
+        />
+      }
+      { open ? null :
+        <div className={classes.menuButton} >
+          <Tooltip title={open ? '' : 'Show Legend'} arrow placement='left'>
+            <KeyboardArrowUpIcon />
+          </Tooltip>
+        </div>
+      }
       <div className={contentClasses}>
-        <h4 className={classes.menuTitle}>Enrichment (NES)</h4>
+        <Tooltip title="Normalized Enrichment Score (NES)" placement='left' arrow>
+          <h4 className={classes.menuTitle}>Enrichment</h4>
+        </Tooltip>
         <NodeColorLegend 
           svgID={NODE_COLOR_SVG_ID}
-          height={LEGEND_HEIGHT * 0.75}
+          height={LEGEND_HEIGHT * 0.8}
           magNES={controller.style.magNES}
           nesVal={nes}
         />
