@@ -175,7 +175,7 @@ const GeneMetadataPanel = ({ symbol, showSymbol }) => {
   const isLoading = query.isLoading;
   let error = query.error;
 
-  let description, ncbiId, ensemblId;
+  let description, ncbiId;
   
   if (!isLoading && !error && data) {
     const entry = data.genes && data.genes.length > 0 ? data.genes[0] : {};
@@ -188,9 +188,6 @@ const GeneMetadataPanel = ({ symbol, showSymbol }) => {
       if (gene) {
         description = gene.description;
         ncbiId = gene['gene_id'];
-        
-        const ensemblGeneIds = gene['ensembl_gene_ids'];
-        ensemblId = ensemblGeneIds && ensemblGeneIds.length > 0 ? ensemblGeneIds[0] : null;
       }
     }
   }
@@ -211,44 +208,38 @@ const GeneMetadataPanel = ({ symbol, showSymbol }) => {
         </span>
       )}
       {!error && (
-        <Grid item xs={12}>
-          <Typography variant="body2" color="textSecondary" className={isLoading ? classes.loadingMsg : null}>
-            {isLoading ? 'Loading...' : description }
-          </Typography>
-        </Grid>
+        <>
+          <Grid item xs={12}>
+            <Typography variant="body2" color="textSecondary" className={isLoading ? classes.loadingMsg : null}>
+              {isLoading ? 'Loading...' : description }
+            </Typography>
+          </Grid>
+          {!isLoading && (
+            <Grid item xs={12}>  
+              <Grid container direction="row" justifyContent="space-between" alignItems='center'>
+                <Grid item>
+                  <Link
+                    href={ncbiId ? `https://www.ncbi.nlm.nih.gov/gene/${ncbiId}` : `https://www.ncbi.nlm.nih.gov/gene?term=(${symbol}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
+                    className={classes.linkout}
+                    {...linkoutProps}
+                  >
+                    More Info
+                  </Link>
+                </Grid>
+                <Grid item>
+                  <Link
+                    href={`https://genemania.org/search/human/${symbol}`}
+                    className={classes.linkout}
+                    {...linkoutProps}
+                  >
+                    Related Genes
+                  </Link>
+                </Grid>
+              </Grid>
+            </Grid>
+          )}
+        </>
       )}
-      <Grid item xs={12}>  
-        <Grid container direction="row" justifyContent="space-between" alignItems='center'>
-          <Grid item>
-            <Link
-              href={ncbiId ? `https://www.ncbi.nlm.nih.gov/gene/${ncbiId}` : `https://www.ncbi.nlm.nih.gov/gene?term=(${symbol}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
-              className={classes.linkout}
-              {...linkoutProps}
-            >
-              NCBI Gene
-            </Link>
-          </Grid>
-          <Grid item>
-            <Link
-              href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${ensemblId ? ensemblId : symbol}`}
-              className={classes.linkout}
-              style={{marginLeft: '2em', marginRight: '2em'}}
-              {...linkoutProps}
-            >
-              Ensembl
-            </Link>
-          </Grid>
-          <Grid item>
-            <Link
-              href={`https://genemania.org/search/human/${symbol}`}
-              className={classes.linkout}
-              {...linkoutProps}
-            >
-              GeneMANIA
-            </Link>
-          </Grid>
-        </Grid>
-      </Grid>
     </Grid>
   );
 };
