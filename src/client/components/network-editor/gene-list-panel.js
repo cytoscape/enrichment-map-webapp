@@ -390,6 +390,7 @@ const GeneListPanel = ({ controller, genes, sort }) => {
       totalCount={totalGenes}
       itemContent={idx => renderGeneRow(idx)}
       overscan={200}
+      style={{ 'background': 'rgb(24, 24, 24)' }} // fixes scrollbar colour on chrome
     />
   );
 };
