@@ -186,7 +186,7 @@ export class NetworkEditor extends Component {
     document.addEventListener("keydown", this.onContentKeyDown, false);
 
     this.cy.on('select', () => {
-      this.setState({ showControlPanel: true });
+      this.setState({ showControlPanel: !this.isMobile() });
     });
   }
 
