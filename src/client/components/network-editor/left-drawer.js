@@ -203,6 +203,14 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     //   })
     // });
 
+    const animatedFit = eles => {
+      cy.animate({
+        fit: { eles: eles, padding: DEFAULT_PADDING },
+        easing: 'ease-out',
+        duration: 500
+      });
+    };
+    
     const updateSelectionClass = () => {
       const allEles = cy.elements();
       const targetEle = allEles.filter(':selected'); // 1 ele
@@ -219,11 +227,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
       });
 
       if (!targetEle.empty()) {
-        cy.animate({
-          fit: { eles: targetEle.component(), padding: DEFAULT_PADDING },
-          easing: 'ease-out',
-          duration: 500
-        });
+        animatedFit(targetEle.component());
       }
     };
 
@@ -240,6 +244,12 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
       updateSelectionClass();
     }).on('remove', () => {
       updateSelectionClass();
+    }).on('tap', (e) => {
+      const tappedOnBackground = e.target === cy;
+
+      if (tappedOnBackground) {
+        animatedFit(cy.elements());
+      }
     });
 
     return function cleanup() {
