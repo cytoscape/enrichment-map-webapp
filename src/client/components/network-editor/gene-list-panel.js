@@ -366,7 +366,7 @@ const GeneListPanel = ({ controller, genes, sort }) => {
                     data && (
                       <div className={classes.rankBarParent}>
                         <HSBar data={data} height={CHART_HEIGHT} />
-                        <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank}</span>
+                        <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(2)}</span>
                       </div>
                     )
                   }
