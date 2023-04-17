@@ -41,7 +41,9 @@ function getNESColor(nesVal, magNES) {
 
 
 export function NodeColorLegend({ height, svgID, magNES, nesVal }) {
-  const textStyle = {whiteSpace: 'pre', fill: 'rgb(51, 51, 51)', fontFamily: 'Arial, sans-serif', fontSize: '15.2px'};
+  const textStyle = {whiteSpace: 'pre', fill: '#464448', fontFamily: '"Open Sans", "Helvetica Neue", Helvetica, sans-serif', fontSize: '15.2px'};
+
+  const selectedTextStyle = {whiteSpace: 'pre', fill: 'rgb(255, 255, 255)', fontFamily: '"Open Sans", "Helvetica Neue", Helvetica, sans-serif', fontSize: '15.2px', stroke: 'rgba(0, 0, 0, 0.8)', strokeWidth: '3px', paintOrder: 'stroke'};
 
   // eslint-disable-next-line react/prop-types
   const Marker = ({ yTop, yBottom }) => {
@@ -57,8 +59,7 @@ export function NodeColorLegend({ height, svgID, magNES, nesVal }) {
         <line x1="10" y1="10" x2="90" y2="10" stroke="black" />
         <polygon points="20,10 10,15 10,5" style={{ fill: nesValColor, stroke: 'black', strokeWidth: 1 }} />
         <polygon points="80,10 90,15 90,5" style={{ fill: nesValColor, stroke: 'black', strokeWidth: 1 }} />
-        <rect x="30" width="40" height="20" style={{ stroke: 'black', fill: 'lightgrey' }}/>
-        <text x={textXPos} y="15" style={textStyle}>{ numToText(nesVal) }</text>
+        <text x={textXPos} y="15" style={selectedTextStyle}>{ numToText(nesVal) }</text>
       </svg>
     );
   };
