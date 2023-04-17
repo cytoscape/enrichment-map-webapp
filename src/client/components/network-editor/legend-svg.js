@@ -10,12 +10,11 @@ export function getSVGString(svgID) {
 
   // Don't export the NES marker on the node color legend
   svg.getElementById(svgID+'-marker')?.remove();
+  svg.removeAttribute('height');
 
   const serializer = new XMLSerializer();
   let xmlString = serializer.serializeToString(svg);
 
-  // remove height attribute
-  xmlString = xmlString.replace(/^<svg height="\d+"/, '<svg ');
   // add namespaces
   if(!xmlString.match(/^<svg[^>]+"http:\/\/www\.w3\.org\/1999\/xlink"/)) {
     xmlString = xmlString.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"'); 
@@ -66,7 +65,6 @@ export function NodeColorLegend({ height, svgID, magNES, nesVal }) {
 
   return (
     <div>
-      {/* height attribute must go first because it is removed during export */}
       <svg height={height} id={svgID} viewBox="0 0 100 260" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="nes-gradient" x1="0" x2="0" y1="0" y2="1">
