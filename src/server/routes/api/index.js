@@ -11,7 +11,8 @@ import Datastore, { DB_1 } from '../../datastore.js';
 import { 
   EM_SERVICE_URL, 
   FGSEA_PRERANKED_SERVICE_URL, 
-  FGSEA_RNASEQ_SERVICE_URL 
+  FGSEA_RNASEQ_SERVICE_URL,
+  BRIDGEDB_URL,
 } from '../../env.js';
 
 
@@ -49,15 +50,20 @@ http.post('/create/preranked', dataParser, async function(req, res, next) {
   try {
     const { networkName } = req.query;
     const contentType = req.get('Content-Type'); // use same content type with FGSEA service
-    
+    let body = req.body;
     const tag = Date.now();
 
     console.log('/create/preranked ' + tag + ', Content-Type:' + contentType);
     console.time('/create/preranked ' + tag);
-    const bodyData = req.body;
+    
+    if(isEnsembl(body)) {
+      console.time('bridgedb ' + tag );
+      body = await runEnsemblToHGNCMapping(body, contentType);
+      console.timeEnd('bridgedb ' + tag );
+    }
 
     console.time('fgsea_preranked_service ' + tag);
-    const { pathways } = await runFGSEApreranked(bodyData, contentType);
+    const { pathways } = await runFGSEApreranked(body, contentType);
     console.timeEnd('fgsea_preranked_service ' + tag);
 
     console.time('em_service ' + tag);
@@ -67,7 +73,7 @@ http.post('/create/preranked', dataParser, async function(req, res, next) {
     console.time('mongo ' + tag);
     const netID = await Datastore.createNetwork(networkJson, networkName);
     const delimiter = contentType === 'text/csv' ? ',' : '\t';
-    const rankedGeneList = Datastore.rankedGeneListToDocument(bodyData, delimiter);
+    const rankedGeneList = Datastore.rankedGeneListToDocument(body, delimiter);
     await Datastore.createRankedGeneList(rankedGeneList, netID);
     console.timeEnd('mongo ' + tag);
 
@@ -86,15 +92,20 @@ http.post('/create/rnaseq', dataParser, async function(req, res, next) {
   try {
     const { classes, networkName } = req.query;
     const contentType = req.get('Content-Type'); // use same content type with FGSEA service
-
+    let body = req.body;
     const tag = Date.now();
 
     console.log('/create/rnaseq ' + tag + ', Content-Type:' + contentType);
     console.time('/create/rnaseq ' + tag);
-    const bodyData = req.body;
+
+    if(isEnsembl(body)) {
+      console.time('bridgedb ' + tag );
+      body = await runEnsemblToHGNCMapping(body, contentType);
+      console.timeEnd('bridgedb ' + tag );
+    }
 
     console.time('fgsea_rnaseq_service ' + tag);
-    const { ranks, pathways, messages } = await runFGSEArnaseq(bodyData, classes, contentType);
+    const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
     console.timeEnd('fgsea_rnaseq_service ' + tag);
 
     processMessages('fgsea', messages);
@@ -331,6 +342,84 @@ async function runEM(fgseaResults) {
   const networkJson = await response.json();
   return networkJson;
 }
+
+
+/**
+ * If the first gene is an ensembl ID then assume they all do.
+ */
+function isEnsembl(body) {
+  const secondLine = body.split('\n', 2)[1]; // First line is the header row, skip it
+  return secondLine && secondLine.startsWith('ENS');
+}
+
+
+/**
+ * Sends a POST request to the BridgeDB xrefsBatch endpoint.
+ * https://www.bridgedb.org/swagger/
+ */
+async function callBridgeDB(ensemblIDs, species='Human', sourceType='En') {
+  // Note the 'dataSource' query parameter seems to have no effect.
+  const url = `${BRIDGEDB_URL}/${species}/xrefsBatch/${sourceType}`;
+  const body = ensemblIDs.join('\n');
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/html' }, // thats what it wants
+    body
+  });
+  if(!response.ok) {
+    throw new Error("Error running BridgeDB xrefsBatch service.");
+  }
+
+  const responseBody = await response.text();
+
+  // Parse response to get symbol names
+  const hgncIDs = responseBody
+    .split('\n')
+    .map(line => {
+      const symbol = line.split(',').filter(m => m.startsWith('H:'))[0];
+      return symbol && symbol.slice(2); // remove 'H:'
+    });
+    
+  return hgncIDs;
+}
+
+
+async function runEnsemblToHGNCMapping(body, contentType) {
+  // Convert CSV/TSV to a 2D array
+  const delim = contentType === 'text/csv' ? ',' : '\t';
+  const lines = body.split('\n');
+  const header  = lines[0];
+  const content = lines.slice(1).map(line => line.split(delim));
+
+  // Call BridgeDB
+  const ensemblIDs = content.map(row => row[0]);
+  console.log(ensemblIDs);
+  const hgncIDs = await callBridgeDB(ensemblIDs);
+  console.log(hgncIDs);
+
+  // Replace old IDs with the new ones
+  const newContent = [];
+  for(var i = 0; i < content.length; i++) {
+    const row = content[i];
+    const newID = hgncIDs[i];
+    if(newID) {
+      newContent.push([newID, ...row.slice(1)]);
+    } else {
+      // TODO collect invaid IDs and report to Sentry
+      console.log("Invalid gene ID, could not map: " + row[0]);
+    }
+  }
+
+  // Convert back to a big string
+  const newBody = header + '\n' + newContent.map(line => line.join(delim)).join('\n');
+
+  console.log(newBody);
+
+  return newBody;
+}
+
+
 
 
 export default http;
