@@ -2,7 +2,7 @@ import React, { Component, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
-import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from './defaults';
+import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';

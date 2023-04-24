@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 
-import { CONTROL_PANEL_WIDTH } from './defaults';
+import { CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import GeneListPanel from './gene-list-panel';

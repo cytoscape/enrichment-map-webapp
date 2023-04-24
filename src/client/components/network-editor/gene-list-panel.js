@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import { useQuery } from "react-query";
-import { linkoutProps } from './defaults';
+import { linkoutProps } from '../defaults';
 import theme from '../../theme';
 import { NES_COLOR_RANGE } from './network-style';
 import { NetworkEditorController } from './controller';

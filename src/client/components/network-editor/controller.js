@@ -2,7 +2,7 @@ import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
 import MiniSearch from 'minisearch';
-import { DEFAULT_PADDING } from './defaults';
+import { DEFAULT_PADDING } from '../defaults';
 
 /**
  * The network editor controller contains all high-level model operations that the network
