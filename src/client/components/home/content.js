@@ -1,19 +1,20 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import EventEmitter from 'eventemitter3';
 
 import { linkoutProps } from '../defaults';
-import { readTextFile, readExcelFile } from './data-file-reader';
+import { UploadController } from './upload-controller';
+import UploadPanel from './upload-panel';
 import ClassSelector from './class-selector';
 import { DebugMenu } from '../../debug-menu';
 import theme from '../../theme';
-
-import { SENTRY } from '../../env';
 
 import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Toolbar } from '@material-ui/core';
 import { Container, Paper, Grid, Divider, } from '@material-ui/core';
 import { IconButton, Button, Typography, Link } from '@material-ui/core';
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@material-ui/core';
 import { CircularProgress } from '@material-ui/core';
 
 import MenuIcon from '@material-ui/icons/Menu';
@@ -24,45 +25,38 @@ import FormatQuoteIcon from '@material-ui/icons/FormatQuote';
 import FileCopyOutlinedIcon from '@material-ui/icons/FileCopyOutlined';
 import { AppLogoIcon } from '../svg-icons';
 
-import * as Sentry from "@sentry/browser";
-
 import classNames from 'classnames';
-import { auto } from '@popperjs/core';
+
 
 const STEP = {
   WAITING: 'WAITING',
+  UPLOAD:  'UPLOAD',
   LOADING: 'LOADING',
   CLASSES: 'CLASSES',
-  ERROR:   'ERROR'
+  ERROR:   'ERROR',
 };
 
-const FILE_EXT_REGEX = /\.[^/.]+$/;
-const TSV_EXTS = ['txt', 'rnk', 'tsv', 'csv', 'gct'];
-const EXCEL_EXTS = ['xls', 'xlsx'];
+const CITATION = 'Merico, D., Isserlin, R., Stueker, O., Emili, A., & Bader, G. D. (2010). Enrichment map: a network-based method for gene-set enrichment visualization and interpretation. PloS one, 5(11), e13984. https://doi.org/10.1371/journal.pone.0013984';
+
+const LOGOS = [
+  { src: "/images/bader-lab-logo.svg", alt: "Bader Lab logo", href: "https://baderlab.org/" },
+  { src: "/images/cytoscape-consortium-logo.svg", alt: "Cytoscape Consortium logo", href: "http://www.cytoscapeconsortium.org/" },
+  { src: "/images/donnelly-logo.png", alt: "The Donnelly Centre logo", href: "https://thedonnellycentre.utoronto.ca/" },
+  { src: "/images/uoft-logo.svg", alt: "UofT logo", href: "https://www.utoronto.ca/" },
+];
 
 // globally cached
 let sampleFiles = [];
 let sampleRankFiles = [];
 let sampleExpressionFiles = [];
 
-class NondescriptiveHandledError extends Error { // since we don't have well-defined errors
-  constructor(message) {
-    message = message ?? 'A non-descriptive error occurred.  Check the attached file.';
-    super(message);
-  }
-}
-
-const captureNondescriptiveErrorInSentry = (errorMessage) => {
-  if (SENTRY) {
-    Sentry.captureException(new NondescriptiveHandledError(errorMessage));
-    console.error('Reporting browser error to Sentry: ' + errorMessage);
-  }
-};
-
 export class Content extends Component {
 
   constructor(props) {
     super(props);
+
+    this.bus = new EventEmitter();
+    this.controller = new UploadController(this.bus);
 
     const isMobile = this.isMobile();
 
@@ -76,13 +70,43 @@ export class Content extends Component {
       isMobile: isMobile,
     };
 
+    this.onLoading = this.onLoading.bind(this);
+    this.onClasses = this.onClasses.bind(this);
+    this.onFinished = this.onFinished.bind(this);
+    this.onError = this.onError.bind(this);
     this.handleResize = this.handleResize.bind(this);
 
     window.addEventListener("resize", this.handleResize);
   }
 
   componentDidMount() {
+    this.bus.on('loading', this.onLoading);
+    this.bus.on('classes', this.onClasses);
+    this.bus.on('finished', this.onFinished);
+    this.bus.on('error', this.onError);
+
     this.loadSampleFiles();
+  }
+
+  componentWillUnmount() {
+    this.bus.removeAllListeners();
+    this.rnaseqClasses = null;
+  }
+
+  onLoading() {
+    this.setState({ step: STEP.LOADING });
+  }
+
+  onClasses({ format, columns, contents, name }) {
+    this.setState({ step: STEP.CLASSES, format, columns, contents, name });
+  }
+
+  onFinished(netID) {
+    this.showNetwork(netID);
+  }
+
+  onError(errorMessages) {
+    this.setState({ step: STEP.ERROR, errorMessages });
   }
 
   handleResize() {
@@ -114,123 +138,29 @@ export class Content extends Component {
     location.href = `/document/${id}`;
   }
 
-  async sendDataToEMService(text, format, type, networkName, classesArr) {
-    let url;
-    if (type === 'ranks') {
-      url = '/api/create/preranked?' + new URLSearchParams({ networkName });
-    } else if(type === 'rnaseq') {
-      const classes = classesArr.join(',');
-      url = '/api/create/rnaseq?' + new URLSearchParams({ classes, networkName });
-    } 
-
-    const contentType = format === 'tsv' ? 'text/tab-separated-values' : 'text/csv';
-    
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': contentType },
-      body: text
-    });
-
-    if (res.ok) {
-      const netID = await res.text();
-      return { netID };
-    } else if(res.status == 413) {
-      // Max file size for uploads is defined in the tsvParser in the server/routes/api/index.js file.
-      return { errors: ["The uploaded file is too large. The maximum file size is 50 MB." ] };
-    } else {
-      return { errors: [] }; // empty array shows generic error message
-    }
-  }
-
   async onLoadSampleNetwork(fileName) {
+    if (this.state.step == STEP.LOADING)
+      return;
+
     const dataurl = `/sample-data/${fileName}`;
     const sdRes = await fetch(dataurl);
+    
     if (!sdRes.ok) {
       this.setState({ step: STEP.ERROR, errorMessages: ["Error loading sample network"] });
-      captureNondescriptiveErrorInSentry('Error loading sample network');
+      this.controller.captureNondescriptiveErrorInSentry('Error loading sample network');
       return;
     }
     
     const data = await sdRes.text();
-
     const file = new File([data], fileName, { type: 'text/plain' });
-    await this.onDropzoneFileLoad([file]);
-  }
-
-  async onDropzoneFileLoad(files) {
-    // This is just for ranks TSV for now
-    if (this.state.step == STEP.LOADING)
-      return;
-
-    const file = files && files.length > 0 ? files[0] : null;
-    if (!file)
-      return;
-   
-    this.setState({ step: STEP.LOADING });
-    const name = file.name.replace(FILE_EXT_REGEX, '');
-    const ext  = file.name.split('.').pop().toLowerCase();
-
-    if (SENTRY) {
-      const attachmentName = file.name;
-      const attachmentContentType = file.type;
-      const arrayBuffer = await file.arrayBuffer();
-      const attachmentData = new Uint8Array(arrayBuffer);
-
-      Sentry.configureScope(scope => {
-        scope.clearAttachments();
-        scope.addAttachment({ filename: attachmentName, data: attachmentData, contentType: attachmentContentType });
-      });
-    }
-
-    try {
-      if (TSV_EXTS.includes(ext)) {
-        console.log('Reading file');
-        const { type, format, columns, contents } = await readTextFile(file);
-        console.log(`Reading ${format} file as ${type}, columns: ${columns}`);
-  
-        if (type === 'ranks') {
-          const emRes = await this.sendDataToEMService(contents, format, 'ranks', name);
-          if (emRes.errors) {
-            this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
-            captureNondescriptiveErrorInSentry('Error in EM service with uploaded rank file');
-            return;
-          }
-          this.showNetwork(emRes.netID);
-    
-        } else {
-          this.setState({ step: STEP.CLASSES, format, columns, contents, name });
-        }
-
-      } else if(EXCEL_EXTS.includes(ext)) {
-        const { columns, contents, format } = await readExcelFile(file);
-        console.log(`Reading Excel file, columns: ${columns}`);
-        this.setState({ step: STEP.CLASSES, format, columns, contents, name });
-      } else {
-        const exts = TSV_EXTS.join(', ') + ', ' + EXCEL_EXTS.join(', ');
-        this.setState({ step: STEP.ERROR, errorMessages: ["File extension not supported. Must be one of: " + exts]});
-      }
-    } catch(e) {
-      this.setState({ step: STEP.ERROR, errorMessages: [e] });
-      captureNondescriptiveErrorInSentry('Some error in handling uploaded file:' + e.message);
-      return;
-    }
-  }
-
-  async onRnaseqClassSubmit(classes) {
-      const { format, contents, name } = this.state;
-      this.setState({ step: STEP.LOADING });
-      
-      const emRes = await this.sendDataToEMService(contents, format, 'rnaseq', name, classes);
-      if (emRes.errors) {
-        this.setState({ step: STEP.ERROR, errorMessages: emRes.errors, contents: null });
-        captureNondescriptiveErrorInSentry('Error in sending uploaded RNASEQ data to service');
-        return;
-      }
-      this.showNetwork(emRes.netID);
+    await this.controller.upload([file]);
   }
 
   async onDropUpload(event) {
     event.preventDefault();
+
+    if (this.state.step == STEP.LOADING)
+      return;
 
     const files = (
       Array.from(event.dataTransfer.items)
@@ -240,19 +170,48 @@ export class Content extends Component {
 
     this.setState({ isDroppingFile: false });
 
-    await this.onDropzoneFileLoad(files);
+    await this.controller.upload(files);
   }
 
   onDragOverUpload(event) {
     event.preventDefault();
-
     this.setState({ isDroppingFile: true });
   }
 
   onDragEndUpload(event) {
     event.preventDefault();
-
     this.setState({ isDroppingFile: false });
+  }
+
+  async onClickGetStarted() {
+    if (this.state.step != STEP.LOADING)
+      this.setState({ step: STEP.UPLOAD });
+  }
+
+  async onClickUpload() {
+    const files = await this.showFileDialog();
+    await this.controller.upload(files);
+  }
+
+  async onClickSubmit() {
+    const { format, contents, name } = this.state;
+    this.setState({ step: STEP.LOADING });
+
+    console.log(">>>> Submit Classes:");
+    console.log(this.rnaseqClasses);
+    const emRes = await this.controller.sendDataToEMService(contents, format, 'rnaseq', name, this.rnaseqClasses);
+    
+    if (emRes.errors) {
+      this.setState({ step: STEP.ERROR, errorMessages: emRes.errors, contents: null });
+      this.controller.captureNondescriptiveErrorInSentry('Error in sending uploaded RNASEQ data to service');
+      return;
+    }
+
+    this.showNetwork(emRes.netID);
+}
+
+  async cancel() {
+    this.setState({ step: STEP.WAITING, columns: null, contents: null, name: null,  errorMessages: null });
   }
 
   async showFileDialog() {
@@ -262,17 +221,11 @@ export class Content extends Component {
     return await new Promise(resolve => {
       input.addEventListener('change', () => {
         const files = input.files;
-  
         resolve(files);
       });
   
       input.click();
     });
-  }
-
-  async onClickUpload() {
-    const files = await this.showFileDialog();
-    await this.onDropzoneFileLoad(files);
   }
 
   render() {
@@ -334,14 +287,14 @@ export class Content extends Component {
   }
 
   renderMain() {
-    const { isMobile } = this.state;
+    const { step, isMobile } = this.state;
     const { classes } = this.props;
 
     const LoadingProgress = () => 
       <Paper className={classes.form}>
         <div className={classes.progress}>
           <CircularProgress color="secondary" />
-          <p>Preparing your figure.</p>
+          <p>Preparing your figure...</p>
         </div>
       </Paper>;
 
@@ -359,7 +312,7 @@ export class Content extends Component {
                   <p key={index}>{message}</p>
                 )
             }
-            <Button variant='outlined' onClick={() => this.setState({ step: STEP.WAITING, errorMessages: null })}>OK</Button>
+            <Button variant='outlined' onClick={() => this.cancel()}>OK</Button>
           </div>
         </Paper>
       );
@@ -369,11 +322,53 @@ export class Content extends Component {
       <Paper className={classes.form}>
         <ClassSelector 
           columns={this.state.columns} 
-          onSubmit={classes => this.onRnaseqClassSubmit(classes)} 
-          onCancel={() => this.setState({ step: STEP.WAITING, columns:null, contents:null, name:null, errorMessages:null })} />
+          onClassesChanged={classes => this.rnaseqClasses = classes}
+        />
       </Paper>;
 
-    const citationText = 'Merico, D., Isserlin, R., Stueker, O., Emili, A., & Bader, G. D. (2010). Enrichment map: a network-based method for gene-set enrichment visualization and interpretation. PloS one, 5(11), e13984. https://doi.org/10.1371/journal.pone.0013984';
+    const StartDialog = ({ step, isMobile }) => {
+      const open = step !== STEP.WAITING;
+
+      return (
+        <Dialog maxWidth="md" fullScreen={isMobile} open={open}>
+          <DialogTitle>
+          {
+            {
+              'UPLOAD':  () => 'Upload your Data',
+              'CLASSES': () => 'Groups',
+              'LOADING': () => 'Loading',
+              'ERROR':   () => 'Error',
+            }[step]()
+          }
+          </DialogTitle>
+          <DialogContent dividers>
+          { 
+            {
+              'UPLOAD':  () => <UploadPanel onUpload={this.onUpload} />,
+              'CLASSES': () => <Classes />,
+              'LOADING': () => <LoadingProgress />,
+              'ERROR':   () => <ErrorReport />,
+            }[step]()
+          }
+          </DialogContent>
+          <DialogActions>
+            <Button autoFocus variant="outlined" color="primary" onClick={() => this.cancel()}>
+              Cancel
+            </Button>
+            {step == STEP.UPLOAD && (
+              <Button variant="contained" color="primary" onClick={() => this.onClickUpload()}>
+                Upload RNA-Seq Data
+              </Button>
+            )}
+            {step == STEP.CLASSES && (
+              <Button variant="contained" color="primary" onClick={() => this.onClickSubmit()}>
+                Submit
+              </Button>
+            )}
+          </DialogActions>
+        </Dialog>
+      );
+    };
 
     return (
       <div
@@ -402,7 +397,7 @@ export class Content extends Component {
                       variant="contained"
                       color="primary"
                       endIcon={<NavigateNextIcon />}
-                      onClick={e => this.onClickUpload(e)}
+                      onClick={e => this.onClickGetStarted(e)}
                     >
                       Get Started
                     </Button>
@@ -418,23 +413,21 @@ export class Content extends Component {
                     </Button>
                   </Grid>
                 </Grid>
-              {/* { 
-                { 'WAITING': () => <RanksDropArea />,
-                  'LOADING': () => <LoadingProgress />,
-                  'ERROR':   () => <ErrorReport />,
-                  'CLASSES': () => <Classes />,
-                }[this.state.step]()
-              } */}
               </Grid>
               <Grid item className={classes.section} style={{ textAlign: 'right' }}>
                 <Paper className={classes.cite} variant="outlined">
                   <FormatQuoteIcon className={classes.citeLogo} /><br />
                   <Link className={classes.citeLink} href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2981572/" {...linkoutProps}>
-                    {citationText}
+                    { CITATION }
                   </Link>
                 </Paper>
-                <Button className={classes.copyButton} aria-label="copy citation" variant="text" startIcon={<FileCopyOutlinedIcon />}
-                onClick={() => navigator.clipboard.writeText(citationText)}>
+                <Button
+                  className={classes.copyButton}
+                  aria-label="copy citation"
+                  variant="text"
+                  startIcon={<FileCopyOutlinedIcon />}
+                  onClick={() => navigator.clipboard.writeText(CITATION)}
+                >
                   Copy
                 </Button>
               </Grid>
@@ -444,6 +437,9 @@ export class Content extends Component {
             <img src="/images/home-fig.png" alt="figure" className={classes.figure} />
           </Grid>
         </Grid>
+        {step !== STEP.WAITING && (
+          <StartDialog step={step} isMobile={isMobile} />
+        )}
       </div>
     );
   }
@@ -468,18 +464,11 @@ export class Content extends Component {
               </Grid>
               <Grid item>
                 <Grid container direction={isMobile ? 'column' : 'row'} alignItems="flex-start" justifyContent={isMobile ? 'space-around' : 'space-between'} spacing={5}>
-                  <Grid item>
-                    <Logo src="/images/bader-lab-logo.svg" alt="Bader Lab logo" href="https://baderlab.org/" />
+                { LOGOS.map((logo, idx) =>
+                  <Grid key={idx} item>
+                    <Logo src={logo.src} alt={logo.alt} href={logo.href} />
                   </Grid>
-                  <Grid item>
-                    <Logo src="/images/cytoscape-consortium-logo.svg" alt="Cytoscape Consortium logo" href="http://www.cytoscapeconsortium.org/" />
-                  </Grid>
-                  <Grid item>
-                    <Logo src="/images/donnelly-logo.png" alt="The Donnelly Centre logo" href="https://thedonnellycentre.utoronto.ca/" />
-                  </Grid>
-                  <Grid item>
-                    <Logo src="/images/uoft-logo.svg" alt="UofT logo" href="https://www.utoronto.ca/" />
-                  </Grid>
+                )}
                 </Grid>
               </Grid>
             </Grid>
@@ -663,7 +652,6 @@ const useStyles = theme => ({
     justifyContent: 'center',
     maxWidth: '100%',
     textAlign: 'center',
-    border: `1px solid ${theme.palette.divider}`,
   },
   progress: {
     display: 'flex',
