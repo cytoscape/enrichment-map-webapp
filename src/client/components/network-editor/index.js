@@ -184,6 +184,10 @@ export class NetworkEditor extends Component {
     this._debounceCyEvents = _.debounce(this.onCyEvents, 500);
     this.cy.on(CY_EVENTS, this._debounceCyEvents);
     document.addEventListener("keydown", this.onContentKeyDown, false);
+
+    this.cy.on('select', () => {
+      this.setState({ showControlPanel: !this.isMobile() });
+    });
   }
 
   componentWillUnmount() {

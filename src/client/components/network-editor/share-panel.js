@@ -1,11 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
+import JSZip from 'jszip';
 import { NetworkEditorController } from './controller';
 import { MenuList, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
-import EmailIcon from '@material-ui/icons/Email';
-import ImageIcon from '@material-ui/icons/Image';
-//import LinkIcon from '@material-ui/icons/Link';
+import { getSVGString } from './legend-svg';
+import { NODE_COLOR_SVG_ID } from './legend-button';
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
+import LinkIcon from '@material-ui/icons/Link';
 
 
 const ImageSize = {
@@ -20,68 +22,104 @@ const ImageArea = {
 };
 
 
-function handleSendEmail() {
-  const subject = "Sharing Network from EnrichmentMap";
-  const body = "Use this link to access the network: " + window.location.href;
-  window.location=`mailto:?subject=${subject}&body=${body}`;
-}
-
-async function handleExportImage(controller, imageSize, imageArea) {
-  const blob = await controller.cy.png({
-    output:'blob-promise',
+async function createNetworkImageBlob(controller, imageSize, imageArea=ImageArea.FULL) {
+  return await controller.cy.png({
+    output: 'blob-promise',
     bg: 'white',
     full: imageArea === ImageArea.FULL,
     scale: imageSize.scale,
   });
-
-  saveAs(blob, 'enrichment_map.png');
 }
 
-async function handleShareURL() {
+async function createSVGLegendBlob(svgID) {
+  const svg = getSVGString(svgID);
+  return new Blob([svg], { type: 'text/plain;charset=utf-8' });
+}
+
+async function clearSelectionStyle(controller) {
+  const eles = controller.cy.elements('.unselected');
+  eles.removeClass('unselected');
+  return async () => eles.addClass('unselected');
+}
+
+
+function getZipFileName(controller) {
+  const networkName = controller.cy.data('name');
+  if(networkName) {
+    // eslint-disable-next-line no-control-regex
+    const reserved = /[<>:"/\\|?*\u0000-\u001F]/g;
+    if(!reserved.test(networkName)) {
+      return networkName + '.zip';
+    }
+  }
+  return 'enrichment_map_images.zip';
+}
+
+
+async function handleExportImageArchive(controller) {
+  const restoreStyle = await clearSelectionStyle(controller);
+
+  const blobs = await Promise.all([
+    createNetworkImageBlob(controller, ImageSize.SMALL),
+    createNetworkImageBlob(controller, ImageSize.MEDIUM),
+    createNetworkImageBlob(controller, ImageSize.LARGE),
+    createSVGLegendBlob(NODE_COLOR_SVG_ID),
+  ]);
+
+  restoreStyle();
+
+  const zip = new JSZip();
+  zip.file('enrichment_map_small.png',  blobs[0]);
+  zip.file('enrichment_map_medium.png', blobs[1]);
+  zip.file('enrichment_map_large.png',  blobs[2]);
+  zip.file('node_color_legend.svg',     blobs[3]);
+
+  const archiveBlob = await zip.generateAsync({ type: 'blob' });
+  
+  const fileName = getZipFileName(controller);
+  await saveAs(archiveBlob, fileName);
+}
+
+
+function handleCopyToClipboard() {
   const url = window.location.href;
-  window.navigator.share({
-    title: "EnrichmentMap Network",
-    url
-  });
-}
-
-function handleExportLegend(controller, imageSize) {
-  controller.bus.emit('exportLegend', imageSize.scale);
+  navigator.clipboard.writeText(url);
 }
 
 
-export function ShareMenu({ controller }) {
-  return <MenuList>
-      {/* <MenuItem onClick={handleShareURL}>
+export function ShareMenu({ controller, onClose = ()=>null, showMessage = ()=>null }) {
+  const handleCopyLink = async () => {
+    await handleCopyToClipboard(); 
+    onClose();
+    showMessage("Link copied to clipboard");
+  };
+
+  const handleExportImages = async () => {
+    await handleExportImageArchive(controller); 
+    onClose();
+  };
+
+  return (
+    <MenuList>
+      <MenuItem onClick={handleCopyLink}>
         <ListItemIcon>
           <LinkIcon />
         </ListItemIcon>
-        <ListItemText>Share Link</ListItemText>
-      </MenuItem> */}
-      <MenuItem onClick={handleSendEmail}>
-        <ListItemIcon>
-          <EmailIcon />
-        </ListItemIcon>
-        <ListItemText>Send by email</ListItemText>
+        <ListItemText>Share Link to Network</ListItemText>
       </MenuItem>
-      <MenuItem onClick={() => handleExportImage(controller, ImageSize.LARGE, ImageArea.FULL)}>
+      <MenuItem onClick={handleExportImages}>
         <ListItemIcon>
-          <ImageIcon />
+          <CloudDownloadIcon />
         </ListItemIcon>
-        <ListItemText>Save Network Image</ListItemText>
+        <ListItemText>Save Network Images</ListItemText>
       </MenuItem>
-      {/* <MenuItem onClick={() => handleExportLegend(controller, ImageSize.MEDIUM)}>
-        <ListItemIcon>
-          <ImageIcon />
-        </ListItemIcon>
-        <ListItemText>Save Legend Image</ListItemText>
-      </MenuItem> */}
-    </MenuList>;
+    </MenuList>
+  );
 }
-
-
 ShareMenu.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  onClose: PropTypes.func,
+  showMessage: PropTypes.func
 };
 
 export default ShareMenu;

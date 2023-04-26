@@ -11,7 +11,8 @@ import Datastore, { DB_1 } from '../../datastore.js';
 import { 
   EM_SERVICE_URL, 
   FGSEA_PRERANKED_SERVICE_URL, 
-  FGSEA_RNASEQ_SERVICE_URL 
+  FGSEA_RNASEQ_SERVICE_URL,
+  BRIDGEDB_URL,
 } from '../../env.js';
 
 
@@ -49,15 +50,20 @@ http.post('/create/preranked', dataParser, async function(req, res, next) {
   try {
     const { networkName } = req.query;
     const contentType = req.get('Content-Type'); // use same content type with FGSEA service
-    
+    let body = req.body;
     const tag = Date.now();
 
     console.log('/create/preranked ' + tag + ', Content-Type:' + contentType);
     console.time('/create/preranked ' + tag);
-    const bodyData = req.body;
+    
+    if(isEnsembl(body)) {
+      console.time('bridgedb ' + tag );
+      body = await runEnsemblToHGNCMapping(body, contentType);
+      console.timeEnd('bridgedb ' + tag );
+    }
 
     console.time('fgsea_preranked_service ' + tag);
-    const { pathways } = await runFGSEApreranked(bodyData, contentType);
+    const { pathways } = await runFGSEApreranked(body, contentType);
     console.timeEnd('fgsea_preranked_service ' + tag);
 
     console.time('em_service ' + tag);
@@ -67,7 +73,7 @@ http.post('/create/preranked', dataParser, async function(req, res, next) {
     console.time('mongo ' + tag);
     const netID = await Datastore.createNetwork(networkJson, networkName);
     const delimiter = contentType === 'text/csv' ? ',' : '\t';
-    const rankedGeneList = Datastore.rankedGeneListToDocument(bodyData, delimiter);
+    const rankedGeneList = Datastore.rankedGeneListToDocument(body, delimiter);
     await Datastore.createRankedGeneList(rankedGeneList, netID);
     console.timeEnd('mongo ' + tag);
 
@@ -86,18 +92,23 @@ http.post('/create/rnaseq', dataParser, async function(req, res, next) {
   try {
     const { classes, networkName } = req.query;
     const contentType = req.get('Content-Type'); // use same content type with FGSEA service
-
+    let body = req.body;
     const tag = Date.now();
 
     console.log('/create/rnaseq ' + tag + ', Content-Type:' + contentType);
     console.time('/create/rnaseq ' + tag);
-    const bodyData = req.body;
+
+    if(isEnsembl(body)) {
+      console.time('bridgedb ' + tag );
+      body = await runEnsemblToHGNCMapping(body, contentType);
+      console.timeEnd('bridgedb ' + tag );
+    }
 
     console.time('fgsea_rnaseq_service ' + tag);
-    const { ranks, pathways, messages } = await runFGSEArnaseq(bodyData, classes, contentType);
+    const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
     console.timeEnd('fgsea_rnaseq_service ' + tag);
 
-    processMessages('fgsea', messages);
+    sendMessagesToSentry('fgsea', messages);
 
     console.time('em_service ' + tag);
     const networkJson = await runEM(pathways);
@@ -255,13 +266,14 @@ http.post('/:netid/genesearch', async function(req, res, next) {
 });
 
 
-function processMessages(service, messages) {
+function sendMessagesToSentry(service, messages) {
   if(!messages || messages.length == 0)
     return;
 
   for(const message of messages) {
     const { level, type, text, data } = message;
     
+    // https://docs.sentry.io/platforms/node/usage/set-level/
     const event = {
       level,
       tags: { message_type:type, service },
@@ -269,6 +281,8 @@ function processMessages(service, messages) {
       extra: data,
     };
 
+    // This method is actually asynchronous
+    // https://github.com/getsentry/sentry-javascript/issues/2049
     Sentry.captureEvent(event);
   }
 }
@@ -331,6 +345,99 @@ async function runEM(fgseaResults) {
   const networkJson = await response.json();
   return networkJson;
 }
+
+
+/**
+ * If the first gene is an ensembl ID then assume they all are.
+ */
+function isEnsembl(body) {
+  const secondLine = body.split('\n', 2)[1]; // First line is the header row, skip it
+  return secondLine && secondLine.startsWith('ENS');
+}
+
+
+/**
+ * Sends a POST request to the BridgeDB xrefsBatch endpoint.
+ * https://www.bridgedb.org/swagger/
+ */
+async function callBridgeDB(ensemblIDs, species='Human', sourceType='En') {
+  // Note the 'dataSource' query parameter seems to have no effect.
+  const url = `${BRIDGEDB_URL}/${species}/xrefsBatch/${sourceType}`;
+  const body = ensemblIDs.join('\n');
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/html' }, // thats what it wants
+    body
+  });
+  if(!response.ok) {
+    throw new Error("Error running BridgeDB xrefsBatch service.");
+  }
+
+  const responseBody = await response.text();
+
+  // Parse response to get symbol names
+  const hgncIDs = responseBody
+    .split('\n')
+    .map(line => {
+      const symbol = line.split(',').filter(m => m.startsWith('H:'))[0];
+      return symbol && symbol.slice(2); // remove 'H:'
+    });
+    
+  return hgncIDs;
+}
+
+
+async function runEnsemblToHGNCMapping(body, contentType) {
+  // Convert CSV/TSV to a 2D array 
+  const lines = body.split('\n');
+  const header  = lines[0];
+  const delim = contentType === 'text/csv' ? ',' : '\t';
+
+  const content = lines
+    .slice(1)
+    .filter(line => line && line.length > 0)
+    .map(line => line.split(delim));
+
+  // Call BridgeDB
+  const ensemblIDs = content.map(row => row[0]);
+  // console.log(ensemblIDs);
+  const hgncIDs = await callBridgeDB(ensemblIDs);
+  // console.log(hgncIDs);
+
+  // Replace old IDs with the new ones
+  const newContent = [];
+  const invalidIDs = [];
+  for(var i = 0; i < content.length; i++) {
+    const row = content[i];
+    const newID = hgncIDs[i];
+    if(newID) {
+      newContent.push([newID, ...row.slice(1)]);
+    } else {
+      invalidIDs.push(row[0]);
+    }
+  }
+
+  if(invalidIDs.length > 0) {
+    console.log("Sending id-mapping warning to Sentry. Number of invalid IDs: " + invalidIDs.length);
+    sendMessagesToSentry('bridgedb', [{
+      level: 'warning',
+      type: 'ids_not_mapped',
+      text: 'IDs not mapped',
+      data: {
+        'Total IDs Mapped': ensemblIDs.length, 
+        'Invalid ID Count': invalidIDs.length,
+        'Invalid IDs (First 100)': invalidIDs.slice(0, 100),
+       }
+    }]);
+  } 
+
+  // Convert back to a big string
+  const newBody = header + '\n' + newContent.map(line => line.join(delim)).join('\n');
+  return newBody;
+}
+
+
 
 
 export default http;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import { useQuery } from "react-query";
@@ -175,7 +175,7 @@ const GeneMetadataPanel = ({ symbol, showSymbol }) => {
   const isLoading = query.isLoading;
   let error = query.error;
 
-  let description, ncbiId, ensemblId;
+  let description, ncbiId;
   
   if (!isLoading && !error && data) {
     const entry = data.genes && data.genes.length > 0 ? data.genes[0] : {};
@@ -188,9 +188,6 @@ const GeneMetadataPanel = ({ symbol, showSymbol }) => {
       if (gene) {
         description = gene.description;
         ncbiId = gene['gene_id'];
-        
-        const ensemblGeneIds = gene['ensembl_gene_ids'];
-        ensemblId = ensemblGeneIds && ensemblGeneIds.length > 0 ? ensemblGeneIds[0] : null;
       }
     }
   }
@@ -211,53 +208,64 @@ const GeneMetadataPanel = ({ symbol, showSymbol }) => {
         </span>
       )}
       {!error && (
-        <Grid item xs={12}>
-          <Typography variant="body2" color="textSecondary" className={isLoading ? classes.loadingMsg : null}>
-            {isLoading ? 'Loading...' : description }
-          </Typography>
-        </Grid>
+        <>
+          <Grid item xs={12}>
+            <Typography variant="body2" color="textSecondary" className={isLoading ? classes.loadingMsg : null}>
+              {isLoading ? 'Loading...' : description }
+            </Typography>
+          </Grid>
+          {!isLoading && (
+            <Grid item xs={12}>  
+              <Grid container direction="row" justifyContent="space-between" alignItems='center'>
+                <Grid item>
+                  <Link
+                    href={ncbiId ? `https://www.ncbi.nlm.nih.gov/gene/${ncbiId}` : `https://www.ncbi.nlm.nih.gov/gene?term=(${symbol}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
+                    className={classes.linkout}
+                    {...linkoutProps}
+                  >
+                    More Info
+                  </Link>
+                </Grid>
+                <Grid item>
+                  <Link
+                    href={`https://genemania.org/search/human/${symbol}`}
+                    className={classes.linkout}
+                    {...linkoutProps}
+                  >
+                    Related Genes
+                  </Link>
+                </Grid>
+              </Grid>
+            </Grid>
+          )}
+        </>
       )}
-      <Grid item xs={12}>  
-        <Grid container direction="row" justifyContent="space-between" alignItems='center'>
-          <Grid item>
-            <Link
-              href={ncbiId ? `https://www.ncbi.nlm.nih.gov/gene/${ncbiId}` : `https://www.ncbi.nlm.nih.gov/gene?term=(${symbol}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
-              className={classes.linkout}
-              {...linkoutProps}
-            >
-              NCBI Gene
-            </Link>
-          </Grid>
-          <Grid item>
-            <Link
-              href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${ensemblId ? ensemblId : symbol}`}
-              className={classes.linkout}
-              style={{marginLeft: '2em', marginRight: '2em'}}
-              {...linkoutProps}
-            >
-              Ensembl
-            </Link>
-          </Grid>
-          <Grid item>
-            <Link
-              href={`https://genemania.org/search/human/${symbol}`}
-              className={classes.linkout}
-              {...linkoutProps}
-            >
-              GeneMANIA
-            </Link>
-          </Grid>
-        </Grid>
-      </Grid>
     </Grid>
   );
 };
 
-const GeneListPanel = ({ controller, genes }) => {
+const GeneListPanel = ({ controller, genes, sort }) => {
   const [selectedGene, setSelectedGene] = useState(null);
+  const [resetScroll, setResetScroll] = useState(true);
   const classes = useStyles();
+  const virtuoso = useRef(null);
+  
+  // Resets the scroll position when either the gene list or the sort has changed
+  useEffect(() => {
+    setResetScroll(true);
+  }, [genes, sort]);
+
+  useEffect(() => {
+    if (resetScroll) {
+      virtuoso.current.scrollToIndex({
+        index: 0,
+        behavior: 'auto',
+      });
+    }
+  });
 
   const toggleGeneDetails = async (symbol) => {
+    setResetScroll(false);
     setSelectedGene(selectedGene !== symbol ? symbol : null);
   };
 
@@ -296,15 +304,20 @@ const GeneListPanel = ({ controller, genes }) => {
 
     const isGeneTextOverflowing = (id) => {
       const elem = document.getElementById(id);
-      const { overflow } = elem.style;
 
-      if(!overflow || overflow === "visible" )
+      if (elem) {
+        const { overflow } = elem.style;
+
+        if (!overflow || overflow === "visible")
           elem.style.overflow = "hidden";
 
-      const isOverflowing = elem.clientWidth < elem.scrollWidth || elem.clientHeight < elem.scrollHeight;
-      elem.style.overflow = overflow;
+        const isOverflowing = elem.clientWidth < elem.scrollWidth || elem.clientHeight < elem.scrollHeight;
+        elem.style.overflow = overflow;
 
-      return isOverflowing;
+        return isOverflowing;
+      }
+
+      return false;
     };
 
     const loading = genes == null;
@@ -353,7 +366,7 @@ const GeneListPanel = ({ controller, genes }) => {
                     data && (
                       <div className={classes.rankBarParent}>
                         <HSBar data={data} height={CHART_HEIGHT} />
-                        <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank}</span>
+                        <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(2)}</span>
                       </div>
                     )
                   }
@@ -373,9 +386,11 @@ const GeneListPanel = ({ controller, genes }) => {
   
   return (
     <Virtuoso
+      ref={virtuoso}
       totalCount={totalGenes}
       itemContent={idx => renderGeneRow(idx)}
       overscan={200}
+      style={{ 'background': 'rgb(24, 24, 24)' }} // fixes scrollbar colour on chrome
     />
   );
 };
@@ -387,6 +402,7 @@ GeneMetadataPanel.propTypes = {
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   genes: PropTypes.array,
+  sort: PropTypes.string,
 };
 
 export default GeneListPanel;

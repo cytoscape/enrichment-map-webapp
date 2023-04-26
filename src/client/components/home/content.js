@@ -278,7 +278,7 @@ export class Content extends Component {
             <AppLogoIcon className={classes.logo} />
           </Grid>
           <Grid item>
-            Enrichment Map
+            EnrichmentMap
           </Grid>
         </Grid>
         <p className={classes.tagline}>Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA-Seq experiment.</p>
@@ -311,6 +311,8 @@ export class Content extends Component {
     const Classes = () =>
       <ClassSelector 
         columns={this.state.columns} 
+        contents={this.state.contents}
+        format={this.state.format}
         onSubmit={classes => this.onRnaseqClassSubmit(classes)} 
         onCancel={() => this.setState({ step: STEP.WAITING, columns:null, contents:null, name:null, errorMessages:null })} />;
 

@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import favicon from 'serve-favicon';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import bodyParser from 'body-parser';
@@ -84,8 +83,6 @@ app.engine('html', function (filePath, options, callback){
 });
 
 app.set('view engine', 'html');
-
-app.use(favicon(path.join(__dirname, '../..', 'public', 'icon.png')));
 
 if (!TESTING) {
   app.use(morgan('dev', {

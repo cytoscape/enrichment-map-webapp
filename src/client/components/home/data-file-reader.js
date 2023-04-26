@@ -6,20 +6,19 @@ import * as XLSX from "xlsx";
  */
 
 
+/**
+ * Uses the header row to determine if its a ranked gene list ('ranks') or an rna-seq expression file ('rnaseq').
+ * Also returns an array of column names for use in the ClassSelector if the type is 'rnaseq', the first 
+ * column of gene names is removed from the array.
+ */
 function processHeader(headerLine, delimiter) {
-  let columns = headerLine.split(delimiter || '\t');
+  const columns = headerLine.split(delimiter || '\t');
   if(columns.length == 2) {
-    return { type: 'ranks', columns };
+    return { type: 'ranks' };
+  } else if(columns.length > 2) {
+    return { type: 'rnaseq', columns: columns.slice(1) };
   } else {
-    columns = columns
-      .slice(1) // ignore first column
-      .filter(h => h.toLowerCase() != "description"); // remove description column if present
-
-    if(columns.length > 2) {
-      return { type: 'rnaseq', columns };
-    } else {
-      return { type: 'error' };
-    }
+    return { type: 'error' };
   }
 }
 
