@@ -85,7 +85,13 @@ export class NetworkEditorController {
       // nodeSeparation: 75,
       randomize: true,
       animate: false,
-      padding: DEFAULT_PADDING
+      padding: DEFAULT_PADDING,
+      boundingBox: {
+        x1: 0,
+        y1: 0,
+        x2: 600,
+        y2: 1000
+      }
     });
 
     const onStop = this.layout.promiseOn('layoutstop');
