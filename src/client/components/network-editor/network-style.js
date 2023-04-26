@@ -22,6 +22,13 @@ function getMinMaxValues(cy, attr) {
   };
 }
 
+export const nodeLabel = _.memoize(node => {
+  const text = (node.data('label') ?? node.data('name')).replace(/_/g, ' ');
+  const percent = text.indexOf('%');
+  
+  return (percent > 0 ? text.substring(0, percent) : text).toLowerCase();
+}, node => node.id());
+
 
 export const createNetworkStyle = (cy) => {
   const { min:minNES, max:maxNES } = getMinMaxValues(cy, 'NES');
@@ -30,12 +37,6 @@ export const createNetworkStyle = (cy) => {
   
   const getBGColor = _.memoize(node => {
     return nesColorScale(node.data('NES')).toString();
-  }, node => node.id());
-
-  const nodeLabel = _.memoize(node => {
-    const text = node.data('label') ?? node.data('name');
-    const percent = text.indexOf('%');
-    return (percent > 0 ? text.substring(0, percent) : text).toLowerCase();
   }, node => node.id());
 
   return {
@@ -48,8 +49,8 @@ export const createNetworkStyle = (cy) => {
         selector: 'node',
         style: {
           'opacity': 1,
-          'border-width': 0,
-          'border-opacity': 0.7,
+          'border-width': 12,
+          'border-opacity': 0,
           'label': nodeLabel,
           'width':  40,
           'height': 40,
@@ -57,7 +58,7 @@ export const createNetworkStyle = (cy) => {
           'text-valign': 'center',
           'text-wrap': 'wrap',
           'text-max-width': 80,
-          'text-outline-width': 1.5,
+          'text-outline-width': 2,
           'text-outline-opacity': 1,
           'color': '#fff'
         }
@@ -72,11 +73,11 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'edge',
         style: {
-          'line-color' : '#b1d6d8',
+          'line-color' : '#888',
           'line-opacity': 0.6,
           'curve-style': 'haystack',
           'haystack-radius': 0,
-          'width': ele => ele.data('similarity_coefficient') * 20,
+          'width': ele => ele.data('similarity_coefficient') * 30,
         }
       },
       {
@@ -100,40 +101,27 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node.unselected',
         style: {
-          'opacity': 0.2
+          
         }
       },
       {
         selector: 'edge.unselected',
         style: {
-          'opacity': 0.1
+          
         }
       },
       {
-        selector: 'node:selected',
+        selector: 'node.selected',
         style: {
-          'border-width': 6,
-          'border-color': '#aadafa',
-          'border-opacity': 0.666
+          'border-width': 12,
+          'border-color': '#5aaae0',
+          'border-opacity': 0.8
         }
       },
       {
-        selector: 'node.eh-preview',
+        selector: 'edge.selected',
         style: {
-          'overlay-opacity': 0.2
-        }
-      },
-      {
-        selector: '.eh-handle',
-        style: {
-          'opacity': 0,
-          'events': 'no'
-        }
-      },
-      {
-        selector: '.eh-ghost-edge.eh-preview-active',
-        style: {
-          'opacity': 0
+          'line-color': '#5aaae0'
         }
       }
     ]

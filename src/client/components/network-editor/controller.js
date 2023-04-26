@@ -3,6 +3,7 @@ import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
 import MiniSearch from 'minisearch';
 import { DEFAULT_PADDING } from './defaults';
+import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 
 /**
  * The network editor controller contains all high-level model operations that the network
@@ -74,15 +75,23 @@ export class NetworkEditorController {
     this.cy.minZoom(-1e50);
     this.cy.maxZoom(1e50);
 
+    monkeyPatchMathRandom(); // just before the FD layout starts
+
     this.layout = this.cy.layout({
       name: 'cose',
-      idealEdgeLength: edge => 50 - 40 * (edge.data('similarity_coefficient')),
-      edgeElasticity: edge => 100 / (edge.data('similarity_coefficient')),
-      nodeRepulsion: node => 10000,
+      idealEdgeLength: edge => 30 - 25 * (edge.data('similarity_coefficient')),
+      edgeElasticity: edge => 10 / (edge.data('similarity_coefficient')),
+      nodeRepulsion: node => 1000,
       // nodeSeparation: 75,
       randomize: true,
       animate: false,
-      padding: DEFAULT_PADDING
+      padding: DEFAULT_PADDING,
+      boundingBox: {
+        x1: 0,
+        y1: 0,
+        x2: 600,
+        y2: 1000
+      }
     });
 
     const onStop = this.layout.promiseOn('layoutstop');
@@ -90,6 +99,8 @@ export class NetworkEditorController {
     this.layout.run();
 
     await onStop;
+
+    restoreMathRandom(); // after the FD layout is done
 
     const allNodes = this.cy.nodes();
     const disconnectedNodes = allNodes.filter(n => n.degree() === 0);
@@ -102,7 +113,9 @@ export class NetworkEditorController {
     const avoidOverlapPadding = 10;
     const cols = Math.floor(layoutWidth / (nodeWidth + avoidOverlapPadding));
 
-    disconnectedNodes.layout({
+    const cmpByNES = (a, b) => b.data('NES') - a.data('NES'); // up then down
+
+    disconnectedNodes.sort(cmpByNES).layout({
       name: 'grid',
       boundingBox: {
         x1: connectedBB.x1,
@@ -122,7 +135,7 @@ export class NetworkEditorController {
 
     // now that we know the zoom level when the graph fits to screen, we can use restrictions
     this.cy.minZoom(this.cy.zoom() * 0.25);
-    this.cy.maxZoom(3);
+    this.cy.maxZoom(2);
   }
 
   /**
