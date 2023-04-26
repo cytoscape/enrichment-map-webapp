@@ -15,10 +15,11 @@ export const BASE_URL = process.env.BASE_URL;
 export const UPLOAD_LIMIT = process.env.UPLOAD_LIMIT;
 export const TESTING = ('' + process.env.TESTING).toLowerCase() === 'true';
 
-// Microservice config
+// Service config
 export const FGSEA_PRERANKED_SERVICE_URL = process.env.FGSEA_PRERANKED_SERVICE_URL;
 export const FGSEA_RNASEQ_SERVICE_URL =  process.env.FGSEA_RNASEQ_SERVICE_URL;
 export const EM_SERVICE_URL = process.env.EM_SERVICE_URL;
+export const BRIDGEDB_URL = process.env.BRIDGEDB_URL;
 
 // Mongo config
 export const MONGO_URL = process.env.MONGO_URL;

@@ -311,6 +311,8 @@ export class Content extends Component {
     const Classes = () =>
       <ClassSelector 
         columns={this.state.columns} 
+        contents={this.state.contents}
+        format={this.state.format}
         onSubmit={classes => this.onRnaseqClassSubmit(classes)} 
         onCancel={() => this.setState({ step: STEP.WAITING, columns:null, contents:null, name:null, errorMessages:null })} />;
 
