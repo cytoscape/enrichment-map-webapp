@@ -3,6 +3,7 @@ import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
 import MiniSearch from 'minisearch';
 import { DEFAULT_PADDING } from './defaults';
+import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 
 /**
  * The network editor controller contains all high-level model operations that the network
@@ -74,6 +75,8 @@ export class NetworkEditorController {
     this.cy.minZoom(-1e50);
     this.cy.maxZoom(1e50);
 
+    monkeyPatchMathRandom(); // just before the FD layout starts
+
     this.layout = this.cy.layout({
       name: 'cose',
       idealEdgeLength: edge => 30 - 25 * (edge.data('similarity_coefficient')),
@@ -90,6 +93,8 @@ export class NetworkEditorController {
     this.layout.run();
 
     await onStop;
+
+    restoreMathRandom(); // after the FD layout is done
 
     const allNodes = this.cy.nodes();
     const disconnectedNodes = allNodes.filter(n => n.degree() === 0);
