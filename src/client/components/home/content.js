@@ -324,6 +324,8 @@ export class Content extends Component {
     const Classes = () => 
       <ClassSelector 
         columns={this.state.columns} 
+        contents={this.state.contents}
+        format={this.state.format}
         onClassesChanged={classes => onClassesChanged(classes)}
       />;
 
