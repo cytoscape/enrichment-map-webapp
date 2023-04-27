@@ -197,8 +197,12 @@ export class Content extends Component {
     const { format, contents, name } = this.state;
     this.setState({ step: STEP.LOADING });
 
-    console.log(">>>> Submit Classes:");
+    console.log(">>>> Submit:");
+    console.log(name);
+    console.log(format);
+    console.log(contents);
     console.log(this.rnaseqClasses);
+    
     const emRes = await this.controller.sendDataToEMService(contents, format, 'rnaseq', name, this.rnaseqClasses);
     
     if (emRes.errors) {
@@ -248,12 +252,12 @@ export class Content extends Component {
     const { classes } = this.props;
 
     return (
-      <AppBar position="static" color='transparent'>
+      <AppBar position="static" color="transparent">
         <Container maxWidth="lg" disableGutters>
           <Toolbar variant="regular">
-            <Grid container alignItems='center' justifyContent="space-between">
+            <Grid container alignItems="center" justifyContent="space-between">
               <Grid item>
-                <Grid container alignItems='center' spacing={2}>
+                <Grid container alignItems="center" spacing={2}>
                   <Grid item>
                     <AppLogoIcon className={classes.logo} />
                   </Grid>
@@ -291,46 +295,45 @@ export class Content extends Component {
     const { classes } = this.props;
 
     const LoadingProgress = () => 
-      <Paper className={classes.form}>
-        <div className={classes.progress}>
-          <CircularProgress color="secondary" />
-          <p>Preparing your figure...</p>
-        </div>
-      </Paper>;
+      <div className={classes.progress}>
+        <CircularProgress color="primary" />
+        <Typography component="p" variant="body1">Preparing your figure...</Typography>
+      </div>;
 
     const ErrorReport = () => {
       const { errorMessages } = this.state;
       
       return (
-        <Paper className={classes.form}>
-          <div className={classes.progress}>
-            <WarningIcon fontSize='large'/>
-            {
-              (!errorMessages || errorMessages.length == 0)
-              ? <p>We were unable to process your experimental data. Please ensure that your data is formatted properly, either in differential expression format or in ranked gene format.</p>
-              : errorMessages.slice(0,7).map((message, index) =>
-                  <p key={index}>{message}</p>
-                )
-            }
-            <Button variant='outlined' onClick={() => this.cancel()}>OK</Button>
-          </div>
-        </Paper>
+        <div className={classes.progress}>
+          <WarningIcon fontSize="large" color="error" />
+          {
+            (!errorMessages || errorMessages.length == 0)
+            ? <>
+                <Typography variant="body1">We were unable to process your experimental data.</Typography>
+                <br />
+                <Typography variant="body2" color="secondary">
+                  Please ensure that your data is formatted properly,<br />either in <i>RNA-Seq Expression</i> format or in <i>Pre-Ranked Gene</i> format.
+                </Typography>
+              </>
+            : errorMessages.slice(0,7).map((message, index) =>
+                <p key={index}>{message}</p>
+              )
+          }
+        </div>
       );
     };
 
     const Classes = () => 
-      <Paper className={classes.form}>
-        <ClassSelector 
-          columns={this.state.columns} 
-          onClassesChanged={classes => this.rnaseqClasses = classes}
-        />
-      </Paper>;
+      <ClassSelector 
+        columns={this.state.columns} 
+        onClassesChanged={classes => this.rnaseqClasses = classes}
+      />;
 
     const StartDialog = ({ step, isMobile }) => {
       const open = step !== STEP.WAITING;
 
       return (
-        <Dialog maxWidth="md" fullScreen={isMobile} open={open}>
+        <Dialog maxWidth="sm" fullScreen={isMobile} open={open}>
           <DialogTitle>
           {
             {
@@ -344,7 +347,7 @@ export class Content extends Component {
           <DialogContent dividers>
           { 
             {
-              'UPLOAD':  () => <UploadPanel onUpload={this.onUpload} />,
+              'UPLOAD':  () => <UploadPanel isMobile />,
               'CLASSES': () => <Classes />,
               'LOADING': () => <LoadingProgress />,
               'ERROR':   () => <ErrorReport />,
@@ -353,11 +356,11 @@ export class Content extends Component {
           </DialogContent>
           <DialogActions>
             <Button autoFocus variant="outlined" color="primary" onClick={() => this.cancel()}>
-              Cancel
+              { step == STEP.ERROR ? 'OK' : 'Cancel' }
             </Button>
             {step == STEP.UPLOAD && (
               <Button variant="contained" color="primary" onClick={() => this.onClickUpload()}>
-                Upload RNA-Seq Data
+                Upload File
               </Button>
             )}
             {step == STEP.CLASSES && (
@@ -434,7 +437,7 @@ export class Content extends Component {
             </Grid>
           </Grid>
           <Grid item xs={isMobile ? 12 : 6}>
-            <img src="/images/home-fig.png" alt="figure" className={classes.figure} />
+            <img src="/images/home-figure.png" alt="figure" className={classes.figure} />
           </Grid>
         </Grid>
         {step !== STEP.WAITING && (
@@ -644,22 +647,13 @@ const useStyles = theme => ({
     color: theme.palette.text.secondary,
     filter: 'opacity(50%)',
   },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxWidth: '100%',
-    textAlign: 'center',
-  },
   progress: {
     display: 'flex',
     flexDirection: 'column',
     alignContent: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    maxWidth: 320,
+    minWidth: 320,
     textAlign: 'center',
   },
   figure: {

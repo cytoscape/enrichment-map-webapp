@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+
 import { makeStyles } from '@material-ui/core/styles';
+
+import { Grid, Typography } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 
 
 const useStyles = makeStyles((theme) => ({
-  container: {
-    
-  },
   header: {
     textAlign: 'center',
   },
@@ -19,7 +19,7 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     width: '280px',
     alignSelf: 'center',
-    padding: '2px',
+    padding: theme.spacing(0.5),
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -45,29 +45,33 @@ function ClassSelector({ columns, onClassesChanged }) {
   const classes = useStyles();
 
   return (
-    <div className={classes.container}>
-      <div className={classes.header}>
-        <p><b>Please define two sample groups that will be compared <br/> against each other (Group A vs Group B).</b></p>
-      </div>
-        { columns.map((column, i) => 
-          <div className={classes.row} key={i}>
-            <div className={classes.col}>
-                { column }
-            </div>
-            <div className={classes.col}>
-              <ToggleButtonGroup 
-                exclusive
-                value={groups[i]} 
-                onChange={(e, newClass) => handleChange(i, newClass)}
-              >
-                <ToggleButton value='A'>Group A</ToggleButton>
-                <ToggleButton value='B'>Group B</ToggleButton>
-                <ToggleButton value='X'>Ignored</ToggleButton>
-              </ToggleButtonGroup>
-            </div>
+    <Grid container direction="column" spacing={4}>
+      <Grid item xs={12}>
+        <Typography variant="body1">
+          Define two sample groups that will be compared against each other<br />(<i>Group A</i> vs <i>Group B</i>):
+        </Typography>
+      </Grid>
+      <Grid item xs={12}>
+      { columns.map((column, i) => 
+        <div className={classes.row} key={i}>
+          <div className={classes.col}>
+              { column }
           </div>
-        )}
-    </div>
+          <div className={classes.col}>
+            <ToggleButtonGroup 
+              exclusive
+              value={groups[i]} 
+              onChange={(e, newClass) => handleChange(i, newClass)}
+            >
+              <ToggleButton value='A'>Group A</ToggleButton>
+              <ToggleButton value='B'>Group B</ToggleButton>
+              <ToggleButton value='X'>Ignored</ToggleButton>
+            </ToggleButtonGroup>
+          </div>
+        </div>
+      )}
+      </Grid>
+    </Grid>
   );
 }
 
