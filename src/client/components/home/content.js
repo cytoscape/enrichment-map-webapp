@@ -197,12 +197,6 @@ export class Content extends Component {
     const { format, contents, name } = this.state;
     this.setState({ step: STEP.LOADING });
 
-    console.log(">>>> Submit:");
-    console.log(name);
-    console.log(format);
-    console.log(contents);
-    console.log(this.rnaseqClasses);
-    
     const emRes = await this.controller.sendDataToEMService(contents, format, 'rnaseq', name, this.rnaseqClasses);
     
     if (emRes.errors) {
@@ -323,10 +317,14 @@ export class Content extends Component {
       );
     };
 
+    const onClassesChanged = (rnaseqClasses) => {
+      this.rnaseqClasses = rnaseqClasses;
+    };
+
     const Classes = () => 
       <ClassSelector 
         columns={this.state.columns} 
-        onClassesChanged={classes => this.rnaseqClasses = classes}
+        onClassesChanged={classes => onClassesChanged(classes)}
       />;
 
     const StartDialog = ({ step, isMobile }) => {

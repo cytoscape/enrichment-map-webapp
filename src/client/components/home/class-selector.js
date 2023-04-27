@@ -40,6 +40,9 @@ function ClassSelector({ columns, onClassesChanged }) {
   const handleChange = (i, newGroup) => {
     var newGroups = groups.map((c, i2) => i == i2 ? newGroup : c);
     setGroups(newGroups);
+
+    if (onClassesChanged)
+      onClassesChanged(newGroups);
   };
 
   const classes = useStyles();

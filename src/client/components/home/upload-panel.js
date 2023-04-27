@@ -58,9 +58,7 @@ const RNASEQ_ROWS = [
 const SampleTable = ({ data }) => {
   const classes = useStyles();
 
-  console.log(data[0]);
   const keys = Object.keys(data[0]);
-  console.log(keys);
 
   return (
     <Paper className={classes.tableContainer} variant="outlined">

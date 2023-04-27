@@ -58,7 +58,7 @@ export class UploadController {
         const { type, format, columns, contents } = await readTextFile(file);
         console.log(`Reading ${format} file as ${type}, columns: ${columns}`);
   
-        if (type === 'ranks') {console.log(1);
+        if (type === 'ranks') {
           const emRes = await this.sendDataToEMService(contents, format, 'ranks', name);
           
           if (emRes.errors) {
@@ -68,7 +68,7 @@ export class UploadController {
           }
 
           this.bus.emit('finished', emRes.netID);
-        } else {console.log(2);
+        } else {
           this.bus.emit('classes', { format, columns, contents, name });
         }
       } else if (EXCEL_EXTS.includes(ext)) {
@@ -107,7 +107,7 @@ export class UploadController {
     if (res.ok) {
       const netID = await res.text();
       return { netID };
-    } else if(res.status == 413) {
+    } else if (res.status == 413) {
       // Max file size for uploads is defined in the tsvParser in the server/routes/api/index.js file.
       return { errors: ["The uploaded file is too large. The maximum file size is 50 MB." ] };
     } else {
