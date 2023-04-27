@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 
-import { CONTROL_PANEL_WIDTH } from '../defaults';
+import { CONTROL_PANEL_WIDTH, DEFAULT_PADDING } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import GeneListPanel from './gene-list-panel';
@@ -190,21 +190,33 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     //   })
     // });
 
-    const updateSelectionClass = _.debounce(() => {
+    const animatedFit = eles => {
+      cy.animate({
+        fit: { eles: eles, padding: DEFAULT_PADDING },
+        easing: 'ease-out',
+        duration: 500
+      });
+    };
+    
+    const updateSelectionClass = () => {
       const allEles = cy.elements();
       const targetEle = allEles.filter(':selected'); // 1 ele
-      const selectedEles = targetEle.isNode() ? targetEle.closedNeighborhood() : targetEle.add(targetEle.connectedNodes());
+      const selectedEles = targetEle.isNode() ? targetEle : targetEle.add(targetEle.connectedNodes());
       const unselectedEles = allEles.subtract(selectedEles);
 
       cy.batch(() => {
         if (allEles.length === unselectedEles.length) {
-          allEles.removeClass('unselected');
+          allEles.removeClass('unselected').removeClass('selected');
         } else {
-          selectedEles.removeClass('unselected');
-          unselectedEles.addClass('unselected');
+          selectedEles.removeClass('unselected').addClass('selected');
+          unselectedEles.addClass('unselected').removeClass('selected');
         }
       });
-    }, 64);
+
+      if (!targetEle.empty()) {
+        animatedFit(targetEle.component());
+      }
+    };
 
     const clearSearch = _.debounce(() => {
       cancelSearch();
@@ -219,6 +231,12 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
       updateSelectionClass();
     }).on('remove', () => {
       updateSelectionClass();
+    }).on('tap', (e) => {
+      const tappedOnBackground = e.target === cy;
+
+      if (tappedOnBackground) {
+        animatedFit(cy.elements());
+      }
     });
 
     return function cleanup() {
