@@ -9,13 +9,18 @@ describe('Gene Set Queries', () => {
   let networkID;
 
   before('load genesets, load network, load ranks', async () => {
-    const network = fs.readFileSync('./test/resources/network.json', { encoding: 'utf8' });
+    const networkStr = fs.readFileSync('./test/resources/network.json', { encoding: 'utf8' });
+    const network = JSON.parse(networkStr);
+    network.summaryNetwork = JSON.parse(JSON.stringify(network.network));
+
     const ranks = fs.readFileSync('./test/resources/ranks.rnk', { encoding: 'utf8' });
+
     await Datastore.dropCollectionIfExists(GENESET_DB);
     await Datastore.initializeGeneSetDB('./test/resources/', GENESET_DB);
+
     networkID = await Datastore.createNetwork(network);
     const ranksDoc = await Datastore.rankedGeneListToDocument(ranks);
-    await Datastore.createRankedGeneList(ranksDoc, networkID);
+    await Datastore.createRankedGeneList(GENESET_DB, networkID, ranksDoc);
   });
 
   it('gets a network', async () => {

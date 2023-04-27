@@ -74,7 +74,7 @@ http.post('/create/preranked', dataParser, async function(req, res, next) {
     const netID = await Datastore.createNetwork(networkJson, networkName);
     const delimiter = contentType === 'text/csv' ? ',' : '\t';
     const rankedGeneList = Datastore.rankedGeneListToDocument(body, delimiter);
-    await Datastore.createRankedGeneList(rankedGeneList, netID);
+    await Datastore.createRankedGeneList(DB_1, netID, rankedGeneList);
     console.timeEnd('mongo ' + tag);
 
     res.send(netID);
@@ -117,7 +117,7 @@ http.post('/create/rnaseq', dataParser, async function(req, res, next) {
     console.time('mongo ' + tag);
     const netID = await Datastore.createNetwork(networkJson, networkName);
     const rankedGeneList = Datastore.fgseaServiceGeneRanksToDocument(ranks);
-    await Datastore.createRankedGeneList(rankedGeneList, netID);
+    await Datastore.createRankedGeneList(DB_1, netID, rankedGeneList);
     console.timeEnd('mongo ' + tag);
 
     res.send(netID);

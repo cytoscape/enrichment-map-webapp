@@ -197,7 +197,7 @@ class Datastore {
    * Inserts gene documents into the "geneRanks" collection.
    * @returns The id of the created document in the geneLists collection.
    */
-  async createRankedGeneList(rankedGeneListDocument, networkIDString) {
+  async createRankedGeneList(geneSetCollection, networkIDString, rankedGeneListDocument) {
     const networkID  = makeID(networkIDString);
     const geneListID = makeID();
 
@@ -212,13 +212,12 @@ class Datastore {
       genes
     };
 
+    // Insert the gene list as a single document into GENE_LISTS_COLLECTION
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .insertOne(geneListDocument);
 
-    // Create a collection with { networkID, gene } as the key, 
-    // for quick lookup of gene ranks.
-
+    // Create a collection with { networkID, gene } as the key, for quick lookup of gene ranks.
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .aggregate([
@@ -234,7 +233,54 @@ class Datastore {
       ])
       .toArray(); // Still need toArray() even though this is a merge
 
-    console.log("done loading ranks");
+    // Create a mapping from { networkID, gene } to a list of node IDs that contain that gene.
+    const docs = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .aggregate([
+        // Get the nodeIDs and the names of the Pathways they represent
+        { $match: { _id: networkID.bson } },
+        { $replaceWith: { path: "$summaryNetwork.elements.nodes.data" } },
+        { $unwind: { path: "$path" } },
+        { $replaceRoot: { newRoot: "$path" } },
+        { $addFields: { splitNames: { $split: [ "$name", "," ] } } }, // TODO Should this be done when creating the network document?
+        { $unwind: { path: "$splitNames" } },
+      
+        // Lookup the genes contained in each pathway
+        { $lookup: {
+            from: geneSetCollection,
+            localField: "splitNames",
+            foreignField: "name",
+            as: "geneSet"
+        }},
+        { $replaceRoot: { newRoot: { $mergeObjects: [ { $arrayElemAt: [ "$geneSet", 0 ] }, "$$ROOT" ] } } },
+        { $unwind: { path: "$genes" } },
+        { $project: { _id: 0, gene: "$genes", nodeID: "$id" } },
+        { $addFields: { networkID: networkID.bson } },
+      
+        // Insert into the geneRanks collection
+        { $merge: {
+            into: GENE_RANKS_COLLECTION,
+            on: [ "networkID", "gene" ],
+            whenNotMatched: "discard",
+            let: { nodeID: "$nodeID" },
+            whenMatched: [{ 
+              $addFields: {
+                nodeIDs: { 
+                  $cond: {
+                    if: { $eq: [ { $type: "$nodeIDs" }, "array" ] },
+                    then: { $concatArrays: [ "$nodeIDs", [ "$$nodeID" ] ] },
+                    else: { $concatArrays: [ [],         [ "$$nodeID" ] ] }
+                  }
+                }
+              }
+            }]
+          }
+        }
+      ])
+      .toArray();
+
+      console.log(docs);
+    console.log("done loading gene ranks");
 
     return geneListID.string;
   }
