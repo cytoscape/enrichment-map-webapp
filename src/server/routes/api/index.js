@@ -108,7 +108,7 @@ http.post('/create/rnaseq', dataParser, async function(req, res, next) {
     const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
     console.timeEnd('fgsea_rnaseq_service ' + tag);
 
-    processMessages('fgsea', messages);
+    sendMessagesToSentry('fgsea', messages);
 
     console.time('em_service ' + tag);
     const networkJson = await runEM(pathways);
@@ -266,13 +266,14 @@ http.post('/:netid/genesearch', async function(req, res, next) {
 });
 
 
-function processMessages(service, messages) {
+function sendMessagesToSentry(service, messages) {
   if(!messages || messages.length == 0)
     return;
 
   for(const message of messages) {
     const { level, type, text, data } = message;
     
+    // https://docs.sentry.io/platforms/node/usage/set-level/
     const event = {
       level,
       tags: { message_type:type, service },
@@ -280,6 +281,8 @@ function processMessages(service, messages) {
       extra: data,
     };
 
+    // This method is actually asynchronous
+    // https://github.com/getsentry/sentry-javascript/issues/2049
     Sentry.captureEvent(event);
   }
 }
@@ -345,7 +348,7 @@ async function runEM(fgseaResults) {
 
 
 /**
- * If the first gene is an ensembl ID then assume they all do.
+ * If the first gene is an ensembl ID then assume they all are.
  */
 function isEnsembl(body) {
   const secondLine = body.split('\n', 2)[1]; // First line is the header row, skip it
@@ -386,36 +389,51 @@ async function callBridgeDB(ensemblIDs, species='Human', sourceType='En') {
 
 
 async function runEnsemblToHGNCMapping(body, contentType) {
-  // Convert CSV/TSV to a 2D array
-  const delim = contentType === 'text/csv' ? ',' : '\t';
+  // Convert CSV/TSV to a 2D array 
   const lines = body.split('\n');
   const header  = lines[0];
-  const content = lines.slice(1).map(line => line.split(delim));
+  const delim = contentType === 'text/csv' ? ',' : '\t';
+
+  const content = lines
+    .slice(1)
+    .filter(line => line && line.length > 0)
+    .map(line => line.split(delim));
 
   // Call BridgeDB
   const ensemblIDs = content.map(row => row[0]);
-  console.log(ensemblIDs);
+  // console.log(ensemblIDs);
   const hgncIDs = await callBridgeDB(ensemblIDs);
-  console.log(hgncIDs);
+  // console.log(hgncIDs);
 
   // Replace old IDs with the new ones
   const newContent = [];
+  const invalidIDs = [];
   for(var i = 0; i < content.length; i++) {
     const row = content[i];
     const newID = hgncIDs[i];
     if(newID) {
       newContent.push([newID, ...row.slice(1)]);
     } else {
-      // TODO collect invaid IDs and report to Sentry
-      console.log("Invalid gene ID, could not map: " + row[0]);
+      invalidIDs.push(row[0]);
     }
   }
 
+  if(invalidIDs.length > 0) {
+    console.log("Sending id-mapping warning to Sentry. Number of invalid IDs: " + invalidIDs.length);
+    sendMessagesToSentry('bridgedb', [{
+      level: 'warning',
+      type: 'ids_not_mapped',
+      text: 'IDs not mapped',
+      data: {
+        'Total IDs Mapped': ensemblIDs.length, 
+        'Invalid ID Count': invalidIDs.length,
+        'Invalid IDs (First 100)': invalidIDs.slice(0, 100),
+       }
+    }]);
+  } 
+
   // Convert back to a big string
   const newBody = header + '\n' + newContent.map(line => line.join(delim)).join('\n');
-
-  console.log(newBody);
-
   return newBody;
 }
 
