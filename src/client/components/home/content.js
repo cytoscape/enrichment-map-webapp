@@ -327,6 +327,7 @@ export class Content extends Component {
         contents={this.state.contents}
         format={this.state.format}
         onClassesChanged={classes => onClassesChanged(classes)}
+        isMobile={isMobile}
       />;
 
     const StartDialog = ({ step, isMobile }) => {

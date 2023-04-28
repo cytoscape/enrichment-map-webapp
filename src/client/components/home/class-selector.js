@@ -6,24 +6,32 @@ import { makeStyles } from '@material-ui/core/styles';
 import { Grid, Typography } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 
+import { GroupAIcon, GroupBIcon } from '../svg-icons';
+import BlockIcon from '@material-ui/icons/Block';
+
+const BUTTONS_DEF = [
+  { value: 'A', label: 'Group A', mobileLabel: 'A',  icon: <GroupAIcon fontSize="small" /> },
+  { value: 'B', label: 'Group B', mobileLabel: 'B',  icon: <GroupBIcon fontSize="small" /> },
+  { value: 'X', label: 'Ignored', mobileLabel: null, icon: <BlockIcon fontSize="small" /> },
+];
 
 const useStyles = makeStyles((theme) => ({
   header: {
     textAlign: 'center',
   },
-  row: {
-    display: 'flex',
-    flexDirection: 'row',
-  },
   col: {
-    flex: 1,
-    width: '280px',
     alignSelf: 'center',
-    padding: theme.spacing(0.5),
+    padding: theme.spacing(0.25),
+    whiteSpace: 'nowrap',
+  },
+  colNameContainer: {
+    alignSelf: 'center',
+    minWidth: 40,
+    maxWidth: '100%',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-  },
+  }
 }));
 
 function assignGroupsSimple(columns) {
@@ -31,7 +39,6 @@ function assignGroupsSimple(columns) {
   const mid = columns.length / 2;
   return columns.map((c,i) => i < mid ? 'A' : 'B');
 }
-
 
 function assignGroups(columns, contents, format) {
   const groups = assignGroupsSimple(columns);
@@ -56,7 +63,7 @@ function assignGroups(columns, contents, format) {
 }
 
 
-function ClassSelector({ columns, contents, format, onClassesChanged }) {
+function ClassSelector({ columns, contents, format, onClassesChanged, isMobile }) {
   const [ groups, setGroups ] = useState(() => assignGroups(columns, contents, format));
 
   if (onClassesChanged)
@@ -83,21 +90,28 @@ function ClassSelector({ columns, contents, format, onClassesChanged }) {
       { columns.map((column, i) => 
           column.toLowerCase() === 'description' 
           ? null
-          : <div className={classes.row} key={i}>
-              <div className={classes.col}>
+          : <Grid container key={i} direction="row" justifyContent="space-between">
+              <Grid item className={classes.col} sm={6}>
+                <div className={classes.colNameContainer}>
                   { column }
-              </div>
-              <div className={classes.col}>
-                <ToggleButtonGroup 
-                  exclusive
-                  value={groups[i]} 
-                  onChange={(e, newClass) => handleChange(i, newClass)}>
-                  <ToggleButton value='A'>Group A</ToggleButton>
-                  <ToggleButton value='B'>Group B</ToggleButton>
-                  <ToggleButton value='X'>Ignored</ToggleButton>
-                </ToggleButtonGroup>
-              </div>
-            </div>
+                </div>
+              </Grid>
+              <Grid item className={classes.col} sm={6}>
+                <Grid container direction="row">
+                  <ToggleButtonGroup 
+                    exclusive
+                    value={groups[i]} 
+                    onChange={(e, newClass) => handleChange(i, newClass)}
+                  >
+                  { BUTTONS_DEF.map((btn) => 
+                    <ToggleButton key={btn.value} value={btn.value}>
+                      { isMobile ? btn.icon : btn.label }
+                    </ToggleButton>
+                  )}
+                  </ToggleButtonGroup>
+                </Grid>
+              </Grid>
+            </Grid>
       )}
       </Grid>
     </Grid>
@@ -105,10 +119,11 @@ function ClassSelector({ columns, contents, format, onClassesChanged }) {
 }
 
 ClassSelector.propTypes = {
-  columns: PropTypes.array,
+  columns: PropTypes.array.isRequired,
   onClassesChanged: PropTypes.func,
-  contents: PropTypes.string,
-  format: PropTypes.string,
+  contents: PropTypes.string.isRequired,
+  format: PropTypes.string.isRequired,
+  isMobile: PropTypes.bool,
 };
 
 export default ClassSelector;
