@@ -265,6 +265,23 @@ http.post('/:netid/genesearch', async function(req, res, next) {
   }
 });
 
+/**
+ * Returns the IDs of nodes that contain the given gene.
+ */
+http.get('/:netid/:gene/nodes', async function(req, res, next) {
+  try {
+    const { netid, gene } = req.params;
+    const nodeIDs = await Datastore.getNodesContainingGene(netid, gene);
+    if(!nodeIDs) {
+      res.sendStatus(404);
+    } else {
+      res.send(JSON.stringify(nodeIDs));
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 function sendMessagesToSentry(service, messages) {
   if(!messages || messages.length == 0)

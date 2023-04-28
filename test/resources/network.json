@@ -113,5 +113,79 @@
 				}
 			]
 		}
+	},
+  "summaryNetwork": {
+		"elements": {
+			"nodes": [
+				{
+					"data": {
+						"id": "ccc53527-c85f-411d-8b96-bd317522b6a7",
+						"name": "GENESET_1,GENESET_2",
+						"pvalue": 0.1328,
+						"colouring": 0.8672,
+						"gs_type": "ENR",
+						"gs_size": 3068,
+						"fdr_qvalue": 1.0,
+						"NES": 1.0
+					}
+				},
+				{
+					"data": {
+						"id": "9aaa7dea-8353-4cb6-9e8b-dd0b52927821",
+						"name": "GENESET_3",
+						"pvalue": 0.8715,
+						"colouring": 0.12849999999999995,
+						"gs_type": "ENR",
+						"gs_size": 3962,
+						"fdr_qvalue": 1.0,
+						"NES": 1.0
+					}
+				},
+				{
+					"data": {
+						"id": "3f9549bd-17f3-4625-88da-86f33794aac5",
+						"name": "GENESET_4",
+						"pvalue": 0.675,
+						"colouring": 0.32499999999999996,
+						"gs_type": "ENR",
+						"gs_size": 1928,
+						"fdr_qvalue": 1.0,
+						"NES": 1.0
+					}
+				},
+				{
+					"data": {
+						"id": "aae5d32b-04ac-4aa7-a440-81843921e258",
+						"name": "GENESET_5",
+						"pvalue": 0.5052,
+						"colouring": 0.4948,
+						"gs_type": "ENR",
+						"gs_size": 14031,
+						"fdr_qvalue": 1.0,
+						"NES": 1.0
+					}
+				}
+			],
+			"edges": [
+				{
+					"data": {
+						"id": "07985571-1a6a-43f5-94f6-d378c07f7a98",
+						"source": "ccc53527-c85f-411d-8b96-bd317522b6a7",
+						"target": "3f9549bd-17f3-4625-88da-86f33794aac5",
+						"similarity_coefficient": 0.554933084344849,
+						"overlap_size": 1783
+					}
+				},
+				{
+					"data": {
+						"id": "ed2dfa86-569a-4e2c-91b0-1659477e8266",
+						"source": "9aaa7dea-8353-4cb6-9e8b-dd0b52927821",
+						"target": "aae5d32b-04ac-4aa7-a440-81843921e258",
+						"similarity_coefficient": 0.2823747416435037,
+						"overlap_size": 3962
+					}
+				}
+			]
+		}
 	}
 }

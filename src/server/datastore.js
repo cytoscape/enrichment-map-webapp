@@ -233,8 +233,9 @@ class Datastore {
       ])
       .toArray(); // Still need toArray() even though this is a merge
 
-    // Create a mapping from { networkID, gene } to a list of node IDs that contain that gene.
-    const docs = await this.db
+    // Update the documents in the geneRanks collection to add a mapping from 
+    // { networkID, gene } to a list of node IDs that contain that gene.
+    await this.db
       .collection(NETWORKS_COLLECTION)
       .aggregate([
         // Get the nodeIDs and the names of the Pathways they represent
@@ -242,10 +243,10 @@ class Datastore {
         { $replaceWith: { path: "$summaryNetwork.elements.nodes.data" } },
         { $unwind: { path: "$path" } },
         { $replaceRoot: { newRoot: "$path" } },
-        { $addFields: { splitNames: { $split: [ "$name", "," ] } } }, // TODO Should this be done when creating the network document?
+        { $addFields: { splitNames: { $split: [ "$name", "," ] } } },
         { $unwind: { path: "$splitNames" } },
       
-        // Lookup the genes contained in each pathway
+        // Lookup the genes contained in each node
         { $lookup: {
             from: geneSetCollection,
             localField: "splitNames",
@@ -254,34 +255,22 @@ class Datastore {
         }},
         { $replaceRoot: { newRoot: { $mergeObjects: [ { $arrayElemAt: [ "$geneSet", 0 ] }, "$$ROOT" ] } } },
         { $unwind: { path: "$genes" } },
-        { $project: { _id: 0, gene: "$genes", nodeID: "$id" } },
-        { $addFields: { networkID: networkID.bson } },
+        { $group: { _id: "$genes", nodeIDs: { $addToSet: "$id" } }},
+        { $project: { _id: 0, gene: "$_id", nodeIDs: 1, networkID: networkID.bson } },
       
-        // Insert into the geneRanks collection
+        // Update the geneRanks collection
         { $merge: {
             into: GENE_RANKS_COLLECTION,
             on: [ "networkID", "gene" ],
             whenNotMatched: "discard",
-            let: { nodeID: "$nodeID" },
-            whenMatched: [{ 
-              $addFields: {
-                nodeIDs: { 
-                  $cond: {
-                    if: { $eq: [ { $type: "$nodeIDs" }, "array" ] },
-                    then: { $concatArrays: [ "$nodeIDs", [ "$$nodeID" ] ] },
-                    else: { $concatArrays: [ [],         [ "$$nodeID" ] ] }
-                  }
-                }
-              }
-            }]
+            let: { nodeIDs: "$nodeIDs" },
+            whenMatched: [{ $addFields: { nodeIDs: "$$nodeIDs" } }],
           }
         }
       ])
       .toArray();
 
-      console.log(docs);
     console.log("done loading gene ranks");
-
     return geneListID.string;
   }
 
@@ -328,7 +317,20 @@ class Datastore {
       .toArray();
   }
 
-  
+
+  /**
+   * Returns the IDs of nodes that contain the given gene.
+   */
+  async getNodesContainingGene(networkIDString, geneName) {
+    const networkID = makeID(networkIDString);
+    return await this.db
+      .collection(GENE_RANKS_COLLECTION)
+      .findOne(
+        { networkID: networkID.bson, gene: geneName },
+        { projection: { _id: 0, nodeIDs: 1 } }
+      );
+  }
+
 
   /**
    * Returns the genes from one or more gene sets joined with ranks.
