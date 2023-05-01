@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { useQuery } from "react-query";
 import { linkoutProps } from './defaults';
 import theme from '../../theme';
-import { NES_COLOR_RANGE } from './network-style';
+import { NES_COLOR_RANGE, nodeLabel } from './network-style';
 import { NetworkEditorController } from './controller';
 
 import { makeStyles } from '@material-ui/core/styles';
@@ -125,6 +125,16 @@ const useStyles = makeStyles((theme) => ({
     marginRight: '0.125em',
     lineHeight: '1.7em'
   },
+  pathwayNameUl: {
+    listStyleType: 'none',
+    margin: 0,
+    padding: 0,
+  },
+  pathwayNameLi: {
+    whiteSpace:'nowrap', 
+    overflow:'hidden', 
+    textOverflow:'ellipsis'
+  },
   '@keyframes blinker': {
     from: {
       opacity: 0.5,
@@ -153,10 +163,10 @@ const rankBarTextStyle = (rank, minRank, maxRank) => {
   }
 };
 
-const GeneMetadataPanel = ({ symbol, showSymbol }) => {
+const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   const classes = useStyles();
 
-  const query = useQuery(
+  const queryGeneData = useQuery(
     ['gene-metadata', symbol],
     () =>
       fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbol}/taxon/9606`, {
@@ -171,9 +181,19 @@ const GeneMetadataPanel = ({ symbol, showSymbol }) => {
     }
   );
 
-  const data = query.data;
-  const isLoading = query.isLoading;
-  let error = query.error;
+  const queryNodes = useQuery(
+    ['related-node-ids', symbol],
+    () => fetch(`/api/${controller.cy.data('id')}/${symbol}/nodes`)
+          .then(res => res.json())
+          .then(res => res.nodeIDs)
+  );
+
+  const data = queryGeneData.data;
+  const nodeIDs = queryNodes.data;
+
+  const isLoading = queryGeneData.isLoading || queryNodes.isLoading;
+
+  let error = queryGeneData.error;
 
   let description, ncbiId;
   
@@ -191,6 +211,26 @@ const GeneMetadataPanel = ({ symbol, showSymbol }) => {
       }
     }
   }
+
+  const NodeList = (params) => {
+    const selector = params.nodeIDs.map(id => `[id="${id}"]`).join(',');
+    const nodes = controller.cy.nodes(selector);
+    const labels = nodes.map(nodeLabel);
+    return <>
+      <Typography variant="body2" color="textPrimary">
+        Gene Sets ({labels.length}):
+      </Typography>
+      <ul className={classes.pathwayNameUl}>
+        { labels.map((label, i) => 
+            <li key={i} className={classes.pathwayNameLi}>
+              <Typography color="textSecondary">
+                {label}
+              </Typography>
+            </li>
+        )}
+      </ul>
+    </>;
+  };
 
   return (
     <Grid container color="textSecondary" className={classes.geneMetadata}>
@@ -215,28 +255,33 @@ const GeneMetadataPanel = ({ symbol, showSymbol }) => {
             </Typography>
           </Grid>
           {!isLoading && (
-            <Grid item xs={12}>  
-              <Grid container direction="row" justifyContent="space-between" alignItems='center'>
-                <Grid item>
-                  <Link
-                    href={ncbiId ? `https://www.ncbi.nlm.nih.gov/gene/${ncbiId}` : `https://www.ncbi.nlm.nih.gov/gene?term=(${symbol}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
-                    className={classes.linkout}
-                    {...linkoutProps}
-                  >
-                    More Info
-                  </Link>
-                </Grid>
-                <Grid item>
-                  <Link
-                    href={`https://genemania.org/search/human/${symbol}`}
-                    className={classes.linkout}
-                    {...linkoutProps}
-                  >
-                    Related Genes
-                  </Link>
+            <>
+              <Grid item xs={12}>  
+                <Grid container direction="row" justifyContent="space-between" alignItems='center'>
+                  <Grid item>
+                    <Link
+                      href={ncbiId ? `https://www.ncbi.nlm.nih.gov/gene/${ncbiId}` : `https://www.ncbi.nlm.nih.gov/gene?term=(${symbol}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
+                      className={classes.linkout}
+                      {...linkoutProps}
+                    >
+                      More Info
+                    </Link>
+                  </Grid>
+                  <Grid item>
+                    <Link
+                      href={`https://genemania.org/search/human/${symbol}`}
+                      className={classes.linkout}
+                      {...linkoutProps}
+                    >
+                      Related Genes
+                    </Link>
+                  </Grid>
                 </Grid>
               </Grid>
-            </Grid>
+              <Grid item xs={12}>
+                <NodeList nodeIDs={nodeIDs} />
+              </Grid>
+            </>
           )}
         </>
       )}
@@ -373,7 +418,7 @@ const GeneListPanel = ({ controller, genes, sort }) => {
                 </Grid>
               </Grid>
               {isSelected && (
-                <GeneMetadataPanel symbol={symbol} showSymbol={() => isGeneTextOverflowing(geneTextElemId)} />
+                <GeneMetadataPanel symbol={symbol} controller={controller} showSymbol={() => isGeneTextOverflowing(geneTextElemId)} />
               )}
             </Grid>
           }
@@ -396,6 +441,7 @@ const GeneListPanel = ({ controller, genes, sort }) => {
 };
 
 GeneMetadataPanel.propTypes = {
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   symbol: PropTypes.string.isRequired,
   showSymbol: PropTypes.func
 };
