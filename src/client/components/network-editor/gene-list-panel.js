@@ -10,7 +10,7 @@ import { NetworkEditorController } from './controller';
 import { makeStyles } from '@material-ui/core/styles';
 
 import { Virtuoso } from 'react-virtuoso';
-import { ListItem, ListItemText } from '@material-ui/core';
+import { ListItem, ListItemText, Tooltip } from '@material-ui/core';
 import { Grid, Typography, Link } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
@@ -152,16 +152,22 @@ const rankBarTextStyle = (rank, minRank, maxRank) => {
     return { right: 0 };
   } else if (rank < 0) { // neg. rank should be shifted right by the size of the pos. max. bar size
     let offset = Math.abs(maxRank) / (Math.abs(minRank) + Math.abs(maxRank)) * 100;
-
     return {
       right: `${offset}%`
     };
   } else { // pos. rank should be shifted left by the size of the neg. max. bar size
     let offset = Math.abs(minRank) / (Math.abs(minRank) + Math.abs(maxRank)) * 100;
-
     return { left: `${offset}%` };
   }
 };
+
+function selectNode(controller, node) {
+  const { cy } = controller;
+  cy.batch(() => {
+    cy.nodes().unselect();
+    node.select();
+  });
+}
 
 const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   const classes = useStyles();
@@ -213,19 +219,23 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   }
 
   const NodeList = (params) => {
+    if(!params.nodeIDs) 
+      return null;
     const selector = params.nodeIDs.map(id => `[id="${id}"]`).join(',');
     const nodes = controller.cy.nodes(selector);
-    const labels = nodes.map(nodeLabel);
+    // The nodeLabel() function is memoized, no issue to call it twice below.
     return <>
       <Typography variant="body2" color="textPrimary">
-        Gene Sets ({labels.length}):
+        Gene Sets ({nodes.length}):
       </Typography>
       <ul className={classes.pathwayNameUl}>
-        { labels.map((label, i) => 
-            <li key={i} className={classes.pathwayNameLi}>
-              <Typography color="textSecondary">
-                {label}
-              </Typography>
+        { nodes.map(node => 
+            <li key={node.id()} className={classes.pathwayNameLi}>
+              <Tooltip title={nodeLabel(node)}>  
+                <Link href="#" underline="hover" color="inherit" onClick={() => selectNode(controller, node)}>
+                    {nodeLabel(node)}
+                </Link>
+              </Tooltip>
             </li>
         )}
       </ul>
