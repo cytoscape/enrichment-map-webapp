@@ -374,6 +374,56 @@ export class Content extends Component {
       );
     };
 
+    const GetStartedSection = () =>
+      <Grid container justifyContent={isMobile ? 'center' : 'flex-start'} alignItems="center" spacing={3}>
+        <Grid item>
+          <Button
+            className={classes.startButton}
+            variant="contained"
+            color="primary"
+            endIcon={<NavigateNextIcon />}
+            onClick={e => this.onClickGetStarted(e)}
+          >
+            Get Started
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button
+            className={classes.demoButton}
+            variant="text"
+            color="primary"
+            startIcon={<PlayCircleFilledIcon />}
+          >
+            Watch Demo
+          </Button>
+        </Grid>
+      </Grid>
+    ;
+
+    const EasyCitation = () =>
+      <>
+        <Paper className={classes.cite} variant="outlined">
+          <FormatQuoteIcon className={classes.citeLogo} /><br />
+          <Link className={classes.citeLink} href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2981572/" {...linkoutProps}>
+            { CITATION }
+          </Link>
+        </Paper>
+        <Button
+          className={classes.copyButton}
+          aria-label="copy citation"
+          variant="text"
+          startIcon={<FileCopyOutlinedIcon />}
+          onClick={() => navigator.clipboard.writeText(CITATION)}
+        >
+          Copy
+        </Button>
+      </>
+    ;
+
+    const Figure = () =>
+      <img src="/images/home-figure.png" alt="figure" className={classes.figure} />
+    ;
+
     return (
       <div
         className={classes.drop} 
@@ -394,51 +444,15 @@ export class Content extends Component {
                 </p>
               </Grid>
               <Grid item className={classes.section}>
-                <Grid container justifyContent="flex-start" alignItems="center" spacing={3}>
-                  <Grid item>
-                    <Button
-                      className={classes.startButton}
-                      variant="contained"
-                      color="primary"
-                      endIcon={<NavigateNextIcon />}
-                      onClick={e => this.onClickGetStarted(e)}
-                    >
-                      Get Started
-                    </Button>
-                  </Grid>
-                  <Grid item>
-                    <Button
-                      className={classes.demoButton}
-                      variant="text"
-                      color="primary"
-                      startIcon={<PlayCircleFilledIcon />}
-                    >
-                      Watch Demo
-                    </Button>
-                  </Grid>
-                </Grid>
+                {isMobile ? <Figure /> : <GetStartedSection />}
               </Grid>
               <Grid item className={classes.section} style={{ textAlign: 'right' }}>
-                <Paper className={classes.cite} variant="outlined">
-                  <FormatQuoteIcon className={classes.citeLogo} /><br />
-                  <Link className={classes.citeLink} href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2981572/" {...linkoutProps}>
-                    { CITATION }
-                  </Link>
-                </Paper>
-                <Button
-                  className={classes.copyButton}
-                  aria-label="copy citation"
-                  variant="text"
-                  startIcon={<FileCopyOutlinedIcon />}
-                  onClick={() => navigator.clipboard.writeText(CITATION)}
-                >
-                  Copy
-                </Button>
+                {isMobile ? <GetStartedSection /> : <EasyCitation />}
               </Grid>
             </Grid>
           </Grid>
           <Grid item xs={isMobile ? 12 : 6}>
-            <img src="/images/home-figure.png" alt="figure" className={classes.figure} />
+            {isMobile ? <EasyCitation /> : <Figure />}
           </Grid>
         </Grid>
         {step !== STEP.WAITING && (
@@ -459,9 +473,9 @@ export class Content extends Component {
     ;
 
     return (
-        <Container maxWidth="lg" disableGutters>
+        <Container maxWidth="lg" disableGutters className={classes.footer}>
           <Divider />
-          <Toolbar variant="regular" className={classes.footer}>
+          <Toolbar variant="regular" className={classes.logoBar}>
             <Grid container direction={isMobile ? 'column' : 'row'} alignItems="center" justifyContent={isMobile ? 'space-around' : 'space-between'}>
               <Grid item>
                 &copy; {new Date().getFullYear()} University of Toronto
@@ -525,16 +539,6 @@ const useStyles = theme => ({
   rootDropping: {
     borderColor: 'rgb(54, 102, 209)'
   },
-  // grid: {
-  //   boxSizing: 'border-box',
-  //   margin: '0 auto',
-  //   maxWidth: '98%',
-  //   textAlign: 'center',
-  //   width: 1333,
-  // },
-  // header: {
-    
-  // },
   main: {
     padding: theme.spacing(1),
     flexGrow: 1,
@@ -576,6 +580,9 @@ const useStyles = theme => ({
     marginBottom: theme.spacing(10),
     padding:  theme.spacing(2),
     textAlign: 'left',
+    [theme.breakpoints.down('md')]: {
+      marginTop: theme.spacing(1),
+    },
   },
   tagline: {
     fontWeight: 800,
@@ -587,17 +594,20 @@ const useStyles = theme => ({
       marginTop: theme.spacing(2.5),
     },
     [theme.breakpoints.down('sm')]: {
-      marginTop: theme.spacing(0),
+      marginTop: 0,
       textAlign: 'center',
     },
   },
   description : {
-    // fontSize: '1rem',
+    fontSize: '1rem',
     color: theme.palette.secondary.main,
     marginTop: theme.spacing(2.5),
     marginBottom: theme.spacing(5),
     [theme.breakpoints.down('sm')]: {
+      fontSize: 'unset',
       textAlign: 'center',
+      marginTop: theme.spacing(2),
+      marginBottom: theme.spacing(1),
     },
   },
   section: {
@@ -621,7 +631,7 @@ const useStyles = theme => ({
   cite: {
     marginTop: theme.spacing(10),
     padding: theme.spacing(2),
-    paddingTop: theme.spacing(0),
+    paddingTop: 0,
     textAlign: 'left',
     fontFamily: 'Monaco,Courier New,Monospace',
     overflow: 'hidden',
@@ -659,9 +669,22 @@ const useStyles = theme => ({
   },
   figure: {
     maxWidth: '100%',
-    height: 'auto',
+    height: '100%',
+    objectFit: 'contain',
+    [theme.breakpoints.down('md')]: {
+      maxWidth: '80%',
+      marginBottom: theme.spacing(2),
+    },
   },
   footer: {
+    marginTop: theme.spacing(-10),
+    paddingTop: 0,
+    [theme.breakpoints.down('md')]: {
+      marginTop: theme.spacing(0),
+      paddingTop: theme.spacing(10),
+    },
+  },
+  logoBar: {
     marginTop: theme.spacing(2),
     color: theme.palette.secondary.main,
   },
