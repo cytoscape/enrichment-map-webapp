@@ -5,6 +5,7 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { saveUserUploadFileToS3 } from './s3.js';
 
 import Datastore, { DB_1 } from '../../datastore.js';
 
@@ -55,7 +56,9 @@ http.post('/create/preranked', dataParser, async function(req, res, next) {
 
     console.log('/create/preranked ' + tag + ', Content-Type:' + contentType);
     console.time('/create/preranked ' + tag);
-    
+
+    await saveUserUploadFileToS3(body, `${networkName}.csv`, contentType);
+
     if(isEnsembl(body)) {
       console.time('bridgedb ' + tag );
       body = await runEnsemblToHGNCMapping(body, contentType);
@@ -97,6 +100,8 @@ http.post('/create/rnaseq', dataParser, async function(req, res, next) {
 
     console.log('/create/rnaseq ' + tag + ', Content-Type:' + contentType);
     console.time('/create/rnaseq ' + tag);
+
+    await saveUserUploadFileToS3(body, `${networkName}.csv`, contentType);
 
     if(isEnsembl(body)) {
       console.time('bridgedb ' + tag );
