@@ -26,6 +26,7 @@ import FileCopyOutlinedIcon from '@material-ui/icons/FileCopyOutlined';
 import { AppLogoIcon } from '../svg-icons';
 
 import classNames from 'classnames';
+import { Copyright } from '@material-ui/icons';
 
 
 const STEP = {
@@ -59,6 +60,7 @@ export class Content extends Component {
     this.controller = new UploadController(this.bus);
 
     const isMobile = this.isMobile();
+    const isTablet = this.isTablet();
 
     this.state = {
       step: STEP.WAITING,
@@ -68,6 +70,7 @@ export class Content extends Component {
       sampleExpressionFiles,
       isDroppingFile: false,
       isMobile: isMobile,
+      isTablet: isTablet,
     };
 
     this.onLoading = this.onLoading.bind(this);
@@ -111,13 +114,19 @@ export class Content extends Component {
 
   handleResize() {
     const isMobile = this.isMobile();
-    if (this.state.isMobile !== isMobile) {
-      this.setState({ isMobile });
+    const isTablet = this.isTablet();
+
+    if (this.state.isMobile !== isMobile || this.state.isTablet !== isTablet) {
+      this.setState({ isMobile, isTablet });
     }
   }
 
   isMobile() {
-    return window.innerWidth < theme.breakpoints.values.sm;
+    return window.innerWidth <= theme.breakpoints.values.sm;
+  }
+
+  isTablet() {
+    return !this.isMobile() && window.innerWidth <= theme.breakpoints.values.md;
   }
 
   async loadSampleFiles() {
@@ -243,6 +252,7 @@ export class Content extends Component {
   }
 
   renderHeader() {
+    const { isTablet, isMobile } = this.state;
     const { classes } = this.props;
 
     return (
@@ -262,22 +272,23 @@ export class Content extends Component {
               </Grid>
             </Grid>
             <div className={classes.grow} />
-            <div className={classes.sectionDesktop}>
+          {!isTablet && !isMobile ?
+            <Toolbar>
               <Button className={classes.menu} variant="text" color="inherit">About</Button>
               <Button className={classes.menu} variant="text" color="inherit">Contact</Button>
               <Button className={classes.menu} variant="text" color="inherit">Help</Button>
-            </div>
-            <div className={classes.sectionMobile}>
-              <IconButton
-                aria-label="show more"
-                // aria-controls={mobileMenuId}
-                aria-haspopup="true"
-                // onClick={handleMobileMenuOpen}
-                color="inherit"
-              >
-                <MenuIcon />
-              </IconButton>
-            </div>
+            </Toolbar>
+          :
+            <IconButton
+              aria-label="show more"
+              // aria-controls={mobileMenuId}
+              aria-haspopup="true"
+              // onClick={handleMobileMenuOpen}
+              color="inherit"
+            >
+              <MenuIcon />
+            </IconButton>
+          }
           </Toolbar>
         </Container>
       </AppBar>
@@ -285,7 +296,7 @@ export class Content extends Component {
   }
 
   renderMain() {
-    const { step, isMobile } = this.state;
+    const { step, isMobile, isTablet } = this.state;
     const { classes } = this.props;
 
     const LoadingProgress = () => 
@@ -375,7 +386,12 @@ export class Content extends Component {
     };
 
     const GetStartedSection = () =>
-      <Grid container justifyContent={isMobile ? 'center' : 'flex-start'} alignItems="center" spacing={3}>
+      <Grid
+        container
+        justifyContent={isMobile || isTablet ? 'center' : 'flex-start'}
+        alignItems="center"
+        spacing={3}
+      >
         <Grid item>
           <Button
             className={classes.startButton}
@@ -401,7 +417,7 @@ export class Content extends Component {
     ;
 
     const EasyCitation = () =>
-      <>
+      <Grid container direction="column" alignItems="flex-end">
         <Paper className={classes.cite} variant="outlined">
           <FormatQuoteIcon className={classes.citeLogo} /><br />
           <Link className={classes.citeLink} href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2981572/" {...linkoutProps}>
@@ -417,7 +433,7 @@ export class Content extends Component {
         >
           Copy
         </Button>
-      </>
+      </Grid>
     ;
 
     const Figure = () =>
@@ -432,38 +448,58 @@ export class Content extends Component {
         onDragLeave={e => this.onDragEndUpload(e)} 
         onDragEnd={e => this.onDragEndUpload(e)}
       >
-        <Grid container className={classes.content} direction={isMobile ? 'row' : 'column'} justifyContent="center" alignItems="center">
-          <Grid item xs={isMobile ? 12 : 6}>
-            <Grid container justifyContent="center" alignItems="center">
-              <Grid item>
-                <Typography variant="h1" className={classes.tagline}>Enrichment analysis for your RNA-Seq</Typography>
+        <Grid container direction="column" justifyContent="center" alignItems="center">
+          <Grid item>
+            <Grid
+              container
+              className={classes.content}
+              direction={isMobile ? 'column' : 'row'}
+              justifyContent="center"
+              alignItems="center"
+              spacing={2}
+            >
+              <Grid item xs={isMobile ? 12 : 6}>
+                <Grid container direction="column" justifyContent="center" alignItems="center">
+                  <Grid item>
+                    <Typography variant="h1" className={classes.tagline}>Enrichment analysis for your RNA-Seq</Typography>
+                  </Grid>
+                  <Grid item>
+                    <p className={classes.description}>
+                      Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA-Seq experiment.
+                    </p>
+                  </Grid>
+                  <Grid item className={classes.section}>
+                    {isMobile ? <Figure /> : <GetStartedSection />}
+                  </Grid>
+                {isMobile && (
+                  <Grid item className={classes.section}>
+                    <GetStartedSection />
+                  </Grid>
+                )}
+                </Grid>
               </Grid>
-              <Grid item>
-                <p className={classes.description}>
-                  Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA-Seq experiment.
-                </p>
+            {!isMobile && (
+              <Grid item className={classes.section} xs={6}>
+                <Figure />
               </Grid>
-              <Grid item className={classes.section}>
-                {isMobile ? <Figure /> : <GetStartedSection />}
-              </Grid>
-              <Grid item className={classes.section} style={{ textAlign: 'right' }}>
-                {isMobile ? <GetStartedSection /> : <EasyCitation />}
-              </Grid>
+            )}
             </Grid>
           </Grid>
-          <Grid item xs={isMobile ? 12 : 6}>
-            {isMobile ? <EasyCitation /> : <Figure />}
+          <Grid item xs={isMobile ? 10 : 8}>
+            <EasyCitation />
           </Grid>
-        </Grid>
         {step !== STEP.WAITING && (
-          <StartDialog step={step} isMobile={isMobile} />
+          <Grid item>
+            <StartDialog step={step} isMobile={isMobile} />
+          </Grid>
         )}
+        </Grid>
       </div>
     );
   }
 
   renderFooter() {
-    const { isMobile } = this.state;
+    const { isMobile, isTablet } = this.state;
     const { classes } = this.props;
 
     const Logo = ({ src, alt, href }) =>
@@ -476,17 +512,28 @@ export class Content extends Component {
         <Container maxWidth="lg" disableGutters className={classes.footer}>
           <Divider />
           <Toolbar variant="regular" className={classes.logoBar}>
-            <Grid container direction={isMobile ? 'column' : 'row'} alignItems="center" justifyContent={isMobile ? 'space-around' : 'space-between'}>
-              <Grid item>
+            <Grid
+              container
+              direction={isMobile || isTablet ? 'column' : 'row'}
+              alignItems={isMobile || isTablet ? 'center' : 'flex-start'}
+              justifyContent={isMobile ? 'space-around' : 'space-between'}
+            >
+              <Grid item className={classes.copyright} md={4} sm={12}>
                 &copy; {new Date().getFullYear()} University of Toronto
               </Grid>
-              <Grid item>
-                <Grid container direction={isMobile ? 'column' : 'row'} alignItems="flex-start" justifyContent={isMobile ? 'space-around' : 'space-between'} spacing={5}>
-                { LOGOS.map((logo, idx) =>
-                  <Grid key={idx} item>
-                    <Logo src={logo.src} alt={logo.alt} href={logo.href} />
-                  </Grid>
-                )}
+              <Grid item md={8} sm={12}>
+                <Grid
+                  container
+                  direction={isMobile ? 'column' : 'row'}
+                  alignItems={isMobile ? 'center' : 'flex-start'}
+                  justifyContent={isMobile ? 'space-around' : 'space-between'}
+                  spacing={5}
+                >
+              {LOGOS.map((logo, idx) =>
+                <Grid key={idx} item>
+                  <Logo src={logo.src} alt={logo.alt} href={logo.href} />
+                </Grid>
+              )}
                 </Grid>
               </Grid>
             </Grid>
@@ -502,23 +549,23 @@ export class Content extends Component {
       <DebugMenu>
         <h3>Example rank input files</h3>
         <ul>
-          {
-            sampleRankFiles.length > 0 ?
-            sampleRankFiles.map(file => (
-              <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
-            )) :
-            <li>Loading...</li>
-          }
+        {
+          sampleRankFiles.length > 0 ?
+          sampleRankFiles.map(file => (
+            <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
+          )) :
+          <li>Loading...</li>
+        }
         </ul>
         <h3>Example expression input files</h3>
         <ul>
-          {
-            sampleExpressionFiles.length > 0 ?
-            sampleExpressionFiles.map(file => (
-              <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
-            )) :
-            <li>Loading...</li>
-          }
+        {
+          sampleExpressionFiles.length > 0 ?
+          sampleExpressionFiles.map(file => (
+            <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
+          )) :
+          <li>Loading...</li>
+        }
         </ul>
       </DebugMenu>
     );
@@ -558,43 +605,38 @@ const useStyles = theme => ({
   grow: {
     flexGrow: 1,
   },
-  sectionDesktop: {
-    display: 'none',
-    [theme.breakpoints.up('md')]: {
-      display: 'flex',
-    },
-  },
-  sectionMobile: {
-    display: 'flex',
-    [theme.breakpoints.up('md')]: {
-      display: 'none',
-    },
-  },
   menu: {
     marginLeft: theme.spacing(5),
     textTransform: 'unset',
   },
   content: {
     maxHeight: 700,
-    marginTop: theme.spacing(3),
-    marginBottom: theme.spacing(10),
-    padding:  theme.spacing(2),
+    marginTop: 0,
+    marginBottom: 0,
+    padding: theme.spacing(2),
+    paddingTop: 0,
+    paddingBottom: 0,
     textAlign: 'left',
-    [theme.breakpoints.down('md')]: {
-      marginTop: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: {
+      marginTop: 0,
+      marginBottom: 0,
+      paddingTop: theme.spacing(1),
+      paddingBottom: theme.spacing(1),
+    },
+    [theme.breakpoints.down('xs')]: {
+      paddingTop: theme.spacing(2),
+      paddingBottom: theme.spacing(2),
     },
   },
   tagline: {
     fontWeight: 800,
-    fontSize: 'clamp(2rem, 1rem + 2.5vw, 3.5rem)',
-    [theme.breakpoints.up('md')]: {
-      marginTop: theme.spacing(5),
-    },
-    [theme.breakpoints.down('md')]: {
-      marginTop: theme.spacing(2.5),
-    },
+    fontSize: 'clamp(1.5rem, 0.75rem + 2.5vw, 3.5rem)',
+    marginTop: theme.spacing(2),
     [theme.breakpoints.down('sm')]: {
-      marginTop: 0,
+      marginTop: theme.spacing(1),
+    },
+    [theme.breakpoints.down('xs')]: {
+      marginTop: theme.spacing(0.5),
       textAlign: 'center',
     },
   },
@@ -603,11 +645,10 @@ const useStyles = theme => ({
     color: theme.palette.secondary.main,
     marginTop: theme.spacing(2.5),
     marginBottom: theme.spacing(5),
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('xs')]: {
       fontSize: 'unset',
       textAlign: 'center',
-      marginTop: theme.spacing(2),
-      marginBottom: theme.spacing(1),
+      marginBottom: theme.spacing(2.5),
     },
   },
   section: {
@@ -615,7 +656,7 @@ const useStyles = theme => ({
     [theme.breakpoints.up('sm')]: {
       marginTop: theme.spacing(2.5),
     },
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('xs')]: {
       textAlign: 'center',
       alignItems: 'center',
       marginTop: theme.spacing(1),
@@ -627,30 +668,6 @@ const useStyles = theme => ({
   },
   demoButton: {
     textTransform: 'unset',
-  },
-  cite: {
-    marginTop: theme.spacing(10),
-    padding: theme.spacing(2),
-    paddingTop: 0,
-    textAlign: 'left',
-    fontFamily: 'Monaco,Courier New,Monospace',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  },
-  citeLogo: {
-    position: 'absolute',
-    color: theme.palette.background.default,
-    marginTop: theme.spacing(-2),
-    marginLeft: theme.spacing(-4),
-    background: theme.palette.divider,
-    borderRadius: '50%',
-    width: 30,
-    height: 30,
-  },
-  citeLink: {
-    fontSize: '0.75rem',
-    color: theme.palette.text.secondary,
-    filter: 'opacity(50%)',
   },
   copyButton: {
     marginTop: theme.spacing(0.5),
@@ -669,19 +686,49 @@ const useStyles = theme => ({
   },
   figure: {
     maxWidth: '100%',
-    height: '100%',
+    maxHeight: 520,
     objectFit: 'contain',
-    [theme.breakpoints.down('md')]: {
+    [theme.breakpoints.down('xs')]: {
       maxWidth: '80%',
-      marginBottom: theme.spacing(2),
+      maxHeight: 300,
+      marginBottom: theme.spacing(4),
     },
   },
-  footer: {
-    marginTop: theme.spacing(-10),
+  cite: {
+    marginTop: theme.spacing(2),
+    marginLeft: theme.spacing(-2),
+    padding: theme.spacing(2),
     paddingTop: 0,
-    [theme.breakpoints.down('md')]: {
-      marginTop: theme.spacing(0),
-      paddingTop: theme.spacing(10),
+    maxWidth: 660,
+    textAlign: 'left',
+    fontFamily: 'Monaco,Courier New,Monospace',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    [theme.breakpoints.down('xs')]: {
+      marginTop: theme.spacing(6),
+    },
+  },
+  citeLogo: {
+    position: 'absolute',
+    color: theme.palette.background.default,
+    marginTop: theme.spacing(-2),
+    marginLeft: theme.spacing(-4),
+    background: theme.palette.divider,
+    borderRadius: '50%',
+    width: 30,
+    height: 30,
+  },
+  citeLink: {
+    fontSize: '0.75rem',
+    color: theme.palette.text.secondary,
+    filter: 'opacity(50%)',
+  },
+  footer: {
+    marginTop: theme.spacing(4),
+  },
+  copyright: {
+    [theme.breakpoints.down('sm')]: {
+      marginBottom: theme.spacing(8),
     },
   },
   logoBar: {
