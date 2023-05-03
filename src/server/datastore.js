@@ -118,6 +118,7 @@ class Datastore {
 
     networkJson['_id'] = networkID.bson;
     networkJson['networkIDStr'] = networkID.string;
+    networkJson['creationTime'] = new Date();
     
     if(networkName)
       networkJson['networkName'] = networkName;
