@@ -62,7 +62,6 @@ function assignGroups(columns, contents, format) {
   return groups;
 }
 
-
 function ClassSelector({ columns, contents, format, onClassesChanged, isMobile }) {
   const [ groups, setGroups ] = useState(() => assignGroups(columns, contents, format));
 
@@ -83,7 +82,7 @@ function ClassSelector({ columns, contents, format, onClassesChanged, isMobile }
     <Grid container direction="column" spacing={4}>
       <Grid item xs={12}>
         <Typography variant="body1">
-          Define two sample groups that will be compared against each other<br />(<i>Group A</i> vs <i>Group B</i>):
+          Define two sample groups that will be compared against each other (<i>Group A</i> vs <i>Group B</i>):
         </Typography>
       </Grid>
       <Grid item xs={12}>

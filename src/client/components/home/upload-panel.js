@@ -90,11 +90,11 @@ const FormatContainer = ({ isMobile, title, data, children }) => {
   return (
     <>
       <Typography variant="subtitle1" className={classes.subtitle}>{ title }</Typography>
-      <Grid container direction={isMobile ? 'row' : 'column'} alignItems="flex-start" justifyContent="space-between" spacing={isMobile ? 2 : 0}>
-        <Grid item sm={12} md={6}>
+      <Grid container direction={isMobile ? 'column' : 'row'} alignItems="flex-start" justifyContent="space-between" spacing={isMobile ? 2 : 0}>
+        <Grid item sm={6}>
           <SampleTable data={data} />
         </Grid>
-        <Grid item sm={12} md={6}>
+        <Grid item sm={6}>
           <Typography component="div" variant="body2" color="secondary">
             { children }
           </Typography>

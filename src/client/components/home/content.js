@@ -11,7 +11,7 @@ import theme from '../../theme';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { AppBar, Toolbar } from '@material-ui/core';
+import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@material-ui/core';
 import { Container, Paper, Grid, Divider, } from '@material-ui/core';
 import { IconButton, Button, Typography, Link } from '@material-ui/core';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@material-ui/core';
@@ -26,7 +26,6 @@ import FileCopyOutlinedIcon from '@material-ui/icons/FileCopyOutlined';
 import { AppLogoIcon } from '../svg-icons';
 
 import classNames from 'classnames';
-import { Copyright } from '@material-ui/icons';
 
 
 const STEP = {
@@ -36,6 +35,13 @@ const STEP = {
   CLASSES: 'CLASSES',
   ERROR:   'ERROR',
 };
+
+const MENUS = [
+  { label: "About" },
+  { label: "Contact" },
+  { label: "Help" },
+];
+const mobileMenuId = 'primary-menu-mobile';
 
 const CITATION = 'Merico, D., Isserlin, R., Stueker, O., Emili, A., & Bader, G. D. (2010). Enrichment map: a network-based method for gene-set enrichment visualization and interpretation. PloS one, 5(11), e13984. https://doi.org/10.1371/journal.pone.0013984';
 
@@ -64,6 +70,7 @@ export class Content extends Component {
 
     this.state = {
       step: STEP.WAITING,
+      mobileMoreAnchorEl: null,
       errorMessages: null,
       sampleFiles,
       sampleRankFiles,
@@ -127,6 +134,18 @@ export class Content extends Component {
 
   isTablet() {
     return !this.isMobile() && window.innerWidth <= theme.breakpoints.values.md;
+  }
+
+  openMobileMenu(event) {
+    this.setState({ mobileMoreAnchorEl: event.currentTarget });
+  }
+
+  closeMobileMenu() {
+    this.setState({ mobileMoreAnchorEl: null });
+  }
+
+  onClickMenu(menu) {
+    // TODO...
   }
 
   async loadSampleFiles() {
@@ -244,10 +263,36 @@ export class Content extends Component {
         { this.renderHeader() }
         <Container maxWidth="lg" disableGutters>
           { this.renderMain() }
+          { this.renderMobileMenu() }
           { this.renderDebug() }
           { this.renderFooter() }
         </Container>
       </div>
+    );
+  }
+
+  renderMobileMenu() {
+    const { mobileMoreAnchorEl } = this.state;
+    const { classes } = this.props;
+
+    return (
+      <Menu
+        anchorEl={mobileMoreAnchorEl}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        id={mobileMenuId}
+        keepMounted
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={Boolean(mobileMoreAnchorEl)}
+        onClose={() => this.closeMobileMenu()}
+      >
+        <MenuList>
+        {MENUS.map((menu, idx) => (
+          <MenuItem key={idx} onClick={() => this.onClickMenu(menu)}>
+            { menu.label }
+          </MenuItem>
+        ))}
+        </MenuList>
+      </Menu>
     );
   }
 
@@ -274,16 +319,18 @@ export class Content extends Component {
             <div className={classes.grow} />
           {!isTablet && !isMobile ?
             <Toolbar>
-              <Button className={classes.menu} variant="text" color="inherit">About</Button>
-              <Button className={classes.menu} variant="text" color="inherit">Contact</Button>
-              <Button className={classes.menu} variant="text" color="inherit">Help</Button>
+            {MENUS.map((menu, idx) => (
+              <Button key={idx} className={classes.menu} variant="text" color="inherit" onClick={() => this.onClickMenu(menu)}>
+                { menu.label }
+              </Button>
+            ))}
             </Toolbar>
           :
             <IconButton
               aria-label="show more"
-              // aria-controls={mobileMenuId}
+              aria-controls={mobileMenuId}
               aria-haspopup="true"
-              // onClick={handleMobileMenuOpen}
+              onClick={(evt) => this.openMobileMenu(evt)}
               color="inherit"
             >
               <MenuIcon />
@@ -359,7 +406,7 @@ export class Content extends Component {
           <DialogContent dividers>
           { 
             {
-              'UPLOAD':  () => <UploadPanel isMobile />,
+              'UPLOAD':  () => <UploadPanel isMobile={isMobile} />,
               'CLASSES': () => <Classes />,
               'LOADING': () => <LoadingProgress />,
               'ERROR':   () => <ErrorReport />,
