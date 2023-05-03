@@ -127,7 +127,7 @@ const UploadPanel = ({ isMobile }) => {
         <ul>
           <li>The first column is the gene <code>name</code>.</li>
           <li>The other columns must be numeric.</li>
-          <li>If there are additional columns, such as <code>description</code>, you will have to set them as "ignored" in the next step.</li>
+          <li>If there are additional columns, such as <code>description</code>, you will have to set them as &ldquo;ignored&rdquo; in the next step.</li>
         </ul>
       </FormatContainer>
     </>
