@@ -19,7 +19,7 @@ describe('Gene Set Queries', () => {
   });
 
   it('gets a network', async () => {
-    const network = await Datastore.getNetwork(networkID, true);
+    const network = await Datastore.getNetwork(networkID, { full: true });
     expect(network.networkIDStr).to.eql(networkID);
     expect(network.network.elements.nodes.length).to.eql(5);
     expect(network.network.elements.edges.length).to.eql(4);

@@ -151,8 +151,9 @@ http.get('/sample-data', async function(req, res, next) {
 http.get('/:netid', async function(req, res, next) {
   try {
     const { netid } = req.params;
-    const { full } = req.query;
-    const network = await Datastore.getNetwork(netid, full);
+    const { nodeLimit=50 } = req.query;
+
+    const network = await Datastore.getNetwork(netid, { nodeLimit });
     if(!network) {
       res.sendStatus(404);
     } else {

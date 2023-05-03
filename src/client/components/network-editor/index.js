@@ -53,26 +53,18 @@ export class NetworkEditor extends Component {
     const loadNetwork = async () => {
       console.log('Loading...');
 
-      const res = await fetch(`/api/${id}` + (full ? '?full=true' : ''));
+      const res = await fetch(`/api/${id}`);
       if(!res.ok) {
         location.href = '/';
         return;
       }
 
-      const result = await res.json();
+      const networkJson = await res.json();
 
-      if(full) { 
-        // Shows entire network, no filtering, no collapsing of clusters
-        this.addClusterNodesToNetworkJSON(result);
-        this.cy.add(result.network.elements);
-      } else {
-        // Shows the "summary" network with clusters collapsed, and limited to a max number of nodes
-        this.setClusterNodeNamesForSummaryNetwork(result);
-        this.limitNodesByQValue(result.summaryNetwork.elements, 50);
-        this.cy.add(result.summaryNetwork.elements);
-      }
+      this.setClusterNodeNamesForSummaryNetwork(networkJson);
 
-      this.cy.data({ name: result.networkName, parameters: result.parameters });
+      this.cy.add(networkJson.summaryNetwork.elements);
+      this.cy.data({ name: networkJson.networkName, parameters: networkJson.parameters });
 
       // Set network style
       const style = createNetworkStyle(this.cy);
@@ -85,12 +77,6 @@ export class NetworkEditor extends Component {
       this.controller.bus.emit('networkLoaded', true);
 
       await this.controller.applyLayout();
-
-      // Lays out the nodes in a grid sorted by q-value
-      // this.cy.nodes()
-      //   .sort((a,b) => a.data('padj') - b.data('padj'))
-      //   .layout({ name: 'grid' })
-      //   .run();
 
       console.log('Successful load from DB');
       console.log('End of editor sync initial phase');
@@ -112,9 +98,23 @@ export class NetworkEditor extends Component {
     window.addEventListener("resize", this.handleResize);
   }
 
+
   setClusterNodeNamesForSummaryNetwork(result) {
+    function createClusterLabelMap() {
+      if(!result.clusterLabels)
+        return new Map();
+      
+      let labels;
+      if(Array.isArray(result.clusterLabels))
+        labels = result.clusterLabels[result.clusterLabels.length - 1].labels;
+      else
+        labels = result.clusterLabels.labels;
+        
+      return new Map(labels.map(obj => [obj.clusterId, obj.label]));
+    }
+
     const { summaryNetwork } = result;
-    const clusterLabelMap = this.getClusterLabels(result);
+    const clusterLabelMap = createClusterLabelMap();
 
     summaryNetwork.elements.nodes.forEach(node => {
       const clusterID = node.data['mcode_cluster_id'];
@@ -126,53 +126,6 @@ export class NetworkEditor extends Component {
     });
   }
 
-  limitNodesByQValue(elements, max) {
-    // Take top nodes sorted by q-value
-    elements.nodes.sort((a,b) => a.data.padj - b.data.padj);
-    elements.nodes = elements.nodes.slice(0, max);
-
-    const nodeIDs = new Set(elements.nodes.map(n => n.data.id));
-    elements.edges = elements.edges.filter(e => nodeIDs.has(e.data.source) && nodeIDs.has(e.data.target));
-  }
-
-  addClusterNodesToNetworkJSON(result) {
-    const { network } = result;
-    const clusterLabelMap = this.getClusterLabels(result);
-
-    const clusterMap = new Map();
-
-    network.elements.nodes.forEach(node => {
-      const clusterID = node.data['mcode_cluster_id'];
-      if(clusterID) {
-        if(!clusterMap.has(clusterID)) {
-          clusterMap.set(clusterID, [node]);
-        } else {
-          clusterMap.get(clusterID).push(node);
-        }
-      }
-    });
-
-    clusterMap.forEach((nodes, clusterID) => {
-      const label = clusterLabelMap.get(clusterID);
-      network.elements.nodes.push({ data: { id: clusterID, label } });
-      nodes.forEach(node => {
-        node.data['parent'] = clusterID;
-      });
-    });
-  }
-
-  getClusterLabels(result) {
-    if(!result.clusterLabels)
-      return new Map();
-    
-    let labels;
-    if(Array.isArray(result.clusterLabels))
-      labels = result.clusterLabels[result.clusterLabels.length - 1].labels;
-    else
-      labels = result.clusterLabels.labels;
-      
-    return new Map(labels.map(obj => [obj.clusterId, obj.label]));
-  }
 
   onCyEvents() {
     const secret = this.secret;
