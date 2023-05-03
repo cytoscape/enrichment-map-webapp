@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
-import tippy, { sticky } from 'tippy.js';
 
-import { CONTROL_PANEL_WIDTH, DEFAULT_PADDING } from './defaults';
+import { CONTROL_PANEL_WIDTH, DEFAULT_PADDING } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import GeneListPanel from './gene-list-panel';
@@ -13,7 +12,6 @@ import { makeStyles } from '@material-ui/core/styles';
 import { Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from "material-ui-search-bar";
-import { nodeLabel } from './network-style';
 
 
 const sortOptions = {
