@@ -82,7 +82,7 @@ function ClassSelector({ columns, contents, format, onClassesChanged, isMobile }
     <Grid container direction="column" spacing={4}>
       <Grid item xs={12}>
         <Typography variant="body1">
-          Define two sample groups that will be compared against each other (<i>Group A</i> vs <i>Group B</i>):
+          Define two sample groups that will be compared against each other &#8212; <i>Group A</i> (experimental) vs <i>Group B</i> (control):
         </Typography>
       </Grid>
       <Grid item xs={12}>
