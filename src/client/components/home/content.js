@@ -22,7 +22,6 @@ import NavigateNextIcon from '@material-ui/icons/NavigateNext';
 import PlayCircleFilledIcon from '@material-ui/icons/PlayCircleFilled';
 import WarningIcon from '@material-ui/icons/Warning';
 import FormatQuoteIcon from '@material-ui/icons/FormatQuote';
-import FileCopyOutlinedIcon from '@material-ui/icons/FileCopyOutlined';
 import { AppLogoIcon } from '../svg-icons';
 
 import classNames from 'classnames';
@@ -43,11 +42,9 @@ const MENUS = [
 ];
 const mobileMenuId = 'primary-menu-mobile';
 
-const CITATION = 'Merico, D., Isserlin, R., Stueker, O., Emili, A., & Bader, G. D. (2010). Enrichment map: a network-based method for gene-set enrichment visualization and interpretation. PloS one, 5(11), e13984. https://doi.org/10.1371/journal.pone.0013984';
-
 const LOGOS = [
   { src: "/images/bader-lab-logo.svg", alt: "Bader Lab logo", href: "https://baderlab.org/" },
-  { src: "/images/cytoscape-consortium-logo.svg", alt: "Cytoscape Consortium logo", href: "http://www.cytoscapeconsortium.org/" },
+  { src: "/images/cytoscape-consortium-logo.svg", alt: "Cytoscape Consortium logo", href: "https://cytoscape.org/" },
   { src: "/images/donnelly-logo.png", alt: "The Donnelly Centre logo", href: "https://thedonnellycentre.utoronto.ca/" },
   { src: "/images/uoft-logo.svg", alt: "UofT logo", href: "https://www.utoronto.ca/" },
 ];
@@ -364,7 +361,7 @@ export class Content extends Component {
                 <Typography variant="body1">We were unable to process your experimental data.</Typography>
                 <br />
                 <Typography variant="body2" color="secondary">
-                  Please ensure that your data is formatted properly,<br />either in <i>RNA-Seq Expression</i> format or in <i>Pre-Ranked Gene</i> format.
+                  Please ensure that your data is formatted properly,<br />either in <i>RNA&#8209;Seq Expression</i> format or in <i>Pre-Ranked Gene</i> format.
                 </Typography>
               </>
             : errorMessages.slice(0,7).map((message, index) =>
@@ -466,20 +463,15 @@ export class Content extends Component {
     const EasyCitation = () =>
       <Grid container direction="column" alignItems="flex-end">
         <Paper className={classes.cite} variant="outlined">
-          <FormatQuoteIcon className={classes.citeLogo} /><br />
-          <Link className={classes.citeLink} href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2981572/" {...linkoutProps}>
-            { CITATION }
-          </Link>
+          <FormatQuoteIcon className={classes.citeLogo} />
+          <Typography className={classes.citeText}>
+            <Link className={classes.citeLink} href="https://doi.org/10.1038/s41596-018-0103-9" {...linkoutProps}>
+              Reimand, J., Isserlin, R. et al.&nbsp;
+              Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, Cytoscape and EnrichmentMap.&nbsp;
+              Nat Protoc 14, 482–517 (2019).
+            </Link>&nbsp;
+          </Typography>
         </Paper>
-        <Button
-          className={classes.copyButton}
-          aria-label="copy citation"
-          variant="text"
-          startIcon={<FileCopyOutlinedIcon />}
-          onClick={() => navigator.clipboard.writeText(CITATION)}
-        >
-          Copy
-        </Button>
       </Grid>
     ;
 
@@ -508,11 +500,11 @@ export class Content extends Component {
               <Grid item xs={isMobile ? 12 : 6}>
                 <Grid container direction="column" justifyContent="center" alignItems="center">
                   <Grid item>
-                    <Typography variant="h1" className={classes.tagline}>Enrichment analysis for your RNA-Seq</Typography>
+                    <Typography variant="h1" className={classes.tagline}>Enrichment analysis for your RNA&#8209;Seq</Typography>
                   </Grid>
                   <Grid item>
                     <p className={classes.description}>
-                      Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA-Seq experiment.
+                      Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA&#8209;Seq experiment.
                     </p>
                   </Grid>
                   <Grid item className={classes.section}>
@@ -716,12 +708,6 @@ const useStyles = theme => ({
   demoButton: {
     textTransform: 'unset',
   },
-  copyButton: {
-    marginTop: theme.spacing(0.5),
-    fontSize: '0.75rem',
-    color: theme.palette.text.secondary,
-    filter: 'opacity(50%)',
-  },
   progress: {
     display: 'flex',
     flexDirection: 'column',
@@ -765,10 +751,14 @@ const useStyles = theme => ({
     width: 30,
     height: 30,
   },
-  citeLink: {
-    fontSize: '0.75rem',
+  citeText: {
+    marginTop: theme.spacing(2),
+    fontSize: '0.85rem',
     color: theme.palette.text.secondary,
     filter: 'opacity(50%)',
+  },
+  citeLink: {
+    color: theme.palette.text.primary,
   },
   footer: {
     marginTop: theme.spacing(4),
