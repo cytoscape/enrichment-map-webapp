@@ -118,7 +118,7 @@ const useStyles = makeStyles((theme) => ({
   rankBarText: {
     position: "absolute",
     top: 0,
-    fontSize: "0.8em",
+    fontSize: "0.75rem",
     color: "#999",
     mixBlendMode: 'difference',
     marginLeft: '0.125em',
@@ -136,13 +136,13 @@ const useStyles = makeStyles((theme) => ({
     whiteSpace:'nowrap', 
     overflow:'hidden', 
     textOverflow:'ellipsis',
-    fontSize: '0.8em',
+    fontSize: '0.75rem',
     color: 'rgba(255, 255, 255, 0.7)'
   },
   pathwayNameTitle: {
     marginTop: '0.333em',
     color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: '0.8em'
+    fontSize: '0.75rem'
   },
   '@keyframes blinker': {
     from: {
