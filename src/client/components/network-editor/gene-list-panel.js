@@ -129,11 +129,20 @@ const useStyles = makeStyles((theme) => ({
     listStyleType: 'none',
     margin: 0,
     padding: 0,
+    paddingLeft: '1em',
+    borderLeft: '1px solid #3A393A'
   },
   pathwayNameLi: {
     whiteSpace:'nowrap', 
     overflow:'hidden', 
-    textOverflow:'ellipsis'
+    textOverflow:'ellipsis',
+    fontSize: '0.8em',
+    color: 'rgba(255, 255, 255, 0.7)'
+  },
+  pathwayNameTitle: {
+    marginTop: '0.333em',
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: '0.8em'
   },
   '@keyframes blinker': {
     from: {
@@ -221,11 +230,14 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   const NodeList = (params) => {
     if(!params.nodeIDs) 
       return null;
-    const selector = params.nodeIDs.map(id => `[id="${id}"]`).join(',');
-    const nodes = controller.cy.nodes(selector);
+    
+      const selector = params.nodeIDs.map(id => `[id="${id}"]`).join(',');
+    const byName = (a, b) => nodeLabel(a) < nodeLabel(b) ? -1 : 1;
+    const nodes = controller.cy.nodes(selector).sort(byName);
+    
     // The nodeLabel() function is memoized, no issue to call it twice below.
     return <>
-      <Typography variant="body2" color="textPrimary">
+      <Typography variant="body2" color="textPrimary" className={classes.pathwayNameTitle}>
         Gene Sets ({nodes.length}):
       </Typography>
       <ul className={classes.pathwayNameUl}>
