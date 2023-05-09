@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
-import { CONTROL_PANEL_WIDTH } from './defaults';
+import { CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import LeftDrawer from './left-drawer';

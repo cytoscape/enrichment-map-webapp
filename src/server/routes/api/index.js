@@ -151,8 +151,9 @@ http.get('/sample-data', async function(req, res, next) {
 http.get('/:netid', async function(req, res, next) {
   try {
     const { netid } = req.params;
-    const { full } = req.query;
-    const network = await Datastore.getNetwork(netid, full);
+    const { nodeLimit=50 } = req.query;
+
+    const network = await Datastore.getNetwork(netid, { nodeLimit });
     if(!network) {
       res.sendStatus(404);
     } else {
@@ -330,6 +331,7 @@ async function runFGSEArnaseq(countsData, classes, contentType) {
     throw new Error("Error running fgsea rnaseq service.");
   }
   const json = await response.json();
+  console.log(JSON.stringify(json, null, 2));
   return json;
 }
 
@@ -343,11 +345,9 @@ async function runEM(fgseaResults) {
       fgseaResults
     }],
     parameters: {
-      // Reduces number of edges
-      similarityMetric: "JACCARD", 
-      similarityCutoff: 0.25,
-      // Reduces number of nodes
-      qvalueFilterMaxNodes: 800,
+      // These parameters correspond to the fields in EMCreationParametersDTO
+      // similarityMetric: "JACCARD", 
+      // similarityCutoff: 0.25,
     }
   };
 

@@ -118,6 +118,7 @@ class Datastore {
 
     networkJson['_id'] = networkID.bson;
     networkJson['networkIDStr'] = networkID.string;
+    networkJson['creationTime'] = new Date();
     
     if(networkName)
       networkJson['networkName'] = networkName;
@@ -277,17 +278,38 @@ class Datastore {
   /**
    * Returns the entire network document. 
    */
-  async getNetwork(networkIDString, full) {
+  async getNetwork(networkIDString, options) {
+    const { nodeLimit, full } = options;
+
     const networkID = makeID(networkIDString);
     const network = await this.db
       .collection(NETWORKS_COLLECTION)
       .findOne(
         { _id: networkID.bson },
-        full ? {} : { projection: { network: false } }
+        full ? { projection: { summaryNetwork: false } } 
+             : { projection: { network: false } }
       );
-      
+    
+    if(!network) {
+      return null;
+    }
+
+    if(nodeLimit) {
+      this.limitNodesByNES(full ? network.network : network.summaryNetwork, nodeLimit);
+    }
+
     return network;
   }
+
+  limitNodesByNES(network, nodeLimit) {
+    const { elements } = network;
+    // Take top nodes sorted by NES magnitude
+    elements.nodes.sort((a, b) => Math.abs(b.data.NES) - Math.abs(a.data.NES));
+    elements.nodes = elements.nodes.slice(0, nodeLimit);
+    const nodeIDs = new Set(elements.nodes.map(n => n.data.id));
+    elements.edges = elements.edges.filter(e => nodeIDs.has(e.data.source) && nodeIDs.has(e.data.target));
+  }
+
 
   /**
    * Returns the entire gene/ranks document. 
