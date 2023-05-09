@@ -1,11 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import theme from '../../theme';
+import { linkoutProps } from '../defaults';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { Grid, Paper, Typography } from '@material-ui/core';
+import { Grid, Paper, Typography, Link } from '@material-ui/core';
 import { Table, TableHead, TableRow, TableCell, TableBody } from '@material-ui/core';
 
 const useStyles = makeStyles((theme) => ({
@@ -28,6 +28,9 @@ const useStyles = makeStyles((theme) => ({
   subtitle: {
     marginTop: theme.spacing(4),
     marginBottom: theme.spacing(1),
+  },
+  linkout: {
+    color: theme.palette.text.primary,
   },
 }));
 
@@ -88,23 +91,42 @@ const FormatContainer = ({ isMobile, title, data, children }) => {
   const classes = useStyles();
 
   return (
-    <>
-      <Typography variant="subtitle1" className={classes.subtitle}>{ title }</Typography>
-      <Grid container direction={isMobile ? 'column' : 'row'} alignItems="flex-start" justifyContent="space-between" spacing={isMobile ? 2 : 0}>
-        <Grid item sm={6}>
-          <SampleTable data={data} />
-        </Grid>
-        <Grid item sm={6}>
-          <Typography component="div" variant="body2" color="secondary">
-            { children }
-          </Typography>
+    <Grid container direction="column" alignItems="flex-start">
+      <Grid item>
+        <Typography variant="subtitle1" className={classes.subtitle}>{ title }</Typography>
+      </Grid>
+      <Grid item>
+        <Grid
+          container
+          direction={isMobile ? 'column' : 'row'}
+          alignItems={isMobile ? 'center' : 'flex-start'}
+          justifyContent="space-between"
+          spacing={isMobile ? 2 : 0}
+        >
+          <Grid item sm={6}>
+            <SampleTable data={data} />
+          </Grid>
+          <Grid item sm={6}>
+            <Typography component="div" variant="body2" color="secondary">
+              { children }
+            </Typography>
+          </Grid>
         </Grid>
       </Grid>
-    </>
+    </Grid>
   );
 };
 
 const UploadPanel = ({ isMobile }) => {
+  const classes = useStyles();
+
+  const GeneNameInfo = () =>
+    <>
+      The first column is the gene <code>name</code>&nbsp;
+      &#40;<Link href="http://www.ensembl.org/Homo_sapiens/Info/Index" className={classes.linkout} {...linkoutProps}>Ensembl</Link> or&nbsp;
+      <Link href="https://www.genenames.org/" className={classes.linkout} {...linkoutProps}>HGNC</Link> IDs, for Human species only&#41;.
+    </>;
+
   return (
     <>
       <Typography component="p" variant="body1">
@@ -118,16 +140,16 @@ const UploadPanel = ({ isMobile }) => {
       <FormatContainer isMobile={isMobile} data={RANKED_ROWS} title="Format 1 - Pre-Ranked Gene List">
         It must have exactly 2 columns:
         <ul>
-          <li>The first column is the <code>gene</code> name.</li>
+          <li><GeneNameInfo /></li>
           <li>The second column is the numeric <code>rank</code>.</li>
         </ul>
       </FormatContainer>
       <FormatContainer isMobile={isMobile} data={RNASEQ_ROWS} title="Format 2 - RNA-Seq Expression Data">
         It must have 3 or more columns:
         <ul>
-          <li>The first column is the gene <code>name</code>.</li>
+          <li><GeneNameInfo /></li>
           <li>The other columns must be numeric.</li>
-          <li>If there are additional columns, such as <code>description</code>, you will have to set them as &ldquo;ignored&rdquo; in the next step.</li>
+          <li>If there are additional columns, you will have to set them as &ldquo;ignored&rdquo; in the next step.</li>
         </ul>
       </FormatContainer>
     </>
