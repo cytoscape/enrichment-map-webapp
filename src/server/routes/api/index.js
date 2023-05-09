@@ -314,6 +314,7 @@ async function runFGSEArnaseq(countsData, classes, contentType) {
     throw new Error("Error running fgsea rnaseq service.");
   }
   const json = await response.json();
+  console.log(JSON.stringify(json, null, 2));
   return json;
 }
 
@@ -327,11 +328,9 @@ async function runEM(fgseaResults) {
       fgseaResults
     }],
     parameters: {
-      // Reduces number of edges
-      similarityMetric: "JACCARD", 
-      similarityCutoff: 0.25,
-      // Reduces number of nodes
-      qvalueFilterMaxNodes: 800,
+      // These parameters correspond to the fields in EMCreationParametersDTO
+      // similarityMetric: "JACCARD", 
+      // similarityCutoff: 0.25,
     }
   };
 
