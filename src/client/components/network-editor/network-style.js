@@ -23,9 +23,15 @@ function getMinMaxValues(cy, attr) {
 }
 
 export const nodeLabel = _.memoize(node => {
-  const text = (node.data('label') ?? node.data('name')).replace(/_/g, ' ');
+  const label = (() => {
+    const label = node.data('label');
+    if(label)
+      return label;
+    const name = node.data('name');
+    return Array.isArray(name) ? name[0] : name;
+  })();
+  const text = label.replace(/_/g, ' ');
   const percent = text.indexOf('%');
-  
   return (percent > 0 ? text.substring(0, percent) : text).toLowerCase();
 }, node => node.id());
 
