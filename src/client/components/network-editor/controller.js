@@ -184,8 +184,8 @@ export class NetworkEditorController {
       });
       this.geneMiniSearch.addAll(genes);
 
-      this.lastGeneSet = res;
-      this.lastGeneSetNames = [];
+      this.lastGeneSet1 = res;
+      this.lastGeneSetNames1 = [];
       this.geneListIndexed = true;
       this.bus.emit('geneListIndexed');
     }
@@ -195,26 +195,35 @@ export class NetworkEditorController {
     geneSetNames = geneSetNames || [];
     const nameSet = new Set(geneSetNames);
 
-    if (this.lastGeneSet == null || !_.isEqual(this.lastGeneSetNames, nameSet)) {
-      // New query...
-      const res = await fetch(`/api/${this.networkIDStr}/genesets`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          geneSets: geneSetNames
-        })
-      });
-      if (res.ok) {
-        const geneSet = await res.json();
-        const rankedGenes = geneSet.genes.filter(g => g.rank);
-        geneSet.genes = rankedGenes;
-        
-        this.lastGeneSet = geneSet;
-        this.lastGeneSetNames = nameSet;
-        return geneSet;
-      }
-    } else {
-      return this.lastGeneSet;
+    if(this.lastGeneSet1 && _.isEqual(this.lastGeneSetNames1, nameSet)) {
+      return this.lastGeneSet1;
+    }
+    if(this.lastGeneSet2 && _.isEqual(this.lastGeneSetNames2, nameSet)) {
+      return this.lastGeneSet2;
+    }
+
+    // New query...
+    const res = await fetch(`/api/${this.networkIDStr}/genesets`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        geneSets: geneSetNames
+      })
+    });
+    if (res.ok) {
+      const geneSet = await res.json();
+      const rankedGenes = geneSet.genes.filter(g => g.rank);
+      geneSet.genes = rankedGenes;
+      
+      // We cache the last two queries because clicking on an 
+      // edge queries for both source/target nodes.
+      this.lastGeneSet2 = this.lastGeneSet1;
+      this.lastGeneSetNames2 = this.lastGeneSetNames1;
+
+      this.lastGeneSet1 = geneSet;
+      this.lastGeneSetNames1 = nameSet;
+
+      return geneSet;
     }
   }
 }

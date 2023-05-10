@@ -94,15 +94,25 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     setGenes(sortGenes(genes, sortRef.current));
   };
 
+  const fetchGeneListForEdge = async (geneSetNamesSource, geneSetNamesTarget) => {
+    const resSource = await controller.fetchGeneList(geneSetNamesSource);
+    const resTarget = await controller.fetchGeneList(geneSetNamesTarget);
+    const genesSource = resSource ? resSource.genes : [];
+    const genesTarget = resTarget ? resTarget.genes : [];
+    const genesCommon = _.intersectionBy(genesSource, genesTarget, x => x.gene);
+    setGenes(sortGenes(genesCommon, sortRef.current));
+    setGenes(sortGenes(genesCommon, sortRef.current));
+  };
+
   const fetchAllRankedGenes = async () => {
     fetchGeneList([]);
   };
 
   const fetchGeneListFromNodeOrEdge = async (ele) => {
-    const gsNames = [];
     const getNames = ele => ele.data('name').split(',');
 
     if (ele.group() === 'nodes') {
+      const gsNames = [];
       const children = ele.children();
      
       if (children.length > 0) { // Compound node (cluster)...
@@ -110,14 +120,15 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
       } else { // Regular node (gene set)...
         gsNames.push(...getNames(ele));
       }
+
+      fetchGeneList(gsNames);
+
     } else if (ele.group() === 'edges') {
       // Edge (get overlapping genes)...
-      gsNames.push(...getNames(ele.source()));
-      gsNames.push(...getNames(ele.target()));
-    }
-    
-    if (gsNames.length > 0) {
-      fetchGeneList(gsNames);
+      const gsNamesSource = [...getNames(ele.source())];
+      const gsNamesTarget = [...getNames(ele.target())];
+
+      fetchGeneListForEdge(gsNamesSource, gsNamesTarget);
     }
   };
 
