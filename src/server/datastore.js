@@ -244,7 +244,13 @@ class Datastore {
         { $replaceWith: { path: "$summaryNetwork.elements.nodes.data" } },
         { $unwind: { path: "$path" } },
         { $replaceRoot: { newRoot: "$path" } },
-        { $addFields: { splitNames: { $split: [ "$name", "," ] } } },
+        { $addFields: { splitNames: { 
+            $cond: {
+              if: { $isArray: "$name" },
+              then: { $getField: "name" },
+              else: { $split: [ "$name", "," ] }
+            }
+        } } },
         { $unwind: { path: "$splitNames" } },
       
         // Lookup the genes contained in each node
