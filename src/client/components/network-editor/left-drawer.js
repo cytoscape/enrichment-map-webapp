@@ -13,6 +13,8 @@ import { Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from "material-ui-search-bar";
 
+import { GeneSetIcon, VennIntersectionIcon } from '../svg-icons';
+import NetworkIcon from '@material-ui/icons/Share';
 
 const sortOptions = {
   down: {
@@ -53,6 +55,9 @@ const useStyles = makeStyles((theme) => ({
   },
   header: {
     padding: '0.5em',
+  },
+  title: {
+    paddingLeft: theme.spacing(0.5),
   },
   geneList: {
     overflowY: "auto",
@@ -279,17 +284,36 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     const totalGenes = genes != null ? genes.length : -1;
     const sortDisabled = totalGenes <= 0;
 
+    const isNetEleSelected = cy.elements().filter(':selected').length > 0;
+    const isIntersection = cy.elements().filter('edge:selected').length > 0;
+    let iconTooltip = 'All Gene Sets';
+    let TitleIcon = NetworkIcon;
+    
+    if (isNetEleSelected) {
+      iconTooltip = isIntersection ? 'Intersection\u2014genes that are common to both gene sets' : 'Gene Set';
+      TitleIcon = isIntersection ? VennIntersectionIcon : GeneSetIcon;
+    }
+    
     return (
-      <Grid container direction="row" justifyContent="space-between" alignItems='center' className={classes.header}>
+      <Grid container direction="row" justifyContent="space-between" alignItems="center" className={classes.header}>
         <Grid item>
-          <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
-            Genes&nbsp;
-            {totalGenes >= 0 && (
-              <Typography display="inline" variant="body2" color="textSecondary">
-                 ({ totalGenes })
+          <Grid container direction="row" alignItems="center" spacing={1}>
+            <Tooltip arrow placement="bottom" title={iconTooltip}>
+              <Grid item style={{lineHeight: 0}}>
+                <TitleIcon size="small" color="secondary" />
+              </Grid>
+            </Tooltip>
+            <Grid>
+              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
+                Genes&nbsp;
+              {totalGenes >= 0 && (
+                <Typography display="inline" variant="body2" color="textSecondary">
+                  ({ totalGenes })
+                </Typography>
+              )}
               </Typography>
-            )}
-          </Typography>
+            </Grid>
+          </Grid>
         </Grid>
         <Grid item>
           <ToggleButtonGroup
@@ -297,13 +321,13 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             exclusive
             onChange={handleSort}
           >
-            {Object.entries(sortOptions).map(([k, { label, icon }]) => (
-              <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" style={{width:70}}>
-                <Tooltip arrow placement="top" title={label}>
-                  {icon}
-                </Tooltip>
-              </ToggleButton>
-            ))}
+          {Object.entries(sortOptions).map(([k, { label, icon }]) => (
+            <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" style={{width:70}}>
+              <Tooltip arrow placement="top" title={label}>
+                {icon}
+              </Tooltip>
+            </ToggleButton>
+          ))}
           </ToggleButtonGroup>
         </Grid>
       </Grid>
@@ -339,9 +363,9 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             <GeneListHeader />
           </div>
           <div className={classes.drawerSection}>
-            {networkLoaded && geneListIndexed && (
-              <GeneListPanel controller={controller} genes={genes} sort={sort} />
-            )}
+          {networkLoaded && geneListIndexed && (
+            <GeneListPanel controller={controller} genes={genes} sort={sort} />
+          )}
           </div>
         </div>
       </Drawer>
