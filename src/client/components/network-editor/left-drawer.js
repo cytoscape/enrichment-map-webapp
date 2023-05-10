@@ -292,7 +292,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     }
     
     return (
-      <Grid container direction="row" justifyContent="space-between" alignItems='center' className={classes.header}>
+      <Grid container direction="row" justifyContent="space-between" alignItems="center" className={classes.header}>
         <Grid item>
           <Grid container direction="row" alignItems="center" spacing={1}>
             <Tooltip arrow placement="bottom" title={iconTooltip}>
@@ -318,13 +318,13 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             exclusive
             onChange={handleSort}
           >
-            {Object.entries(sortOptions).map(([k, { label, icon }]) => (
-              <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" style={{width:70}}>
-                <Tooltip arrow placement="top" title={label}>
-                  {icon}
-                </Tooltip>
-              </ToggleButton>
-            ))}
+          {Object.entries(sortOptions).map(([k, { label, icon }]) => (
+            <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" style={{width:70}}>
+              <Tooltip arrow placement="top" title={label}>
+                {icon}
+              </Tooltip>
+            </ToggleButton>
+          ))}
           </ToggleButtonGroup>
         </Grid>
       </Grid>
@@ -360,9 +360,9 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             <GeneListHeader />
           </div>
           <div className={classes.drawerSection}>
-            {networkLoaded && geneListIndexed && (
-              <GeneListPanel controller={controller} genes={genes} sort={sort} />
-            )}
+          {networkLoaded && geneListIndexed && (
+            <GeneListPanel controller={controller} genes={genes} sort={sort} />
+          )}
           </div>
         </div>
       </Drawer>
