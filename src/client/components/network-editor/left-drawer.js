@@ -109,7 +109,10 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
   };
 
   const fetchGeneListFromNodeOrEdge = async (ele) => {
-    const getNames = ele => ele.data('name').split(',');
+    const getNames = ele => {
+      const name = ele.data('name');
+      return Array.isArray(name) ? name : name.split(',');
+    };
 
     if (ele.group() === 'nodes') {
       const gsNames = [];
