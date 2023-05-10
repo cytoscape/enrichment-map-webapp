@@ -652,7 +652,7 @@ const useStyles = theme => ({
     maxHeight: 700,
     marginTop: 0,
     marginBottom: 0,
-    padding: theme.spacing(2),
+    padding: theme.spacing(4),
     paddingTop: 0,
     paddingBottom: 0,
     textAlign: 'left',
@@ -663,8 +663,7 @@ const useStyles = theme => ({
       paddingBottom: theme.spacing(1),
     },
     [theme.breakpoints.down('xs')]: {
-      paddingTop: theme.spacing(2),
-      paddingBottom: theme.spacing(2),
+      padding: theme.spacing(2),
     },
   },
   tagline: {
@@ -692,9 +691,6 @@ const useStyles = theme => ({
   },
   section: {
     width: '100%',
-    [theme.breakpoints.up('sm')]: {
-      marginTop: theme.spacing(2.5),
-    },
     [theme.breakpoints.down('xs')]: {
       textAlign: 'center',
       alignItems: 'center',
