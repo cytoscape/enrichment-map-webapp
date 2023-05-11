@@ -231,14 +231,17 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
     if(!params.nodeIDs) 
       return null;
     
-      const selector = params.nodeIDs.map(id => `[id="${id}"]`).join(',');
+    const selector = params.nodeIDs.map(id => `[id="${id}"]`).join(',');
     const byName = (a, b) => nodeLabel(a) < nodeLabel(b) ? -1 : 1;
     const nodes = controller.cy.nodes(selector).sort(byName);
-    
+
     // The nodeLabel() function is memoized, no issue to call it twice below.
     return <>
       <Typography variant="body2" color="textPrimary" className={classes.pathwayNameTitle}>
-        Gene Sets ({nodes.length}):
+        { nodes.length == 0
+          ? "Not contained in network"
+          : `Gene Sets (${nodes.length}):`
+        }
       </Typography>
       <ul className={classes.pathwayNameUl}>
         { nodes.map(node => 
