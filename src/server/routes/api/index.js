@@ -5,9 +5,7 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-
 import Datastore, { DB_1 } from '../../datastore.js';
-
 import { 
   EM_SERVICE_URL, 
   FGSEA_PRERANKED_SERVICE_URL, 
@@ -15,9 +13,7 @@ import {
   BRIDGEDB_URL,
 } from '../../env.js';
 
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
 const http = Express.Router();
 
 // Endpoints accept TSV or CSV
@@ -25,7 +21,6 @@ const dataParser = bodyParser.text({
   type: ['text/tab-separated-values', 'text/csv'],
   limit: '50mb' 
 });
-
 
 /*
  * This is just for pinging the server.
@@ -41,92 +36,6 @@ http.get('/iamerror', async function(req, res) {
   res.sendStatus(500);
 });
 
-
-/*
- * Runs the FGSEA/EnrichmentMap algorithms, saves the 
- * created network, then returns its ID.
- */
-http.post('/create/preranked', dataParser, async function(req, res, next) {
-  try {
-    const { networkName } = req.query;
-    const contentType = req.get('Content-Type'); // use same content type with FGSEA service
-    let body = req.body;
-    const tag = Date.now();
-
-    console.log('/create/preranked ' + tag + ', Content-Type:' + contentType);
-    console.time('/create/preranked ' + tag);
-    
-    if(isEnsembl(body)) {
-      console.time('bridgedb ' + tag );
-      body = await runEnsemblToHGNCMapping(body, contentType);
-      console.timeEnd('bridgedb ' + tag );
-    }
-
-    console.time('fgsea_preranked_service ' + tag);
-    const { pathways } = await runFGSEApreranked(body, contentType);
-    console.timeEnd('fgsea_preranked_service ' + tag);
-
-    console.time('em_service ' + tag);
-    const networkJson = await runEM(pathways);
-    console.timeEnd('em_service ' + tag);
-
-    console.time('mongo ' + tag);
-    const netID = await Datastore.createNetwork(networkJson, networkName);
-    const delimiter = contentType === 'text/csv' ? ',' : '\t';
-    const rankedGeneList = Datastore.rankedGeneListToDocument(body, delimiter);
-    await Datastore.createRankedGeneList(rankedGeneList, netID);
-    console.timeEnd('mongo ' + tag);
-
-    res.send(netID);
-    console.timeEnd('/create/preranked ' + tag);
-  } catch (err) {
-    next(err);
-  }
-});
-
-/*
- * Runs the FGSEA/EnrichmentMap algorithms, saves the 
- * created network, then returns its ID.
- */
-http.post('/create/rnaseq', dataParser, async function(req, res, next) {
-  try {
-    const { classes, networkName } = req.query;
-    const contentType = req.get('Content-Type'); // use same content type with FGSEA service
-    let body = req.body;
-    const tag = Date.now();
-
-    console.log('/create/rnaseq ' + tag + ', Content-Type:' + contentType);
-    console.time('/create/rnaseq ' + tag);
-
-    if(isEnsembl(body)) {
-      console.time('bridgedb ' + tag );
-      body = await runEnsemblToHGNCMapping(body, contentType);
-      console.timeEnd('bridgedb ' + tag );
-    }
-
-    console.time('fgsea_rnaseq_service ' + tag);
-    const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
-    console.timeEnd('fgsea_rnaseq_service ' + tag);
-
-    sendMessagesToSentry('fgsea', messages);
-
-    console.time('em_service ' + tag);
-    const networkJson = await runEM(pathways);
-    console.timeEnd('em_service ' + tag);
-
-    console.time('mongo ' + tag);
-    const netID = await Datastore.createNetwork(networkJson, networkName);
-    const rankedGeneList = Datastore.fgseaServiceGeneRanksToDocument(ranks);
-    await Datastore.createRankedGeneList(rankedGeneList, netID);
-    console.timeEnd('mongo ' + tag);
-
-    res.send(netID);
-    console.timeEnd('/create/rnaseq ' + tag);
-  } catch (err) {
-    next(err);
-  }
-});
-
 /**
  * Get file names of sample input data.
  */
@@ -134,10 +43,9 @@ http.get('/sample-data', async function(req, res, next) {
   try {
     const files = await fs.promises.readdir(path.join(__dirname, '../../../../', 'public/sample-data'));
 
-    const sanitizedFiles = ( files
+    const sanitizedFiles = files
       .filter(f => !f.startsWith('.'))
-      .sort()
-    );
+      .sort();
 
     res.send(sanitizedFiles);
   } catch (err) {
@@ -182,7 +90,7 @@ http.put('/:netid', async function(req, res, next) {
 /*
  * Returns the contents of multiple gene sets, not including ranks.
  */
- http.post('/genesets', async function(req, res, next) {
+http.post('/genesets', async function(req, res, next) {
   try {
     const { geneSets } = req.body;
     if(!Array.isArray(geneSets)) {
@@ -204,7 +112,7 @@ http.put('/:netid', async function(req, res, next) {
 /*
  * Returns the contents of multiple gene sets, including ranks.
  */
- http.post('/:netid/genesets', async function(req, res, next) {
+http.post('/:netid/genesets', async function(req, res, next) {
   try {
     const { netid } = req.params;
     const { geneSets } = req.body;
@@ -227,7 +135,7 @@ http.put('/:netid', async function(req, res, next) {
 /*
  * Returns a ranked gene list.
  */
- http.get('/:netid/ranks', async function(req, res, next) {
+http.get('/:netid/ranks', async function(req, res, next) {
   try {
     const { netid } = req.params;
 
@@ -266,26 +174,81 @@ http.post('/:netid/genesearch', async function(req, res, next) {
   }
 });
 
-
-function sendMessagesToSentry(service, messages) {
-  if(!messages || messages.length == 0)
-    return;
-
-  for(const message of messages) {
-    const { level, type, text, data } = message;
-    
-    // https://docs.sentry.io/platforms/node/usage/set-level/
-    const event = {
-      level,
-      tags: { message_type:type, service },
-      message: "Service Message: " + text,
-      extra: data,
-    };
-
-    // This method is actually asynchronous
-    // https://github.com/getsentry/sentry-javascript/issues/2049
-    Sentry.captureEvent(event);
+/*
+ * Runs the FGSEA/EnrichmentMap algorithms, saves the 
+ * created network, then returns its ID.
+ */
+http.post('/create/preranked', dataParser, async function(req, res, next) {
+  try {
+    await runDataPipeline(req, res, 'preranked');
+  } catch (err) {
+    next(err);
   }
+});
+
+/*
+ * Runs the FGSEA/EnrichmentMap algorithms, saves the 
+ * created network, then returns its ID.
+ */
+http.post('/create/rnaseq', dataParser, async function(req, res, next) {
+  try {
+    await runDataPipeline(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+async function runDataPipeline(req, res, preranked) {
+  const { networkName } = req.query;
+  const contentType = req.get('Content-Type'); // use same content type with FGSEA service
+  let body = req.body;
+  const tag = Date.now();
+
+  console.log('/api/create/ ' + tag + ', Content-Type:' + contentType);
+  console.time('/api/create/ ' + tag);
+  
+  if(isEnsembl(body)) {
+    console.time(' bridgedb ' + tag );
+    body = await runEnsemblToHGNCMapping(body, contentType);
+    console.timeEnd(' bridgedb ' + tag );
+  }
+
+  let rankedGeneList;
+  let pathwaysForEM;
+
+  if(preranked) {
+    console.time(' fgsea_preranked_service ' + tag);
+    const { pathways } = await runFGSEApreranked(body, contentType);
+    console.timeEnd(' fgsea_preranked_service ' + tag);
+
+    const delim = contentType === 'text/csv' ? ',' : '\t';
+    rankedGeneList = Datastore.rankedGeneListToDocument(body, delim);
+    pathwaysForEM = pathways;
+  } else {
+    console.time(' fgsea_rnaseq_service ' + tag);
+    const { classes } = req.query;
+    const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
+    sendMessagesToSentry('fgsea', messages);
+    console.timeEnd(' fgsea_rnaseq_service ' + tag);
+
+    rankedGeneList = Datastore.fgseaServiceGeneRanksToDocument(ranks);
+    pathwaysForEM = pathways;
+  }
+
+  console.time(' em_service ' + tag);
+  const networkJson = await runEM(pathwaysForEM);
+  console.timeEnd(' em_service ' + tag);
+
+  // TODO check for empty network here
+
+  console.time(' mongo ' + tag);
+  const netID = await Datastore.createNetwork(networkJson, networkName);
+  await Datastore.createRankedGeneList(rankedGeneList, netID);
+  console.timeEnd(' mongo ' + tag);
+
+  res.send(netID);
+  console.timeEnd('/api/create/ ' + tag);
 }
 
 
@@ -313,9 +276,7 @@ async function runFGSEArnaseq(countsData, classes, contentType) {
   if(!response.ok) {
     throw new Error("Error running fgsea rnaseq service.");
   }
-  const json = await response.json();
-  console.log(JSON.stringify(json, null, 2));
-  return json;
+  return await response.json();
 }
 
 
@@ -360,7 +321,7 @@ function isEnsembl(body) {
  * Sends a POST request to the BridgeDB xrefsBatch endpoint.
  * https://www.bridgedb.org/swagger/
  */
-async function callBridgeDB(ensemblIDs, species='Human', sourceType='En') {
+async function runBridgeDB(ensemblIDs, species='Human', sourceType='En') {
   // Note the 'dataSource' query parameter seems to have no effect.
   const url = `${BRIDGEDB_URL}/${species}/xrefsBatch/${sourceType}`;
   const body = ensemblIDs.join('\n');
@@ -402,7 +363,7 @@ async function runEnsemblToHGNCMapping(body, contentType) {
   // Call BridgeDB
   const ensemblIDs = content.map(row => row[0]);
   // console.log(ensemblIDs);
-  const hgncIDs = await callBridgeDB(ensemblIDs);
+  const hgncIDs = await runBridgeDB(ensemblIDs);
   // console.log(hgncIDs);
 
   // Replace old IDs with the new ones
@@ -438,6 +399,26 @@ async function runEnsemblToHGNCMapping(body, contentType) {
 }
 
 
+function sendMessagesToSentry(service, messages) {
+  if(!messages || messages.length == 0)
+    return;
+
+  for(const message of messages) {
+    const { level, type, text, data } = message;
+    
+    // https://docs.sentry.io/platforms/node/usage/set-level/
+    const event = {
+      level,
+      tags: { message_type:type, service },
+      message: "Service Message: " + text,
+      extra: data,
+    };
+
+    // This method is actually asynchronous
+    // https://github.com/getsentry/sentry-javascript/issues/2049
+    Sentry.captureEvent(event);
+  }
+}
 
 
 export default http;
