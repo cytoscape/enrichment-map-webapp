@@ -240,15 +240,23 @@ async function runDataPipeline(req, res, preranked) {
   const networkJson = await runEM(pathwaysForEM);
   console.timeEnd(' em_service ' + tag);
 
-  // TODO check for empty network here
+  if(isEmptyNetwork(networkJson)) {
+    res.status(422).send("Empty Network");
+  } else {
+    console.time(' mongo ' + tag);
+    const netID = await Datastore.createNetwork(networkJson, networkName);
+    await Datastore.createRankedGeneList(rankedGeneList, netID);
+    console.timeEnd(' mongo ' + tag);
+    res.send(netID);
+  }
 
-  console.time(' mongo ' + tag);
-  const netID = await Datastore.createNetwork(networkJson, networkName);
-  await Datastore.createRankedGeneList(rankedGeneList, netID);
-  console.timeEnd(' mongo ' + tag);
-
-  res.send(netID);
   console.timeEnd('/api/create/ ' + tag);
+}
+
+
+function isEmptyNetwork(networkJson) {
+  return !(networkJson.network?.elements?.nodes?.length) 
+      || !(networkJson.summaryNetwork?.elements?.nodes?.length);
 }
 
 
