@@ -198,7 +198,7 @@ class Datastore {
    * Inserts gene documents into the "geneRanks" collection.
    * @returns The id of the created document in the geneLists collection.
    */
-  async createRankedGeneList(rankedGeneListDocument, networkIDString) {
+  async createRankedGeneList(geneSetCollection, networkIDString, rankedGeneListDocument) {
     const networkID  = makeID(networkIDString);
     const geneListID = makeID();
 
@@ -213,13 +213,12 @@ class Datastore {
       genes
     };
 
+    // Insert the gene list as a single document into GENE_LISTS_COLLECTION
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .insertOne(geneListDocument);
 
-    // Create a collection with { networkID, gene } as the key, 
-    // for quick lookup of gene ranks.
-
+    // Create a collection with { networkID, gene } as the key, for quick lookup of gene ranks.
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .aggregate([
@@ -235,8 +234,50 @@ class Datastore {
       ])
       .toArray(); // Still need toArray() even though this is a merge
 
-    console.log("done loading ranks");
+    // Update the documents in the geneRanks collection to add a mapping from 
+    // { networkID, gene } to a list of node IDs that contain that gene.
+    await this.db
+      .collection(NETWORKS_COLLECTION)
+      .aggregate([
+        // Get the nodeIDs and the names of the Pathways they represent
+        { $match: { _id: networkID.bson } },
+        { $replaceWith: { path: "$summaryNetwork.elements.nodes.data" } },
+        { $unwind: { path: "$path" } },
+        { $replaceRoot: { newRoot: "$path" } },
+        { $addFields: { splitNames: { 
+            $cond: {
+              if: { $isArray: "$name" },
+              then: { $getField: "name" },
+              else: { $split: [ "$name", "," ] }
+            }
+        } } },
+        { $unwind: { path: "$splitNames" } },
+      
+        // Lookup the genes contained in each node
+        { $lookup: {
+            from: geneSetCollection,
+            localField: "splitNames",
+            foreignField: "name",
+            as: "geneSet"
+        }},
+        { $replaceRoot: { newRoot: { $mergeObjects: [ { $arrayElemAt: [ "$geneSet", 0 ] }, "$$ROOT" ] } } },
+        { $unwind: { path: "$genes" } },
+        { $group: { _id: "$genes", nodeIDs: { $addToSet: "$id" } }},
+        { $project: { _id: 0, gene: "$_id", nodeIDs: 1, networkID: networkID.bson } },
+      
+        // Update the geneRanks collection
+        { $merge: {
+            into: GENE_RANKS_COLLECTION,
+            on: [ "networkID", "gene" ],
+            whenNotMatched: "discard",
+            let: { nodeIDs: "$nodeIDs" },
+            whenMatched: [{ $addFields: { nodeIDs: "$$nodeIDs" } }],
+          }
+        }
+      ])
+      .toArray();
 
+    console.log("done loading gene ranks");
     return geneListID.string;
   }
 
@@ -304,7 +345,20 @@ class Datastore {
       .toArray();
   }
 
-  
+
+  /**
+   * Returns the IDs of nodes that contain the given gene.
+   */
+  async getNodesContainingGene(networkIDString, geneName) {
+    const networkID = makeID(networkIDString);
+    return await this.db
+      .collection(GENE_RANKS_COLLECTION)
+      .findOne(
+        { networkID: networkID.bson, gene: geneName },
+        { projection: { _id: 0, nodeIDs: 1 } }
+      );
+  }
+
 
   /**
    * Returns the genes from one or more gene sets joined with ranks.

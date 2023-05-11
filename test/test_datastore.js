@@ -9,13 +9,17 @@ describe('Gene Set Queries', () => {
   let networkID;
 
   before('load genesets, load network, load ranks', async () => {
-    const network = fs.readFileSync('./test/resources/network.json', { encoding: 'utf8' });
+    const networkStr = fs.readFileSync('./test/resources/network.json', { encoding: 'utf8' });
+    const network = JSON.parse(networkStr);
+
     const ranks = fs.readFileSync('./test/resources/ranks.rnk', { encoding: 'utf8' });
+
     await Datastore.dropCollectionIfExists(GENESET_DB);
     await Datastore.initializeGeneSetDB('./test/resources/', GENESET_DB);
+
     networkID = await Datastore.createNetwork(network);
     const ranksDoc = await Datastore.rankedGeneListToDocument(ranks);
-    await Datastore.createRankedGeneList(ranksDoc, networkID);
+    await Datastore.createRankedGeneList(GENESET_DB, networkID, ranksDoc);
   });
 
   it('gets a network', async () => {
@@ -126,4 +130,37 @@ describe('Gene Set Queries', () => {
     });
   });
 
+  it('gets nodes for genes', async () => { 
+    const lookup = async gene => {
+      const results = await Datastore.getNodesContainingGene(networkID, gene);
+      results.nodeIDs.sort();
+      return results;
+    };
+    {  
+      const results = await lookup("AAA");
+      expect(results).to.eql({
+        nodeIDs: [
+          '3f9549bd-17f3-4625-88da-86f33794aac5',
+          '9aaa7dea-8353-4cb6-9e8b-dd0b52927821',
+          'aae5d32b-04ac-4aa7-a440-81843921e258',
+          'ccc53527-c85f-411d-8b96-bd317522b6a7',
+        ]
+      });
+    } {
+      const results = await lookup("CCC");
+      expect(results).to.eql({
+        nodeIDs: [
+          '9aaa7dea-8353-4cb6-9e8b-dd0b52927821',
+          'ccc53527-c85f-411d-8b96-bd317522b6a7',
+        ]
+      });
+    } {
+      const results = await lookup("LLL");
+      expect(results).to.eql({
+        nodeIDs: [
+          'aae5d32b-04ac-4aa7-a440-81843921e258',
+        ]
+      });
+    } 
+  });
 });
