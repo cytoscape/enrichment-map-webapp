@@ -107,9 +107,16 @@ export class UploadController {
     if (res.ok) {
       const netID = await res.text();
       return { netID };
+
     } else if (res.status == 413) {
-      // Max file size for uploads is defined in the tsvParser in the server/routes/api/index.js file.
-      return { errors: ["The uploaded file is too large. The maximum file size is 50 MB." ] };
+      // Max file size for uploads is defined in the dataParser in the server/routes/api/index.js file.
+      return { errors: ["The uploaded file is too large. The maximum file size is 50 MB."] };
+
+    } else if (res.status == 422) {
+      // The EM-service returned an empty network. 
+      // Probable causes: The gene IDs don't match whats in our pathway database or none of the enriched pathways passed the filter cutoff.
+      return { errors: ["Not able to create a network from the provided data."] };
+
     } else {
       return { errors: [] }; // empty array shows generic error message
     }

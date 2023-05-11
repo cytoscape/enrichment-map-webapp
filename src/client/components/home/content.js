@@ -260,7 +260,7 @@ export class Content extends Component {
         { this.renderHeader() }
         <Container maxWidth="lg" disableGutters>
           { this.renderMain() }
-          { this.renderMobileMenu() }
+          {/* { this.renderMobileMenu() } */}
           { this.renderDebug() }
           { this.renderFooter() }
         </Container>
@@ -314,7 +314,7 @@ export class Content extends Component {
               </Grid>
             </Grid>
             <div className={classes.grow} />
-          {!isTablet && !isMobile ?
+          {/* {!isTablet && !isMobile ?
             <Toolbar>
             {MENUS.map((menu, idx) => (
               <Button key={idx} className={classes.menu} variant="text" color="inherit" onClick={() => this.onClickMenu(menu)}>
@@ -332,7 +332,7 @@ export class Content extends Component {
             >
               <MenuIcon />
             </IconButton>
-          }
+          } */}
           </Toolbar>
         </Container>
       </AppBar>
@@ -447,7 +447,7 @@ export class Content extends Component {
             Get Started
           </Button>
         </Grid>
-        <Grid item>
+        {/* <Grid item>
           <Button
             className={classes.demoButton}
             variant="text"
@@ -456,7 +456,7 @@ export class Content extends Component {
           >
             Watch Demo
           </Button>
-        </Grid>
+        </Grid> */}
       </Grid>
     ;
 
