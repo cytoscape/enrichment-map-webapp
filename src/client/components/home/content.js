@@ -4,9 +4,8 @@ import EventEmitter from 'eventemitter3';
 
 import { linkoutProps } from '../defaults';
 import { UploadController } from './upload-controller';
-import UploadPanel from './upload-panel';
-import ClassSelector from './class-selector';
 import { DebugMenu } from '../../debug-menu';
+import StartDialog from './start-dialog';
 import theme from '../../theme';
 
 import { withStyles } from '@material-ui/core/styles';
@@ -14,13 +13,10 @@ import { withStyles } from '@material-ui/core/styles';
 import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@material-ui/core';
 import { Container, Paper, Grid, Divider, } from '@material-ui/core';
 import { IconButton, Button, Typography, Link } from '@material-ui/core';
-import { Dialog, DialogTitle, DialogContent, DialogActions } from '@material-ui/core';
-import { CircularProgress } from '@material-ui/core';
 
 import MenuIcon from '@material-ui/icons/Menu';
 import NavigateNextIcon from '@material-ui/icons/NavigateNext';
 import PlayCircleFilledIcon from '@material-ui/icons/PlayCircleFilled';
-import WarningIcon from '@material-ui/icons/Warning';
 import FormatQuoteIcon from '@material-ui/icons/FormatQuote';
 import { AppLogoIcon } from '../svg-icons';
 
@@ -35,19 +31,27 @@ const STEP = {
   ERROR:   'ERROR',
 };
 
-const MENUS = [
+const menusDef = [
   { label: "About" },
   { label: "Contact" },
   { label: "Help" },
 ];
 const mobileMenuId = 'primary-menu-mobile';
 
-const LOGOS = [
+const logosDef = [
   { src: "/images/bader-lab-logo.svg", alt: "Bader Lab logo", href: "https://baderlab.org/" },
   { src: "/images/cytoscape-consortium-logo.svg", alt: "Cytoscape Consortium logo", href: "https://cytoscape.org/" },
   { src: "/images/donnelly-logo.png", alt: "The Donnelly Centre logo", href: "https://thedonnellycentre.utoronto.ca/" },
   { src: "/images/uoft-logo.svg", alt: "UofT logo", href: "https://www.utoronto.ca/" },
 ];
+
+const isMobileWidth = () => {
+  return window.innerWidth <= theme.breakpoints.values.sm;
+};
+
+const isTabletWidth = () => {
+  return !isMobileWidth() && window.innerWidth <= theme.breakpoints.values.md;
+};
 
 // globally cached
 let sampleFiles = [];
@@ -62,8 +66,8 @@ export class Content extends Component {
     this.bus = new EventEmitter();
     this.controller = new UploadController(this.bus);
 
-    const isMobile = this.isMobile();
-    const isTablet = this.isTablet();
+    const isMobile = isMobileWidth();
+    const isTablet = isTabletWidth();
 
     this.state = {
       step: STEP.WAITING,
@@ -117,20 +121,12 @@ export class Content extends Component {
   }
 
   handleResize() {
-    const isMobile = this.isMobile();
-    const isTablet = this.isTablet();
+    const isMobile = isMobileWidth();
+    const isTablet = isTabletWidth();
 
     if (this.state.isMobile !== isMobile || this.state.isTablet !== isTablet) {
       this.setState({ isMobile, isTablet });
     }
-  }
-
-  isMobile() {
-    return window.innerWidth <= theme.breakpoints.values.sm;
-  }
-
-  isTablet() {
-    return !this.isMobile() && window.innerWidth <= theme.breakpoints.values.md;
   }
 
   openMobileMenu(event) {
@@ -213,13 +209,23 @@ export class Content extends Component {
       this.setState({ step: STEP.UPLOAD });
   }
 
-  async onClickUpload() {
+  onClassesChanged(rnaseqClasses) {
+    this.rnaseqClasses = rnaseqClasses;
+  }
+
+  cancel() {
+    // this.controller.cancel();
+    this.setState({ step: STEP.WAITING, columns: null, contents: null, name: null,  errorMessages: null });
+  }
+
+  async onUpload() {
     const files = await this.showFileDialog();
     await this.controller.upload(files);
   }
 
-  async onClickSubmit() {
+  async onSubmit() {
     const { format, contents, name } = this.state;
+
     this.setState({ step: STEP.LOADING });
 
     const emRes = await this.controller.sendDataToEMService(contents, format, 'rnaseq', name, this.rnaseqClasses);
@@ -231,10 +237,6 @@ export class Content extends Component {
     }
 
     this.showNetwork(emRes.netID);
-}
-
-  async cancel() {
-    this.setState({ step: STEP.WAITING, columns: null, contents: null, name: null,  errorMessages: null });
   }
 
   async showFileDialog() {
@@ -270,7 +272,6 @@ export class Content extends Component {
 
   renderMobileMenu() {
     const { mobileMoreAnchorEl } = this.state;
-    const { classes } = this.props;
 
     return (
       <Menu
@@ -283,7 +284,7 @@ export class Content extends Component {
         onClose={() => this.closeMobileMenu()}
       >
         <MenuList>
-        {MENUS.map((menu, idx) => (
+        {menusDef.map((menu, idx) => (
           <MenuItem key={idx} onClick={() => this.onClickMenu(menu)}>
             { menu.label }
           </MenuItem>
@@ -316,7 +317,7 @@ export class Content extends Component {
             <div className={classes.grow} />
           {/* {!isTablet && !isMobile ?
             <Toolbar>
-            {MENUS.map((menu, idx) => (
+            {menusDef.map((menu, idx) => (
               <Button key={idx} className={classes.menu} variant="text" color="inherit" onClick={() => this.onClickMenu(menu)}>
                 { menu.label }
               </Button>
@@ -340,125 +341,8 @@ export class Content extends Component {
   }
 
   renderMain() {
-    const { step, isMobile, isTablet } = this.state;
+    const { step, isMobile, format, columns, contents } = this.state;
     const { classes } = this.props;
-
-    const LoadingProgress = () => 
-      <div className={classes.progress}>
-        <CircularProgress color="primary" />
-        <Typography component="p" variant="body1">Preparing your figure...</Typography>
-      </div>;
-
-    const ErrorReport = () => {
-      const { errorMessages } = this.state;
-      
-      return (
-        <div className={classes.progress}>
-          <WarningIcon fontSize="large" color="error" />
-          {
-            (!errorMessages || errorMessages.length == 0)
-            ? <>
-                <Typography variant="body1">We were unable to process your experimental data.</Typography>
-                <br />
-                <Typography variant="body2" color="secondary">
-                  Please ensure that your data is formatted properly,<br />either in <i>RNA&#8209;Seq Expression</i> format or in <i>Pre-Ranked Gene</i> format.
-                </Typography>
-              </>
-            : errorMessages.slice(0,7).map((message, index) =>
-                <p key={index}>{message}</p>
-              )
-          }
-        </div>
-      );
-    };
-
-    const onClassesChanged = (rnaseqClasses) => {
-      this.rnaseqClasses = rnaseqClasses;
-    };
-
-    const Classes = () => 
-      <ClassSelector 
-        columns={this.state.columns} 
-        contents={this.state.contents}
-        format={this.state.format}
-        onClassesChanged={classes => onClassesChanged(classes)}
-        isMobile={isMobile}
-      />;
-
-    const StartDialog = ({ step, isMobile }) => {
-      const open = step !== STEP.WAITING;
-
-      return (
-        <Dialog maxWidth="sm" fullScreen={isMobile} open={open}>
-          <DialogTitle>
-          {
-            {
-              'UPLOAD':  () => 'Upload your Data',
-              'CLASSES': () => 'Groups',
-              'LOADING': () => 'Loading',
-              'ERROR':   () => 'Error',
-            }[step]()
-          }
-          </DialogTitle>
-          <DialogContent dividers>
-          { 
-            {
-              'UPLOAD':  () => <UploadPanel isMobile={isMobile} />,
-              'CLASSES': () => <Classes />,
-              'LOADING': () => <LoadingProgress />,
-              'ERROR':   () => <ErrorReport />,
-            }[step]()
-          }
-          </DialogContent>
-          <DialogActions>
-            <Button autoFocus variant="outlined" color="primary" onClick={() => this.cancel()}>
-              { step == STEP.ERROR ? 'OK' : 'Cancel' }
-            </Button>
-            {step == STEP.UPLOAD && (
-              <Button variant="contained" color="primary" onClick={() => this.onClickUpload()}>
-                Upload File
-              </Button>
-            )}
-            {step == STEP.CLASSES && (
-              <Button variant="contained" color="primary" onClick={() => this.onClickSubmit()}>
-                Submit
-              </Button>
-            )}
-          </DialogActions>
-        </Dialog>
-      );
-    };
-
-    const GetStartedSection = () =>
-      <Grid
-        container
-        justifyContent={isMobile || isTablet ? 'center' : 'flex-start'}
-        alignItems="center"
-        spacing={3}
-      >
-        <Grid item>
-          <Button
-            className={classes.startButton}
-            variant="contained"
-            color="primary"
-            endIcon={<NavigateNextIcon />}
-            onClick={e => this.onClickGetStarted(e)}
-          >
-            Get Started
-          </Button>
-        </Grid>
-        {/* <Grid item>
-          <Button
-            className={classes.demoButton}
-            variant="text"
-            color="primary"
-            startIcon={<PlayCircleFilledIcon />}
-          >
-            Watch Demo
-          </Button>
-        </Grid> */}
-      </Grid>
-    ;
 
     const EasyCitation = () =>
       <Grid container direction="column" alignItems="flex-end">
@@ -473,10 +357,6 @@ export class Content extends Component {
           </Typography>
         </Paper>
       </Grid>
-    ;
-
-    const Figure = () =>
-      <img src="/images/home-figure.png" alt="figure" className={classes.figure} />
     ;
 
     return (
@@ -508,18 +388,18 @@ export class Content extends Component {
                     </p>
                   </Grid>
                   <Grid item className={classes.section}>
-                    {isMobile ? <Figure /> : <GetStartedSection />}
+                    {isMobile ? this.renderFigure() : this.renderGetStartedSection()}
                   </Grid>
                 {isMobile && (
                   <Grid item className={classes.section}>
-                    <GetStartedSection />
+                    { this.renderGetStartedSection() }
                   </Grid>
                 )}
                 </Grid>
               </Grid>
             {!isMobile && (
               <Grid item className={classes.section} xs={6}>
-                <Figure />
+                { this.renderFigure() }
               </Grid>
             )}
             </Grid>
@@ -529,7 +409,17 @@ export class Content extends Component {
           </Grid>
         {step !== STEP.WAITING && (
           <Grid item>
-            <StartDialog step={step} isMobile={isMobile} />
+            <StartDialog
+              step={step}
+              isMobile={isMobile}
+              format={format}
+              columns={columns}
+              contents={contents}
+              onUpload={() => this.onUpload()}
+              onClassesChanged={(arr) => this.onClassesChanged(arr)}
+              onSubmit={() => this.onSubmit()}
+              onCancelled={() => this.cancel()}
+            />
           </Grid>
         )}
         </Grid>
@@ -537,15 +427,53 @@ export class Content extends Component {
     );
   }
 
-  renderFooter() {
+  renderGetStartedSection() {
     const { isMobile, isTablet } = this.state;
     const { classes } = this.props;
 
-    const Logo = ({ src, alt, href }) =>
-      <Link href={href} target="_blank" rel="noreferrer" underline="none">
-        <img src={src} alt={alt} className={classes.footerLogo} />  
-      </Link>
-    ;
+    return (
+      <Grid
+        container
+        justifyContent={isMobile || isTablet ? 'center' : 'flex-start'}
+        alignItems="center"
+        spacing={3}
+      >
+        <Grid item>
+          <Button
+            className={classes.startButton}
+            variant="contained"
+            color="primary"
+            endIcon={<NavigateNextIcon />}
+            onClick={e => this.onClickGetStarted(e)}
+          >
+            Get Started
+          </Button>
+        </Grid>
+        {/* <Grid item>
+          <Button
+            className={classes.demoButton}
+            variant="text"
+            color="primary"
+            startIcon={<PlayCircleFilledIcon />}
+          >
+            Watch Demo
+          </Button>
+        </Grid> */}
+      </Grid>
+    );
+  }
+
+  renderFigure = () => {
+    const { classes } = this.props;
+
+    return (
+      <img src="/images/home-figure.png" alt="figure" className={classes.figure} />
+    );
+  };
+
+  renderFooter() {
+    const { isMobile, isTablet } = this.state;
+    const { classes } = this.props;
 
     return (
         <Container maxWidth="lg" disableGutters className={classes.footer}>
@@ -568,9 +496,9 @@ export class Content extends Component {
                   justifyContent={isMobile ? 'space-around' : 'space-between'}
                   spacing={5}
                 >
-              {LOGOS.map((logo, idx) =>
+              {logosDef.map((logo, idx) =>
                 <Grid key={idx} item>
-                  <Logo src={logo.src} alt={logo.alt} href={logo.href} />
+                  { this.renderLogo(logo) }
                 </Grid>
               )}
                 </Grid>
@@ -578,6 +506,16 @@ export class Content extends Component {
             </Grid>
           </Toolbar>
         </Container>
+    );
+  }
+
+  renderLogo({ src, alt, href }) {
+    const { classes } = this.props;
+
+    return (
+      <Link href={href} target="_blank" rel="noreferrer" underline="none">
+        <img src={src} alt={alt} className={classes.footerLogo} />  
+      </Link>
     );
   }
 
@@ -703,15 +641,6 @@ const useStyles = theme => ({
   },
   demoButton: {
     textTransform: 'unset',
-  },
-  progress: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 320,
-    textAlign: 'center',
   },
   figure: {
     maxWidth: '100%',

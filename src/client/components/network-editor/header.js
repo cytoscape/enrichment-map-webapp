@@ -11,7 +11,7 @@ import { ShareMenu } from './share-panel';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { AppBar, Button, Snackbar, SnackbarContent, Toolbar } from '@material-ui/core';
+import { AppBar, Snackbar, SnackbarContent, Toolbar } from '@material-ui/core';
 import { Divider } from '@material-ui/core';
 import { Popover, Menu, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
@@ -232,10 +232,6 @@ export class Header extends Component {
       },
     ];
 
-    const ToolbarDivider = ({ unrelated }) => {
-      return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
-    };
-
     const shiftAppBar = showControlPanel && !isMobile;
     
     return (
@@ -279,9 +275,9 @@ export class Header extends Component {
                 </IconButton>
               </Tooltip>
             </Box>
-            <ToolbarDivider unrelated />
+            <ToolbarDivider classes={classes} unrelated />
             <TitleEditor controller={controller} disabled={!networkLoaded} />
-            <ToolbarDivider unrelated />
+            <ToolbarDivider classes={classes} unrelated />
             <div className={classes.sectionDesktop}>
               { buttonsDef.map(({title, icon, onClick, unrelated}, idx) =>
                 <Fragment key={idx}>
@@ -375,6 +371,14 @@ class ToolbarButton extends Component {
   }
 }
 
+class ToolbarDivider extends Component {
+  render() {
+    const { classes, unrelated } = this.props;
+
+    return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
+  }
+}
+
 const useStyles = theme => ({
   appBar: {
     transition: theme.transitions.create(['margin', 'width'], {
@@ -432,6 +436,11 @@ ToolbarButton.propTypes = {
   className: PropTypes.string,
   disabled: PropTypes.bool,
   onClick: PropTypes.func.isRequired,
+};
+
+ToolbarDivider.propTypes = {
+  classes: PropTypes.object.isRequired,
+  unrelated: PropTypes.bool
 };
 
 Header.propTypes = {
