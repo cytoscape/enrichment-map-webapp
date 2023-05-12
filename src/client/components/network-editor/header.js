@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import Mousetrap from 'mousetrap';
 
-import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from './defaults';
+import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
@@ -11,7 +11,7 @@ import { ShareMenu } from './share-panel';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { AppBar, Button, Snackbar, SnackbarContent, Toolbar } from '@material-ui/core';
+import { AppBar, Snackbar, SnackbarContent, Toolbar } from '@material-ui/core';
 import { Divider } from '@material-ui/core';
 import { Popover, Menu, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
@@ -206,7 +206,7 @@ export class Header extends Component {
         onClick: () => {
           this.zoomIn();
         },
-        unrelated: true,
+        unrelated: false,
       },
       {
         title: "Zoom Out",
@@ -214,7 +214,7 @@ export class Header extends Component {
         onClick: () => {
           this.zoomOut();
         },
-        unrelated: true,
+        unrelated: false,
       },
       {
         title: "Fit Figure to Screen",
@@ -231,10 +231,6 @@ export class Header extends Component {
         unrelated: false,
       },
     ];
-
-    const ToolbarDivider = ({ unrelated }) => {
-      return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
-    };
 
     const shiftAppBar = showControlPanel && !isMobile;
     
@@ -279,9 +275,9 @@ export class Header extends Component {
                 </IconButton>
               </Tooltip>
             </Box>
-            <ToolbarDivider unrelated />
+            <ToolbarDivider classes={classes} unrelated />
             <TitleEditor controller={controller} disabled={!networkLoaded} />
-            <ToolbarDivider unrelated />
+            <ToolbarDivider classes={classes} unrelated />
             <div className={classes.sectionDesktop}>
               { buttonsDef.map(({title, icon, onClick, unrelated}, idx) =>
                 <Fragment key={idx}>
@@ -291,7 +287,7 @@ export class Header extends Component {
                     disabled={!networkLoaded}
                     onClick={onClick}
                   />
-                  <ToolbarDivider unrelated={unrelated} />
+                  <ToolbarDivider classes={classes} unrelated={unrelated} />
                 </Fragment>
               )}
             </div>
@@ -375,6 +371,14 @@ class ToolbarButton extends Component {
   }
 }
 
+class ToolbarDivider extends Component {
+  render() {
+    const { classes, unrelated } = this.props;
+
+    return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
+  }
+}
+
 const useStyles = theme => ({
   appBar: {
     transition: theme.transitions.create(['margin', 'width'], {
@@ -394,13 +398,13 @@ const useStyles = theme => ({
     display: 'none',
   },
   divider: {
-    marginLeft: theme.spacing(0.5),
-    marginRight: theme.spacing(0.5),
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(1),
     width: 0,
   },
   unrelatedDivider: {
-    marginLeft: theme.spacing(1.5),
-    marginRight: theme.spacing(1.5),
+    marginLeft: theme.spacing(3),
+    marginRight: theme.spacing(3),
     width: 0,
   },
   sectionDesktop: {
@@ -432,6 +436,11 @@ ToolbarButton.propTypes = {
   className: PropTypes.string,
   disabled: PropTypes.bool,
   onClick: PropTypes.func.isRequired,
+};
+
+ToolbarDivider.propTypes = {
+  classes: PropTypes.object.isRequired,
+  unrelated: PropTypes.bool
 };
 
 Header.propTypes = {

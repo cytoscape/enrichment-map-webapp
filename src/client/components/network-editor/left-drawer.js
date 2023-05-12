@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
-import tippy, { sticky } from 'tippy.js';
 
-import { CONTROL_PANEL_WIDTH, DEFAULT_PADDING } from './defaults';
+import { CONTROL_PANEL_WIDTH, DEFAULT_PADDING } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import GeneListPanel from './gene-list-panel';
@@ -13,8 +12,9 @@ import { makeStyles } from '@material-ui/core/styles';
 import { Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from "material-ui-search-bar";
-import { nodeLabel } from './network-style';
 
+import { GeneSetIcon, VennIntersectionIcon } from '../svg-icons';
+import NetworkIcon from '@material-ui/icons/Share';
 
 const sortOptions = {
   down: {
@@ -56,6 +56,9 @@ const useStyles = makeStyles((theme) => ({
   header: {
     padding: '0.5em',
   },
+  title: {
+    paddingLeft: theme.spacing(0.5),
+  },
   geneList: {
     overflowY: "auto",
   },
@@ -96,15 +99,28 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     setGenes(sortGenes(genes, sortRef.current));
   };
 
+  const fetchGeneListForEdge = async (geneSetNamesSource, geneSetNamesTarget) => {
+    const resSource = await controller.fetchGeneList(geneSetNamesSource);
+    const resTarget = await controller.fetchGeneList(geneSetNamesTarget);
+    const genesSource = resSource ? resSource.genes : [];
+    const genesTarget = resTarget ? resTarget.genes : [];
+    const genesCommon = _.intersectionBy(genesSource, genesTarget, x => x.gene);
+    setGenes(sortGenes(genesCommon, sortRef.current));
+    setGenes(sortGenes(genesCommon, sortRef.current));
+  };
+
   const fetchAllRankedGenes = async () => {
     fetchGeneList([]);
   };
 
   const fetchGeneListFromNodeOrEdge = async (ele) => {
-    const gsNames = [];
-    const getNames = ele => ele.data('name').split(',');
+    const getNames = ele => {
+      const name = ele.data('name');
+      return Array.isArray(name) ? name : name.split(',');
+    };
 
     if (ele.group() === 'nodes') {
+      const gsNames = [];
       const children = ele.children();
      
       if (children.length > 0) { // Compound node (cluster)...
@@ -112,14 +128,15 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
       } else { // Regular node (gene set)...
         gsNames.push(...getNames(ele));
       }
+
+      fetchGeneList(gsNames);
+
     } else if (ele.group() === 'edges') {
       // Edge (get overlapping genes)...
-      gsNames.push(...getNames(ele.source()));
-      gsNames.push(...getNames(ele.target()));
-    }
-    
-    if (gsNames.length > 0) {
-      fetchGeneList(gsNames);
+      const gsNamesSource = [...getNames(ele.source())];
+      const gsNamesTarget = [...getNames(ele.target())];
+
+      fetchGeneListForEdge(gsNamesSource, gsNamesTarget);
     }
   };
 
@@ -267,17 +284,36 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     const totalGenes = genes != null ? genes.length : -1;
     const sortDisabled = totalGenes <= 0;
 
+    const isNetEleSelected = cy.elements().filter(':selected').length > 0;
+    const isIntersection = cy.elements().filter('edge:selected').length > 0;
+    let iconTooltip = 'All Gene Sets';
+    let TitleIcon = NetworkIcon;
+    
+    if (isNetEleSelected) {
+      iconTooltip = isIntersection ? 'Intersection\u2014genes that are common to both gene sets' : 'Gene Set';
+      TitleIcon = isIntersection ? VennIntersectionIcon : GeneSetIcon;
+    }
+    
     return (
-      <Grid container direction="row" justifyContent="space-between" alignItems='center' className={classes.header}>
+      <Grid container direction="row" justifyContent="space-between" alignItems="center" className={classes.header}>
         <Grid item>
-          <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
-            Genes&nbsp;
-            {totalGenes >= 0 && (
-              <Typography display="inline" variant="body2" color="textSecondary">
-                 ({ totalGenes })
+          <Grid container direction="row" alignItems="center" spacing={1}>
+            <Tooltip arrow placement="bottom" title={iconTooltip}>
+              <Grid item style={{lineHeight: 0}}>
+                <TitleIcon size="small" color="secondary" />
+              </Grid>
+            </Tooltip>
+            <Grid>
+              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
+                Genes&nbsp;
+              {totalGenes >= 0 && (
+                <Typography display="inline" variant="body2" color="textSecondary">
+                  ({ totalGenes })
+                </Typography>
+              )}
               </Typography>
-            )}
-          </Typography>
+            </Grid>
+          </Grid>
         </Grid>
         <Grid item>
           <ToggleButtonGroup
@@ -285,13 +321,13 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             exclusive
             onChange={handleSort}
           >
-            {Object.entries(sortOptions).map(([k, { label, icon }]) => (
-              <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" style={{width:70}}>
-                <Tooltip arrow placement="top" title={label}>
-                  {icon}
-                </Tooltip>
-              </ToggleButton>
-            ))}
+          {Object.entries(sortOptions).map(([k, { label, icon }]) => (
+            <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" style={{width:70}}>
+              <Tooltip arrow placement="top" title={label}>
+                {icon}
+              </Tooltip>
+            </ToggleButton>
+          ))}
           </ToggleButtonGroup>
         </Grid>
       </Grid>
@@ -327,9 +363,9 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             <GeneListHeader />
           </div>
           <div className={classes.drawerSection}>
-            {networkLoaded && geneListIndexed && (
-              <GeneListPanel controller={controller} genes={genes} sort={sort} />
-            )}
+          {networkLoaded && geneListIndexed && (
+            <GeneListPanel controller={controller} genes={genes} sort={sort} />
+          )}
           </div>
         </div>
       </Drawer>

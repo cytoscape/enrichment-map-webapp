@@ -2,8 +2,6 @@ import debug from './debug';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Router } from './router';
-import { Chart } from 'chart.js';
-import annotationPlugin from 'chartjs-plugin-annotation';
 import { registerCytoscapeExtensions } from '../model/cy-extensions';
 import { fixOldFashionedScrollStyle } from './scroll';
 import * as Sentry from "@sentry/browser";
@@ -26,8 +24,6 @@ if (SENTRY) {
     tracesSampleRate: 1.0,
   });
 }
-
-Chart.register(annotationPlugin);
 
 registerCytoscapeExtensions();
 

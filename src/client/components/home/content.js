@@ -1,74 +1,144 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import EventEmitter from 'eventemitter3';
 
-import { readTextFile, readExcelFile } from './data-file-reader';
-import ClassSelector from './class-selector';
-import { InfoPanel } from './info-panel';
+import { linkoutProps } from '../defaults';
+import { UploadController } from './upload-controller';
 import { DebugMenu } from '../../debug-menu';
-
-import { SENTRY } from '../../env';
+import StartDialog from './start-dialog';
+import theme from '../../theme';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { AppBar, Button, Toolbar } from '@material-ui/core';
-import { Grid } from '@material-ui/core';
-import { Tooltip, Typography, Link } from '@material-ui/core';
+import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@material-ui/core';
+import { Container, Paper, Grid, Divider, } from '@material-ui/core';
+import { IconButton, Button, Typography, Link } from '@material-ui/core';
 
-import { CircularProgress, IconButton } from '@material-ui/core';
-import WarningIcon from '@material-ui/icons/Warning';
+import MenuIcon from '@material-ui/icons/Menu';
+import NavigateNextIcon from '@material-ui/icons/NavigateNext';
+import PlayCircleFilledIcon from '@material-ui/icons/PlayCircleFilled';
+import FormatQuoteIcon from '@material-ui/icons/FormatQuote';
 import { AppLogoIcon } from '../svg-icons';
-
-import * as Sentry from "@sentry/browser";
 
 import classNames from 'classnames';
 
+
 const STEP = {
   WAITING: 'WAITING',
+  UPLOAD:  'UPLOAD',
   LOADING: 'LOADING',
   CLASSES: 'CLASSES',
-  ERROR:   'ERROR'
+  ERROR:   'ERROR',
 };
 
-const FILE_EXT_REGEX = /\.[^/.]+$/;
-const TSV_EXTS = ['txt', 'rnk', 'tsv', 'csv', 'gct'];
-const EXCEL_EXTS = ['xls', 'xlsx'];
+const menusDef = [
+  { label: "About" },
+  { label: "Contact" },
+  { label: "Help" },
+];
+const mobileMenuId = 'primary-menu-mobile';
+
+const logosDef = [
+  { src: "/images/bader-lab-logo.svg", alt: "Bader Lab logo", href: "https://baderlab.org/" },
+  { src: "/images/cytoscape-consortium-logo.svg", alt: "Cytoscape Consortium logo", href: "https://cytoscape.org/" },
+  { src: "/images/donnelly-logo.png", alt: "The Donnelly Centre logo", href: "https://thedonnellycentre.utoronto.ca/" },
+  { src: "/images/uoft-logo.svg", alt: "UofT logo", href: "https://www.utoronto.ca/" },
+];
+
+const isMobileWidth = () => {
+  return window.innerWidth <= theme.breakpoints.values.sm;
+};
+
+const isTabletWidth = () => {
+  return !isMobileWidth() && window.innerWidth <= theme.breakpoints.values.md;
+};
 
 // globally cached
 let sampleFiles = [];
 let sampleRankFiles = [];
 let sampleExpressionFiles = [];
 
-class NondescriptiveHandledError extends Error { // since we don't have well-defined errors
-  constructor(message) {
-    message = message ?? 'A non-descriptive error occurred.  Check the attached file.';
-    super(message);
-  }
-}
-
-const captureNondescriptiveErrorInSentry = (errorMessage) => {
-  if (SENTRY) {
-    Sentry.captureException(new NondescriptiveHandledError(errorMessage));
-    console.error('Reporting browser error to Sentry: ' + errorMessage);
-  }
-};
-
 export class Content extends Component {
 
   constructor(props) {
     super(props);
 
+    this.bus = new EventEmitter();
+    this.controller = new UploadController(this.bus);
+
+    const isMobile = isMobileWidth();
+    const isTablet = isTabletWidth();
+
     this.state = {
       step: STEP.WAITING,
+      mobileMoreAnchorEl: null,
       errorMessages: null,
       sampleFiles,
       sampleRankFiles,
       sampleExpressionFiles,
-      isDroppingFile: false
+      isDroppingFile: false,
+      isMobile: isMobile,
+      isTablet: isTablet,
     };
+
+    this.onLoading = this.onLoading.bind(this);
+    this.onClasses = this.onClasses.bind(this);
+    this.onFinished = this.onFinished.bind(this);
+    this.onError = this.onError.bind(this);
+    this.handleResize = this.handleResize.bind(this);
+
+    window.addEventListener("resize", this.handleResize);
   }
 
   componentDidMount() {
+    this.bus.on('loading', this.onLoading);
+    this.bus.on('classes', this.onClasses);
+    this.bus.on('finished', this.onFinished);
+    this.bus.on('error', this.onError);
+
     this.loadSampleFiles();
+  }
+
+  componentWillUnmount() {
+    this.bus.removeAllListeners();
+    this.rnaseqClasses = null;
+  }
+
+  onLoading() {
+    this.setState({ step: STEP.LOADING });
+  }
+
+  onClasses({ format, columns, contents, name }) {
+    this.setState({ step: STEP.CLASSES, format, columns, contents, name });
+  }
+
+  onFinished(netID) {
+    this.showNetwork(netID);
+  }
+
+  onError(errorMessages) {
+    this.setState({ step: STEP.ERROR, errorMessages });
+  }
+
+  handleResize() {
+    const isMobile = isMobileWidth();
+    const isTablet = isTabletWidth();
+
+    if (this.state.isMobile !== isMobile || this.state.isTablet !== isTablet) {
+      this.setState({ isMobile, isTablet });
+    }
+  }
+
+  openMobileMenu(event) {
+    this.setState({ mobileMoreAnchorEl: event.currentTarget });
+  }
+
+  closeMobileMenu() {
+    this.setState({ mobileMoreAnchorEl: null });
+  }
+
+  onClickMenu(menu) {
+    // TODO...
   }
 
   async loadSampleFiles() {
@@ -89,128 +159,29 @@ export class Content extends Component {
     location.href = `/document/${id}`;
   }
 
-  async sendDataToEMService(text, format, type, networkName, classesArr) {
-    let url;
-    if(type === 'ranks') {
-      url = '/api/create/preranked?' + new URLSearchParams({ networkName });
-    } else if(type === 'rnaseq') {
-      const classes = classesArr.join(',');
-      url = '/api/create/rnaseq?' + new URLSearchParams({ classes, networkName });
-    } 
-
-    const contentType = format === 'tsv' ? 'text/tab-separated-values' : 'text/csv';
-    
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': contentType },
-      body: text
-    });
-
-    if(res.ok) {
-      const netID = await res.text();
-      return { netID };
-    } else if(res.status == 413) {
-      // Max file size for uploads is defined in the tsvParser in the server/routes/api/index.js file.
-      return { errors: ["The uploaded file is too large. The maximum file size is 50 MB." ] };
-    } else {
-      return { errors: [] }; // empty array shows generic error message
-    }
-  }
-
-
   async onLoadSampleNetwork(fileName) {
+    if (this.state.step == STEP.LOADING)
+      return;
+
     const dataurl = `/sample-data/${fileName}`;
     const sdRes = await fetch(dataurl);
-    if(!sdRes.ok) {
+    
+    if (!sdRes.ok) {
       this.setState({ step: STEP.ERROR, errorMessages: ["Error loading sample network"] });
-      captureNondescriptiveErrorInSentry('Error loading sample network');
+      this.controller.captureNondescriptiveErrorInSentry('Error loading sample network');
       return;
     }
     
     const data = await sdRes.text();
-
     const file = new File([data], fileName, { type: 'text/plain' });
-    await this.onDropzoneFileLoad([file]);
+    await this.controller.upload([file]);
   }
-
-
-  async onDropzoneFileLoad(files) {
-    // This is just for ranks TSV for now
-    if(this.state.step == STEP.LOADING)
-      return;
-
-    const file = files && files.length > 0 ? files[0] : null;
-    if(!file)
-      return;
-   
-    this.setState({ step: STEP.LOADING });
-    const name = file.name.replace(FILE_EXT_REGEX, '');
-    const ext  = file.name.split('.').pop().toLowerCase();
-
-    if (SENTRY) {
-      const attachmentName = file.name;
-      const attachmentContentType = file.type;
-      const arrayBuffer = await file.arrayBuffer();
-      const attachmentData = new Uint8Array(arrayBuffer);
-
-      Sentry.configureScope(scope => {
-        scope.clearAttachments();
-        scope.addAttachment({ filename: attachmentName, data: attachmentData, contentType: attachmentContentType });
-      });
-    }
-
-    try {
-      if(TSV_EXTS.includes(ext)) {
-        console.log('Reading file');
-        const { type, format, columns, contents } = await readTextFile(file);
-        console.log(`Reading ${format} file as ${type}, columns: ${columns}`);
-  
-        if(type === 'ranks') {
-          const emRes = await this.sendDataToEMService(contents, format, 'ranks', name);
-          if(emRes.errors) {
-            this.setState({ step: STEP.ERROR, errorMessages: emRes.errors });
-            captureNondescriptiveErrorInSentry('Error in EM service with uploaded rank file');
-            return;
-          }
-          this.showNetwork(emRes.netID);
-    
-        } else {
-          this.setState({ step: STEP.CLASSES, format, columns, contents, name });
-        }
-
-      } else if(EXCEL_EXTS.includes(ext)) {
-        const { columns, contents, format } = await readExcelFile(file);
-        console.log(`Reading Excel file, columns: ${columns}`);
-        this.setState({ step: STEP.CLASSES, format, columns, contents, name });
-      } else {
-        const exts = TSV_EXTS.join(', ') + ', ' + EXCEL_EXTS.join(', ');
-        this.setState({ step: STEP.ERROR, errorMessages: ["File extension not supported. Must be one of: " + exts]});
-      }
-
-    } catch(e) {
-      this.setState({ step: STEP.ERROR, errorMessages: [e] });
-      captureNondescriptiveErrorInSentry('Some error in handling uploaded file:' + e.message);
-      return;
-    }
-  }
-
-
-  async onRnaseqClassSubmit(classes) {
-      const { format, contents, name } = this.state;
-      this.setState({ step: STEP.LOADING });
-      
-      const emRes = await this.sendDataToEMService(contents, format, 'rnaseq', name, classes);
-      if(emRes.errors) {
-        this.setState({ step: STEP.ERROR, errorMessages: emRes.errors, contents: null });
-        captureNondescriptiveErrorInSentry('Error in sending uploaded RNASEQ data to service');
-        return;
-      }
-      this.showNetwork(emRes.netID);
-  }
-
 
   async onDropUpload(event) {
     event.preventDefault();
+
+    if (this.state.step == STEP.LOADING)
+      return;
 
     const files = (
       Array.from(event.dataTransfer.items)
@@ -220,19 +191,52 @@ export class Content extends Component {
 
     this.setState({ isDroppingFile: false });
 
-    await this.onDropzoneFileLoad(files);
+    await this.controller.upload(files);
   }
 
   onDragOverUpload(event) {
     event.preventDefault();
-
     this.setState({ isDroppingFile: true });
   }
 
   onDragEndUpload(event) {
     event.preventDefault();
-
     this.setState({ isDroppingFile: false });
+  }
+
+  async onClickGetStarted() {
+    if (this.state.step != STEP.LOADING)
+      this.setState({ step: STEP.UPLOAD });
+  }
+
+  onClassesChanged(rnaseqClasses) {
+    this.rnaseqClasses = rnaseqClasses;
+  }
+
+  cancel() {
+    // this.controller.cancel();
+    this.setState({ step: STEP.WAITING, columns: null, contents: null, name: null,  errorMessages: null });
+  }
+
+  async onUpload() {
+    const files = await this.showFileDialog();
+    await this.controller.upload(files);
+  }
+
+  async onSubmit() {
+    const { format, contents, name } = this.state;
+
+    this.setState({ step: STEP.LOADING });
+
+    const emRes = await this.controller.sendDataToEMService(contents, format, 'rnaseq', name, this.rnaseqClasses);
+    
+    if (emRes.errors) {
+      this.setState({ step: STEP.ERROR, errorMessages: emRes.errors, contents: null });
+      this.controller.captureNondescriptiveErrorInSentry('Error in sending uploaded RNASEQ data to service');
+      return;
+    }
+
+    this.showNetwork(emRes.netID);
   }
 
   async showFileDialog() {
@@ -242,7 +246,6 @@ export class Content extends Component {
     return await new Promise(resolve => {
       input.addEventListener('change', () => {
         const files = input.files;
-  
         resolve(files);
       });
   
@@ -250,86 +253,269 @@ export class Content extends Component {
     });
   }
 
-  async onClickUpload(event) {
-    const files = await this.showFileDialog();
-    await this.onDropzoneFileLoad(files);
-  }
-
-
   render() {
     const { classes } = this.props;
     const { isDroppingFile } = this.state;
 
     return (
       <div className={classNames({ [classes.root]: true, [classes.rootDropping]: isDroppingFile })}>
-        { this.renderMain() }
-        { this.renderDebug() }
+        { this.renderHeader() }
+        <Container maxWidth="lg" disableGutters>
+          { this.renderMain() }
+          {/* { this.renderMobileMenu() } */}
+          { this.renderDebug() }
+          { this.renderFooter() }
+        </Container>
       </div>
     );
   }
 
-  renderMain() {
-    const { classes } = this.props;
-    
-    const RanksDropArea = () => (
-      <div className={classes.dropzone}>
-        <Grid container className={classes.header} direction="row" alignItems="center" justifyContent="center" spacing={2}>
-          <Grid item>
-            <AppLogoIcon className={classes.logo} />
-          </Grid>
-          <Grid item>
-            EnrichmentMap
-          </Grid>
-        </Grid>
-        <p className={classes.tagline}>Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA-Seq experiment.</p>
-        <InfoPanel />
-        <Button className={classes.uploadButton} onClick={e => this.onClickUpload(e)} variant="contained" color="primary">Upload RNA-Seq data</Button>
-      </div>
-    );
-
-    const LoadingProgress = () => 
-      <div className={classes.spinner}>
-        <CircularProgress color="secondary" />
-        <p>Preparing your figure.</p>
-      </div>;
-
-    const ErrorReport = () => {
-      const { errorMessages } = this.state;
-      return <div className={classes.spinner}>
-        <WarningIcon fontSize='large'/>
-        {
-          (!errorMessages || errorMessages.length == 0)
-          ? <p>We were unable to process your experimental data. Please ensure that your data is formatted properly, either in differential expression format or in ranked gene format.</p>
-          : errorMessages.slice(0,7).map((message, index) =>
-              <p key={index}>{message}</p>
-            )
-        }
-        <Button variant='outlined' onClick={() => this.setState({ step: STEP.WAITING, errorMessages: null })}>OK</Button>
-      </div>;
-    };
-
-    const Classes = () =>
-      <ClassSelector 
-        columns={this.state.columns} 
-        contents={this.state.contents}
-        format={this.state.format}
-        onSubmit={classes => this.onRnaseqClassSubmit(classes)} 
-        onCancel={() => this.setState({ step: STEP.WAITING, columns:null, contents:null, name:null, errorMessages:null })} />;
+  renderMobileMenu() {
+    const { mobileMoreAnchorEl } = this.state;
 
     return (
-      <div className={classes.main} 
+      <Menu
+        anchorEl={mobileMoreAnchorEl}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        id={mobileMenuId}
+        keepMounted
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={Boolean(mobileMoreAnchorEl)}
+        onClose={() => this.closeMobileMenu()}
+      >
+        <MenuList>
+        {menusDef.map((menu, idx) => (
+          <MenuItem key={idx} onClick={() => this.onClickMenu(menu)}>
+            { menu.label }
+          </MenuItem>
+        ))}
+        </MenuList>
+      </Menu>
+    );
+  }
+
+  renderHeader() {
+    const { isTablet, isMobile } = this.state;
+    const { classes } = this.props;
+
+    return (
+      <AppBar position="static" color="transparent">
+        <Container maxWidth="lg" disableGutters>
+          <Toolbar variant="regular">
+            <Grid container alignItems="center" justifyContent="space-between">
+              <Grid item>
+                <Grid container alignItems="center" spacing={2}>
+                  <Grid item>
+                    <AppLogoIcon className={classes.logo} />
+                  </Grid>
+                  <Grid item>
+                    <Typography variant="inherit" className={classes.logoText}>EnrichmentMap</Typography>
+                  </Grid>
+                </Grid>
+              </Grid>
+            </Grid>
+            <div className={classes.grow} />
+          {/* {!isTablet && !isMobile ?
+            <Toolbar>
+            {menusDef.map((menu, idx) => (
+              <Button key={idx} className={classes.menu} variant="text" color="inherit" onClick={() => this.onClickMenu(menu)}>
+                { menu.label }
+              </Button>
+            ))}
+            </Toolbar>
+          :
+            <IconButton
+              aria-label="show more"
+              aria-controls={mobileMenuId}
+              aria-haspopup="true"
+              onClick={(evt) => this.openMobileMenu(evt)}
+              color="inherit"
+            >
+              <MenuIcon />
+            </IconButton>
+          } */}
+          </Toolbar>
+        </Container>
+      </AppBar>
+    );
+  }
+
+  renderMain() {
+    const { step, isMobile, format, columns, contents } = this.state;
+    const { classes } = this.props;
+
+    const EasyCitation = () =>
+      <Grid container direction="column" alignItems="flex-end">
+        <Paper className={classes.cite} variant="outlined">
+          <FormatQuoteIcon className={classes.citeLogo} />
+          <Typography className={classes.citeText}>
+            <Link className={classes.citeLink} href="https://doi.org/10.1038/s41596-018-0103-9" {...linkoutProps}>
+              Reimand, J., Isserlin, R. et al.&nbsp;
+              Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, Cytoscape and EnrichmentMap.&nbsp;
+              Nat Protoc 14, 482–517 (2019).
+            </Link>&nbsp;
+          </Typography>
+        </Paper>
+      </Grid>
+    ;
+
+    return (
+      <div
+        className={classes.drop} 
         onDrop={e => this.onDropUpload(e)} 
         onDragOver={e => this.onDragOverUpload(e)} 
         onDragLeave={e => this.onDragEndUpload(e)} 
-        onDragEnd={e => this.onDragEndUpload(e)} >
-        { 
-          { 'WAITING': () => <RanksDropArea />,
-            'LOADING': () => <LoadingProgress />,
-            'ERROR':   () => <ErrorReport />,
-            'CLASSES': () => <Classes />,
-          }[this.state.step]()
-        }
+        onDragEnd={e => this.onDragEndUpload(e)}
+      >
+        <Grid container direction="column" justifyContent="center" alignItems="center">
+          <Grid item>
+            <Grid
+              container
+              className={classes.content}
+              direction={isMobile ? 'column' : 'row'}
+              justifyContent="center"
+              alignItems="center"
+              spacing={2}
+            >
+              <Grid item xs={isMobile ? 12 : 6}>
+                <Grid container direction="column" justifyContent="center" alignItems="center">
+                  <Grid item>
+                    <Typography variant="h1" className={classes.tagline}>Enrichment analysis for your RNA&#8209;Seq</Typography>
+                  </Grid>
+                  <Grid item>
+                    <p className={classes.description}>
+                      Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA&#8209;Seq experiment.
+                    </p>
+                  </Grid>
+                  <Grid item className={classes.section}>
+                    {isMobile ? this.renderFigure() : this.renderGetStartedSection()}
+                  </Grid>
+                {isMobile && (
+                  <Grid item className={classes.section}>
+                    { this.renderGetStartedSection() }
+                  </Grid>
+                )}
+                </Grid>
+              </Grid>
+            {!isMobile && (
+              <Grid item className={classes.section} xs={6}>
+                { this.renderFigure() }
+              </Grid>
+            )}
+            </Grid>
+          </Grid>
+          <Grid item xs={isMobile ? 10 : 8}>
+            <EasyCitation />
+          </Grid>
+        {step !== STEP.WAITING && (
+          <Grid item>
+            <StartDialog
+              step={step}
+              isMobile={isMobile}
+              format={format}
+              columns={columns}
+              contents={contents}
+              onUpload={() => this.onUpload()}
+              onClassesChanged={(arr) => this.onClassesChanged(arr)}
+              onSubmit={() => this.onSubmit()}
+              onCancelled={() => this.cancel()}
+            />
+          </Grid>
+        )}
+        </Grid>
       </div>
+    );
+  }
+
+  renderGetStartedSection() {
+    const { isMobile, isTablet } = this.state;
+    const { classes } = this.props;
+
+    return (
+      <Grid
+        container
+        justifyContent={isMobile || isTablet ? 'center' : 'flex-start'}
+        alignItems="center"
+        spacing={3}
+      >
+        <Grid item>
+          <Button
+            className={classes.startButton}
+            variant="contained"
+            color="primary"
+            endIcon={<NavigateNextIcon />}
+            onClick={e => this.onClickGetStarted(e)}
+          >
+            Get Started
+          </Button>
+        </Grid>
+        {/* <Grid item>
+          <Button
+            className={classes.demoButton}
+            variant="text"
+            color="primary"
+            startIcon={<PlayCircleFilledIcon />}
+          >
+            Watch Demo
+          </Button>
+        </Grid> */}
+      </Grid>
+    );
+  }
+
+  renderFigure = () => {
+    const { classes } = this.props;
+
+    return (
+      <img src="/images/home-figure.png" alt="figure" className={classes.figure} />
+    );
+  };
+
+  renderFooter() {
+    const { isMobile, isTablet } = this.state;
+    const { classes } = this.props;
+
+    return (
+        <Container maxWidth="lg" disableGutters className={classes.footer}>
+          <Divider />
+          <Toolbar variant="regular" className={classes.logoBar}>
+            <Grid
+              container
+              direction={isMobile || isTablet ? 'column' : 'row'}
+              alignItems={isMobile || isTablet ? 'center' : 'flex-start'}
+              justifyContent={isMobile ? 'space-around' : 'space-between'}
+            >
+              <Grid item className={classes.copyright} md={4} sm={12}>
+                &copy; {new Date().getFullYear()} University of Toronto
+              </Grid>
+              <Grid item md={8} sm={12}>
+                <Grid
+                  container
+                  direction={isMobile ? 'column' : 'row'}
+                  alignItems={isMobile ? 'center' : 'flex-start'}
+                  justifyContent={isMobile ? 'space-around' : 'space-between'}
+                  spacing={5}
+                >
+              {logosDef.map((logo, idx) =>
+                <Grid key={idx} item>
+                  { this.renderLogo(logo) }
+                </Grid>
+              )}
+                </Grid>
+              </Grid>
+            </Grid>
+          </Toolbar>
+        </Container>
+    );
+  }
+
+  renderLogo({ src, alt, href }) {
+    const { classes } = this.props;
+
+    return (
+      <Link href={href} target="_blank" rel="noreferrer" underline="none">
+        <img src={src} alt={alt} className={classes.footerLogo} />  
+      </Link>
     );
   }
 
@@ -340,52 +526,25 @@ export class Content extends Component {
       <DebugMenu>
         <h3>Example rank input files</h3>
         <ul>
-          {
-            sampleRankFiles.length > 0 ?
-            sampleRankFiles.map(file => (
-              <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
-            )) :
-            <li>Loading...</li>
-          }
+        {
+          sampleRankFiles.length > 0 ?
+          sampleRankFiles.map(file => (
+            <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
+          )) :
+          <li>Loading...</li>
+        }
         </ul>
         <h3>Example expression input files</h3>
         <ul>
-          {
-            sampleExpressionFiles.length > 0 ?
-            sampleExpressionFiles.map(file => (
-              <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
-            )) :
-            <li>Loading...</li>
-          }
+        {
+          sampleExpressionFiles.length > 0 ?
+          sampleExpressionFiles.map(file => (
+            <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
+          )) :
+          <li>Loading...</li>
+        }
         </ul>
       </DebugMenu>
-    );
-  }
-
-  renderHeader() {
-    const { classes } = this.props;
-
-    return (
-      <AppBar position="static" color='default'>
-        <Toolbar variant="regular">
-          <Grid container alignItems='center' justifyContent="space-between">
-            <Grid item>
-              <Grid container alignItems='center'>
-                <Grid item>
-                  <Tooltip arrow placement="bottom" title="Home">
-                    <IconButton aria-label='close' onClick={() => location.href = '/'} >
-                      <AppLogoIcon fontSize="large" />
-                    </IconButton>
-                  </Tooltip>
-                </Grid>
-                <Grid item>
-                  <Typography variant="h5" className={classes.h5}>EnrichmentMap</Typography>
-                </Grid>
-              </Grid>
-            </Grid>
-          </Grid>
-        </Toolbar>
-      </AppBar>
     );
   }
 }
@@ -404,10 +563,6 @@ const useStyles = theme => ({
   rootDropping: {
     borderColor: 'rgb(54, 102, 209)'
   },
-  header: {
-    fontSize: '1.5em',
-    fontWeight: 'bold',
-  },
   main: {
     padding: theme.spacing(1),
     flexGrow: 1,
@@ -417,35 +572,135 @@ const useStyles = theme => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dropzone: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center'
-  },
-  spinner: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxWidth: '20em',
-    textAlign: 'center'
-  },
-  uploadButton: {
-    fontSize: '1.25em',
-    marginTop: '1.5em',
-    textTransform: 'unset',
-  },
   logo: {
     fontSize: 48,
   },
+  logoText: {
+    fontSize: '1.5em',
+    fontWeight: 'bold',
+  },
+  grow: {
+    flexGrow: 1,
+  },
+  menu: {
+    marginLeft: theme.spacing(5),
+    textTransform: 'unset',
+  },
+  content: {
+    maxHeight: 700,
+    marginTop: 0,
+    marginBottom: 0,
+    padding: theme.spacing(4),
+    paddingTop: 0,
+    paddingBottom: 0,
+    textAlign: 'left',
+    [theme.breakpoints.down('sm')]: {
+      marginTop: 0,
+      marginBottom: 0,
+      paddingTop: theme.spacing(1),
+      paddingBottom: theme.spacing(1),
+    },
+    [theme.breakpoints.down('xs')]: {
+      padding: theme.spacing(2),
+    },
+  },
   tagline: {
+    fontWeight: 800,
+    fontSize: 'clamp(1.5rem, 0.75rem + 2.5vw, 3.5rem)',
+    marginTop: theme.spacing(2),
+    [theme.breakpoints.down('sm')]: {
+      marginTop: theme.spacing(1),
+    },
+    [theme.breakpoints.down('xs')]: {
+      marginTop: theme.spacing(0.5),
+      textAlign: 'center',
+    },
+  },
+  description : {
     fontSize: '1rem',
     color: theme.palette.secondary.main,
-  }
+    marginTop: theme.spacing(2.5),
+    marginBottom: theme.spacing(5),
+    [theme.breakpoints.down('xs')]: {
+      fontSize: 'unset',
+      textAlign: 'center',
+      marginBottom: theme.spacing(2.5),
+    },
+  },
+  section: {
+    width: '100%',
+    [theme.breakpoints.down('xs')]: {
+      textAlign: 'center',
+      alignItems: 'center',
+      marginTop: theme.spacing(1),
+    },
+  },
+  startButton: {
+    // fontSize: '1.25em',
+    // textTransform: 'unset',
+  },
+  demoButton: {
+    textTransform: 'unset',
+  },
+  figure: {
+    maxWidth: '100%',
+    maxHeight: 520,
+    objectFit: 'contain',
+    [theme.breakpoints.down('xs')]: {
+      maxWidth: '80%',
+      maxHeight: 300,
+      marginBottom: theme.spacing(4),
+    },
+  },
+  cite: {
+    marginTop: theme.spacing(2),
+    marginLeft: theme.spacing(-2),
+    padding: theme.spacing(2),
+    paddingTop: 0,
+    maxWidth: 660,
+    textAlign: 'left',
+    fontFamily: 'Monaco,Courier New,Monospace',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    [theme.breakpoints.down('xs')]: {
+      marginTop: theme.spacing(6),
+    },
+  },
+  citeLogo: {
+    position: 'absolute',
+    color: theme.palette.background.default,
+    marginTop: theme.spacing(-2),
+    marginLeft: theme.spacing(-4),
+    background: theme.palette.divider,
+    borderRadius: '50%',
+    width: 30,
+    height: 30,
+  },
+  citeText: {
+    marginTop: theme.spacing(2),
+    fontSize: '0.85rem',
+    color: theme.palette.text.secondary,
+    filter: 'opacity(50%)',
+  },
+  citeLink: {
+    color: theme.palette.text.primary,
+  },
+  footer: {
+    marginTop: theme.spacing(4),
+  },
+  copyright: {
+    [theme.breakpoints.down('sm')]: {
+      marginBottom: theme.spacing(8),
+    },
+  },
+  logoBar: {
+    marginTop: theme.spacing(2),
+    color: theme.palette.secondary.main,
+  },
+  footerLogo: {
+    maxHeight: 48,
+    filter: 'grayscale(1) opacity(50%)',
+  },
 });
 
 Content.propTypes = {
