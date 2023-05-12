@@ -206,7 +206,7 @@ export class Header extends Component {
         onClick: () => {
           this.zoomIn();
         },
-        unrelated: true,
+        unrelated: false,
       },
       {
         title: "Zoom Out",
@@ -214,7 +214,7 @@ export class Header extends Component {
         onClick: () => {
           this.zoomOut();
         },
-        unrelated: true,
+        unrelated: false,
       },
       {
         title: "Fit Figure to Screen",
@@ -398,13 +398,13 @@ const useStyles = theme => ({
     display: 'none',
   },
   divider: {
-    marginLeft: theme.spacing(0.5),
-    marginRight: theme.spacing(0.5),
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(1),
     width: 0,
   },
   unrelatedDivider: {
-    marginLeft: theme.spacing(1.5),
-    marginRight: theme.spacing(1.5),
+    marginLeft: theme.spacing(3),
+    marginRight: theme.spacing(3),
     width: 0,
   },
   sectionDesktop: {
