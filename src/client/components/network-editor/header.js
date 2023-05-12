@@ -287,7 +287,7 @@ export class Header extends Component {
                     disabled={!networkLoaded}
                     onClick={onClick}
                   />
-                  <ToolbarDivider unrelated={unrelated} />
+                  <ToolbarDivider classes={classes} unrelated={unrelated} />
                 </Fragment>
               )}
             </div>
