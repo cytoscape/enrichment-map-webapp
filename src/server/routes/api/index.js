@@ -12,6 +12,7 @@ import {
   FGSEA_RNASEQ_SERVICE_URL,
   BRIDGEDB_URL,
 } from '../../env.js';
+import { saveUserUploadFileToS3 } from './s3.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const http = Express.Router();
@@ -225,6 +226,9 @@ async function runDataPipeline(req, res, preranked) {
   console.log('/api/create/ ' + tag + ', Content-Type:' + contentType);
   console.time('/api/create/ ' + tag);
   
+  // n.b. no await so as to not block
+  saveUserUploadFileToS3(body, `${networkName}.csv`, contentType);
+
   if(isEnsembl(body)) {
     console.time(' bridgedb ' + tag );
     body = await runEnsemblToHGNCMapping(body, contentType);
