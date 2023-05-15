@@ -200,7 +200,8 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
     ['related-node-ids', symbol],
     () => fetch(`/api/${controller.cy.data('id')}/${symbol}/nodes`)
           .then(res => res.json())
-          .then(res => res.nodeIDs)
+          .then(res => res.nodeIDs),
+    { retry: false }
   );
 
   const data = queryGeneData.data;
