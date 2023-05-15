@@ -23,10 +23,10 @@ describe('Gene Set Queries', () => {
   });
 
   it('gets a network', async () => {
-    const network = await Datastore.getNetwork(networkID, { full: true });
+    const network = await Datastore.getNetwork(networkID, { nodeLimit: 100 });
     expect(network.networkIDStr).to.eql(networkID);
-    expect(network.network.elements.nodes.length).to.eql(5);
-    expect(network.network.elements.edges.length).to.eql(4);
+    expect(network.summaryNetwork.elements.nodes.length).to.eql(4);
+    expect(network.summaryNetwork.elements.edges.length).to.eql(2);
   });
 
   it('get a gene sets', async () => {
@@ -43,8 +43,14 @@ describe('Gene Set Queries', () => {
     ]);
   });
 
+  it('get gene set names from summary network', async () => {
+    const results = await Datastore.getNodeDataSetNames(networkID, { nodeLimit: 1 });
+    results.sort();
+    expect(results).to.eql(["GENESET_1", "GENESET_2"]);
+  });
+
   it('gets a geneset with ranks', async () => {
-    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_5']);
+    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_5'], { nodeLimit: 100 });
     expect(results).to.eql({
       minRank: 1,
       maxRank: 11,
@@ -53,14 +59,12 @@ describe('Gene Set Queries', () => {
         { gene: "JJJ", rank: 10 },
         { gene: "BBB", rank: 2 },
         { gene: "AAA", rank: 1 },
-        // { gene: "ADF" },
-        // { gene: "ZZZ" }
       ]
     });
   });
 
   it('gets more than one geneset with ranks', async () => {
-    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_3', 'GENESET_4']);
+    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_3', 'GENESET_4'], { nodeLimit: 100 });
     expect(results).to.eql({
       minRank: 1,
       maxRank: 11,
@@ -76,7 +80,7 @@ describe('Gene Set Queries', () => {
   });
 
   it('gets all genesets with ranks', async () => {
-    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, []);
+    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, [], { nodeLimit: 100 });
     expect(results).to.eql({
       minRank: 1,
       maxRank: 11,

@@ -14,6 +14,10 @@ import {
 } from '../../env.js';
 import { saveUserUploadFileToS3 } from './s3.js';
 
+
+const DEFAULT_NETWORK_SIZE = 50; // Max number of nodes to return when showing the network.
+
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const http = Express.Router();
 
@@ -60,7 +64,7 @@ http.get('/sample-data', async function(req, res, next) {
 http.get('/:netid', async function(req, res, next) {
   try {
     const { netid } = req.params;
-    const { nodeLimit=50 } = req.query;
+    const { nodeLimit = DEFAULT_NETWORK_SIZE } = req.query;
 
     const network = await Datastore.getNetwork(netid, { nodeLimit });
     if(!network) {
@@ -116,13 +120,14 @@ http.post('/genesets', async function(req, res, next) {
 http.post('/:netid/genesets', async function(req, res, next) {
   try {
     const { netid } = req.params;
+    const { nodeLimit = DEFAULT_NETWORK_SIZE } = req.query;
     const { geneSets } = req.body;
     if(!Array.isArray(geneSets)) {
       res.sendStatus(404);
       return;
     }
 
-    const geneInfo = await Datastore.getGenesWithRanks(DB_1, netid, geneSets);
+    const geneInfo = await Datastore.getGenesWithRanks(DB_1, netid, geneSets, { nodeLimit });
     if(!geneInfo) {
       res.sendStatus(404);
     } else {

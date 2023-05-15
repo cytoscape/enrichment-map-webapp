@@ -1,6 +1,7 @@
 import { MongoClient } from 'mongodb';
 import uuid from 'uuid';
 import MUUID from 'uuid-mongodb';
+import _ from 'lodash';
 import { fileForEachLine } from './util.js';
 
 
@@ -11,10 +12,11 @@ const GENE_LISTS_COLLECTION = 'geneLists';
 const NETWORKS_COLLECTION = 'networks';
 
 
-function makeID(string) {
-  if (!string) {
-    string = uuid.v4();
+function makeID(strOrObj) {
+  if(_.has(strOrObj, 'bson')) {
+    return strOrObj;
   }
+  const string = _.isString(strOrObj) ? strOrObj : uuid.v4();
   const bson = MUUID.from(string);
   return { string, bson };
 }
@@ -282,30 +284,59 @@ class Datastore {
   }
 
   /**
-   * Returns the entire network document. 
+   * Returns the network document. 
    */
   async getNetwork(networkIDString, options) {
-    const { nodeLimit, full } = options;
-
+    const { nodeLimit } = options;
     const networkID = makeID(networkIDString);
+
     const network = await this.db
       .collection(NETWORKS_COLLECTION)
       .findOne(
         { _id: networkID.bson },
-        full ? { projection: { summaryNetwork: false } } 
-             : { projection: { network: false } }
+        { projection: { network: false } }
       );
     
     if(!network) {
       return null;
     }
-
     if(nodeLimit) {
-      this.limitNodesByNES(full ? network.network : network.summaryNetwork, nodeLimit);
+      this.limitNodesByNES(network.summaryNetwork, nodeLimit);
     }
-
     return network;
   }
+
+  /**
+   * Returns the network document. 
+   */
+  async getNodeDataSetNames(networkIDString, options) {
+    const { nodeLimit } = options;
+    const networkID = makeID(networkIDString);
+
+    const names = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .aggregate([
+        // Get the node data in the network
+        { $match: { _id: networkID.bson } },
+        { $replaceWith: { path: "$summaryNetwork.elements.nodes.data" } },
+        { $unwind: { path: "$path" } },
+        { $replaceRoot: { newRoot: "$path" } },
+      
+        // Limit to top 50 by NES magnitude
+        { $addFields: { magNES: { $abs: "$NES" } } },
+        { $sort: { magNES: -1 } },
+        { $limit: nodeLimit },
+      
+        // Get the names
+        { $unwind: { path: "$name" } },
+        { $project: { name: 1 }}
+      ]) 
+      .map(obj => obj.name)
+      .toArray();
+
+    return names;
+  }
+
 
   limitNodesByNES(network, nodeLimit) {
     const { elements } = network;
@@ -359,14 +390,10 @@ class Datastore {
       );
   }
 
-
   /**
-   * Returns the genes from one or more gene sets joined with ranks.
-   * The returned array is sorted so that the genes with ranks are first (sorted by rank),
-   * then the genes without rankes are after (sorted alphabetically).
+   * Returns the values of the min and max ranks in the network.
    */
-  async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames) {
-    const all = geneSetNames === undefined || geneSetNames.length == 0;
+  async getMinMaxRanks(networkIDStr) {
     const networkID = makeID(networkIDStr);
 
     const minMax = await this.db
@@ -376,20 +403,26 @@ class Datastore {
         { projection: { min: 1, max: 1 } } // 'projection:' is explicit because min,max have special meaning in mongo
       );
 
-    let geneListWithRanks;
-    if (all) {
-      geneListWithRanks = await this.db
-        .collection(GENE_LISTS_COLLECTION)
-        .aggregate([
-          { $match: { networkID: networkID.bson } },
-          { $unwind: "$genes" },
-          { $replaceRoot: { newRoot: "$genes" } },
-          { $sort: { rank: -1, gene: 1 } }
-        ])
-        .toArray();
+    return {
+      minRank: minMax.min,
+      maxRank: minMax.max,
+    };
+  }
 
-    } else {
-      geneListWithRanks = await this.db
+  /**
+   * Returns the genes from one or more gene sets joined with ranks.
+   * The returned array is sorted so that the genes with ranks are first (sorted by rank),
+   * then the genes without rankes are after (sorted alphabetically).
+   */
+  async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames, options) {
+    const { nodeLimit } = options;
+    const networkID = makeID(networkIDStr);
+
+    if(geneSetNames === undefined || geneSetNames.length == 0) {
+      geneSetNames = await this.getNodeDataSetNames(networkID, { nodeLimit });
+    }
+    
+    const geneListWithRanks = await this.db
         .collection(geneSetCollection)
         .aggregate([
           { $match: { name: { $in: geneSetNames } } },
@@ -418,11 +451,12 @@ class Datastore {
           { $sort: { rank: -1, gene: 1 } }
         ])
         .toArray();
-    }
+
+    const { minRank, maxRank } = await this.getMinMaxRanks(networkID);
 
     return {
-      minRank: minMax.min,
-      maxRank: minMax.max,
+      minRank,
+      maxRank,
       genes: geneListWithRanks
     };
   }
@@ -434,13 +468,6 @@ class Datastore {
 
     const networkID = makeID(networkIDStr);
     const queryRE = new RegExp(geneTokens.join('|'));
-
-    const minMax = await this.db
-      .collection(GENE_LISTS_COLLECTION)
-      .findOne(
-        { networkID: networkID.bson },
-        { projection: { min: 1, max: 1 } } // 'projection:' is explicit because min,max have special meaning in mongo
-      );
 
     const geneListWithRanksAndGeneSets = await this.db
       .collection(geneSetCollection)
@@ -472,9 +499,11 @@ class Datastore {
       ])
       .toArray();
 
+    const { minRank, maxRank } = await this.getMinMaxRanks(networkID);
+
     return {
-      minRank: minMax.min,
-      maxRank: minMax.max,
+      minRank,
+      maxRank,
       genes: geneListWithRanksAndGeneSets
     };
   }
