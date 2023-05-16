@@ -138,12 +138,13 @@ class Datastore {
    */
   async updateNetwork(networkIDString, { networkName }) {
     const networkID = makeID(networkIDString);
-    const filter = { '_id': networkID.bson };
-    const updateDoc = { $set: { networkName: networkName } };
     
     const res = await this.db
       .collection(NETWORKS_COLLECTION)
-      .updateOne(filter, updateDoc);
+      .updateOne(
+        { '_id': networkID.bson }, 
+        { $set: { networkName: networkName } }
+      );
 
     return res.modifiedCount > 0;
   }
@@ -290,16 +291,21 @@ class Datastore {
     const { nodeLimit } = options;
     const networkID = makeID(networkIDString);
 
-    const network = await this.db
+    const result = await this.db
       .collection(NETWORKS_COLLECTION)
-      .findOne(
+      .findOneAndUpdate(
         { _id: networkID.bson },
-        { projection: { network: false } }
+        { $set: { lastAccessTime: new Date() } },
+        { returnDocument: 'after',
+          projection: { network: false }
+        }
       );
     
-    if(!network) {
+    if(!result) {
       return null;
     }
+    const network = result.value;
+
     if(nodeLimit) {
       this.limitNodesByNES(network.summaryNetwork, nodeLimit);
     }
