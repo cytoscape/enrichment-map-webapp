@@ -10,9 +10,13 @@ import { makeStyles } from '@material-ui/core/styles';
 import { Container, Paper, Grid, Divider, } from '@material-ui/core';
 import { IconButton, Button, Typography } from '@material-ui/core';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@material-ui/core';
-import { CircularProgress } from '@material-ui/core';
 
+import NavigateBeforeIcon from '@material-ui/icons/NavigateBefore';
+import NavigateNextIcon from '@material-ui/icons/NavigateNext';
+import DescriptionOutlinedIcon from '@material-ui/icons/DescriptionOutlined';
+import CloseIcon from '@material-ui/icons/Close';
 import WarningIcon from '@material-ui/icons/Warning';
+import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
 
 const useStyles = makeStyles(() => ({
@@ -27,7 +31,7 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-const StartDialog = ({ step, isMobile, format, columns, contents, errorMessages, onUpload, onClassesChanged, onSubmit, onCancelled }) => {
+const StartDialog = ({ step, isMobile, format, columns, contents, errorMessages, onUpload, onClassesChanged, onSubmit, onCancelled, onBack }) => {
   const classes = useStyles();
   const open = step !== 'WAITING';
 
@@ -42,7 +46,7 @@ const StartDialog = ({ step, isMobile, format, columns, contents, errorMessages,
 
   const LoadingProgress = () => 
     <div className={classes.progress}>
-      <CircularProgress color="primary" />
+      <CircularProgressIcon color="primary" />
       <Typography component="p" variant="body1">Preparing your figure...</Typography>
     </div>;
 
@@ -90,19 +94,25 @@ const StartDialog = ({ step, isMobile, format, columns, contents, errorMessages,
       }
       </DialogContent>
       <DialogActions>
-        <Button autoFocus variant="outlined" color="primary" onClick={onCancelled}>
-          { step == 'ERROR' ? 'OK' : 'Cancel' }
+      {step === 'CLASSES' && (
+        <Button variant="outlined" color="primary" startIcon={<NavigateBeforeIcon />} onClick={onBack}>
+          Back
         </Button>
-        {step == 'UPLOAD' && (
-          <Button variant="contained" color="primary" onClick={() => onUpload()}>
-            Upload File
-          </Button>
-        )}
-        {step == 'CLASSES' && (
-          <Button variant="contained" color="primary" onClick={() => onSubmit()}>
-            Submit
-          </Button>
-        )}
+      )}
+      <span style={{flexGrow: 1}} />
+      <Button autoFocus variant="outlined" color="primary" startIcon={step !== 'ERROR' ? <CloseIcon /> : null} onClick={onCancelled}>
+        { step === 'ERROR' ? 'OK' : 'Cancel' }
+      </Button>
+      {step === 'UPLOAD' && (
+        <Button variant="contained" color="primary" startIcon={<DescriptionOutlinedIcon />} onClick={onUpload}>
+          Upload File
+        </Button>
+      )}
+      {step === 'CLASSES' && (
+        <Button variant="contained" color="primary" endIcon={<NavigateNextIcon />} onClick={onSubmit}>
+          Submit
+        </Button>
+      )}
       </DialogActions>
     </Dialog>
   );
@@ -119,6 +129,7 @@ StartDialog.propTypes = {
   onUpload: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   onCancelled: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
 };
 
 export default StartDialog;

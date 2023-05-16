@@ -215,7 +215,7 @@ export class Content extends Component {
 
   cancel() {
     // this.controller.cancel();
-    this.setState({ step: STEP.WAITING, columns: null, contents: null, name: null,  errorMessages: null });
+    this.setState({ step: STEP.WAITING, format: null, columns: null, contents: null, name: null,  errorMessages: null });
   }
 
   async onUpload() {
@@ -237,6 +237,11 @@ export class Content extends Component {
     }
 
     this.showNetwork(emRes.netID);
+  }
+
+  onBack() {
+    if (this.state.step === 'CLASSES')
+      this.setState({ step: STEP.UPLOAD, format: null, columns: null, contents: null, name: null, errorMessages: null });
   }
 
   async showFileDialog() {
@@ -419,6 +424,7 @@ export class Content extends Component {
               onClassesChanged={(arr) => this.onClassesChanged(arr)}
               onSubmit={() => this.onSubmit()}
               onCancelled={() => this.cancel()}
+              onBack={() => this.onBack()}
             />
           </Grid>
         )}
