@@ -28,6 +28,23 @@ export class UploadController {
     }
   }
 
+
+  async loadSampleData(fileName) {
+    const dataurl = `/sample-data/${fileName}`;
+    const sdRes = await fetch(dataurl);
+    
+    if (!sdRes.ok) {
+      this.bus.emit('error', { errors: ["Error loading sample network"] });
+      this.captureNondescriptiveErrorInSentry('Error loading sample network');
+      return;
+    }
+    
+    const data = await sdRes.text();
+    const file = new File([data], fileName, { type: 'text/plain' });
+    return file;
+  }
+
+
   async upload(files) {
     // This is just for ranks TSV for now
     const file = files && files.length > 0 ? files[0] : null;
@@ -59,15 +76,7 @@ export class UploadController {
         console.log(`Reading ${format} file as ${type}, columns: ${columns}`);
   
         if (type === 'ranks') {
-          const emRes = await this.sendDataToEMService(contents, format, 'ranks', name);
-          
-          if (emRes.errors) {
-            this.bus.emit('error', emRes.errors);
-            this.captureNondescriptiveErrorInSentry('Error in EM service with uploaded rank file');
-            return;
-          }
-
-          this.bus.emit('finished', emRes.netID);
+          this.bus.emit('ranks', { format, contents, name });
         } else {
           this.bus.emit('classes', { format, columns, contents, name });
         }
@@ -77,17 +86,30 @@ export class UploadController {
         this.bus.emit('classes', { format, columns, contents, name });
       } else {
         const exts = TSV_EXTS.join(', ') + ', ' + EXCEL_EXTS.join(', ');
-        this.bus.emit('error', ["File extension not supported. Must be one of: " + exts]);
+        this.bus.emit('error', { errors: ["File extension not supported. Must be one of: " + exts] });
       }
     } catch (e) {
-      this.bus.emit('error', [e]);
+      this.bus.emit('error', { errors: [e] });
       this.captureNondescriptiveErrorInSentry('Some error in handling uploaded file:' + e.message);
       
       return;
     }
   }
 
-  async sendDataToEMService(text, format, type, networkName, classesArr) {
+  async sendDataToEMService(text, format, type, networkName, requestID, classesArr) {
+    const emRes = await this._sendDataToEMService(text, format, type, networkName, classesArr);
+          
+    if (emRes.errors) {
+      this.bus.emit('error', { errors: emRes.errors, requestID });
+      this.captureNondescriptiveErrorInSentry('Error in EM service with uploaded rank file');
+      return;
+    }
+
+    this.bus.emit('finished', { networkID: emRes.netID, requestID });
+  }
+  
+
+  async _sendDataToEMService(text, format, type, networkName, classesArr) {
     let url;
     if (type === 'ranks') {
       url = '/api/create/preranked?' + new URLSearchParams({ networkName });
