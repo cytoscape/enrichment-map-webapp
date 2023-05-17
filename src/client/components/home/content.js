@@ -12,15 +12,14 @@ import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@material-ui/core';
 import { Container, Paper, Grid, Divider, } from '@material-ui/core';
-import { IconButton, Button, Typography, Link } from '@material-ui/core';
+import { Button, Typography, Link } from '@material-ui/core';
 
-import MenuIcon from '@material-ui/icons/Menu';
 import NavigateNextIcon from '@material-ui/icons/NavigateNext';
-import PlayCircleFilledIcon from '@material-ui/icons/PlayCircleFilled';
 import FormatQuoteIcon from '@material-ui/icons/FormatQuote';
 import { AppLogoIcon } from '../svg-icons';
 
 import classNames from 'classnames';
+import uuid from 'uuid';
 
 
 const STEP = {
@@ -65,6 +64,7 @@ export class Content extends Component {
 
     this.bus = new EventEmitter();
     this.controller = new UploadController(this.bus);
+    this.cancelledRequests = [];
 
     const isMobile = isMobileWidth();
     const isTablet = isTabletWidth();
@@ -81,18 +81,23 @@ export class Content extends Component {
       isTablet: isTablet,
     };
 
+    // For events emitted by the UploadController
     this.onLoading = this.onLoading.bind(this);
     this.onClasses = this.onClasses.bind(this);
+    this.onRanks = this.onRanks.bind(this);
     this.onFinished = this.onFinished.bind(this);
     this.onError = this.onError.bind(this);
+
     this.handleResize = this.handleResize.bind(this);
 
     window.addEventListener("resize", this.handleResize);
   }
 
   componentDidMount() {
+    // events emitted by the UploadController
     this.bus.on('loading', this.onLoading);
     this.bus.on('classes', this.onClasses);
+    this.bus.on('ranks', this.onRanks);
     this.bus.on('finished', this.onFinished);
     this.bus.on('error', this.onError);
 
@@ -102,22 +107,6 @@ export class Content extends Component {
   componentWillUnmount() {
     this.bus.removeAllListeners();
     this.rnaseqClasses = null;
-  }
-
-  onLoading() {
-    this.setState({ step: STEP.LOADING });
-  }
-
-  onClasses({ format, columns, contents, name }) {
-    this.setState({ step: STEP.CLASSES, format, columns, contents, name });
-  }
-
-  onFinished(netID) {
-    this.showNetwork(netID);
-  }
-
-  onError(errorMessages) {
-    this.setState({ step: STEP.ERROR, errorMessages });
   }
 
   handleResize() {
@@ -163,18 +152,10 @@ export class Content extends Component {
     if (this.state.step == STEP.LOADING)
       return;
 
-    const dataurl = `/sample-data/${fileName}`;
-    const sdRes = await fetch(dataurl);
-    
-    if (!sdRes.ok) {
-      this.setState({ step: STEP.ERROR, errorMessages: ["Error loading sample network"] });
-      this.controller.captureNondescriptiveErrorInSentry('Error loading sample network');
-      return;
+    const file = await this.controller.loadSampleData(fileName);
+    if(file) {
+      await this.controller.upload([file]);
     }
-    
-    const data = await sdRes.text();
-    const file = new File([data], fileName, { type: 'text/plain' });
-    await this.controller.upload([file]);
   }
 
   async onDropUpload(event) {
@@ -213,33 +194,65 @@ export class Content extends Component {
     this.rnaseqClasses = rnaseqClasses;
   }
 
-  cancel() {
-    // this.controller.cancel();
-    this.setState({ step: STEP.WAITING, format: null, columns: null, contents: null, name: null,  errorMessages: null });
-  }
-
   async onUpload() {
     const files = await this.showFileDialog();
     await this.controller.upload(files);
   }
 
+  onLoading() {
+    console.log('onLoading');
+    this.setState({ step: STEP.LOADING });
+  }
+
+  async onRanks({ format, contents, name }) {
+    const requestID = uuid.v4();
+    console.log(`onRanks: { requestID:${requestID} }`);
+    this.setState({ step: STEP.LOADING, requestID });
+    await this.controller.sendDataToEMService(contents, format, 'ranks', name, requestID);
+  }
+
   async onSubmit() {
     const { format, contents, name } = this.state;
+    const requestID = uuid.v4();
+    console.log(`onSubmit: { requestID:${requestID} }`);
+    this.setState({ step: STEP.LOADING, requestID });
+    await this.controller.sendDataToEMService(contents, format, 'rnaseq', name, requestID, this.rnaseqClasses);
+  }
 
-    this.setState({ step: STEP.LOADING });
-
-    const emRes = await this.controller.sendDataToEMService(contents, format, 'rnaseq', name, this.rnaseqClasses);
-    
-    if (emRes.errors) {
-      this.setState({ step: STEP.ERROR, errorMessages: emRes.errors, contents: null });
-      this.controller.captureNondescriptiveErrorInSentry('Error in sending uploaded RNASEQ data to service');
+  onClasses({ format, columns, contents, name }) {
+    console.log('onClasses');
+    this.setState({ step: STEP.CLASSES, format, columns, contents, name });
+  }
+ 
+  onFinished({ networkID, requestID }) {
+    console.log(`onFinished: { requestID:${requestID} }`);
+    if(this.cancelledRequests.includes(requestID)) {
+      console.log(`Ignoring cancelled request: { networkID:${networkID}, requestID:${requestID} }`);
       return;
     }
+    this.showNetwork(networkID);
+  }
 
-    this.showNetwork(emRes.netID);
+  onError({ errors, requestID }) {
+    console.log(`onError: { requestID:${requestID} }`);
+    if(this.cancelledRequests.includes(requestID)) {
+      console.log(`Ignoring error from cancelled request: { requestID:${requestID} }`);
+      return;
+    }
+    this.setState({ step: STEP.ERROR, errorMessages: errors });
+  }
+
+  onCancel() {
+    const { requestID } = this.state;
+    console.log(`onCancel: { requestID:${requestID} }`);
+    if(requestID) {
+      this.cancelledRequests.push(requestID);
+    }
+    this.setState({ step: STEP.WAITING, format: null, columns: null, contents: null, name: null,  errorMessages: null });
   }
 
   onBack() {
+    console.log('onBack');
     if (this.state.step === 'CLASSES')
       this.setState({ step: STEP.UPLOAD, format: null, columns: null, contents: null, name: null, errorMessages: null });
   }
@@ -423,7 +436,7 @@ export class Content extends Component {
               onUpload={() => this.onUpload()}
               onClassesChanged={(arr) => this.onClassesChanged(arr)}
               onSubmit={() => this.onSubmit()}
-              onCancelled={() => this.cancel()}
+              onCancelled={() => this.onCancel()}
               onBack={() => this.onBack()}
             />
           </Grid>
