@@ -57,7 +57,7 @@
     "color-convert": "^2.0.1",
     "cookie-parser": "^1.4.5",
     "csv-file-validator": "^2.0.0",
-    "cytoscape": "^3.20.0",
+    "cytoscape": "^3.25.0",
     "cytoscape-cola": "^2.4.0",
     "cytoscape-cose-bilkent": "^4.1.0",
     "cytoscape-dagre": "^2.3.2",
