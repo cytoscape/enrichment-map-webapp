@@ -327,7 +327,7 @@ export class Content extends Component {
                     <AppLogoIcon className={classes.logo} />
                   </Grid>
                   <Grid item>
-                    <Typography variant="inherit" className={classes.logoText}>EnrichmentMap</Typography>
+                    <Typography variant="inherit" className={classes.logoText}>EnrichmentMap:RNA-Seq</Typography>
                   </Grid>
                 </Grid>
               </Grid>
@@ -363,15 +363,27 @@ export class Content extends Component {
     const { classes } = this.props;
 
     const EasyCitation = () =>
-      <Grid container direction="column" alignItems="flex-end">
+      <Grid container direction="column" alignItems="center">
         <Paper className={classes.cite} variant="outlined">
           <FormatQuoteIcon className={classes.citeLogo} />
           <Typography className={classes.citeText}>
+            <p>To cite this app in a paper, for now, please cite the Nature Protocols article below.  An article specific to this app will be published shortly.</p>
+
             <Link className={classes.citeLink} href="https://doi.org/10.1038/s41596-018-0103-9" {...linkoutProps}>
-              Reimand, J., Isserlin, R. et al.&nbsp;
+              Reimand, J., Isserlin, R., ..., Bader, G. &nbsp;
               Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, Cytoscape and EnrichmentMap.&nbsp;
               Nat Protoc 14, 482–517 (2019).
             </Link>&nbsp;
+          </Typography>
+        </Paper>
+        <Paper>
+          <Typography className={classes.citeTextAuthors}>
+            <span>App authored by: </span>
+            <Link href="https://github.com/maxkfranz" className={classes.citeLinkAuthor}>Max Franz</Link><span>, </span>
+            <Link href="https://github.com/mikekucera" className={classes.citeLinkAuthor}>Mike Kucera</Link><span>, </span>
+            <Link href="https://github.com/chrtannus"className={classes.citeLinkAuthor} >Christian Lopes</Link><span>, </span>
+            <span>..., </span>
+            <Link href="https://baderlab.org" className={classes.citeLinkAuthor}>Gary Bader</Link>
           </Typography>
         </Paper>
       </Grid>
@@ -699,10 +711,20 @@ const useStyles = theme => ({
     marginTop: theme.spacing(2),
     fontSize: '0.85rem',
     color: theme.palette.text.secondary,
-    filter: 'opacity(50%)',
+    filter: 'opacity(80%)',
+  },
+  citeTextAuthors: {
+    marginTop: theme.spacing(2),
+    fontSize: '0.85rem',
+    color: theme.palette.text.secondary,
+    textAlign: 'center',
+    width: '100%'
   },
   citeLink: {
-    color: theme.palette.text.primary,
+    color: theme.palette.text.secondary,
+  },
+  citeLinkAuthor: {
+    color: theme.palette.text.primary
   },
   footer: {
     marginTop: theme.spacing(4),
