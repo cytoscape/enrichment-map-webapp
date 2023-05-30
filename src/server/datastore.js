@@ -11,7 +11,11 @@ const GENE_RANKS_COLLECTION = 'geneRanks';
 const GENE_LISTS_COLLECTION = 'geneLists';
 const NETWORKS_COLLECTION = 'networks';
 
-
+/**
+ * When called with no args will returns a new unique mongo ID.
+ * When called with a UUID string arg will convert it to a mongo compatible ID.
+ * Throws an exception if called with an invalid string arg.
+ */
 function makeID(strOrObj) {
   if(_.has(strOrObj, 'bson')) {
     return strOrObj;
@@ -20,6 +24,7 @@ function makeID(strOrObj) {
   const bson = MUUID.from(string);
   return { string, bson };
 }
+
 
 class Datastore {
   // mongo; // mongo connection obj
@@ -289,7 +294,14 @@ class Datastore {
    */
   async getNetwork(networkIDString, options) {
     const { nodeLimit } = options;
-    const networkID = makeID(networkIDString);
+
+    let networkID;
+    try {
+      networkID = makeID(networkIDString);
+    } catch {
+      console.log(`Invalid network ID: '${networkIDString}'`);
+      return null;
+    }
 
     const result = await this.db
       .collection(NETWORKS_COLLECTION)
