@@ -376,7 +376,7 @@ export class Content extends Component {
             </Link>&nbsp;
           </Typography>
         </Paper>
-        <Paper>
+        <Container>
           <Typography className={classes.citeTextAuthors}>
             <span>App authored by: </span>
             <Link href="https://github.com/maxkfranz" className={classes.citeLinkAuthor}>Max Franz</Link><span>, </span>
@@ -385,7 +385,7 @@ export class Content extends Component {
             <span>..., </span>
             <Link href="https://baderlab.org" className={classes.citeLinkAuthor}>Gary Bader</Link>
           </Typography>
-        </Paper>
+        </Container>
       </Grid>
     ;
 
@@ -716,6 +716,7 @@ const useStyles = theme => ({
   },
   citeTextAuthors: {
     marginTop: theme.spacing(2),
+    marginLeft: theme.spacing(-1),
     fontSize: '0.85rem',
     color: theme.palette.text.secondary,
     textAlign: 'center',
@@ -725,7 +726,7 @@ const useStyles = theme => ({
     color: theme.palette.text.secondary,
   },
   citeLinkAuthor: {
-    color: theme.palette.text.primary
+    color: theme.palette.text.secondary,
   },
   footer: {
     marginTop: theme.spacing(4),
