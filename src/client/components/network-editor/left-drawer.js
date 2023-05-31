@@ -364,7 +364,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
           </div>
           <div className={classes.drawerSection}>
           {networkLoaded && geneListIndexed && (
-            <GeneListPanel controller={controller} genes={genes} sort={sort} />
+            <GeneListPanel controller={controller} genes={genes} sort={sort} isMobile={isMobile} />
           )}
           </div>
         </div>

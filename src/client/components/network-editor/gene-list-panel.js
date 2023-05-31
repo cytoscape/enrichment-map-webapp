@@ -7,7 +7,7 @@ import theme from '../../theme';
 import { NES_COLOR_RANGE, nodeLabel } from './network-style';
 import { NetworkEditorController } from './controller';
 
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, withStyles } from '@material-ui/core/styles';
 
 import { Virtuoso } from 'react-virtuoso';
 import { ListItem, ListItemText, Tooltip } from '@material-ui/core';
@@ -57,6 +57,9 @@ const useStyles = makeStyles((theme) => ({
     marginRight: '4px',
     color: 'inherit',
     opacity: 0.5
+  },
+  geneNameContainer: {
+    width: '40%',
   },
   geneName: {
     color: 'inherit', 
@@ -315,7 +318,7 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   );
 };
 
-const GeneListPanel = ({ controller, genes, sort }) => {
+const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
   const [selectedGene, setSelectedGene] = useState(null);
   const [resetScroll, setResetScroll] = useState(true);
   const classes = useStyles();
@@ -341,6 +344,16 @@ const GeneListPanel = ({ controller, genes, sort }) => {
   };
 
   const { minRank, maxRank } = controller;
+
+  const RankTooltip = withStyles(theme => ({
+    tooltipPlacementTop: {
+      marginBottom: 8,
+    },
+    tooltipPlacementRight: {
+      marginTop: -2,
+      marginLeft: 3,
+    },
+  }))(Tooltip);
 
   const renderGeneRow = (idx) => {
     const g = genes != null && genes.length > 0 ? genes[idx] : null;
@@ -420,7 +433,7 @@ const GeneListPanel = ({ controller, genes, sort }) => {
                 className={classes.listItemHeader}
                 onClick={() => { if (!loading) toggleGeneDetails(symbol); }}
               >
-                <Grid item style={{ width: '40%' }}>
+                <Grid item className={classes.geneNameContainer}>
                   <Grid container direction="row" justifyContent="flex-start">
                     <Grid item xs={3}>
                       {isSelected ?
@@ -436,7 +449,7 @@ const GeneListPanel = ({ controller, genes, sort }) => {
                     </Grid>
                   </Grid>
                 </Grid>
-                <Tooltip title={tooltip} enterDelay={750}>
+                <RankTooltip arrow title={tooltip} enterDelay={750} placement={isMobile ? 'top' : 'right'}>
                   <Grid item className={classes.chartContainer}>
                     {loading ?
                       <Skeleton variant="rect" height={CHART_HEIGHT} />
@@ -449,7 +462,7 @@ const GeneListPanel = ({ controller, genes, sort }) => {
                       )
                     }
                   </Grid>
-                </Tooltip>
+                </RankTooltip>
               </Grid>
               {isSelected && (
                 <GeneMetadataPanel symbol={symbol} controller={controller} showSymbol={() => isGeneTextOverflowing(geneTextElemId)} />
@@ -483,6 +496,7 @@ GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   genes: PropTypes.array,
   sort: PropTypes.string,
+  isMobile: PropTypes.bool,
 };
 
 export default GeneListPanel;
