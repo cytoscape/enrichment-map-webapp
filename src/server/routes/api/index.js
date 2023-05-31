@@ -6,11 +6,13 @@ import fs from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import Datastore, { DB_1 } from '../../datastore.js';
+import { performance } from 'perf_hooks';
 import { 
   EM_SERVICE_URL, 
   FGSEA_PRERANKED_SERVICE_URL, 
   FGSEA_RNASEQ_SERVICE_URL,
   BRIDGEDB_URL,
+  MONGO_URL,
 } from '../../env.js';
 import { saveUserUploadFileToS3 } from './s3.js';
 
@@ -215,68 +217,111 @@ http.post('/create/preranked', dataParser, async function(req, res, next) {
  */
 http.post('/create/rnaseq', dataParser, async function(req, res, next) {
   try {
-    await runDataPipeline(req, res);
+    await runDataPipeline(req, res, 'rnaseq');
   } catch (err) {
     next(err);
   }
 });
 
 
-async function runDataPipeline(req, res, preranked) {
+function createPeformanceHook() {
+  const tag = Date.now();
+  const markNames = [];
+  return {
+    startTime: new Date(),
+    mark: name => {
+      const markName = `${name}-${tag}`;
+      console.log('  running ' + markName);
+      performance.mark(markName);
+      markNames.push(markName);
+    },
+    measure: ({ from, to }) => {
+      const { duration } = performance.measure(from, `${from}-${tag}`, `${to}-${tag}`);
+      return duration;
+    },
+    dispose: () => {
+      markNames.forEach(performance.clearMarks);
+    }
+  };
+}
+
+
+async function runDataPipeline(req, res, type) {
   const { networkName } = req.query;
   const contentType = req.get('Content-Type'); // use same content type with FGSEA service
+  const preranked = type === 'preranked';
   let body = req.body;
-  const tag = Date.now();
 
-  console.log('/api/create/ ' + tag + ', Content-Type:' + contentType);
-  console.time('/api/create/ ' + tag);
-  
+  console.log('/api/create/');
+  const perf = createPeformanceHook();
+
   // n.b. no await so as to not block
   saveUserUploadFileToS3(body, `${networkName}.csv`, contentType);
 
-  if(isEnsembl(body)) {
-    console.time(' bridgedb ' + tag );
+  perf.mark('bridgedb');
+  const needIdMapping = isEnsembl(body);
+  if(needIdMapping) {
     body = await runEnsemblToHGNCMapping(body, contentType);
-    console.timeEnd(' bridgedb ' + tag );
   }
 
+  perf.mark('fgsea');
   let rankedGeneList;
   let pathwaysForEM;
-
   if(preranked) {
-    console.time(' fgsea_preranked_service ' + tag);
     const { pathways } = await runFGSEApreranked(body, contentType);
-    console.timeEnd(' fgsea_preranked_service ' + tag);
-
     const delim = contentType === 'text/csv' ? ',' : '\t';
     rankedGeneList = Datastore.rankedGeneListToDocument(body, delim);
     pathwaysForEM = pathways;
   } else {
-    console.time(' fgsea_rnaseq_service ' + tag);
     const { classes } = req.query;
     const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
     sendMessagesToSentry('fgsea', messages);
-    console.timeEnd(' fgsea_rnaseq_service ' + tag);
-
     rankedGeneList = Datastore.fgseaServiceGeneRanksToDocument(ranks);
     pathwaysForEM = pathways;
   }
 
-  console.time(' em_service ' + tag);
+  perf.mark('em');
   const networkJson = await runEM(pathwaysForEM);
-  console.timeEnd(' em_service ' + tag);
 
+  perf.mark('mongo');
+  let networkID;
   if(isEmptyNetwork(networkJson)) {
+    console.log('sending empty network');
     res.status(422).send("Empty Network");
   } else {
-    console.time(' mongo ' + tag);
-    const netID = await Datastore.createNetwork(networkJson, networkName);
-    await Datastore.createRankedGeneList(DB_1, netID, rankedGeneList);
-    console.timeEnd(' mongo ' + tag);
-    res.send(netID);
+    networkID = await Datastore.createNetwork(networkJson, networkName, type);
+    await Datastore.createRankedGeneList(DB_1, networkID, rankedGeneList);
+    res.send(networkID);
   }
 
-  console.timeEnd('/api/create/ ' + tag);
+  perf.mark('end');
+
+  Datastore.createPerfDocument(networkID, {
+    startTime: perf.startTime,
+    emptyNetwork: typeof networkID === 'undefined',
+    geneCount: rankedGeneList?.genes?.length,
+    steps: [ {
+      step: 'bridgedb',
+      needIdMapping,
+      url: BRIDGEDB_URL,
+      timeTaken: perf.measure({ from:'bridgedb', to:'fgsea' }),
+    }, {
+      step: 'fgsea',
+      type,
+      url: preranked ? FGSEA_PRERANKED_SERVICE_URL : FGSEA_RNASEQ_SERVICE_URL,
+      timeTaken: perf.measure({ from:'fgsea', to:'em' }),
+    }, {
+      step: 'em',
+      url: EM_SERVICE_URL,
+      timeTaken: perf.measure({ from:'em', to:'mongo' }),
+    }, {
+      step: 'mongo',
+      url: MONGO_URL,
+      timeTaken: perf.measure({ from:'mongo', to:'end' }),
+    }]
+  });
+  
+  perf.dispose();
 }
 
 
@@ -301,7 +346,6 @@ async function runFGSEApreranked(ranksData, contentType) {
 
 async function runFGSEArnaseq(countsData, classes, contentType) {
   const url = FGSEA_RNASEQ_SERVICE_URL + '?' + new URLSearchParams({ classes });
-  console.log(url);
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': contentType },

@@ -10,6 +10,7 @@ export const DB_1 = 'Human_GOBP_AllPathways_no_GO_iea_June_01_2022_symbol.gmt';
 const GENE_RANKS_COLLECTION = 'geneRanks';
 const GENE_LISTS_COLLECTION = 'geneLists';
 const NETWORKS_COLLECTION = 'networks';
+const PERFORMANCE_COLLECTION = 'performance';
 
 /**
  * When called with no args will returns a new unique mongo ID.
@@ -116,7 +117,7 @@ class Datastore {
    * Inserts a network document into the 'networks' collection.
    * @returns The id of the created document.
    */
-  async createNetwork(networkJson, networkName) {
+  async createNetwork(networkJson, networkName, type) {
     if (typeof (networkJson) == 'string') {
       networkJson = JSON.parse(networkJson);
     }
@@ -129,6 +130,8 @@ class Datastore {
     
     if(networkName)
       networkJson['networkName'] = networkName;
+    if(type)
+      networkJson['inputType'] = type;
 
     await this.db
       .collection(NETWORKS_COLLECTION)
@@ -154,6 +157,20 @@ class Datastore {
     return res.modifiedCount > 0;
   }
 
+  /**
+   * Inserts the given document into the 'performance' collection.
+   */
+  async createPerfDocument(networkIDString, document) {
+    if(networkIDString) {
+      document = { 
+        networkID: makeID(networkIDString).bson, 
+        ...document
+      };
+    }
+    await this.db
+      .collection(PERFORMANCE_COLLECTION)
+      .insertOne(document);
+  }
 
   /**
    * Converts a ranked gene list in TSV format into the document
@@ -285,7 +302,6 @@ class Datastore {
       ])
       .toArray();
 
-    console.log("done loading gene ranks");
     return geneListID.string;
   }
 
