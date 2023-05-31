@@ -396,6 +396,12 @@ const GeneListPanel = ({ controller, genes, sort }) => {
 
     const roundDigits = GENE_RANK_ROUND_DIGITS;
     const roundedRank = rank != null ? (Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits)) : 0;
+    
+    // Tooltip for rank:
+    const sign = roundedRank > 0 ? '+' : '';
+    let reg = roundedRank > 0 ? 'up' : 'down';
+    reg = roundedRank !== 0 ? ` (${reg} regulated)` : '';
+    const tooltip = `Differential gene expression: ${sign}${roundedRank.toFixed(GENE_RANK_ROUND_DIGITS)}${reg}`;
 
     const geneTextElemId = `gene_${idx}`;
 
@@ -430,18 +436,20 @@ const GeneListPanel = ({ controller, genes, sort }) => {
                     </Grid>
                   </Grid>
                 </Grid>
-                <Grid item className={classes.chartContainer}>
-                  {loading ?
-                    <Skeleton variant="rect" height={CHART_HEIGHT} />
-                    :
-                    data && (
-                      <div className={classes.rankBarParent}>
-                        <HSBar data={data} height={CHART_HEIGHT} />
-                        <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(2)}</span>
-                      </div>
-                    )
-                  }
-                </Grid>
+                <Tooltip title={tooltip} enterDelay={750}>
+                  <Grid item className={classes.chartContainer}>
+                    {loading ?
+                      <Skeleton variant="rect" height={CHART_HEIGHT} />
+                      :
+                      data && (
+                        <div className={classes.rankBarParent}>
+                          <HSBar data={data} height={CHART_HEIGHT} />
+                          <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(GENE_RANK_ROUND_DIGITS)}</span>
+                        </div>
+                      )
+                    }
+                  </Grid>
+                </Tooltip>
               </Grid>
               {isSelected && (
                 <GeneMetadataPanel symbol={symbol} controller={controller} showSymbol={() => isGeneTextOverflowing(geneTextElemId)} />

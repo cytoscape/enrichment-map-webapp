@@ -47,6 +47,14 @@ const theme = createTheme({
       }
     },
   },
+  overrides: {
+    MuiTooltip: {
+        tooltip: {
+            fontSize: "0.85em",
+            maxWidth: 340,
+        },
+    },
+  },
 });
 
 export default theme;
