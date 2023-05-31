@@ -137,7 +137,7 @@ export class UploadController {
     } else if (res.status == 422) {
       // The EM-service returned an empty network. 
       // Probable causes: The gene IDs don't match whats in our pathway database or none of the enriched pathways passed the filter cutoff.
-      return { errors: ["Not able to create a network from the provided data."] };
+      return { errors: ["Not able to create a network from the provided data.", "There are not enough significantly enriched gene sets."] };
 
     } else {
       return { errors: [] }; // empty array shows generic error message

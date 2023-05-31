@@ -234,7 +234,7 @@ export class Content extends Component {
   }
 
   onError({ errors, requestID }) {
-    console.log(`onError: { requestID:${requestID} }`);
+    console.log(`onError: { errors: ${errors}, requestID: ${requestID} }`);
     if(this.cancelledRequests.includes(requestID)) {
       console.log(`Ignoring error from cancelled request: { requestID:${requestID} }`);
       return;
@@ -359,7 +359,7 @@ export class Content extends Component {
   }
 
   renderMain() {
-    const { step, isMobile, format, columns, contents } = this.state;
+    const { step, isMobile, format, columns, contents, errorMessages } = this.state;
     const { classes } = this.props;
 
     const EasyCitation = () =>
@@ -445,6 +445,7 @@ export class Content extends Component {
               format={format}
               columns={columns}
               contents={contents}
+              errorMessages={errorMessages}
               onUpload={() => this.onUpload()}
               onClassesChanged={(arr) => this.onClassesChanged(arr)}
               onSubmit={() => this.onSubmit()}
