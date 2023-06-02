@@ -1,4 +1,4 @@
-# Cytoscape Explore
+# EnrichmentMap web-app
 
 ## Required software
 
