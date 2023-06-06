@@ -137,19 +137,19 @@ const UploadPanel = ({ isMobile }) => {
         Both formats have a header row, followed by the data rows.<br />
         The column names are not important, but their orders are.
       </Typography>
-      <FormatContainer isMobile={isMobile} data={RANKED_ROWS} title="Format 1 - Pre-Ranked Gene List">
-        It must have exactly 2 columns:
-        <ul>
-          <li><GeneNameInfo /></li>
-          <li>The second column is the numeric <code>rank</code>.</li>
-        </ul>
-      </FormatContainer>
-      <FormatContainer isMobile={isMobile} data={RNASEQ_ROWS} title="Format 2 - RNA-Seq Expression Data">
+      <FormatContainer isMobile={isMobile} data={RNASEQ_ROWS} title="Format 1 - RNA-Seq Expression Data">
         It must have 3 or more columns:
         <ul>
           <li><GeneNameInfo /></li>
           <li>The other columns must be numeric.</li>
           <li>If there are additional columns, you will have to set them as &ldquo;ignored&rdquo; in the next step.</li>
+        </ul>
+      </FormatContainer>
+      <FormatContainer isMobile={isMobile} data={RANKED_ROWS} title="Format 2 - Pre-Ranked Gene List">
+        It must have exactly 2 columns:
+        <ul>
+          <li><GeneNameInfo /></li>
+          <li>The second column is the numeric <code>rank</code>.</li>
         </ul>
       </FormatContainer>
     </>
