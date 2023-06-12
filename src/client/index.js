@@ -7,6 +7,8 @@ import { fixOldFashionedScrollStyle } from './scroll';
 import * as Sentry from "@sentry/browser";
 import { BrowserTracing } from "@sentry/tracing";
 import { SENTRY, SENTRY_ENVIRONMENT } from './env';
+import Cytoscape from 'cytoscape';
+import svg from 'cytoscape-svg';
 
 if( debug.enabled() ){
   debug.init();
@@ -26,6 +28,8 @@ if (SENTRY) {
 }
 
 registerCytoscapeExtensions();
+Cytoscape.use(svg);
+
 
 let div = document.createElement('div');
 div.setAttribute('id', 'root');

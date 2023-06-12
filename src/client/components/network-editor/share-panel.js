@@ -17,23 +17,32 @@ const ImageSize = {
 };
 
 const ImageArea = {
-  FULL: 'full',
-  VIEW: 'view',
+  FULL: { name:'full', full: true  },
+  VIEW: { name:'view', full: false },
 };
 
+const stringToBlob = str => new Blob([str], { type: 'text/plain;charset=utf-8' });
 
 async function createNetworkImageBlob(controller, imageSize, imageArea=ImageArea.FULL) {
   return await controller.cy.png({
     output: 'blob-promise',
     bg: 'white',
-    full: imageArea === ImageArea.FULL,
+    full: imageArea.full,
     scale: imageSize.scale,
   });
 }
 
-async function createSVGLegendBlob(svgID) {
+async function createNetworkSVGBlob(controller,  imageArea=ImageArea.FULL) {
+  const svg = await controller.cy.svg({
+    full: imageArea.full,
+    bg: 'white',
+  });
+  return stringToBlob(svg);
+}
+
+async function createLegendSVGBlob(svgID) {
   const svg = getSVGString(svgID);
-  return new Blob([svg], { type: 'text/plain;charset=utf-8' });
+  return stringToBlob(svg);
 }
 
 async function clearSelectionStyle(controller) {
@@ -63,7 +72,8 @@ async function handleExportImageArchive(controller) {
     createNetworkImageBlob(controller, ImageSize.SMALL),
     createNetworkImageBlob(controller, ImageSize.MEDIUM),
     createNetworkImageBlob(controller, ImageSize.LARGE),
-    createSVGLegendBlob(NODE_COLOR_SVG_ID),
+    createNetworkSVGBlob(controller),
+    createLegendSVGBlob(NODE_COLOR_SVG_ID),
   ]);
 
   restoreStyle();
@@ -72,7 +82,8 @@ async function handleExportImageArchive(controller) {
   zip.file('enrichment_map_small.png',  blobs[0]);
   zip.file('enrichment_map_medium.png', blobs[1]);
   zip.file('enrichment_map_large.png',  blobs[2]);
-  zip.file('node_color_legend.svg',     blobs[3]);
+  zip.file('enrichment_map.svg',        blobs[3]);
+  zip.file('node_color_legend.svg',     blobs[4]);
 
   const archiveBlob = await zip.generateAsync({ type: 'blob' });
   
