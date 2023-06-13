@@ -23,7 +23,7 @@ export function DebugMenu({ children }) {
         {children}
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => this.close()} color="primary">
+        <Button onClick={toggle} color="primary">
           Close
         </Button>
       </DialogActions>

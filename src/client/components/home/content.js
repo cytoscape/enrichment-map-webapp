@@ -1,6 +1,7 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import PropTypes from 'prop-types';
 import EventEmitter from 'eventemitter3';
+import _ from 'lodash';
 
 import { linkoutProps } from '../defaults';
 import { UploadController } from './upload-controller';
@@ -44,253 +45,226 @@ const logosDef = [
   { src: "/images/uoft-logo.svg", alt: "UofT logo", href: "https://www.utoronto.ca/" },
 ];
 
-const isMobileWidth = () => {
-  return window.innerWidth <= theme.breakpoints.values.sm;
-};
+const isMobileWidth = () => window.innerWidth <= theme.breakpoints.values.sm;
+const isTabletWidth = () => !isMobileWidth() && window.innerWidth <= theme.breakpoints.values.md;
 
-const isTabletWidth = () => {
-  return !isMobileWidth() && window.innerWidth <= theme.breakpoints.values.md;
-};
+function showNetwork(id) {
+  location.href = `/document/${id}`;
+}
 
-// globally cached
-let sampleFiles = [];
-let sampleRankFiles = [];
-let sampleExpressionFiles = [];
+async function loadSampleFiles() {
+  const res = await fetch('/api/sample-data');
+  const files = await res.json();
+  const [ sampleRankFiles, sampleExprFiles ] = _.partition(files, f => f.endsWith('.rnk'));
+  return {
+    sampleRankFiles,
+    sampleExprFiles
+  };
+}
 
-export class Content extends Component {
+async function showFileDialog() {
+  var input = document.createElement('input');
+  input.type = 'file';
 
-  constructor(props) {
-    super(props);
+  return await new Promise(resolve => {
+    input.addEventListener('change', () => {
+      const files = input.files;
+      resolve(files);
+    });
+    input.click();
+  });
+}
 
-    this.bus = new EventEmitter();
-    this.controller = new UploadController(this.bus);
-    this.cancelledRequests = [];
 
-    const isMobile = isMobileWidth();
-    const isTablet = isTabletWidth();
 
-    this.state = {
-      step: STEP.WAITING,
-      mobileMoreAnchorEl: null,
-      errorMessages: null,
-      sampleFiles,
-      sampleRankFiles,
-      sampleExpressionFiles,
-      isDroppingFile: false,
-      isMobile: isMobile,
-      isTablet: isTablet,
+export function Content({ classes }) {
+
+  /** State */
+
+  // the UploadController interacts with this component via an event bus
+  const [ bus ] = useState(() => new EventEmitter());
+  const [ uploadController ] = useState(() => new UploadController(bus));
+
+  const [ sampleFiles, setSampleFiles ] = useState({ sampleRankFiles: [], sampleExprFiles: []});
+  const [ step, setStep ] = useState(STEP.WAITING);
+
+  // keep track of requests for the cancel button to work
+  const [ requestID, setRequestID ] = useState(null);
+  const [ cancelledRequests, addCanceledRequest ] = useReducer((rs, r) => [...rs, r], []);
+
+  // state for uploaded file
+  const [ format, setFormat ] = useState(null); // file format: 'rnaseq' or 'ranks'
+  const [ contents, setContents ] = useState(null); // entire contents of uploaded file :)
+  const [ columns, setColumns ] = useState(null); // names of columns in file
+  const [ name, setName ] = useState(null); // name of file
+  const [ rnaseqClasses, setRnaseqClasses ] = useState(null); // classification of columns into A or B or X (ignored)
+  const [ errorMessages, setErrorMessages ] = useState(null);
+
+  // state for components
+  const [ mobile, setMobile ] = useState(() => isMobileWidth());
+  const [ tablet, setTablet ] = useState(() => isTabletWidth());
+  const [ mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState(null);
+  const [ droppingFile, setDroppingFile ] = useState(false);
+  
+
+  /** Effects */
+
+  useEffect(() => {
+    loadSampleFiles().then(setSampleFiles);
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setMobile(isMobileWidth());
+      setTablet(isTabletWidth());
     };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-    // For events emitted by the UploadController
-    this.onLoading = this.onLoading.bind(this);
-    this.onClasses = this.onClasses.bind(this);
-    this.onRanks = this.onRanks.bind(this);
-    this.onFinished = this.onFinished.bind(this);
-    this.onError = this.onError.bind(this);
+  useEffect(() => {
+    bus.on('loading', onLoading);
+    bus.on('classes', onClasses);
+    bus.on('ranks', onRanks);
+    bus.on('finished', onFinished);
+    bus.on('error', onError);
+    return () => bus.removeAllListeners();
+  }, []);
 
-    this.handleResize = this.handleResize.bind(this);
 
-    window.addEventListener("resize", this.handleResize);
-  }
+  /** Callbacks and utility functions */
 
-  componentDidMount() {
-    // events emitted by the UploadController
-    this.bus.on('loading', this.onLoading);
-    this.bus.on('classes', this.onClasses);
-    this.bus.on('ranks', this.onRanks);
-    this.bus.on('finished', this.onFinished);
-    this.bus.on('error', this.onError);
+  const clearFileState = () => {
+    setFormat(null);
+    setColumns(null);
+    setContents(null);
+    setName(null);
+    setRnaseqClasses(null);
+    setErrorMessages(null);
+  };
 
-    this.loadSampleFiles();
-  }
-
-  componentWillUnmount() {
-    this.bus.removeAllListeners();
-    this.rnaseqClasses = null;
-  }
-
-  handleResize() {
-    const isMobile = isMobileWidth();
-    const isTablet = isTabletWidth();
-
-    if (this.state.isMobile !== isMobile || this.state.isTablet !== isTablet) {
-      this.setState({ isMobile, isTablet });
-    }
-  }
-
-  openMobileMenu(event) {
-    this.setState({ mobileMoreAnchorEl: event.currentTarget });
-  }
-
-  closeMobileMenu() {
-    this.setState({ mobileMoreAnchorEl: null });
-  }
-
-  onClickMenu(menu) {
-    // TODO...
-  }
-
-  async loadSampleFiles() {
-    if (sampleFiles.length > 0) { return; } // already loaded
-
-    const res = await fetch('/api/sample-data');
-    const files = await res.json();
-
-    sampleFiles = files;
-    sampleRankFiles = files.filter(f => f.endsWith('.rnk'));
-    sampleExpressionFiles = files.filter(f => !f.endsWith('.rnk'));
-
-    this.setState({ sampleFiles, sampleRankFiles, sampleExpressionFiles }); // re-render on load
-  }
-
-  showNetwork(id, secret) {
-    // location.href = `/document/${id}/${secret}`;
-    location.href = `/document/${id}`;
-  }
-
-  async onLoadSampleNetwork(fileName) {
-    if (this.state.step == STEP.LOADING)
+  const loadSampleNetwork = async (fileName) => {
+    if (step == STEP.LOADING)
       return;
-
-    const file = await this.controller.loadSampleData(fileName);
+    const file = await uploadController.loadSampleData(fileName);
     if(file) {
-      await this.controller.upload([file]);
+      await uploadController.upload([file]);
     }
-  }
+  };
 
-  async onDropUpload(event) {
+  const onDropUpload = async (event) => {
     event.preventDefault();
-
-    if (this.state.step == STEP.LOADING)
+    if (step == STEP.LOADING)
       return;
 
-    const files = (
-      Array.from(event.dataTransfer.items)
+    const files = Array.from(event.dataTransfer.items)
         .filter(item => item.kind === 'file')
-        .map(item => item.getAsFile())
-    );
+        .map(item => item.getAsFile());
 
-    this.setState({ isDroppingFile: false });
+    setDroppingFile(false);
+    await uploadController.upload(files);
+  };
 
-    await this.controller.upload(files);
-  }
-
-  onDragOverUpload(event) {
+  const onDragOverUpload = (event) => {
     event.preventDefault();
-    this.setState({ isDroppingFile: true });
-  }
+    setDroppingFile(true);
+  };
 
-  onDragEndUpload(event) {
+  const onDragEndUpload = (event) => {
     event.preventDefault();
-    this.setState({ isDroppingFile: false });
-  }
+    setDroppingFile(false);
+  };
 
-  async onClickGetStarted() {
-    if (this.state.step != STEP.LOADING)
-      this.setState({ step: STEP.UPLOAD });
-  }
+  const onClickGetStarted = () => {
+    if (step != STEP.LOADING)
+      setStep(STEP.UPLOAD);
+  };
 
-  onClassesChanged(rnaseqClasses) {
-    this.rnaseqClasses = rnaseqClasses;
-  }
+  const onClassesChanged = (rnaseqClasses) => {
+    setRnaseqClasses(rnaseqClasses);
+  };
 
-  async onUpload() {
-    const files = await this.showFileDialog();
-    await this.controller.upload(files);
-  }
+  const onUpload = async () => {
+    const files = await showFileDialog();
+    await uploadController.upload(files);
+  };
 
-  onLoading() {
-    console.log('onLoading');
-    this.setState({ step: STEP.LOADING });
-  }
+  const onLoading = () => setStep(STEP.LOADING);
 
-  async onRanks({ format, contents, name }) {
+  const onRanks = async ({ format, contents, name }) => {
     const requestID = uuid.v4();
-    console.log(`onRanks: { requestID:${requestID} }`);
-    this.setState({ step: STEP.LOADING, requestID });
-    await this.controller.sendDataToEMService(contents, format, 'ranks', name, requestID);
-  }
+    setStep(STEP.LOADING);
+    setRequestID(requestID);
+    await uploadController.sendDataToEMService(contents, format, 'ranks', name, requestID);
+  };
 
-  async onSubmit() {
-    const { format, contents, name } = this.state;
+  const onSubmit = async () => {
     const requestID = uuid.v4();
-    console.log(`onSubmit: { requestID:${requestID} }`);
-    this.setState({ step: STEP.LOADING, requestID });
-    await this.controller.sendDataToEMService(contents, format, 'rnaseq', name, requestID, this.rnaseqClasses);
-  }
+    setStep(STEP.LOADING);
+    setRequestID(requestID);
+    await uploadController.sendDataToEMService(contents, format, 'rnaseq', name, requestID, rnaseqClasses);
+  };
 
-  onClasses({ format, columns, contents, name }) {
-    console.log('onClasses');
-    this.setState({ step: STEP.CLASSES, format, columns, contents, name });
-  }
+  const onClasses = ({ format, columns, contents, name }) => {
+    setStep(STEP.CLASSES);
+    setFormat(format);
+    setColumns(columns);
+    setContents(contents);
+    setName(name);
+  };
  
-  onFinished({ networkID, requestID }) {
-    console.log(`onFinished: { requestID:${requestID} }`);
-    if(this.cancelledRequests.includes(requestID)) {
-      console.log(`Ignoring cancelled request: { networkID:${networkID}, requestID:${requestID} }`);
-      return;
-    }
-    this.showNetwork(networkID);
-  }
-
-  onError({ errors, requestID }) {
-    console.log(`onError: { errors: ${errors}, requestID: ${requestID} }`);
-    if(this.cancelledRequests.includes(requestID)) {
+  const onError = ({ errors, requestID }) => {
+    if(cancelledRequests.includes(requestID)) {
       console.log(`Ignoring error from cancelled request: { requestID:${requestID} }`);
       return;
     }
-    this.setState({ step: STEP.ERROR, errorMessages: errors });
-  }
+    setStep(STEP.ERROR);
+    setRequestID(null);
+    clearFileState();
+    setErrorMessages(errors);
+  };
 
-  onCancel() {
-    const { requestID } = this.state;
-    console.log(`onCancel: { requestID:${requestID} }`);
+  const onCancel = () => {
     if(requestID) {
-      this.cancelledRequests.push(requestID);
+      addCanceledRequest(requestID);
     }
-    this.setState({ step: STEP.WAITING, format: null, columns: null, contents: null, name: null,  errorMessages: null });
-  }
+    setStep(STEP.WAITING);
+    setRequestID(null);
+    clearFileState();
+  };
 
-  onBack() {
-    console.log('onBack');
-    if (this.state.step === 'CLASSES')
-      this.setState({ step: STEP.UPLOAD, format: null, columns: null, contents: null, name: null, errorMessages: null });
-  }
+  const onBack = () => {
+    setStep(STEP.UPLOAD);
+    clearFileState();
+  };
 
-  async showFileDialog() {
-    var input = document.createElement('input');
-    input.type = 'file';
+  const onFinished = ({ networkID, requestID }) => {
+    if(cancelledRequests.includes(requestID)) {
+      console.log(`Ignoring cancelled request: { networkID:${networkID}, requestID:${requestID} }`);
+      return;
+    }
+    showNetwork(networkID);
+  };
 
-    return await new Promise(resolve => {
-      input.addEventListener('change', () => {
-        const files = input.files;
-        resolve(files);
-      });
-  
-      input.click();
-    });
-  }
 
-  render() {
-    const { classes } = this.props;
-    const { isDroppingFile } = this.state;
+  /** Render Componenets */
 
+  const Figure = () => {
+    return <img src="/images/home-figure.png" alt="figure" className={classes.figure} />;
+  };
+
+  // eslint-disable-next-line react/prop-types
+  const Logo = ({ src, alt, href }) => {
     return (
-      <div className={classNames({ [classes.root]: true, [classes.rootDropping]: isDroppingFile })}>
-        { this.renderHeader() }
-        <Container maxWidth="lg" disableGutters>
-          { this.renderMain() }
-          {/* { this.renderMobileMenu() } */}
-          { this.renderDebug() }
-          { this.renderFooter() }
-        </Container>
-      </div>
+      <Link href={href} target="_blank" rel="noreferrer" underline="none">
+        <img src={src} alt={alt} className={classes.footerLogo} />  
+      </Link>
     );
-  }
+  };
 
-  renderMobileMenu() {
-    const { mobileMoreAnchorEl } = this.state;
-
+  const MobileMenu = () => {
+    const openMobileMenu = (event) => setMobileMoreAnchorEl(event.currentTarget);
+    const closeMobileMenu = () => setMobileMoreAnchorEl(null);
     return (
       <Menu
         anchorEl={mobileMoreAnchorEl}
@@ -299,23 +273,20 @@ export class Content extends Component {
         keepMounted
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         open={Boolean(mobileMoreAnchorEl)}
-        onClose={() => this.closeMobileMenu()}
+        onClose={closeMobileMenu}
       >
         <MenuList>
         {menusDef.map((menu, idx) => (
-          <MenuItem key={idx} onClick={() => this.onClickMenu(menu)}>
+          <MenuItem key={idx}>
             { menu.label }
           </MenuItem>
         ))}
         </MenuList>
       </Menu>
     );
-  }
+  };
 
-  renderHeader() {
-    const { isTablet, isMobile } = this.state;
-    const { classes } = this.props;
-
+  const Header = () => {
     return (
       <AppBar position="static" color="transparent">
         <Container maxWidth="lg" disableGutters>
@@ -333,140 +304,80 @@ export class Content extends Component {
               </Grid>
             </Grid>
             <div className={classes.grow} />
-          {/* {!isTablet && !isMobile ?
-            <Toolbar>
-            {menusDef.map((menu, idx) => (
-              <Button key={idx} className={classes.menu} variant="text" color="inherit" onClick={() => this.onClickMenu(menu)}>
-                { menu.label }
-              </Button>
-            ))}
-            </Toolbar>
-          :
-            <IconButton
-              aria-label="show more"
-              aria-controls={mobileMenuId}
-              aria-haspopup="true"
-              onClick={(evt) => this.openMobileMenu(evt)}
-              color="inherit"
-            >
-              <MenuIcon />
-            </IconButton>
-          } */}
           </Toolbar>
         </Container>
       </AppBar>
     );
-  }
+  };
 
-  renderMain() {
-    const { step, isMobile, format, columns, contents, errorMessages } = this.state;
-    const { classes } = this.props;
-
-    const EasyCitation = () =>
-      <Grid container direction="column" alignItems="center">
-        <Paper className={classes.cite} variant="outlined">
-          <FormatQuoteIcon className={classes.citeLogo} />
-          <Typography className={classes.citeText}>
-            <p>To cite this app in a paper, for now, please cite the Nature Protocols article below.  An article specific to this app will be published shortly.</p>
-
-            <Link className={classes.citeLink} href="https://doi.org/10.1038/s41596-018-0103-9" {...linkoutProps}>
-              Reimand, J., Isserlin, R., ..., Bader, G. &nbsp;
-              Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, Cytoscape and EnrichmentMap.&nbsp;
-              Nat Protoc 14, 482–517 (2019).
-            </Link>&nbsp;
-          </Typography>
-        </Paper>
-        <Container>
-          <Typography className={classes.citeTextAuthors}>
-            <span>App authored by: </span>
-            <Link href="https://github.com/maxkfranz" className={classes.citeLinkAuthor}>Max Franz</Link><span>, </span>
-            <Link href="https://github.com/mikekucera" className={classes.citeLinkAuthor}>Mike Kucera</Link><span>, </span>
-            <Link href="https://github.com/chrtannus"className={classes.citeLinkAuthor} >Christian Lopes</Link><span>, </span>
-            <span>..., </span>
-            <Link href="https://baderlab.org" className={classes.citeLinkAuthor}>Gary Bader</Link>
-          </Typography>
-        </Container>
-      </Grid>
-    ;
-
+  const Footer = () => {
     return (
-      <div
-        className={classes.drop} 
-        onDrop={e => this.onDropUpload(e)} 
-        onDragOver={e => this.onDragOverUpload(e)} 
-        onDragLeave={e => this.onDragEndUpload(e)} 
-        onDragEnd={e => this.onDragEndUpload(e)}
-      >
-        <Grid container direction="column" justifyContent="center" alignItems="center">
-          <Grid item>
-            <Grid
-              container
-              className={classes.content}
-              direction={isMobile ? 'column' : 'row'}
-              justifyContent="center"
-              alignItems="center"
-              spacing={2}
-            >
-              <Grid item xs={isMobile ? 12 : 6}>
-                <Grid container direction="column" justifyContent="center" alignItems="center">
-                  <Grid item>
-                    <Typography variant="h1" className={classes.tagline}>Enrichment analysis for your RNA&#8209;Seq</Typography>
-                  </Grid>
-                  <Grid item>
-                    <p className={classes.description}>
-                      Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA&#8209;Seq experiment.
-                    </p>
-                  </Grid>
-                  <Grid item className={classes.section}>
-                    {isMobile ? this.renderFigure() : this.renderGetStartedSection()}
-                  </Grid>
-                {isMobile && (
-                  <Grid item className={classes.section}>
-                    { this.renderGetStartedSection() }
-                  </Grid>
-                )}
-                </Grid>
-              </Grid>
-            {!isMobile && (
-              <Grid item className={classes.section} xs={6}>
-                { this.renderFigure() }
+      <Container maxWidth="lg" disableGutters className={classes.footer}>
+        <Divider />
+        <Toolbar variant="regular" className={classes.logoBar}>
+          <Grid
+            container
+            direction={mobile || tablet ? 'column' : 'row'}
+            alignItems={mobile || tablet ? 'center' : 'flex-start'}
+            justifyContent={mobile ? 'space-around' : 'space-between'}
+          >
+            <Grid item className={classes.copyright} md={4} sm={12}>
+              &copy; {new Date().getFullYear()} University of Toronto
+            </Grid>
+            <Grid item md={8} sm={12}>
+              <Grid
+                container
+                direction={mobile ? 'column' : 'row'}
+                alignItems={mobile ? 'center' : 'flex-start'}
+                justifyContent={mobile ? 'space-around' : 'space-between'}
+                spacing={5}
+              >
+            {logosDef.map((logo, idx) =>
+              <Grid key={idx} item>
+                <Logo src={logo.src} alt={logo.alt} href={logo.href} />
               </Grid>
             )}
+              </Grid>
             </Grid>
           </Grid>
-          <Grid item xs={isMobile ? 10 : 8}>
-            <EasyCitation />
-          </Grid>
-        {step !== STEP.WAITING && (
-          <Grid item>
-            <StartDialog
-              step={step}
-              isMobile={isMobile}
-              format={format}
-              columns={columns}
-              contents={contents}
-              errorMessages={errorMessages}
-              onUpload={() => this.onUpload()}
-              onClassesChanged={(arr) => this.onClassesChanged(arr)}
-              onSubmit={() => this.onSubmit()}
-              onCancelled={() => this.onCancel()}
-              onBack={() => this.onBack()}
-            />
-          </Grid>
-        )}
-        </Grid>
-      </div>
+        </Toolbar>
+      </Container>
     );
-  }
+  };
 
-  renderGetStartedSection() {
-    const { isMobile, isTablet } = this.state;
-    const { classes } = this.props;
+  const Debug = () => {
+    const { sampleRankFiles, sampleExprFiles } = sampleFiles;
+    return (
+      <DebugMenu>
+        <h3>Example rank input files</h3>
+        <ul>
+        {
+          sampleRankFiles.length > 0 ?
+          sampleRankFiles.map(file => (
+            <li key={file}><Link component="a" style={{ cursor: 'pointer' }} onClick={() => loadSampleNetwork(file)}>{file}</Link></li>
+          )) :
+          <li>Loading...</li>
+        }
+        </ul>
+        <h3>Example expression input files</h3>
+        <ul>
+        {
+          sampleExprFiles.length > 0 ?
+          sampleExprFiles.map(file => (
+            <li key={file}><Link component="a" style={{ cursor: 'pointer' }} onClick={() => loadSampleNetwork(file)}>{file}</Link></li>
+          )) :
+          <li>Loading...</li>
+        }
+        </ul>
+      </DebugMenu>
+    );
+  };
 
+  const GetStartedSection = () => {
     return (
       <Grid
         container
-        justifyContent={isMobile || isTablet ? 'center' : 'flex-start'}
+        justifyContent={mobile || tablet ? 'center' : 'flex-start'}
         alignItems="center"
         spacing={3}
       >
@@ -476,7 +387,7 @@ export class Content extends Component {
             variant="contained"
             color="primary"
             endIcon={<NavigateNextIcon />}
-            onClick={e => this.onClickGetStarted(e)}
+            onClick={onClickGetStarted}
           >
             Get Started
           </Button>
@@ -493,92 +404,120 @@ export class Content extends Component {
         </Grid> */}
       </Grid>
     );
-  }
+  };
 
-  renderFigure = () => {
-    const { classes } = this.props;
+  const EasyCitation = () =>
+    <Grid container direction="column" alignItems="center">
+      <Paper className={classes.cite} variant="outlined">
+        <FormatQuoteIcon className={classes.citeLogo} />
+        <Typography className={classes.citeText}>
+          To cite this app in a paper, for now, please cite the Nature Protocols article below.  An article specific to this app will be published shortly.
 
+          <Link className={classes.citeLink} href="https://doi.org/10.1038/s41596-018-0103-9" {...linkoutProps}>
+            Reimand, J., Isserlin, R., ..., Bader, G. &nbsp;
+            Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, Cytoscape and EnrichmentMap.&nbsp;
+            Nat Protoc 14, 482–517 (2019).
+          </Link>&nbsp;
+        </Typography>
+      </Paper>
+      <Container>
+        <Typography className={classes.citeTextAuthors}>
+          <span>App authored by: </span>
+          <Link href="https://github.com/maxkfranz" className={classes.citeLinkAuthor}>Max Franz</Link><span>, </span>
+          <Link href="https://github.com/mikekucera" className={classes.citeLinkAuthor}>Mike Kucera</Link><span>, </span>
+          <Link href="https://github.com/chrtannus"className={classes.citeLinkAuthor} >Christian Lopes</Link><span>, </span>
+          <span>..., </span>
+          <Link href="https://baderlab.org" className={classes.citeLinkAuthor}>Gary Bader</Link>
+        </Typography>
+      </Container>
+    </Grid>
+  ;
+
+  const Main = () => {
     return (
-      <img src="/images/home-figure.png" alt="figure" className={classes.figure} />
+      <div
+        className={classes.drop} 
+        onDrop={onDropUpload} 
+        onDragOver={onDragOverUpload} 
+        onDragLeave={onDragEndUpload} 
+        onDragEnd={onDragEndUpload}
+      >
+        <Grid container direction="column" justifyContent="center" alignItems="center">
+          <Grid item>
+            <Grid
+              container
+              className={classes.content}
+              direction={mobile ? 'column' : 'row'}
+              justifyContent="center"
+              alignItems="center"
+              spacing={2}
+            >
+              <Grid item xs={mobile ? 12 : 6}>
+                <Grid container direction="column" justifyContent="center" alignItems="center">
+                  <Grid item>
+                    <Typography variant="h1" className={classes.tagline}>Enrichment analysis for your RNA&#8209;Seq</Typography>
+                  </Grid>
+                  <Grid item>
+                    <p className={classes.description}>
+                      Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA&#8209;Seq experiment.
+                    </p>
+                  </Grid>
+                  <Grid item className={classes.section}>
+                    {mobile 
+                      ? <Figure /> 
+                      : <GetStartedSection /> 
+                    }
+                  </Grid>
+                {mobile && (
+                  <Grid item className={classes.section}>
+                    <GetStartedSection />
+                  </Grid>
+                )}
+                </Grid>
+              </Grid>
+            {!mobile && (
+              <Grid item className={classes.section} xs={6}>
+                <Figure />
+              </Grid>
+            )}
+            </Grid>
+          </Grid>
+          <Grid item xs={mobile ? 10 : 8}>
+            <EasyCitation />
+          </Grid>
+        {step !== STEP.WAITING && (
+          <Grid item>
+            <StartDialog
+              step={step}
+              isMobile={mobile}
+              format={format}
+              columns={columns}
+              contents={contents}
+              errorMessages={errorMessages}
+              onUpload={onUpload}
+              onClassesChanged={onClassesChanged}
+              onSubmit={onSubmit}
+              onCancelled={onCancel}
+              onBack={onBack}
+            />
+          </Grid>
+        )}
+        </Grid>
+      </div>
     );
   };
 
-  renderFooter() {
-    const { isMobile, isTablet } = this.state;
-    const { classes } = this.props;
-
-    return (
-        <Container maxWidth="lg" disableGutters className={classes.footer}>
-          <Divider />
-          <Toolbar variant="regular" className={classes.logoBar}>
-            <Grid
-              container
-              direction={isMobile || isTablet ? 'column' : 'row'}
-              alignItems={isMobile || isTablet ? 'center' : 'flex-start'}
-              justifyContent={isMobile ? 'space-around' : 'space-between'}
-            >
-              <Grid item className={classes.copyright} md={4} sm={12}>
-                &copy; {new Date().getFullYear()} University of Toronto
-              </Grid>
-              <Grid item md={8} sm={12}>
-                <Grid
-                  container
-                  direction={isMobile ? 'column' : 'row'}
-                  alignItems={isMobile ? 'center' : 'flex-start'}
-                  justifyContent={isMobile ? 'space-around' : 'space-between'}
-                  spacing={5}
-                >
-              {logosDef.map((logo, idx) =>
-                <Grid key={idx} item>
-                  { this.renderLogo(logo) }
-                </Grid>
-              )}
-                </Grid>
-              </Grid>
-            </Grid>
-          </Toolbar>
-        </Container>
-    );
-  }
-
-  renderLogo({ src, alt, href }) {
-    const { classes } = this.props;
-
-    return (
-      <Link href={href} target="_blank" rel="noreferrer" underline="none">
-        <img src={src} alt={alt} className={classes.footerLogo} />  
-      </Link>
-    );
-  }
-
-  renderDebug() {
-    const { sampleRankFiles } = this.state;
-
-    return (
-      <DebugMenu>
-        <h3>Example rank input files</h3>
-        <ul>
-        {
-          sampleRankFiles.length > 0 ?
-          sampleRankFiles.map(file => (
-            <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
-          )) :
-          <li>Loading...</li>
-        }
-        </ul>
-        <h3>Example expression input files</h3>
-        <ul>
-        {
-          sampleExpressionFiles.length > 0 ?
-          sampleExpressionFiles.map(file => (
-            <li key={file}><Link component="a" style={{ cursor: 'pointer' }}  onClick={() => this.onLoadSampleNetwork(file)}>{file}</Link></li>
-          )) :
-          <li>Loading...</li>
-        }
-        </ul>
-      </DebugMenu>
-    );
-  }
+  return (
+    <div className={classNames({ [classes.root]: true, [classes.rootDropping]: droppingFile })}>
+      <Header />
+      <Container maxWidth="lg" disableGutters>
+        <Main />
+        {/* <MobileMenu /> */}
+        <Debug />
+        <Footer />
+      </Container>
+    </div>
+  );
 }
 
 
