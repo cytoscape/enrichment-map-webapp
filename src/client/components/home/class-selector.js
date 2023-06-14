@@ -40,7 +40,7 @@ function assignGroupsSimple(columns) {
   return columns.map((c,i) => i < mid ? 'A' : 'B');
 }
 
-function assignGroups(columns, contents, format) {
+export function assignGroups(columns, contents, format) {
   const groups = assignGroupsSimple(columns);
   if(!contents || !format)
     return groups;
@@ -62,18 +62,11 @@ function assignGroups(columns, contents, format) {
   return groups;
 }
 
-function ClassSelector({ columns, contents, format, onClassesChanged, isMobile }) {
-  const [ groups, setGroups ] = useState(() => assignGroups(columns, contents, format));
-
-  if (onClassesChanged)
-    onClassesChanged(groups);
+function ClassSelector({ columns, isMobile, rnaseqClasses, onClassesChanged }) {
 
   const handleChange = (i, newGroup) => {
-    var newGroups = groups.map((c, i2) => i == i2 ? newGroup : c);
-    setGroups(newGroups);
-
-    if (onClassesChanged)
-      onClassesChanged(newGroups);
+    var newGroups = rnaseqClasses.map((c, i2) => i == i2 ? newGroup : c);
+    onClassesChanged(newGroups);
   };
 
   const classes = useStyles();
@@ -99,7 +92,7 @@ function ClassSelector({ columns, contents, format, onClassesChanged, isMobile }
                 <Grid container direction="row">
                   <ToggleButtonGroup 
                     exclusive
-                    value={groups[i]} 
+                    value={rnaseqClasses[i]} 
                     onChange={(e, newClass) => handleChange(i, newClass)}
                   >
                   { BUTTONS_DEF.map((btn) => 
@@ -118,10 +111,9 @@ function ClassSelector({ columns, contents, format, onClassesChanged, isMobile }
 }
 
 ClassSelector.propTypes = {
-  columns: PropTypes.array.isRequired,
   onClassesChanged: PropTypes.func,
-  contents: PropTypes.string.isRequired,
-  format: PropTypes.string.isRequired,
+  columns: PropTypes.array.isRequired,
+  rnaseqClasses: PropTypes.array.isRequired,
   isMobile: PropTypes.bool,
 };
 

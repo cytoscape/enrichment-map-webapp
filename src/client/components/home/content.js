@@ -8,6 +8,7 @@ import EasyCitation from './citation.js';
 import { DebugMenu } from '../../debug-menu';
 import StartDialog from './start-dialog';
 import theme from '../../theme';
+import { assignGroups } from './class-selector';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -75,6 +76,8 @@ async function showFileDialog() {
 }
 
 
+let requestID = null;
+let cancelledRequests = [];
 
 export function Content({ classes }) {
 
@@ -83,21 +86,21 @@ export function Content({ classes }) {
   // the UploadController interacts with this component via an event bus
   const [ bus ] = useState(() => new EventEmitter());
   const [ uploadController ] = useState(() => new UploadController(bus));
-
   const [ sampleFiles, setSampleFiles ] = useState({ sampleRankFiles: [], sampleExprFiles: [] });
-  const [ step, setStep ] = useState(STEP.WAITING);
 
-  // keep track of requests for the cancel button to work
-  const [ requestID, setRequestID ] = useState(null);
-  const [ cancelledRequests, addCanceledRequest ] = useReducer((rs, r) => [...rs, r], []);
-
-  // state for uploaded file
-  const [ format, setFormat ] = useState(null); // file format: 'rnaseq' or 'ranks'
-  const [ contents, setContents ] = useState(null); // entire contents of uploaded file :)
-  const [ columns, setColumns ] = useState(null); // names of columns in file
-  const [ name, setName ] = useState(null); // name of file
-  const [ rnaseqClasses, setRnaseqClasses ] = useState(null); // classification of columns into A or B or X (ignored)
-  const [ errorMessages, setErrorMessages ] = useState(null);
+  // This state must be kept as a single object because the event bus callbacks run asyncronously, 
+  // so this state must be updated atomically to avoid extra re-renders (which also cause errors).
+  // Each of the onXXX callbacks below must call setUploadState at most once.
+  const [ uploadState, setUploadState ] = useState({
+    step: STEP.WAITING,
+    format: null,
+    contents: null,
+    columns: null, 
+    name: null,
+    rnaseqClasses: null,
+    errorMessages: null,
+  });
+  const updateUploadState = (update) => setUploadState(prev => ({ ...prev, ...update }));
 
   // state for component interaction
   const [ mobile, setMobile ] = useState(() => isMobileWidth());
@@ -133,17 +136,17 @@ export function Content({ classes }) {
 
   /** Callbacks and utility functions */
 
-  const clearFileState = () => {
-    setFormat(null);
-    setColumns(null);
-    setContents(null);
-    setName(null);
-    setRnaseqClasses(null);
-    setErrorMessages(null);
-  };
+  // const clearFileState = () => {
+  //   setFormat(null);
+  //   setColumns(null);
+  //   setContents(null);
+  //   setName(null);
+  //   setRnaseqClasses(null);
+  //   setErrorMessages(null);
+  // };
 
   const loadSampleNetwork = async (fileName) => {
-    if (step == STEP.LOADING)
+    if (uploadState.step == STEP.LOADING)
       return;
     const file = await uploadController.loadSampleData(fileName);
     if(file) {
@@ -153,7 +156,7 @@ export function Content({ classes }) {
 
   const onDropUpload = async (event) => {
     event.preventDefault();
-    if (step == STEP.LOADING)
+    if (uploadState.step == STEP.LOADING)
       return;
 
     const files = Array.from(event.dataTransfer.items)
@@ -175,12 +178,13 @@ export function Content({ classes }) {
   };
 
   const onClickGetStarted = () => {
-    if (step != STEP.LOADING)
-      setStep(STEP.UPLOAD);
+    if (uploadState.step != STEP.LOADING) {
+      setUploadState({ step: STEP.UPLOAD });
+    }
   };
 
   const onClassesChanged = (rnaseqClasses) => {
-    setRnaseqClasses(rnaseqClasses);
+    updateUploadState({ rnaseqClasses });
   };
 
   const onUpload = async () => {
@@ -188,28 +192,26 @@ export function Content({ classes }) {
     await uploadController.upload(files);
   };
 
-  const onLoading = () => setStep(STEP.LOADING);
+  const onLoading = () => {
+    updateUploadState({ step: STEP.LOADING });
+  };
 
   const onRanks = async ({ format, contents, name }) => {
     const requestID = uuid.v4();
-    setStep(STEP.LOADING);
-    setRequestID(requestID);
+    updateUploadState({ step: STEP.LOADING });
     await uploadController.sendDataToEMService(contents, format, 'ranks', name, requestID);
   };
 
   const onSubmit = async () => {
     const requestID = uuid.v4();
-    setStep(STEP.LOADING);
-    setRequestID(requestID);
+    const { contents, format, name, rnaseqClasses } = uploadState;
+    updateUploadState({ step: STEP.LOADING });
     await uploadController.sendDataToEMService(contents, format, 'rnaseq', name, requestID, rnaseqClasses);
   };
 
   const onClasses = ({ format, columns, contents, name }) => {
-    setStep(STEP.CLASSES);
-    setFormat(format);
-    setColumns(columns);
-    setContents(contents);
-    setName(name);
+    const rnaseqClasses = assignGroups(columns, contents, format);
+    setUploadState({ step: STEP.CLASSES, format, columns, contents, name, rnaseqClasses });
   };
  
   const onError = ({ errors, requestID }) => {
@@ -217,24 +219,19 @@ export function Content({ classes }) {
       console.log(`Ignoring error from cancelled request: { requestID:${requestID} }`);
       return;
     }
-    setStep(STEP.ERROR);
-    setRequestID(null);
-    clearFileState();
-    setErrorMessages(errors);
+    setUploadState({ step: STEP.ERROR, errorMessages: errors });
   };
 
   const onCancel = () => {
     if(requestID) {
-      addCanceledRequest(requestID);
+      console.log(`Cancelling request: ${requestID}`);
+      cancelledRequests.push(requestID);
     }
-    setStep(STEP.WAITING);
-    setRequestID(null);
-    clearFileState();
+    setUploadState({ step: STEP.WAITING });
   };
 
   const onBack = () => {
-    setStep(STEP.UPLOAD);
-    clearFileState();
+    setUploadState({ step: STEP.UPLOAD });
   };
 
   const onFinished = ({ networkID, requestID }) => {
@@ -457,15 +454,14 @@ export function Content({ classes }) {
           <Grid item xs={mobile ? 10 : 8}>
             <EasyCitation />
           </Grid>
-        {step !== STEP.WAITING && (
+        {uploadState.step !== STEP.WAITING && (
           <Grid item>
             <StartDialog
-              step={step}
               isMobile={mobile}
-              format={format}
-              columns={columns}
-              contents={contents}
-              errorMessages={errorMessages}
+              step={uploadState.step}
+              columns={uploadState.columns}
+              errorMessages={uploadState.errorMessages}
+              rnaseqClasses={uploadState.rnaseqClasses}
               onUpload={onUpload}
               onClassesChanged={onClassesChanged}
               onSubmit={onSubmit}
@@ -479,6 +475,7 @@ export function Content({ classes }) {
     );
   };
 
+  console.log("Content re-render. uploadState: " + JSON.stringify({ ...uploadState, contents: 'contents' }));
   return (
     <div className={classNames({ [classes.root]: true, [classes.rootDropping]: droppingFile })}>
       <Header />
