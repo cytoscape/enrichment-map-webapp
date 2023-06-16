@@ -11,8 +11,6 @@ import StartDialog from './start-dialog';
 import theme from '../../theme';
 import { assignGroups } from './class-selector';
 
-// import { withStyles } from '@material-ui/core/styles';
-
 import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@material-ui/core';
 import { Container, Grid, Divider, } from '@material-ui/core';
 import { Button, Typography, Link } from '@material-ui/core';
@@ -77,7 +75,6 @@ async function showFileDialog() {
 }
 
 
-
 let requestID = null;
 let cancelledRequests = [];
 
@@ -91,7 +88,12 @@ export function Content() {
   const [ uploadController ] = useState(() => new UploadController(bus));
   const [ sampleFiles, setSampleFiles ] = useState({ sampleRankFiles: [], sampleExprFiles: [] });
 
-  // This state must be kept as a single object because the event bus callbacks run asyncronously, 
+  // state for component interaction
+  const [ mobile, setMobile ] = useState(() => isMobileWidth());
+  const [ tablet, setTablet ] = useState(() => isTabletWidth());
+  const [ droppingFile, setDroppingFile ] = useState(false);
+
+  // This state must be kept as a single object because the eventbus callbacks run asyncronously, 
   // so this state must be updated atomically to avoid extra re-renders (which also cause errors).
   // Each of the onXXX callbacks below must call setUploadState at most once.
   const [ uploadState, setUploadState ] = useState({
@@ -105,11 +107,6 @@ export function Content() {
   });
   const updateUploadState = (update) => setUploadState(prev => ({ ...prev, ...update }));
 
-  // state for component interaction
-  const [ mobile, setMobile ] = useState(() => isMobileWidth());
-  const [ tablet, setTablet ] = useState(() => isTabletWidth());
-  const [ droppingFile, setDroppingFile ] = useState(false);
-  
 
   /** Effects */
 
@@ -190,13 +187,13 @@ export function Content() {
   };
 
   const onRanks = async ({ format, contents, name }) => {
-    const requestID = uuid.v4();
+    requestID = uuid.v4();
     updateUploadState({ step: STEP.LOADING });
     await uploadController.sendDataToEMService(contents, format, 'ranks', name, requestID);
   };
 
   const onSubmit = async () => {
-    const requestID = uuid.v4();
+    requestID = uuid.v4();
     const { contents, format, name, rnaseqClasses } = uploadState;
     updateUploadState({ step: STEP.LOADING });
     await uploadController.sendDataToEMService(contents, format, 'rnaseq', name, requestID, rnaseqClasses);
@@ -237,8 +234,9 @@ export function Content() {
 
 
   /** Render Componenets */
+  const { contents, ...stateToLog } = uploadState;
+  console.log("Content render. uploadState: " + JSON.stringify(stateToLog));
 
-  console.log("Content re-render. uploadState: " + JSON.stringify({ ...uploadState, contents: 'contents' }));
   return (
     <div className={classNames({ [classes.root]: true, [classes.rootDropping]: droppingFile })}>
       <Header />
