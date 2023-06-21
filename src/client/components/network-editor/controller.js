@@ -6,6 +6,10 @@ import MiniSearch from 'minisearch';
 import { DEFAULT_PADDING } from '../defaults';
 import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 
+
+const cmpByNES = (a, b) => b.data('NES') - a.data('NES'); // up then down
+
+
 /**
  * The network editor controller contains all high-level model operations that the network
  * editor view can perform.
@@ -63,19 +67,70 @@ export class NetworkEditorController {
     return this.geneListIndexed;
   }
 
+  getNodePositions() {
+    const positions = new Map();
+    this.cy.nodes().forEach((node) => {
+      const pos = node.position();
+      positions.set(node.id(), { x: pos.x, y: pos.y });
+    });
+    return positions;
+  }
+
   /**
-   * Stops the currently running layout, if there is one, and apply the new layout options.
+   * Stops the currently running layout, if there is one, and apply the default cose layout.
    * @param {*} options
    */
-  async applyLayout(options) {
+  async applyLayout(options = {}) {
     if (this.layout) {
       this.layout.stop();
     }
-
     // unrestricted zoom, since the old restrictions may not apply if things have changed
     this.cy.minZoom(-1e50);
     this.cy.maxZoom(1e50);
 
+    const { name } = options;
+    if(name === 'sorted') {
+      await this._applySortedLayout();
+    } else if(name === 'preset') {
+      const { positions } = options;
+      await this._applyPresetLayout(positions);
+    } else {
+      await this._applyCoseLayout();
+      this.cy.fit(DEFAULT_PADDING);
+    }
+
+    // now that we know the zoom level when the graph fits to screen, we can use restrictions
+    this.cy.minZoom(this.cy.zoom() * 0.25);
+    this.cy.maxZoom(2);
+  }
+
+  async _applyPresetLayout(positions) {
+    this.layout = this.cy
+      .layout({
+        name: 'preset',
+        animate: true,
+        positions: (node) => positions.get(node.id())
+      });
+
+    const onStop = this.layout.promiseOn('layoutstop');
+    this.layout.run();
+    await onStop;
+  }
+
+  async _applySortedLayout() {
+    this.layout = this.cy.nodes()
+      .sort(cmpByNES)
+      .layout({
+        name: 'circle',
+        animate: true,
+      });
+
+    const onStop = this.layout.promiseOn('layoutstop');
+    this.layout.run();
+    await onStop;
+  }
+
+  async _applyCoseLayout() {
     monkeyPatchMathRandom(); // just before the FD layout starts
 
     this.layout = this.cy.layout({
@@ -114,8 +169,6 @@ export class NetworkEditorController {
     const avoidOverlapPadding = 10;
     const cols = Math.floor(layoutWidth / (nodeWidth + avoidOverlapPadding));
 
-    const cmpByNES = (a, b) => b.data('NES') - a.data('NES'); // up then down
-
     disconnectedNodes.sort(cmpByNES).layout({
       name: 'grid',
       boundingBox: {
@@ -131,13 +184,8 @@ export class NetworkEditorController {
       nodeDimensionsIncludeLabels: true,
       fit: false
     }).run();
-
-    this.cy.fit(DEFAULT_PADDING);
-
-    // now that we know the zoom level when the graph fits to screen, we can use restrictions
-    this.cy.minZoom(this.cy.zoom() * 0.25);
-    this.cy.maxZoom(2);
   }
+
 
   /**
    * Delete the selected (i.e. :selected) elements in the graph

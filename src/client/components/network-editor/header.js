@@ -21,6 +21,8 @@ import MenuIcon from '@material-ui/icons/Menu';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
+import RotateLeftIcon from '@material-ui/icons/RotateLeft';
+import BubbleChartIcon from '@material-ui/icons/BubbleChart';
 import { Add, Remove } from '@material-ui/icons';
 import CloseIcon from '@material-ui/icons/Close';
 
@@ -77,7 +79,7 @@ function createPanner({ cy }) {
   };
 }
 
-
+let layoutDisabled = false;
 
 export function Header({ controller, classes, showControlPanel, isMobile, onShowControlPanel }) {
 
@@ -87,6 +89,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
   const [ snackOpen, setSnackOpen ] = useState(false);
   const [ snackMessage, setSnackMessage ] = useState('');
+  const [ layoutSorted, setLayoutSorted ] = useState(true);
 
   const panner = createPanner(controller);
 
@@ -146,6 +149,20 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     setSnackMessage(message);
   };
 
+  const runLayout = async () => {
+    if(layoutDisabled)
+      return;
+    layoutDisabled = true;
+    if(layoutSorted) {
+      controller.positions = controller.getNodePositions();
+      await controller.applyLayout({ name: 'sorted' });
+    } else {
+      await controller.applyLayout({ name: 'preset', positions: controller.positions });
+    }
+    setLayoutSorted(!layoutSorted);
+    layoutDisabled = false;
+  };
+
   const buttonsDef = [ 
     {
       title: "Zoom In",
@@ -163,11 +180,16 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
       onClick: panner.fit,
       unrelated: true,
     }, {
+      title: layoutSorted ? "Sort by Significance" : "Sort by Similarity",
+      icon:  layoutSorted ? <RotateLeftIcon /> : <BubbleChartIcon />,
+      onClick: runLayout,
+      unrelated: true,
+    }, {
       title: "Share",
       icon: <ReplyIcon style={{transform: 'scaleX(-1)'}} />,
       onClick: showShareMenu,
       unrelated: false,
-    },
+    }
   ];
 
   const shiftAppBar = showControlPanel && !isMobile;
