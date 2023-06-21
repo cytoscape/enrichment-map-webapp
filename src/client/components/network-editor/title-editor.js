@@ -1,149 +1,113 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { styled } from '@material-ui/core/styles';
 import { NetworkEditorController } from './controller';
 import { Tooltip, InputBase } from '@material-ui/core';
 
+
+
+function renameNetwork(controller, newName) {
+  const networkName = newName != null ? newName.trim() : null;
+  controller.cy.data({ name: networkName });
+
+  fetch(`/api/${controller.networkIDStr}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ networkName })
+  });
+}
+
+
 /**
  * The network title editor. Shows and edits the attribute `cy.data('name')`.
  * - **ENTER** key or `blur()`: Commits the changes and renames the network.
  * - **ESCAPE** key: Cancels the changes and shows the previous network name again.
- * @param {Object} props React props
  */
-export class TitleEditor extends Component {
+export function TitleEditor({ controller, disabled }) {
 
-  constructor(props) {
-    super(props);
-    this.controller = props.controller;
-    this.state = {
-      networkName: this.controller.cy.data('name'),
-    };
-    
-    this.onDataChanged = this.onDataChanged.bind(this);
-  }
+  const [ networkName, setNetworkName ] = useState(() => controller.cy.data('name'));
 
-  componentDidMount() {
-    this.addCyListeners();
-  }
+  useEffect(() => {
+    const onDataChanged = event => setNetworkName(event.cy.data('name')); 
+    controller.cy.on('data', onDataChanged);
+    return () => controller.cy.removeListener('data', onDataChanged);
+  }, []);
 
-  componentWillUnmount() {
-    this.busProxy.removeAllListeners();
-    this.removeCyListeners();
-  }
+  let input;
 
-  addCyListeners() {
-    this.controller.cy.on('data', this.onDataChanged);
-  }
-
-  removeCyListeners() {
-    this.controller.cy.removeListener('data', this.onDataChanged);
-  }
-
-  /**
-   * Listens to cy.js 'data' events and updates the networkName state
-   * when the network's 'name' attribute has changed.
-   */
-  onDataChanged(event) {
-    const name = event.cy.data('name');
-    
-    if (this.state.networkName != name)
-      this.setState({ networkName: name });
-  }
-
-  handleNetworkNameKeyDown(event) {
+  const handleNetworkNameKeyDown = (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      this.input.blur();
+      input.blur();
     } else if (event.key === 'Escape') {
-      this.cancelNetworkNameChange();
+      setNetworkName(controller.cy.data('name'));
       event.preventDefault();
     }
-  }
+  };
 
-  handleNetworkNameFocus() {
+  const handleNetworkNameFocus = () => {
     // Using the uncontrolled input approach here
-    if (!this.state.networkName)
-      this.input.value = '';
+    if (!networkName)
+      input.value = '';
     else
-      this.input.select();
-  }
+      input.select();
+  };
 
-  handleNetworkNameBlur() {
-    const networkName = this.input.value;
-
-    if (networkName !== this.state.networkName) {
-      this.renameNetwork(networkName);
+  const handleNetworkNameBlur = () => {
+    const newName = input.value;
+    if (newName !== networkName) {
+      renameNetwork(controller, newName);
     }
-  }
+  };
 
-  cancelNetworkNameChange() {
-    this.setState({ networkName: this.controller.cy.data('name') });
-  }
-
-  renameNetwork(newName) {
-    const networkName = newName != null ? newName.trim() : null;
-    this.controller.cy.data({ name: networkName });
-
-    fetch(`/api/${this.controller.networkIDStr}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ networkName: networkName })
-    });
-  }
-
-  render() {
-    const { disabled } = this.props;
-    const { networkName } = this.state;
-    
-    const CssInputBase = styled(InputBase)(({ theme }) => ({
-      '& .MuiInputBase-input': {
-        position: 'relative',
-        border: '1px solid transparent',
-        borderRadius: 5,
-        width: '100%',
-        maxWidth: 640,
-        padding: 2,
-        fontWeight: 'bold',
-        [theme.breakpoints.down('sm')]: {
-          textAlign: 'center',
-        },
-        [theme.breakpoints.up('sm')]: {
-          textAlign: 'left',
-        },
-        '&:hover': {
-          border: `1px solid ${theme.palette.secondary.main}`,
-          '&[disabled]': {
-            border: '1px solid transparent !important',
-          },
-        },
-        '&:focus': {
-          border: `1px solid ${theme.palette.primary.main}`,
-          backgroundColor: theme.palette.background.focus,
-          fontWeight: 'normal',
+  const CssInputBase = styled(InputBase)(({ theme }) => ({
+    '& .MuiInputBase-input': {
+      position: 'relative',
+      border: '1px solid transparent',
+      borderRadius: 5,
+      width: '100%',
+      maxWidth: 640,
+      padding: 2,
+      fontWeight: 'bold',
+      [theme.breakpoints.down('sm')]: {
+        textAlign: 'center',
+      },
+      [theme.breakpoints.up('sm')]: {
+        textAlign: 'left',
+      },
+      '&:hover': {
+        border: `1px solid ${theme.palette.secondary.main}`,
+        '&[disabled]': {
+          border: '1px solid transparent !important',
         },
       },
-    }));
+      '&:focus': {
+        border: `1px solid ${theme.palette.primary.main}`,
+        backgroundColor: theme.palette.background.focus,
+        fontWeight: 'normal',
+      },
+    },
+  }));
 
-    return (
-      <Tooltip
-        arrow
-        placement="bottom"
-        title="Rename Figure"
-        disableHoverListener={disabled}
-        disableTouchListener={disabled}
-      >
-        <CssInputBase
-          fullWidth={true}
-          defaultValue={networkName || 'Untitled Network'}
-          disabled={disabled}
-          onFocus={() => this.handleNetworkNameFocus()}
-          onBlur={() => this.handleNetworkNameBlur()}
-          onKeyDown={(evt) => this.handleNetworkNameKeyDown(evt)}
-          inputRef={ref => (this.input = ref)}
-        />
-      </Tooltip>
-    );
-  }
+  return (
+    <Tooltip
+      arrow
+      placement="bottom"
+      title="Rename Figure"
+      disableHoverListener={disabled}
+      disableTouchListener={disabled}
+    >
+      <CssInputBase
+        fullWidth={true}
+        defaultValue={networkName || 'Untitled Network'}
+        disabled={disabled}
+        onFocus={handleNetworkNameFocus}
+        onBlur={handleNetworkNameBlur}
+        onKeyDown={handleNetworkNameKeyDown}
+        inputRef={ref => (input = ref)}
+      />
+    </Tooltip>
+  );
 }
 
 TitleEditor.propTypes = {

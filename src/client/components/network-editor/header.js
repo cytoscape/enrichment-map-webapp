@@ -1,10 +1,9 @@
-import React, { Component, Fragment } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import Mousetrap from 'mousetrap';
 
 import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from '../defaults';
-import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
 import { ShareMenu } from './share-panel';
@@ -26,309 +25,155 @@ import { Add, Remove } from '@material-ui/icons';
 import CloseIcon from '@material-ui/icons/Close';
 
 const MOBILE_MENU_ID = "menu-mobile";
-const SHARE_MENU_ID = "menu-share";
+const SHARE_MENU_ID  = "menu-share";
 
-const zoomButtonFactor = 2;
-const panFactor = 200;
-const viewportAnimationEasing = 'ease-out';
-const viewportAnimationDuration = 400;
 
-/**
- * The network editor's header or app bar.
- * @param {Object} props React props
- */
-export class Header extends Component {
+function createPanner({ cy }) {
+  const zoomButtonFactor = 1.5;
+  const panFactor = 100;
+  const easing = 'ease-out';
+  const duration = 400;
 
-  constructor(props) {
-    super(props);
-
-    this.controller = props.controller;
-    this.busProxy = new EventEmitterProxy(this.controller.bus);
-
-    this.state = {
-      menuName: null,
-      mobileMoreAnchorEl: null,
-      anchorEl: null,
-      dialogId: null,
-      networkLoaded: this.controller.isNetworkLoaded(),
-      snackOpen: false,
-      snackMessage: ""
-    };
-
-    this.showMobileMenu = this.showMobileMenu.bind(this);
-    this.onNetworkLoaded = this.onNetworkLoaded.bind(this);
-  }
-
-  componentDidMount() {
-    this.controller.bus.on('networkLoaded', this.onNetworkLoaded);
-
-    this.addKeyboardShortcuts();
-  }
-
-  componentWillUnmount() {
-    this.controller.bus.removeListener('networkLoaded', this.onNetworkLoaded);
-
-    this.removeKeyboardShortcuts();
-  }
-
-  onNetworkLoaded() {
-    this.setState({ networkLoaded: true });
-  }
-
-  showMenu(menuName, target) {
-    this.setState({
-      menuName: menuName,
-      anchorEl: target,
-    });
-  }
-
-  handleMenuClose() {
-    this.setState({
-      menuName: null,
-      mobileMoreAnchorEl: null,
-      anchorEl: null,
-    });
-  }
-
-  showMobileMenu(event) {
-    this.setState({ mobileMoreAnchorEl: event.currentTarget });
-  }
-
-  handleMobileMenuClose() {
-    this.setState({ mobileMoreAnchorEl: null });
-  }
-
-  zoomByFactor(factor) {
-    const cy = this.controller.cy;
+  const zoomByFactor = (factor) => {
     const container = cy.container();
     const x = container.clientWidth / 2;
     const y = container.clientHeight / 2;
     const zoom = cy.zoom() * factor;
-
     cy.stop().animate({
       zoom: {
         level: zoom,
         renderedPosition: { x, y }
       },
-      easing: viewportAnimationEasing,
-      duration: viewportAnimationDuration,
+      easing,
+      duration,
     });
-  }
+  };
 
-  fit() {
-    const cy = this.controller.cy;
-
-    cy.stop().animate({
-      fit: { padding: DEFAULT_PADDING },
-      easing: viewportAnimationEasing,
-      duration: viewportAnimationDuration,
-    });
-  }
-
-  panBy(x, y) {
-    const cy = this.controller.cy;
+  const panBy = (x, y) => {
     const z = 1;
-
     cy.stop().animate({
       panBy: { x: x * z, y: y * z },
-      easing: viewportAnimationEasing,
-      duration: viewportAnimationDuration,
+      easing,
+      duration,
     });
-  }
+  };
 
-  panLeft() {
-    this.panBy(panFactor, 0);
-  }
+  const fit = () => {
+    cy.stop().animate({
+      fit: { padding: DEFAULT_PADDING },
+      easing,
+      duration,
+    });
+  };
 
-  panRight() {
-    this.panBy(-panFactor, 0);
-  }
+  return {
+    panLeft:  () => panBy(panFactor, 0),
+    panRight: () => panBy(-panFactor, 0),
+    panUp:    () => panBy(0, panFactor),
+    panDown:  () => panBy(0, -panFactor),
+    zoomOut:  () => zoomByFactor(1 / zoomButtonFactor),
+    zoomIn:   () => zoomByFactor(zoomButtonFactor),
+    fit:      () => fit(),
+  };
+}
 
-  panUp() {
-    this.panBy(0, panFactor);
-  }
 
-  panDown() {
-    this.panBy(0, -panFactor);
-  }
 
-  zoomOut() {
-    this.zoomByFactor(1 / zoomButtonFactor);
-  }
+export function Header({ controller, classes, showControlPanel, isMobile, onShowControlPanel }) {
 
-  zoomIn() {
-    this.zoomByFactor(zoomButtonFactor);
-  }
+  const [ menuName, setMenuName ] = useState(null);
+  const [ mobileMoreAnchorEl, setMobileMoreAnchorEl ] = useState(null);
+  const [ anchorEl, setAnchorEl ] = useState(null);
+  const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
+  const [ snackOpen, setSnackOpen ] = useState(false);
+  const [ snackMessage, setSnackMessage ] = useState('');
 
-  addKeyboardShortcuts() {
-    Mousetrap.bind('-', () => this.zoomOut());
-    Mousetrap.bind('_', () => this.zoomOut());
-    Mousetrap.bind('=', () => this.zoomIn());
-    Mousetrap.bind('+', () => this.zoomIn());
-    Mousetrap.bind('up', () => this.panUp());
-    Mousetrap.bind('down', () => this.panDown());
-    Mousetrap.bind('left', () => this.panLeft());
-    Mousetrap.bind('right', () => this.panRight());
-    Mousetrap.bind('f', () => this.fit());
-    Mousetrap.bind('space', () => this.fit());
-  }
+  const panner = createPanner(controller);
 
-  removeKeyboardShortcuts() {
-    Mousetrap.unbind('-');
-    Mousetrap.unbind('_');
-    Mousetrap.unbind('=');
-    Mousetrap.unbind('+');
-    Mousetrap.unbind('up');
-    Mousetrap.unbind('down');
-    Mousetrap.unbind('left');
-    Mousetrap.unbind('right');
-    Mousetrap.unbind('f');
-    Mousetrap.unbind('space');
-  }
+  useEffect(() => {
+    const onNetworkLoaded = () => setNetworkLoaded(true);
+    controller.bus.on('networkLoaded', onNetworkLoaded);
+    return () => controller.bus.removeListener('networkLoaded', onNetworkLoaded);
+  }, []);
 
-  render() {
-    const { anchorEl, menuName, networkLoaded } = this.state;
-    const { classes, showControlPanel, isMobile, onShowControlPanel } = this.props;
-    const { controller } = this;
-
-    const showShareMenu = (event) => {
-      this.showMenu(SHARE_MENU_ID, event.currentTarget);
+  useEffect(() => {
+    Mousetrap.bind('-', panner.zoomOut);
+    Mousetrap.bind('_', panner.zoomOut);
+    Mousetrap.bind('=', panner.zoomIn);
+    Mousetrap.bind('+', panner.zoomIn);
+    Mousetrap.bind('up', panner.panUp);
+    Mousetrap.bind('down', panner.panDown);
+    Mousetrap.bind('left', panner.panLeft);
+    Mousetrap.bind('right', panner.panRight);
+    Mousetrap.bind('f', panner.fit);
+    Mousetrap.bind('space', panner.fit);
+  
+    return () => {
+      Mousetrap.unbind('-');
+      Mousetrap.unbind('_');
+      Mousetrap.unbind('=');
+      Mousetrap.unbind('+');
+      Mousetrap.unbind('up');
+      Mousetrap.unbind('down');
+      Mousetrap.unbind('left');
+      Mousetrap.unbind('right');
+      Mousetrap.unbind('f');
+      Mousetrap.unbind('space');
     };
+  }, []);
+  
+  const handleMenuClose = () => {
+    setMenuName(null);
+    setMobileMoreAnchorEl(null);
+    setAnchorEl(null);
+  };
 
-    const showSnackbar = (open, message='') => {
-      this.setState({ snackOpen: open, snackMessage: message });
-    };
+  const showMobileMenu = (event) => {
+    setMobileMoreAnchorEl(event.currentTarget);
+  };
 
-    const buttonsDef = [
-      {
-        title: "Zoom In",
-        icon: <Add />,
-        onClick: () => {
-          this.zoomIn();
-        },
-        unrelated: false,
-      },
-      {
-        title: "Zoom Out",
-        icon: <Remove />,
-        onClick: () => {
-          this.zoomOut();
-        },
-        unrelated: false,
-      },
-      {
-        title: "Fit Figure to Screen",
-        icon: <FitScreenIcon />,
-        onClick: () => {
-          this.fit();
-        },
-        unrelated: true,
-      },
-      {
-        title: "Share",
-        icon: <ReplyIcon style={{transform: 'scaleX(-1)'}} />,
-        onClick: showShareMenu,
-        unrelated: false,
-      },
-    ];
+  const handleMobileMenuClose= () => {
+    setMobileMoreAnchorEl(null);
+  };
 
-    const shiftAppBar = showControlPanel && !isMobile;
-    
-    return (
-      <>
-        <Snackbar
-          className={classes.snackBar}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-          open={this.state.snackOpen} 
-          autoHideDuration={4000} 
-          onClose={() => showSnackbar(false)} 
-        >
-          <SnackbarContent 
-            className={classes.snackBarContent}
-            message={<span>{this.state.snackMessage}</span>}
-            action={
-              <IconButton size='small' onClick={() => showSnackbar(false)}>
-                <CloseIcon />
-              </IconButton>
-            }
-          />
-        </Snackbar>
-        <AppBar
-          position="relative"
-          color='default'
-          className={clsx(classes.appBar, { [classes.appBarShift]: shiftAppBar })}
-        >
-          <Toolbar variant="dense">
-            <ToolbarButton
-              title="Control Panel"
-              icon={<MenuIcon />}
-              edge="start"
-              onClick={() => onShowControlPanel(!showControlPanel)}
-            />
-            <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
-              <Tooltip arrow placement="bottom" title="Home">
-                <IconButton 
-                  aria-label='close' 
-                  onClick={() => location.href = '/'}
-                >
-                  <AppLogoIcon style={{ fontSize: 26 }} />
-                </IconButton>
-              </Tooltip>
-            </Box>
-            <ToolbarDivider classes={classes} unrelated />
-            <TitleEditor controller={controller} disabled={!networkLoaded} />
-            <ToolbarDivider classes={classes} unrelated />
-            <div className={classes.sectionDesktop}>
-              { buttonsDef.map(({title, icon, onClick, unrelated}, idx) =>
-                <Fragment key={idx}>
-                  <ToolbarButton
-                    title={title}
-                    icon={icon}
-                    disabled={!networkLoaded}
-                    onClick={onClick}
-                  />
-                  <ToolbarDivider classes={classes} unrelated={unrelated} />
-                </Fragment>
-              )}
-            </div>
-            <div className={classes.sectionMobile}>
-              <ToolbarButton
-                title="Options"
-                icon={<MoreIcon />}
-                onClick={(evt) => this.showMobileMenu(evt)}
-              />
-            </div>
-          </Toolbar>
-          {this.renderMobileMenu(buttonsDef)}
-          {anchorEl && (
-            <Popover
-              id="menu-popover"
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'left',
-              }}
-              onClose={() => this.handleMenuClose()}
-            >
-              {menuName === SHARE_MENU_ID && (
-                <ShareMenu 
-                  controller={controller} 
-                  onClose={() => this.handleMenuClose()}
-                  showMessage={message => showSnackbar(true, message)}
-                />
-              )}
-            </Popover>
-          )}
-        </AppBar>
-      </>
-    );
-  }
+  const showShareMenu = (event) => {
+    setMenuName(SHARE_MENU_ID),
+    setAnchorEl(event.currentTarget);
+  };
 
-  renderMobileMenu(buttonsDef) {
-    const { mobileMoreAnchorEl } = this.state;
+  const showSnackbar = (open, message='') => {
+    setSnackOpen(open);
+    setSnackMessage(message);
+  };
+
+  const buttonsDef = [ 
+    {
+      title: "Zoom In",
+      icon: <Add />,
+      onClick: panner.zoomIn,
+      unrelated: false,
+    }, {
+      title: "Zoom Out",
+      icon: <Remove />,
+      onClick: panner.zoomOut,
+      unrelated: false,
+    }, {
+      title: "Fit Figure to Screen",
+      icon: <FitScreenIcon />,
+      onClick: panner.fit,
+      unrelated: true,
+    }, {
+      title: "Share",
+      icon: <ReplyIcon style={{transform: 'scaleX(-1)'}} />,
+      onClick: showShareMenu,
+      unrelated: false,
+    },
+  ];
+
+  const shiftAppBar = showControlPanel && !isMobile;
+
+  const MobileMenu = () => {
     const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
-
     return (
       <Menu
         anchorEl={mobileMoreAnchorEl}
@@ -337,7 +182,7 @@ export class Header extends Component {
         keepMounted
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         open={isMobileMenuOpen}
-        onClose={() => this.handleMobileMenuClose()}
+        onClose={handleMobileMenuClose}
       >
         { buttonsDef.map(({title, icon, onClick}, idx) =>
           <MenuItem key={idx} onClick={onClick}>
@@ -347,37 +192,120 @@ export class Header extends Component {
         )}
       </Menu>
     );
-  }
-}
+  };
 
-class ToolbarButton extends Component {
-  render() {
-    const { title, icon, color, className, disabled, onClick } = this.props;
-
-    return (
-      <Tooltip arrow placement="bottom" title={title}>
-        <IconButton
-          disabled={disabled}
-          component={disabled ? "div" : undefined} // To prevent error: 'Material-UI: You are providing a disabled `button` child to the Tooltip component.'
-          size="small"
-          color={color || 'inherit'}
-          className={className}
-          onClick={onClick}
+  return <>
+    <Snackbar
+      className={classes.snackBar}
+      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      open={snackOpen} 
+      autoHideDuration={4000} 
+      onClose={() => showSnackbar(false)} 
+    >
+      <SnackbarContent 
+        className={classes.snackBarContent}
+        message={<span>{snackMessage}</span>}
+        action={
+          <IconButton size='small' onClick={() => showSnackbar(false)}>
+            <CloseIcon />
+          </IconButton>
+        }
+      />
+    </Snackbar>
+    <AppBar
+      position="relative"
+      color='default'
+      className={clsx(classes.appBar, { [classes.appBarShift]: shiftAppBar })}
+    >
+      <Toolbar variant="dense">
+        <ToolbarButton
+          title="Control Panel"
+          icon={<MenuIcon />}
+          edge="start"
+          onClick={() => onShowControlPanel(!showControlPanel)}
+        />
+        <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
+          <Tooltip arrow placement="bottom" title="Home">
+            <IconButton 
+              aria-label='close' 
+              onClick={() => location.href = '/'}
+            >
+              <AppLogoIcon style={{ fontSize: 26 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        <ToolbarDivider classes={classes} unrelated />
+        <TitleEditor controller={controller} disabled={!networkLoaded} />
+        <ToolbarDivider classes={classes} unrelated />
+        <div className={classes.sectionDesktop}>
+          { buttonsDef.map(({title, icon, onClick, unrelated}, idx) =>
+            <Fragment key={idx}>
+              <ToolbarButton
+                title={title}
+                icon={icon}
+                disabled={!networkLoaded}
+                onClick={onClick}
+              />
+              <ToolbarDivider classes={classes} unrelated={unrelated} />
+            </Fragment>
+          )}
+        </div>
+        <div className={classes.sectionMobile}>
+          <ToolbarButton
+            title="Options"
+            icon={<MoreIcon />}
+            onClick={showMobileMenu}
+          />
+        </div>
+      </Toolbar>
+      <MobileMenu />
+      {anchorEl && (
+        <Popover
+          id="menu-popover"
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          onClose={handleMenuClose}
         >
-          { icon }
-        </IconButton>
-      </Tooltip>
-    );
-  }
+          {menuName === SHARE_MENU_ID && (
+            <ShareMenu 
+              controller={controller} 
+              onClose={handleMenuClose}
+              showMessage={message => showSnackbar(true, message)}
+            />
+          )}
+        </Popover>
+      )}
+    </AppBar>
+  </>;
 }
 
-class ToolbarDivider extends Component {
-  render() {
-    const { classes, unrelated } = this.props;
 
-    return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
-  }
+function ToolbarButton({ title, icon, color, className, disabled, onClick }) {
+  return (
+    <Tooltip arrow placement="bottom" title={title}>
+      <IconButton
+        disabled={disabled}
+        component={disabled ? "div" : undefined} // To prevent error: 'Material-UI: You are providing a disabled `button` child to the Tooltip component.'
+        size="small"
+        color={color || 'inherit'}
+        className={className}
+        onClick={onClick}
+      >
+        { icon }
+      </IconButton>
+    </Tooltip>
+  );
 }
+
+
+function ToolbarDivider({ classes, unrelated }) {
+  return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
+}
+
 
 const useStyles = theme => ({
   appBar: {

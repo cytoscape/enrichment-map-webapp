@@ -1,14 +1,12 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 
-import theme from '../../theme';
 import UploadPanel from './upload-panel';
 import ClassSelector from './class-selector';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { Container, Paper, Grid, Divider, } from '@material-ui/core';
-import { IconButton, Button, Typography } from '@material-ui/core';
+import { Button, Typography } from '@material-ui/core';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@material-ui/core';
 
 import NavigateBeforeIcon from '@material-ui/icons/NavigateBefore';
@@ -31,15 +29,14 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-const StartDialog = ({ step, isMobile, format, columns, contents, errorMessages, onUpload, onClassesChanged, onSubmit, onCancelled, onBack }) => {
+const StartDialog = ({ step, isMobile, columns, errorMessages, rnaseqClasses, onUpload, onClassesChanged, onSubmit, onCancelled, onBack }) => {
   const classes = useStyles();
   const open = step !== 'WAITING';
 
   const Classes = () => 
     <ClassSelector 
       columns={columns} 
-      contents={contents}
-      format={format}
+      rnaseqClasses={rnaseqClasses}
       onClassesChanged={arr => onClassesChanged(arr)}
       isMobile={isMobile}
     />;
@@ -121,9 +118,8 @@ const StartDialog = ({ step, isMobile, format, columns, contents, errorMessages,
 StartDialog.propTypes = {
   step: PropTypes.string.isRequired,
   isMobile: PropTypes.bool,
-  format: PropTypes.string,
+  rnaseqClasses: PropTypes.array,
   columns: PropTypes.array,
-  contents: PropTypes.string,
   errorMessages: PropTypes.array,
   onClassesChanged: PropTypes.func.isRequired,
   onUpload: PropTypes.func.isRequired,
