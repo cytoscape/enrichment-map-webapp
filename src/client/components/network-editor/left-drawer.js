@@ -240,7 +240,19 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     const clearSearch = _.debounce(() => {
       cancelSearch();
     }, 128);
+    
+    cyEmitter.on('click', evt => {
+      // Prevents multi-selection when shift/ctrl/command is pressed...
+      if (evt.originalEvent.ctrlKey || evt.originalEvent.metaKey || evt.originalEvent.shiftKey) {
+        const ele = evt.target;
 
+        if (ele.group && !ele.selected()) {
+          // This is a node/edge and is not selected yet--if already selected, ignore it,
+          // otherwise shift-clicking the same element won't deselect it as usually expected.
+          cy.$(':selected').unselect(); // Unselect everything, so only this clicked element can be selected by Cytoscape.
+        }
+      }
+    });
     cyEmitter.on('select unselect', onCySelectionChanged);
 
     cyEmitter.on('select', () => {
