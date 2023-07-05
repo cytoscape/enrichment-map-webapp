@@ -1,11 +1,11 @@
 import React, { useEffect, useReducer, useState } from 'react';
 import PropTypes from 'prop-types';
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 import { NodeColorLegend } from './legend-svg';
 import { NetworkEditorController } from './controller';
-import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
-import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
-import { Chip, Tooltip } from '@material-ui/core';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { Chip, Tooltip } from '@mui/material';
 import EventEmitterProxy from '../../../model/event-emitter-proxy';
 
 export const NODE_COLOR_SVG_ID = 'node-color-legend-svg';

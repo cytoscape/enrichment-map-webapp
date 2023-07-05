@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { styled } from '@material-ui/core/styles';
+import { styled } from '@mui/material/styles';
 import { NetworkEditorController } from './controller';
-import { Tooltip, InputBase } from '@material-ui/core';
+import { Tooltip, InputBase } from '@mui/material';
 
 
 
@@ -69,7 +69,7 @@ export function TitleEditor({ controller, disabled }) {
       maxWidth: 640,
       padding: 2,
       fontWeight: 'bold',
-      [theme.breakpoints.down('sm')]: {
+      [theme.breakpoints.down('md')]: {
         textAlign: 'center',
       },
       [theme.breakpoints.up('sm')]: {

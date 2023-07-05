@@ -3,11 +3,11 @@ import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 import { NetworkEditorController } from './controller';
-import { MenuList, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import { MenuList, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { getSVGString } from './legend-svg';
 import { NODE_COLOR_SVG_ID } from './legend-button';
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
-import LinkIcon from '@material-ui/icons/Link';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import LinkIcon from '@mui/icons-material/Link';
 
 
 const ImageSize = {

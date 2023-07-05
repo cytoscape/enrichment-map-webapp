@@ -1,9 +1,9 @@
 import React from 'react';
-import FormatQuoteIcon from '@material-ui/icons/FormatQuote';
-import { Grid, Link, Paper, Typography, Container } from '@material-ui/core';
+import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
+import { Grid, Link, Paper, Typography, Container } from '@mui/material';
 import { linkoutProps } from '../defaults';
 import PropTypes from 'prop-types';
-import { withStyles } from '@material-ui/core/styles';
+import withStyles from '@mui/styles/withStyles';
 
 function EasyCitation({ classes }) {
   return (
@@ -13,7 +13,11 @@ function EasyCitation({ classes }) {
         <Typography className={classes.citeText}>
           To cite this app in a paper, for now, please cite the Nature Protocols article below.  An article specific to this app will be published shortly.
 
-          <Link className={classes.citeLink} href="https://doi.org/10.1038/s41596-018-0103-9" {...linkoutProps}>
+          <Link
+            className={classes.citeLink}
+            href="https://doi.org/10.1038/s41596-018-0103-9"
+            {...linkoutProps}
+            underline="hover">
             Reimand, J., Isserlin, R., ..., Bader, G. &nbsp;
             Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, Cytoscape and EnrichmentMap.&nbsp;
             Nat Protoc 14, 482–517 (2019).
@@ -23,11 +27,23 @@ function EasyCitation({ classes }) {
       <Container>
         <Typography className={classes.citeTextAuthors}>
           <span>App authored by: </span>
-          <Link href="https://github.com/maxkfranz" className={classes.citeLinkAuthor}>Max Franz</Link><span>, </span>
-          <Link href="https://github.com/mikekucera" className={classes.citeLinkAuthor}>Mike Kucera</Link><span>, </span>
-          <Link href="https://github.com/chrtannus"className={classes.citeLinkAuthor} >Christian Lopes</Link><span>, </span>
+          <Link
+            href="https://github.com/maxkfranz"
+            className={classes.citeLinkAuthor}
+            underline="hover">Max Franz</Link><span>, </span>
+          <Link
+            href="https://github.com/mikekucera"
+            className={classes.citeLinkAuthor}
+            underline="hover">Mike Kucera</Link><span>, </span>
+          <Link
+            href="https://github.com/chrtannus"
+            className={classes.citeLinkAuthor}
+            underline="hover">Christian Lopes</Link><span>, </span>
           <span>..., </span>
-          <Link href="https://baderlab.org" className={classes.citeLinkAuthor}>Gary Bader</Link>
+          <Link
+            href="https://baderlab.org"
+            className={classes.citeLinkAuthor}
+            underline="hover">Gary Bader</Link>
         </Typography>
       </Container>
     </Grid>
@@ -45,7 +61,7 @@ const useStyles = theme => ({
     fontFamily: 'Monaco,Courier New,Monospace',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('md')]: {
       marginTop: theme.spacing(6),
     },
   },

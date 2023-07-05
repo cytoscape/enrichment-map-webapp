@@ -7,14 +7,14 @@ import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import GeneListPanel from './gene-list-panel';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import { Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
-import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
-import SearchBar from "material-ui-search-bar";
+import { Drawer, Grid, Typography, Tooltip } from '@mui/material';
+import { InputAdornment, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material';
 
 import { GeneSetIcon, VennIntersectionIcon } from '../svg-icons';
-import NetworkIcon from '@material-ui/icons/Share';
+import NetworkIcon from '@mui/icons-material/Share';
+import SearchIcon from "@mui/icons-material/Search";
 
 const sortOptions = {
   down: {
@@ -66,6 +66,8 @@ const useStyles = makeStyles((theme) => ({
     borderColor: theme.palette.divider,
     borderWidth: '1px',
     borderStyle: 'hidden hidden solid hidden',
+    borderRadius: 0,
+    padding: 0,
   },
 }));
 
@@ -170,10 +172,11 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     setSearchValue('');
     setSearchResult(null);
   };
-  const search = (val) => {
+  const search = (evt) => {
+    const val = evt.target.value;
     const query = val.trim();
     
-    if (val.length > 0) {
+    if (query.length > 0) {
       // Unselect Cy elements first
       const selectedEles = cy.elements().filter(':selected');
       selectedEles.unselect();
@@ -334,7 +337,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             onChange={handleSort}
           >
           {Object.entries(sortOptions).map(([k, { label, icon }]) => (
-            <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" style={{width:70}}>
+            <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" color="standard" style={{width:70}}>
               <Tooltip arrow placement="top" title={label}>
                 {icon}
               </Tooltip>
@@ -346,42 +349,52 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     );
   };
   
-    const drawerVariant = isMobile ? 'temporary' : 'persistent';
+  const drawerVariant = isMobile ? 'temporary' : 'persistent';
 
-    return (
-      <Drawer
-        className={classes.drawer}
-        variant={drawerVariant}
-        anchor="left"
-        open={open}
-        PaperProps={{
-          style: {
-            overflow: "hidden"
-          }
-        }}
-        classes={{
-          paper: classes.drawerPaper,
-        }}
-      >
-        <div className={classes.drawerContent}>
-          <div className={classes.drawerHeader}>
-            <SearchBar
-              disabled={!networkLoaded || !geneListIndexed}
-              className={classes.searchBar}
-              value={searchValue}
-              onChange={search}
-              onCancelSearch={cancelSearch}
-            />
-            <GeneListHeader />
-          </div>
-          <div className={classes.drawerSection}>
-          {networkLoaded && geneListIndexed && (
-            <GeneListPanel controller={controller} genes={genes} sort={sort} isMobile={isMobile} />
-          )}
-          </div>
+  return (
+    <Drawer
+      className={classes.drawer}
+      variant={drawerVariant}
+      anchor="left"
+      open={open}
+      PaperProps={{
+        style: {
+          overflow: "hidden"
+        }
+      }}
+      classes={{
+        paper: classes.drawerPaper,
+      }}
+    >
+      <div className={classes.drawerContent}>
+        <div className={classes.drawerHeader}>
+          <TextField
+            id="search"
+            type="search"
+            placeholder="Search"
+            className={classes.searchBar}
+            disabled={!networkLoaded || !geneListIndexed}
+            value={searchValue}
+            onChange={search}
+            sx={{ width: '100%' }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="secondary" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <GeneListHeader />
         </div>
-      </Drawer>
-    );
+        <div className={classes.drawerSection}>
+        {networkLoaded && geneListIndexed && (
+          <GeneListPanel controller={controller} genes={genes} sort={sort} isMobile={isMobile} />
+        )}
+        </div>
+      </div>
+    </Drawer>
+  );
 };
 
 LeftDrawer.propTypes = {

@@ -1,14 +1,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Typography } from "@material-ui/core";
-import CloseIcon from '@material-ui/icons/Close';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Typography } from "@mui/material";
+import CloseIcon from '@mui/icons-material/Close';
 
 export function ConfirmDialog({ open, title, message, onConfirm, onCancel }) {
   return (
     <Dialog open={open} maxWidth="sm" fullWidth>
       <DialogTitle>{title}</DialogTitle>
       <Box position="absolute" top={0} right={0}>
-        <IconButton onClick={onCancel}>
+        <IconButton onClick={onCancel} size="large">
           <CloseIcon />
         </IconButton>
       </Box>

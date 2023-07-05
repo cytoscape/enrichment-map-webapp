@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Popover, Button, Menu, MenuItem } from "@material-ui/core";
+import { Popover, Button, Menu, MenuItem } from "@mui/material";
 
 
 export class PopoverButton extends React.Component {

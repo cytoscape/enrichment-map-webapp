@@ -7,17 +7,18 @@ import theme from '../../theme';
 import { NES_COLOR_RANGE, nodeLabel } from './network-style';
 import { NetworkEditorController } from './controller';
 
-import { makeStyles, withStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
+import withStyles from '@mui/styles/withStyles';
 
 import { Virtuoso } from 'react-virtuoso';
-import { ListItem, ListItemText, Tooltip } from '@material-ui/core';
-import { Grid, Typography, Link } from '@material-ui/core';
-import Skeleton from '@material-ui/lab/Skeleton';
+import { ListItem, ListItemText, Tooltip } from '@mui/material';
+import { Grid, Typography, Link } from '@mui/material';
+import Skeleton from '@mui/material/Skeleton';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
-import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
-import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
-import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 const CHART_WIDTH = 160;
 const CHART_HEIGHT = 16;
@@ -292,7 +293,7 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
                       href={ncbiId ? `https://www.ncbi.nlm.nih.gov/gene/${ncbiId}` : `https://www.ncbi.nlm.nih.gov/gene?term=(${symbol}%5BGene%20Name%5D)%20AND%209606%5BTaxonomy%20ID%5D`}
                       className={classes.linkout}
                       {...linkoutProps}
-                    >
+                      underline="hover">
                       More Info
                     </Link>
                   </Grid>
@@ -301,7 +302,7 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
                       href={`https://genemania.org/search/human/${symbol}`}
                       className={classes.linkout}
                       {...linkoutProps}
-                    >
+                      underline="hover">
                       Related Genes
                     </Link>
                   </Grid>
@@ -452,7 +453,7 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
                 <RankTooltip arrow title={tooltip} enterDelay={750} placement={isMobile ? 'top' : 'right'}>
                   <Grid item className={classes.chartContainer}>
                     {loading ?
-                      <Skeleton variant="rect" height={CHART_HEIGHT} />
+                      <Skeleton variant="rectangular" height={CHART_HEIGHT} />
                       :
                       data && (
                         <div className={classes.rankBarParent}>

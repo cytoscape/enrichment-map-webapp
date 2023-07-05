@@ -11,8 +11,8 @@ import Main from './main';
 
 import createNetworkStyle from './network-style';
 
-import { ThemeProvider } from '@material-ui/core/styles';
-import CssBaseline from '@material-ui/core/CssBaseline';
+import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import LegendActionButton from './legend-button';
 
 
@@ -148,24 +148,26 @@ export function NetworkEditor({ id }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <LegendActionButton controller={controller} />
-        <div className="network-editor">
-          <Header
-            controller={controller}
-            showControlPanel={showControlPanel}
-            isMobile={mobile}
-            onShowControlPanel={setShowControlPanel}
-          />
-          <Main
-            controller={controller}
-            showControlPanel={showControlPanel}
-            isMobile={mobile}
-            onContentClick={onContentClick}
-          />
-        </div>
-      </ThemeProvider>
+      <StyledEngineProvider injectFirst>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <LegendActionButton controller={controller} />
+          <div className="network-editor">
+            <Header
+              controller={controller}
+              showControlPanel={showControlPanel}
+              isMobile={mobile}
+              onShowControlPanel={setShowControlPanel}
+            />
+            <Main
+              controller={controller}
+              showControlPanel={showControlPanel}
+              isMobile={mobile}
+              onContentClick={onContentClick}
+            />
+          </div>
+        </ThemeProvider>
+      </StyledEngineProvider>
     </QueryClientProvider>
   );
 }

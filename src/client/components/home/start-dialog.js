@@ -4,17 +4,17 @@ import PropTypes from 'prop-types';
 import UploadPanel from './upload-panel';
 import ClassSelector from './class-selector';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import { Button, Typography } from '@material-ui/core';
-import { Dialog, DialogTitle, DialogContent, DialogActions } from '@material-ui/core';
+import { Button, Typography } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 
-import NavigateBeforeIcon from '@material-ui/icons/NavigateBefore';
-import NavigateNextIcon from '@material-ui/icons/NavigateNext';
-import DescriptionOutlinedIcon from '@material-ui/icons/DescriptionOutlined';
-import CloseIcon from '@material-ui/icons/Close';
-import WarningIcon from '@material-ui/icons/Warning';
-import CircularProgressIcon from '@material-ui/core/CircularProgress';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+import WarningIcon from '@mui/icons-material/Warning';
+import CircularProgressIcon from '@mui/material/CircularProgress';
 
 
 const useStyles = makeStyles(() => ({

@@ -1,4 +1,4 @@
-import { createTheme }  from '@material-ui/core/styles';
+import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
@@ -26,6 +26,7 @@ const theme = createTheme({
     },
     text: {
       primary: '#E9E9E9',
+      secondary: '#ffffffb3',
     },
     link: {
       main: '#aadafa',
@@ -47,12 +48,21 @@ const theme = createTheme({
       }
     },
   },
-  overrides: {
+  components: {
     MuiTooltip: {
+      styleOverrides: {
         tooltip: {
             fontSize: "0.85em",
             maxWidth: 340,
         },
+      }
+    },
+    MuiToggleButton: {
+      styleOverrides: {
+        root: {
+          color: '#ffffff61',
+        }
+      }
     },
   },
 });

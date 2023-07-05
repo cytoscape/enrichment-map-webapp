@@ -1,13 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import { Grid, Typography } from '@material-ui/core';
-import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
+import { Grid, Typography } from '@mui/material';
+import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 
 import { GroupAIcon, GroupBIcon } from '../svg-icons';
-import BlockIcon from '@material-ui/icons/Block';
+import BlockIcon from '@mui/icons-material/Block';
 
 const BUTTONS_DEF = [
   { value: 'A', label: 'Group A', mobileLabel: 'A',  icon: <GroupAIcon fontSize="small" /> },

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import EventEmitter from 'eventemitter3';
 import _ from 'lodash';
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
 import { UploadController } from './upload-controller';
 import EasyCitation from './citation.js';
@@ -11,11 +11,11 @@ import StartDialog from './start-dialog';
 import theme from '../../theme';
 import { assignGroups } from './class-selector';
 
-import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@material-ui/core';
-import { Container, Grid, Divider, } from '@material-ui/core';
-import { Button, Typography, Link } from '@material-ui/core';
+import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@mui/material';
+import { Container, Grid, Divider, } from '@mui/material';
+import { Button, Typography, Link } from '@mui/material';
 
-import NavigateNextIcon from '@material-ui/icons/NavigateNext';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { AppLogoIcon } from '../svg-icons';
 
 import classNames from 'classnames';
@@ -444,7 +444,11 @@ function Debug({ sampleFiles, onLoadSampleNetwork }) {
       {
         sampleRankFiles.length > 0 ?
         sampleRankFiles.map(file => (
-          <li key={file}><Link component="a" style={{ cursor: 'pointer' }} onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
+          <li key={file}><Link
+            component="a"
+            style={{ cursor: 'pointer' }}
+            onClick={() => onLoadSampleNetwork(file)}
+            underline="hover">{file}</Link></li>
         )) :
         <li>Loading...</li>
       }
@@ -454,7 +458,11 @@ function Debug({ sampleFiles, onLoadSampleNetwork }) {
       {
         sampleExprFiles.length > 0 ?
         sampleExprFiles.map(file => (
-          <li key={file}><Link component="a" style={{ cursor: 'pointer' }} onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
+          <li key={file}><Link
+            component="a"
+            style={{ cursor: 'pointer' }}
+            onClick={() => onLoadSampleNetwork(file)}
+            underline="hover">{file}</Link></li>
         )) :
         <li>Loading...</li>
       }
@@ -552,13 +560,13 @@ const useStyles = makeStyles(theme => ({
     paddingTop: 0,
     paddingBottom: 0,
     textAlign: 'left',
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('lg')]: {
       marginTop: 0,
       marginBottom: 0,
       paddingTop: theme.spacing(1),
       paddingBottom: theme.spacing(1),
     },
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('md')]: {
       padding: theme.spacing(2),
     },
   },
@@ -566,10 +574,10 @@ const useStyles = makeStyles(theme => ({
     fontWeight: 800,
     fontSize: 'clamp(1.5rem, 0.75rem + 2.5vw, 3.5rem)',
     marginTop: theme.spacing(2),
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('lg')]: {
       marginTop: theme.spacing(1),
     },
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('md')]: {
       marginTop: theme.spacing(0.5),
       textAlign: 'center',
     },
@@ -579,7 +587,7 @@ const useStyles = makeStyles(theme => ({
     color: theme.palette.secondary.main,
     marginTop: theme.spacing(2.5),
     marginBottom: theme.spacing(5),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('md')]: {
       fontSize: 'unset',
       textAlign: 'center',
       marginBottom: theme.spacing(2.5),
@@ -587,7 +595,7 @@ const useStyles = makeStyles(theme => ({
   },
   section: {
     width: '100%',
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('md')]: {
       textAlign: 'center',
       alignItems: 'center',
       marginTop: theme.spacing(1),
@@ -604,7 +612,7 @@ const useStyles = makeStyles(theme => ({
     maxWidth: '100%',
     maxHeight: 520,
     objectFit: 'contain',
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('md')]: {
       maxWidth: '80%',
       maxHeight: 300,
       marginBottom: theme.spacing(4),
@@ -614,7 +622,7 @@ const useStyles = makeStyles(theme => ({
     marginTop: theme.spacing(4),
   },
   copyright: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('lg')]: {
       marginBottom: theme.spacing(8),
     },
   },

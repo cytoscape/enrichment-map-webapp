@@ -3,10 +3,10 @@ import PropTypes from 'prop-types';
 
 import { linkoutProps } from '../defaults';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import { Grid, Paper, Typography, Link } from '@material-ui/core';
-import { Table, TableHead, TableRow, TableCell, TableBody } from '@material-ui/core';
+import { Grid, Paper, Typography, Link } from '@mui/material';
+import { Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 
 const useStyles = makeStyles((theme) => ({
   tableContainer: {
@@ -123,8 +123,16 @@ const UploadPanel = ({ isMobile }) => {
   const GeneNameInfo = () =>
     <>
       The first column is the gene <code>name</code>&nbsp;
-      &#40;<Link href="http://www.ensembl.org/Homo_sapiens/Info/Index" className={classes.linkout} {...linkoutProps}>Ensembl</Link> or&nbsp;
-      <Link href="https://www.genenames.org/" className={classes.linkout} {...linkoutProps}>HGNC</Link> IDs, for Human species only&#41;.
+      &#40;<Link
+      href="http://www.ensembl.org/Homo_sapiens/Info/Index"
+      className={classes.linkout}
+      {...linkoutProps}
+      underline="hover">Ensembl</Link> or&nbsp;
+      <Link
+        href="https://www.genenames.org/"
+        className={classes.linkout}
+        {...linkoutProps}
+        underline="hover">HGNC</Link> IDs, for Human species only&#41;.
     </>;
 
   return (

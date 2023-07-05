@@ -8,21 +8,21 @@ import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
 import { ShareMenu } from './share-panel';
 
-import { withStyles } from '@material-ui/core/styles';
+import withStyles from '@mui/styles/withStyles';
 
-import { AppBar, Snackbar, SnackbarContent, Toolbar } from '@material-ui/core';
-import { Divider } from '@material-ui/core';
-import { Popover, Menu, MenuItem} from "@material-ui/core";
-import { Tooltip } from '@material-ui/core';
-import { IconButton, Box } from '@material-ui/core';
+import { AppBar, Snackbar, SnackbarContent, Toolbar } from '@mui/material';
+import { Divider } from '@mui/material';
+import { Popover, Menu, MenuItem} from "@mui/material";
+import { Tooltip } from '@mui/material';
+import { IconButton, Box } from '@mui/material';
 
 import { AppLogoIcon } from '../svg-icons';
-import MenuIcon from '@material-ui/icons/Menu';
-import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
-import ReplyIcon from '@material-ui/icons/Reply';
-import MoreIcon from '@material-ui/icons/MoreVert';
-import { Add, Remove } from '@material-ui/icons';
-import CloseIcon from '@material-ui/icons/Close';
+import MenuIcon from '@mui/icons-material/Menu';
+import FitScreenIcon from '@mui/icons-material/SettingsOverscan';
+import ReplyIcon from '@mui/icons-material/Reply';
+import MoreIcon from '@mui/icons-material/MoreVert';
+import { Add, Remove } from '@mui/icons-material';
+import CloseIcon from '@mui/icons-material/Close';
 
 const MOBILE_MENU_ID = "menu-mobile";
 const SHARE_MENU_ID  = "menu-share";
@@ -186,7 +186,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
       >
         { buttonsDef.map(({title, icon, onClick}, idx) =>
           <MenuItem key={idx} onClick={onClick}>
-            <IconButton>{icon}</IconButton>
+            <IconButton size="large">{icon}</IconButton>
             <p>{title}</p>
           </MenuItem>
         )}
@@ -202,8 +202,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
       autoHideDuration={4000} 
       onClose={() => showSnackbar(false)} 
     >
-      <SnackbarContent 
-        className={classes.snackBarContent}
+      <SnackbarContent
         message={<span>{snackMessage}</span>}
         action={
           <IconButton size='small' onClick={() => showSnackbar(false)}>
@@ -226,10 +225,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
         />
         <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
           <Tooltip arrow placement="bottom" title="Home">
-            <IconButton 
-              aria-label='close' 
-              onClick={() => location.href = '/'}
-            >
+            <IconButton aria-label='close' onClick={() => location.href = '/'} size="large">
               <AppLogoIcon style={{ fontSize: 26 }} />
             </IconButton>
           </Tooltip>
@@ -309,6 +305,8 @@ function ToolbarDivider({ classes, unrelated }) {
 
 const useStyles = theme => ({
   appBar: {
+    color: 'inherit',
+    backgroundColor: 'rgb(33 33 33 / 80%)',
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
@@ -329,11 +327,13 @@ const useStyles = theme => ({
     marginLeft: theme.spacing(1),
     marginRight: theme.spacing(1),
     width: 0,
+    borderColor: 'transparent',
   },
   unrelatedDivider: {
     marginLeft: theme.spacing(3),
     marginRight: theme.spacing(3),
     width: 0,
+    borderColor: 'transparent',
   },
   sectionDesktop: {
     display: 'none',
@@ -351,10 +351,6 @@ const useStyles = theme => ({
     top: '70px',
     zOrder: 1000,
   },
-  snackBarContent: {
-    color: 'inherit',
-    backgroundColor: 'rgb(33 33 33 / 80%)'
-  }
 });
 
 ToolbarButton.propTypes = {
