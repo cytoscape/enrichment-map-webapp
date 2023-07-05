@@ -337,7 +337,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             onChange={handleSort}
           >
           {Object.entries(sortOptions).map(([k, { label, icon }]) => (
-            <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" color="standard" style={{width:70}}>
+            <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" style={{width:70}}>
               <Tooltip arrow placement="top" title={label}>
                 {icon}
               </Tooltip>
