@@ -341,7 +341,54 @@ class Datastore {
   }
 
   /**
-   * Returns the network document. 
+   * Returns an cursor of objects of the form:
+   * [ { "name": "PYROPTOSIS%REACTOME%R-HSA-5620971.3", "padj": 0.0322, "NES": -1.8049, "pval": 0.0022, "size": 27 }, ... ]
+   */
+  async getEnrichmentResultsCursor(networkIDString) {
+    const networkID = makeID(networkIDString);
+
+    const cursor = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .aggregate([
+        { $match: { _id: networkID.bson } },
+        { $replaceWith: { path: "$network.elements.nodes.data" } },
+        { $unwind: { path: "$path" } },
+        { $replaceRoot: { newRoot: "$path" } },
+        { $project: { 
+            name: { $arrayElemAt: [ "$name", 0 ] },
+            pval: "$pvalue",
+            padj: true,
+            NES: true,
+            size: "$gs_size"
+        }}
+      ]);
+
+    return cursor;
+  }
+
+  /**
+   * Returns an cursor of objects of the form (sorted by rank):
+   * [ { "gene": "ABCD", "rank": 0.0322 }, ... ]
+   */
+  async getRankedGeneListCursor(networkIDString) {
+    const networkID = makeID(networkIDString);
+
+    const cursor = await this.db
+      .collection(GENE_LISTS_COLLECTION)
+      .aggregate([
+        { $match: { networkID: networkID.bson } },
+        { $match: { networkIDStr: "21d883fd-06c5-4435-927d-1de3917cb7fc" } },
+        { $unwind: { path: "$genes" } },
+        { $replaceRoot: { newRoot: "$genes" } },
+        { $sort: { rank: -1 }}
+      ]);
+
+    return cursor;
+  }
+
+
+  /**
+   * Returns names 
    */
   async getNodeDataSetNames(networkIDString, options) {
     const { nodeLimit } = options;

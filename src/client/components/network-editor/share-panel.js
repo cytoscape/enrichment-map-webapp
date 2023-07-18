@@ -42,17 +42,22 @@ async function clearSelectionStyle(controller) {
   return async () => eles.addClass('unselected');
 }
 
-
-function getZipFileName(controller) {
+function getZipFileName(controller, suffix) {
   const networkName = controller.cy.data('name');
   if(networkName) {
     // eslint-disable-next-line no-control-regex
     const reserved = /[<>:"/\\|?*\u0000-\u001F]/g;
     if(!reserved.test(networkName)) {
-      return networkName + '.zip';
+      return `${networkName}_${suffix}.zip`;
     }
   }
-  return 'enrichment_map_images.zip';
+  return `enrichment_map_${suffix}.zip`;
+}
+
+async function saveZip(controller, zip, type) {
+  const archiveBlob = await zip.generateAsync({ type: 'blob' });
+  const fileName = getZipFileName(controller, type);
+  await saveAs(archiveBlob, fileName);
 }
 
 
@@ -74,10 +79,28 @@ async function handleExportImageArchive(controller) {
   zip.file('enrichment_map_large.png',  blobs[2]);
   zip.file('node_color_legend.svg',     blobs[3]);
 
-  const archiveBlob = await zip.generateAsync({ type: 'blob' });
-  
-  const fileName = getZipFileName(controller);
-  await saveAs(archiveBlob, fileName);
+  saveZip(controller, zip, 'images');
+}
+
+
+async function handleExportDataArchive(controller) {
+  const netID = controller.networkIDStr;
+
+  const fetchExport = async path => {
+    const res = await fetch(path);
+    return await res.text();
+  };
+
+  const files = await Promise.all([
+    fetchExport(`/api/export/enrichment/${netID}`),
+    fetchExport(`/api/export/ranks/${netID}`),
+  ]);
+
+  const zip = new JSZip();
+  zip.file('enrichment_results.txt', files[0]);
+  zip.file('ranks.txt', files[1]);
+
+  saveZip(controller, zip, 'enrichment');
 }
 
 
@@ -99,6 +122,11 @@ export function ShareMenu({ controller, onClose = ()=>null, showMessage = ()=>nu
     onClose();
   };
 
+  const handleExportData = async () => {
+    await handleExportDataArchive(controller); 
+    onClose();
+  };
+
   return (
     <MenuList>
       <MenuItem onClick={handleCopyLink}>
@@ -112,6 +140,12 @@ export function ShareMenu({ controller, onClose = ()=>null, showMessage = ()=>nu
           <CloudDownloadIcon />
         </ListItemIcon>
         <ListItemText>Save Network Images</ListItemText>
+      </MenuItem>
+      <MenuItem onClick={handleExportData}>
+        <ListItemIcon>
+          <CloudDownloadIcon />
+        </ListItemIcon>
+        <ListItemText>Export Data</ListItemText>
       </MenuItem>
     </MenuList>
   );

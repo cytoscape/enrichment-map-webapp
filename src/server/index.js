@@ -18,6 +18,7 @@ import * as Tracing from "@sentry/tracing";
 import { NODE_ENV, PORT, UPLOAD_LIMIT, TESTING, SENTRY, SENTRY_ENVIRONMENT } from './env.js';
 import indexRouter from './routes/index.js';
 import apiRouter from './routes/api/index.js';
+import exportRouter from './routes/api/export.js';
 import { registerCytoscapeExtensions } from '../model/cy-extensions.js';
 
 console.info('Starting Express');
@@ -102,6 +103,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../..', 'public')));
 
 app.use('/api', apiRouter);
+app.use('/api/export', exportRouter);
 app.use('/', indexRouter);
 
 // The error handler must be before any other error middleware and after all controllers
