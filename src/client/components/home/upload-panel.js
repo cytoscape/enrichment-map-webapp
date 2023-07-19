@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
 import { linkoutProps } from '../defaults';
+import theme from '../../theme';
 
 import { makeStyles } from '@material-ui/core/styles';
 
 import { Grid, Paper, Typography, Link } from '@material-ui/core';
+import { Accordion, AccordionDetails, AccordionSummary } from '@material-ui/core';
 import { Table, TableHead, TableRow, TableCell, TableBody } from '@material-ui/core';
+
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 const useStyles = makeStyles((theme) => ({
   tableContainer: {
@@ -25,9 +29,12 @@ const useStyles = makeStyles((theme) => ({
     color: theme.palette.text.secondary,
     borderColor: theme.palette.divider,
   },
-  subtitle: {
-    marginTop: theme.spacing(4),
-    marginBottom: theme.spacing(1),
+  accordionHead: {
+    fontSize: theme.typography.pxToRem(15),
+    fontWeight: theme.typography.fontWeightRegular,
+  },
+  accordionSummary: {
+    marginBottom: theme.spacing(2),
   },
   linkout: {
     color: theme.palette.text.primary,
@@ -87,38 +94,51 @@ const SampleTable = ({ data }) => {
   );
 };
 
-const FormatContainer = ({ isMobile, title, data, children }) => {
+const FormatAccordion = ({ isMobile, id, title, summary, data, children, expanded, onChange }) => {
   const classes = useStyles();
 
   return (
-    <Grid container direction="column" alignItems="flex-start">
-      <Grid item>
-        <Typography variant="subtitle1" className={classes.subtitle}>{ title }</Typography>
-      </Grid>
-      <Grid item>
-        <Grid
-          container
-          direction={isMobile ? 'column' : 'row'}
-          alignItems={isMobile ? 'center' : 'flex-start'}
-          justifyContent="space-between"
-          spacing={isMobile ? 2 : 0}
-        >
-          <Grid item sm={6}>
-            <SampleTable data={data} />
+    <Accordion defaultExpanded={id === 'format1'} expanded={expanded} variant="outlined" onChange={onChange(id)}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Typography className={classes.accordionHead}>{ title }</Typography>
+      </AccordionSummary>
+      <AccordionDetails>
+        <Grid container direction="column" alignItems="flex-start">
+          <Grid item>
+            <Typography variant="body2" color="secondary" className={classes.accordionSummary}>{ summary }</Typography>
           </Grid>
-          <Grid item sm={6}>
-            <Typography component="div" variant="body2" color="secondary">
-              { children }
-            </Typography>
+          <Grid item>
+            <Grid
+              container
+              direction={isMobile ? 'column' : 'row'}
+              alignItems={isMobile ? 'center' : 'flex-start'}
+              justifyContent="space-between"
+              spacing={isMobile ? 2 : 0}
+            >
+              <Grid item sm={6}>
+                <SampleTable data={data} />
+              </Grid>
+              <Grid item sm={6}>
+                <Typography component="div" variant="body2" color="secondary">
+                  { children }
+                </Typography>
+              </Grid>
+            </Grid>
           </Grid>
         </Grid>
-      </Grid>
-    </Grid>
+      </AccordionDetails>
+    </Accordion>
   );
 };
 
 const UploadPanel = ({ isMobile }) => {
   const classes = useStyles();
+  const [expanded, setExpanded] = useState('f1');
+
+  const handleChange = (panel) => (event, expand) => {
+    if (expand) // clicking an expanded accordion should not collapse it
+      setExpanded(panel);
+  };
 
   const GeneNameInfo = () =>
     <>
@@ -127,31 +147,48 @@ const UploadPanel = ({ isMobile }) => {
       <Link href="https://www.genenames.org/" className={classes.linkout} {...linkoutProps}>HGNC</Link> IDs, for Human species only&#41;.
     </>;
 
+  const summary = 
+    <>
+       It must have a header row, followed by the data rows.<br />
+       The column names are not important, but their orders are.
+    </>;
+
   return (
     <>
-      <Typography component="p" variant="body1">
+      <Typography component="p" variant="body1" style={{marginBottom: theme.spacing(2.5)}}>
         Upload your file (<code>CSV</code>, <code>TSV</code> or <code>Excel</code>) in one of the formats below:
       </Typography>
-      <br />
-      <Typography component="p" variant="body2" color="secondary">
-        Both formats have a header row, followed by the data rows.<br />
-        The column names are not important, but their orders are.
-      </Typography>
-      <FormatContainer isMobile={isMobile} data={RNASEQ_ROWS} title="Format 1 - RNA-Seq Expression Data">
+      <FormatAccordion
+        id="f1"
+        title="RNA-Seq Expression Data"
+        summary={summary}
+        isMobile={isMobile}
+        data={RNASEQ_ROWS}
+        expanded={expanded === "f1"}
+        onChange={handleChange}
+      >
         It must have 3 or more columns:
         <ul>
           <li><GeneNameInfo /></li>
           <li>The other columns must be numeric.</li>
           <li>If there are additional columns, you will have to set them as &ldquo;ignored&rdquo; in the next step.</li>
         </ul>
-      </FormatContainer>
-      <FormatContainer isMobile={isMobile} data={RANKED_ROWS} title="Format 2 - Pre-Ranked Gene List">
+      </FormatAccordion>
+      <FormatAccordion
+        id="f2"
+        title="Pre-Ranked Gene List"
+        summary={summary}
+        isMobile={isMobile}
+        data={RANKED_ROWS}
+        expanded={expanded === "f2"}
+        onChange={handleChange}
+      >
         It must have exactly 2 columns:
         <ul>
           <li><GeneNameInfo /></li>
           <li>The second column is the numeric <code>rank</code>.</li>
         </ul>
-      </FormatContainer>
+      </FormatAccordion>
     </>
   );
 };
@@ -160,14 +197,21 @@ SampleTable.propTypes = {
   data: PropTypes.array.isRequired,
 };
 
-FormatContainer.propTypes = {
-  isMobile: PropTypes.bool.isRequired,
+FormatAccordion.propTypes = {
+  id: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
+  summary: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node
+  ]).isRequired,
+  isMobile: PropTypes.bool.isRequired,
   data: PropTypes.array.isRequired,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
-  ]).isRequired
+  ]).isRequired,
+  expanded: PropTypes.bool.isRequired,
+  onChange: PropTypes.func.isRequired,
 };
 
 UploadPanel.propTypes = {
