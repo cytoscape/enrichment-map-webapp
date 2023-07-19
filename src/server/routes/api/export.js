@@ -1,5 +1,5 @@
 import Express from 'express';
-import Datastore from '../../datastore.js';
+import Datastore, { DB_1 } from '../../datastore.js';
 
 const http = Express.Router();
 
@@ -39,7 +39,21 @@ http.get('/ranks/:netid', async function(req, res, next) {
 
 // Return ranked gene list in TSV format
 http.get('/gmt/:netid', async function(req, res, next) {
+  try {
+    const { netid } = req.params;
+    const cursor = await Datastore.getGMTCursor(DB_1, netid);
 
+    sendDataLines(cursor, res, {
+      header: 'name\tdescription\tgenes',
+      objToStr: ({name, description, genes}) => {
+        const genesStr = genes.join('\t');
+        return `${name}\t${description}\t${genesStr}`;
+      }
+    });
+
+  } catch(err) {
+    next(err);
+  }
 });
 
 
@@ -62,8 +76,8 @@ async function sendDataLines(cursor, res, { type='tsv', header, objToStr } ) {
       res.write(str);
       res.write('\n');
     }
-    res.write('/n');
-
+    // DO NOT add a newline at the end of the file, it will break EM-desktop
+    
   } finally {
     cursor.close();
     res.end();

@@ -386,6 +386,38 @@ class Datastore {
     return cursor;
   }
 
+  /**
+   * Returns an cursor of objects of the form:
+   * [ { "name": "My Gene Set", "description": "blah blah", "genes": ["ABC", "DEF"] }, ... ]
+   */
+  async getGMTCursor(geneSetCollection, networkIDString) {
+    const networkID = makeID(networkIDString);
+
+    const cursor = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .aggregate([
+        { $match: { _id: networkID.bson } },
+        { $replaceWith: { path: "$network.elements.nodes.data" } },
+        { $unwind: { path: "$path" } },
+        { $replaceRoot: { newRoot: "$path" } },
+        { $project: { name: { $arrayElemAt: [ "$name", 0 ] } } },
+        { $lookup: {
+            from: geneSetCollection,
+            localField: "name",
+            foreignField: "name",
+            as: "geneSet"
+        }},
+        { $unwind: "$geneSet" },
+        { $project: { 
+            name: true,
+            description: "$geneSet.description",
+            genes: "$geneSet.genes",
+        }}
+      ]);
+    
+    return cursor;
+  }
+
 
   /**
    * Returns names 

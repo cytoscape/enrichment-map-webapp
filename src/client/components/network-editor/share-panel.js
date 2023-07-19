@@ -94,11 +94,13 @@ async function handleExportDataArchive(controller) {
   const files = await Promise.all([
     fetchExport(`/api/export/enrichment/${netID}`),
     fetchExport(`/api/export/ranks/${netID}`),
+    fetchExport(`/api/export/gmt/${netID}`),
   ]);
 
   const zip = new JSZip();
   zip.file('enrichment_results.txt', files[0]);
   zip.file('ranks.txt', files[1]);
+  zip.file('gene_sets.gmt', files[2]);
 
   saveZip(controller, zip, 'enrichment');
 }
