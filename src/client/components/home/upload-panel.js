@@ -135,8 +135,9 @@ const UploadPanel = ({ isMobile }) => {
   const classes = useStyles();
   const [expanded, setExpanded] = useState('f1');
 
-  const handleChange = (panel) => (event, isExpanded) => {
-    setExpanded(isExpanded ? panel : false);
+  const handleChange = (panel) => (event, expand) => {
+    if (expand) // clicking an expanded accordion should not collapse it
+      setExpanded(panel);
   };
 
   const GeneNameInfo = () =>
