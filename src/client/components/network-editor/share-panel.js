@@ -112,11 +112,11 @@ function handleCopyToClipboard() {
 }
 
 
-export function ShareMenu({ controller, onClose = ()=>null, showMessage = ()=>null }) {
+export function ShareMenu({ controller, onClose = ()=>null, setSnackBarState = ()=>null }) {
   const handleCopyLink = async () => {
     await handleCopyToClipboard(); 
     onClose();
-    showMessage("Link copied to clipboard");
+    setSnackBarState({ open: true, closeable: true, autoHideDelay: 4000, message: "Link copied to clipboard" });
   };
 
   const handleExportImages = async () => {
@@ -155,7 +155,7 @@ export function ShareMenu({ controller, onClose = ()=>null, showMessage = ()=>nu
 ShareMenu.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   onClose: PropTypes.func,
-  showMessage: PropTypes.func
+  setSnackBarState: PropTypes.func
 };
 
 export default ShareMenu;

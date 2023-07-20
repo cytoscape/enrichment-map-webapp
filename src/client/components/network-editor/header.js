@@ -23,6 +23,7 @@ import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
 import { Add, Remove } from '@material-ui/icons';
 import CloseIcon from '@material-ui/icons/Close';
+import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
 const MOBILE_MENU_ID = "menu-mobile";
 const SHARE_MENU_ID  = "menu-share";
@@ -85,8 +86,14 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
   const [ mobileMoreAnchorEl, setMobileMoreAnchorEl ] = useState(null);
   const [ anchorEl, setAnchorEl ] = useState(null);
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
-  const [ snackOpen, setSnackOpen ] = useState(false);
-  const [ snackMessage, setSnackMessage ] = useState('');
+
+  const [ snackBarState, setSnackBarState ] = useState({
+    open: false,
+    message: "",
+    autoHideDelay: 4000,
+    closeable: true,
+    spinner: false
+  });
 
   const panner = createPanner(controller);
 
@@ -141,11 +148,6 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     setAnchorEl(event.currentTarget);
   };
 
-  const showSnackbar = (open, message='') => {
-    setSnackOpen(open);
-    setSnackMessage(message);
-  };
-
   const buttonsDef = [ 
     {
       title: "Zoom In",
@@ -198,18 +200,25 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     <Snackbar
       className={classes.snackBar}
       anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      open={snackOpen} 
-      autoHideDuration={4000} 
-      onClose={() => showSnackbar(false)} 
+      open={snackBarState.open || false} 
+      autoHideDuration={snackBarState.autoHideDelay || null} 
+      onClose={() => setSnackBarState({ open: false })} 
     >
       <SnackbarContent 
         className={classes.snackBarContent}
-        message={<span>{snackMessage}</span>}
-        action={
-          <IconButton size='small' onClick={() => showSnackbar(false)}>
-            <CloseIcon />
-          </IconButton>
-        }
+        message={<span>{snackBarState.message || ""}</span>}
+        action={(() => {
+          if(snackBarState.closeable) {
+            return (
+              <IconButton size='small' 
+                onClick={() => setSnackBarState({ open: false })}>
+                <CloseIcon />
+              </IconButton>
+            );
+          } else if(snackBarState.spinner) {
+            return <CircularProgressIcon size={20}/>;
+          }
+        })()}
       />
     </Snackbar>
     <AppBar
@@ -274,7 +283,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
             <ShareMenu 
               controller={controller} 
               onClose={handleMenuClose}
-              showMessage={message => showSnackbar(true, message)}
+              setSnackBarState={setSnackBarState}
             />
           )}
         </Popover>
