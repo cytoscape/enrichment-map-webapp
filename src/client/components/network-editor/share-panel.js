@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
@@ -112,21 +112,45 @@ function handleCopyToClipboard() {
 }
 
 
+function snackBarFunctions(setSnackBarState) {
+  return {
+    close: () => setSnackBarState({ open: false }),
+    showMessage: message => setSnackBarState({ open: true, closeable: true, autoHideDelay: 3000, message }),
+    showSpinner: message => setSnackBarState({ open: true, closeable: false, spinner: true, message }),
+  };
+}
+
+
+
 export function ShareMenu({ controller, onClose = ()=>null, setSnackBarState = ()=>null }) {
+  const snack = snackBarFunctions(setSnackBarState);
+
   const handleCopyLink = async () => {
+    onClose();
     await handleCopyToClipboard(); 
-    onClose();
-    setSnackBarState({ open: true, closeable: true, autoHideDelay: 4000, message: "Link copied to clipboard" });
+    snack.showMessage("Link copied to clipboard");
   };
 
-  const handleExportImages = async () => {
-    await handleExportImageArchive(controller); 
+  const handleExportImages = () => {
     onClose();
+    handleExportImageArchive(controller); 
   };
 
-  const handleExportData = async () => {
-    await handleExportDataArchive(controller); 
+  const handleExportData = () => {
     onClose();
+
+    const dataPromise = handleExportDataArchive(controller);
+
+    Promise.race([
+      dataPromise,
+      new Promise(r => setTimeout(r, 1000, "waiting"))
+    ])
+    .then(value => {
+      if(value === "waiting") { // if the "waiting" promise resolved first then show a progress indicator
+        snack.showSpinner("Exporting enrichment data...");
+        dataPromise.then(snack.close);
+      }
+    });
   };
 
   return (
@@ -147,7 +171,7 @@ export function ShareMenu({ controller, onClose = ()=>null, setSnackBarState = (
         <ListItemIcon>
           <CloudDownloadIcon />
         </ListItemIcon>
-        <ListItemText>Export Data</ListItemText>
+        <ListItemText>Export Enrichment Data</ListItemText>
       </MenuItem>
     </MenuList>
   );
