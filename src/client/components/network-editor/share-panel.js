@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 import { NetworkEditorController } from './controller';
-import { MenuList, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import { MenuList, MenuItem, ListItemIcon, ListItemText, Popover } from '@material-ui/core';
 import { getSVGString } from './legend-svg';
 import { NODE_COLOR_SVG_ID } from './legend-button';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
@@ -21,6 +21,10 @@ const ImageArea = {
   VIEW: 'view',
 };
 
+
+function wait(millis, value="") {
+  return new Promise(resolve => setTimeout(resolve, millis, value));
+}
 
 async function createNetworkImageBlob(controller, imageSize, imageArea=ImageArea.FULL) {
   return await controller.cy.png({
@@ -112,7 +116,7 @@ function handleCopyToClipboard() {
 }
 
 
-function snackBarFunctions(setSnackBarState) {
+function snackBarOps(setSnackBarState) {
   return {
     close: () => setSnackBarState({ open: false }),
     showMessage: message => setSnackBarState({ open: true, closeable: true, autoHideDelay: 3000, message }),
@@ -121,9 +125,11 @@ function snackBarFunctions(setSnackBarState) {
 }
 
 
+export function ShareMenu({ controller, target, visible, onClose = ()=>null, setSnackBarState = ()=>null }) {
+  const [ imageExportEnabled, setImageExportEnabled ] = useState(true);
+  const [ dataExportEnabled,  setDataExportEnabled  ] = useState(true);
 
-export function ShareMenu({ controller, onClose = ()=>null, setSnackBarState = ()=>null }) {
-  const snack = snackBarFunctions(setSnackBarState);
+  const snack = snackBarOps(setSnackBarState);
 
   const handleCopyLink = async () => {
     onClose();
@@ -131,55 +137,69 @@ export function ShareMenu({ controller, onClose = ()=>null, setSnackBarState = (
     snack.showMessage("Link copied to clipboard");
   };
 
-  const handleExportImages = () => {
+  const handleExportImages = async () => {
     onClose();
-    handleExportImageArchive(controller); 
+    setImageExportEnabled(false);
+    await handleExportImageArchive(controller);
+    setImageExportEnabled(true); 
   };
 
-  const handleExportData = () => {
+  const handleExportData = async () => {
     onClose();
+    setDataExportEnabled(false);
 
-    const dataPromise = handleExportDataArchive(controller);
+    const dataExportPromise = handleExportDataArchive(controller);
 
-    Promise.race([
-      dataPromise,
-      new Promise(r => setTimeout(r, 1000, "waiting"))
-    ])
-    .then(value => {
-      if(value === "waiting") { // if the "waiting" promise resolved first then show a progress indicator
-        snack.showSpinner("Exporting enrichment data...");
-        dataPromise.then(snack.close);
-      }
-    });
+    const value = await Promise.race([ dataExportPromise, wait(1000,"waiting") ]);
+
+    if(value === "waiting") // if the "waiting" promise resolved first then show a progress indicator
+      snack.showSpinner("Exporting enrichment data...");
+
+    await dataExportPromise; // wait for the export to finish
+    snack.close();
+    setDataExportEnabled(true);
   };
 
   return (
-    <MenuList>
-      <MenuItem onClick={handleCopyLink}>
-        <ListItemIcon>
-          <LinkIcon />
-        </ListItemIcon>
-        <ListItemText>Share Link to Network</ListItemText>
-      </MenuItem>
-      <MenuItem onClick={handleExportImages}>
-        <ListItemIcon>
-          <CloudDownloadIcon />
-        </ListItemIcon>
-        <ListItemText>Save Network Images</ListItemText>
-      </MenuItem>
-      <MenuItem onClick={handleExportData}>
-        <ListItemIcon>
-          <CloudDownloadIcon />
-        </ListItemIcon>
-        <ListItemText>Export Enrichment Data</ListItemText>
-      </MenuItem>
-    </MenuList>
+    <Popover
+      id="menu-popover"
+      anchorEl={target}
+      open={visible && Boolean(target)}
+      anchorOrigin={{
+        vertical: 'bottom',
+        horizontal: 'left',
+      }}
+      onClose={onClose}
+    >
+      <MenuList>
+        <MenuItem onClick={handleCopyLink}>
+          <ListItemIcon>
+            <LinkIcon />
+          </ListItemIcon>
+          <ListItemText>Share Link to Network</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleExportImages} disabled={!imageExportEnabled}>
+          <ListItemIcon>
+            <CloudDownloadIcon />
+          </ListItemIcon>
+          <ListItemText>Save Network Images</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleExportData} disabled={!dataExportEnabled}>
+          <ListItemIcon>
+            <CloudDownloadIcon />
+          </ListItemIcon>
+          <ListItemText>Export Enrichment Data</ListItemText>
+        </MenuItem>
+      </MenuList>
+    </Popover>
   );
 }
 ShareMenu.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   onClose: PropTypes.func,
-  setSnackBarState: PropTypes.func
+  setSnackBarState: PropTypes.func,
+  target: PropTypes.any,
+  visible: PropTypes.bool,
 };
 
 export default ShareMenu;

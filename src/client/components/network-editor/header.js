@@ -268,26 +268,13 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
         </div>
       </Toolbar>
       <MobileMenu />
-      {anchorEl && (
-        <Popover
-          id="menu-popover"
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-          onClose={handleMenuClose}
-        >
-          {menuName === SHARE_MENU_ID && (
-            <ShareMenu 
-              controller={controller} 
-              onClose={handleMenuClose}
-              setSnackBarState={setSnackBarState}
-            />
-          )}
-        </Popover>
-      )}
+      <ShareMenu
+        visible={menuName === SHARE_MENU_ID}
+        target={anchorEl}
+        controller={controller} 
+        onClose={handleMenuClose}
+        setSnackBarState={setSnackBarState}
+      />
     </AppBar>
   </>;
 }
