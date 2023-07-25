@@ -7,15 +7,20 @@ ARG NODE_ENV
 ENV NODE_ENV ${NODE_ENV:-production}
 
 # Create app directory
+RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
+
+# Note: NODE_ENV is development so that dev deps are installed
+# Note: Do this step before `COPY .` and `npm run build` in order to maximise sub-image/layer reuse
+COPY package*.json .
+RUN NODE_ENV=development npm ci
 
 # Bundle app source
 COPY . .
-
-# Note: NODE_ENV is development so that dev deps are installed
-RUN NODE_ENV=development npm ci
-
 RUN npm run build
 
+# N.b. PORT must be left to the default (3000)
 EXPOSE 3000
-CMD [ "npm", "start" ]
+
+# N.b. use a CMD without `npm start` to allow for cleaner exiting
+CMD ["node", "-r", "dotenv-defaults/config", "./src/server/index.js" ]
