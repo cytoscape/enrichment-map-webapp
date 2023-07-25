@@ -377,7 +377,6 @@ class Datastore {
       .collection(GENE_LISTS_COLLECTION)
       .aggregate([
         { $match: { networkID: networkID.bson } },
-        { $match: { networkIDStr: "21d883fd-06c5-4435-927d-1de3917cb7fc" } },
         { $unwind: { path: "$genes" } },
         { $replaceRoot: { newRoot: "$genes" } },
         { $sort: { rank: -1 }}
