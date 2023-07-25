@@ -309,23 +309,23 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     return (
       <Grid container direction="row" justifyContent="space-between" alignItems="center" className={classes.header}>
         <Grid item>
-          <Grid container direction="row" alignItems="center" spacing={1}>
-            <Tooltip arrow placement="bottom" title={iconTooltip}>
+          <Tooltip arrow placement="bottom" title={iconTooltip}>
+            <Grid container direction="row" alignItems="center" spacing={1}>
               <Grid item style={{lineHeight: 0}}>
                 <TitleIcon size="small" color="secondary" />
               </Grid>
-            </Tooltip>
-            <Grid>
-              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
-                Genes&nbsp;
-              {totalGenes >= 0 && (
-                <Typography display="inline" variant="body2" color="textSecondary">
-                  ({ totalGenes })
+              <Grid>
+                <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
+                  Genes&nbsp;
+                {totalGenes >= 0 && (
+                  <Typography display="inline" variant="body2" color="textSecondary">
+                    ({ totalGenes })
+                  </Typography>
+                )}
                 </Typography>
-              )}
-              </Typography>
+              </Grid>
             </Grid>
-          </Grid>
+          </Tooltip>
         </Grid>
         <Grid item>
           <ToggleButtonGroup
