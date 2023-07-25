@@ -150,7 +150,7 @@ const UploadPanel = ({ isMobile }) => {
   const summary = 
     <>
        It must have a header row, followed by the data rows.<br />
-       The column names are not important, but their orders are.
+       The column names are not important, but their order is.
     </>;
 
   return (
@@ -170,8 +170,8 @@ const UploadPanel = ({ isMobile }) => {
         It must have 3 or more columns:
         <ul>
           <li><GeneNameInfo /></li>
-          <li>The other columns must be numeric.</li>
-          <li>If there are additional columns, you will have to set them as &ldquo;ignored&rdquo; in the next step.</li>
+          <li><code>Expression</code> columns must be numeric.</li>
+          <li>Any other columns must be marked as &ldquo;ignored&rdquo; in the next step.</li>
         </ul>
       </FormatAccordion>
       <FormatAccordion
