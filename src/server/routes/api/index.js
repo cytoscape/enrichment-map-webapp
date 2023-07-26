@@ -289,7 +289,7 @@ async function runDataPipeline(req, res, type) {
     console.log('sending empty network');
     res.status(422).send("Empty Network");
   } else {
-    networkID = await Datastore.createNetwork(networkJson, networkName, type);
+    networkID = await Datastore.createNetwork(networkJson, networkName, type, DB_1);
     await Datastore.createRankedGeneList(DB_1, networkID, rankedGeneList);
     res.send(networkID);
   }
