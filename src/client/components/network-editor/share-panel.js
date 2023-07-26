@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 import { NetworkEditorController } from './controller';
-import { MenuList, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import { MenuList, MenuItem, ListItemIcon, ListItemText, Popover } from '@material-ui/core';
 import { getSVGString } from './legend-svg';
 import { NODE_COLOR_SVG_ID } from './legend-button';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
@@ -21,6 +21,10 @@ const ImageArea = {
   VIEW: 'view',
 };
 
+
+function wait(millis, value="") {
+  return new Promise(resolve => setTimeout(resolve, millis, value));
+}
 
 async function createNetworkImageBlob(controller, imageSize, imageArea=ImageArea.FULL) {
   return await controller.cy.png({
@@ -42,17 +46,22 @@ async function clearSelectionStyle(controller) {
   return async () => eles.addClass('unselected');
 }
 
-
-function getZipFileName(controller) {
+function getZipFileName(controller, suffix) {
   const networkName = controller.cy.data('name');
   if(networkName) {
     // eslint-disable-next-line no-control-regex
     const reserved = /[<>:"/\\|?*\u0000-\u001F]/g;
     if(!reserved.test(networkName)) {
-      return networkName + '.zip';
+      return `${networkName}_${suffix}.zip`;
     }
   }
-  return 'enrichment_map_images.zip';
+  return `enrichment_map_${suffix}.zip`;
+}
+
+async function saveZip(controller, zip, type) {
+  const archiveBlob = await zip.generateAsync({ type: 'blob' });
+  const fileName = getZipFileName(controller, type);
+  await saveAs(archiveBlob, fileName);
 }
 
 
@@ -74,10 +83,30 @@ async function handleExportImageArchive(controller) {
   zip.file('enrichment_map_large.png',  blobs[2]);
   zip.file('node_color_legend.svg',     blobs[3]);
 
-  const archiveBlob = await zip.generateAsync({ type: 'blob' });
-  
-  const fileName = getZipFileName(controller);
-  await saveAs(archiveBlob, fileName);
+  saveZip(controller, zip, 'images');
+}
+
+
+async function handleExportDataArchive(controller) {
+  const netID = controller.networkIDStr;
+
+  const fetchExport = async path => {
+    const res = await fetch(path);
+    return await res.text();
+  };
+
+  const files = await Promise.all([
+    fetchExport(`/api/export/enrichment/${netID}`),
+    fetchExport(`/api/export/ranks/${netID}`),
+    fetchExport(`/api/export/gmt/${netID}`),
+  ]);
+
+  const zip = new JSZip();
+  zip.file('enrichment_results.txt', files[0]);
+  zip.file('ranks.txt', files[1]);
+  zip.file('gene_sets.gmt', files[2]);
+
+  saveZip(controller, zip, 'enrichment');
 }
 
 
@@ -87,39 +116,90 @@ function handleCopyToClipboard() {
 }
 
 
-export function ShareMenu({ controller, onClose = ()=>null, showMessage = ()=>null }) {
+function snackBarOps(setSnackBarState) {
+  return {
+    close: () => setSnackBarState({ open: false }),
+    showMessage: message => setSnackBarState({ open: true, closeable: true, autoHideDelay: 3000, message }),
+    showSpinner: message => setSnackBarState({ open: true, closeable: false, spinner: true, message }),
+  };
+}
+
+
+export function ShareMenu({ controller, target, visible, onClose = ()=>null, setSnackBarState = ()=>null }) {
+  const [ imageExportEnabled, setImageExportEnabled ] = useState(true);
+  const [ dataExportEnabled,  setDataExportEnabled  ] = useState(true);
+
+  const snack = snackBarOps(setSnackBarState);
+
   const handleCopyLink = async () => {
-    await handleCopyToClipboard(); 
     onClose();
-    showMessage("Link copied to clipboard");
+    await handleCopyToClipboard(); 
+    snack.showMessage("Link copied to clipboard");
   };
 
   const handleExportImages = async () => {
-    await handleExportImageArchive(controller); 
     onClose();
+    setImageExportEnabled(false);
+    await handleExportImageArchive(controller);
+    setImageExportEnabled(true); 
+  };
+
+  const handleExportData = async () => {
+    onClose();
+    setDataExportEnabled(false);
+
+    const dataExportPromise = handleExportDataArchive(controller);
+
+    const value = await Promise.race([ dataExportPromise, wait(1000,"waiting") ]);
+
+    if(value === "waiting") // if the "waiting" promise resolved first then show a progress indicator
+      snack.showSpinner("Exporting enrichment data...");
+
+    await dataExportPromise; // wait for the export to finish
+    snack.close();
+    setDataExportEnabled(true);
   };
 
   return (
-    <MenuList>
-      <MenuItem onClick={handleCopyLink}>
-        <ListItemIcon>
-          <LinkIcon />
-        </ListItemIcon>
-        <ListItemText>Share Link to Network</ListItemText>
-      </MenuItem>
-      <MenuItem onClick={handleExportImages}>
-        <ListItemIcon>
-          <CloudDownloadIcon />
-        </ListItemIcon>
-        <ListItemText>Save Network Images</ListItemText>
-      </MenuItem>
-    </MenuList>
+    <Popover
+      id="menu-popover"
+      anchorEl={target}
+      open={visible && Boolean(target)}
+      anchorOrigin={{
+        vertical: 'bottom',
+        horizontal: 'left',
+      }}
+      onClose={onClose}
+    >
+      <MenuList>
+        <MenuItem onClick={handleCopyLink}>
+          <ListItemIcon>
+            <LinkIcon />
+          </ListItemIcon>
+          <ListItemText>Share Link to Network</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleExportImages} disabled={!imageExportEnabled}>
+          <ListItemIcon>
+            <CloudDownloadIcon />
+          </ListItemIcon>
+          <ListItemText>Save Network Images</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleExportData} disabled={!dataExportEnabled}>
+          <ListItemIcon>
+            <CloudDownloadIcon />
+          </ListItemIcon>
+          <ListItemText>Export Enrichment Data</ListItemText>
+        </MenuItem>
+      </MenuList>
+    </Popover>
   );
 }
 ShareMenu.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   onClose: PropTypes.func,
-  showMessage: PropTypes.func
+  setSnackBarState: PropTypes.func,
+  target: PropTypes.any,
+  visible: PropTypes.bool,
 };
 
 export default ShareMenu;
