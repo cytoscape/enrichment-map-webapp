@@ -575,52 +575,6 @@ class Datastore {
     };
   }
 
-
-  async searchGenes(geneSetCollection, networkIDStr, geneTokens) {
-    if(geneTokens === undefined || geneTokens.length === 0)
-      return { genes: [] };
-
-    const networkID = makeID(networkIDStr);
-    const queryRE = new RegExp(geneTokens.join('|'));
-
-    const geneListWithRanksAndGeneSets = await this.db
-      .collection(geneSetCollection)
-      .aggregate([
-        { $match: { genes: queryRE } },
-        { $unwind: '$genes' },
-        { $match: { genes: queryRE } },
-        { $limit: 100 },
-        { $group: { _id: { gene: '$genes' }, geneSets: { $addToSet: '$name' } } },
-        { $project: { _id: 0, gene: '$_id.gene', geneSets: 1 }},
-        { $lookup: {
-            from: GENE_RANKS_COLLECTION,
-            let: { gene: "$gene" },
-            pipeline: [
-              { $match: 
-                { $expr: 
-                  { $and: [ 
-                    { $eq: [ '$networkID', networkID.bson ] }, 
-                    { $eq: [ '$gene', '$$gene' ] } ] 
-                  }
-                }
-              }
-            ],
-            as: "newField"
-          }
-        },
-        { $project: { _id: 0, gene: 1, geneSets: 1, rank: { $first: "$newField.rank" } } },
-        { $sort: { rank: -1, gene: 1 } }
-      ])
-      .toArray();
-
-    const { minRank, maxRank } = await this.getMinMaxRanks(networkID);
-
-    return {
-      minRank,
-      maxRank,
-      genes: geneListWithRanksAndGeneSets
-    };
-  }
 }
 
 const ds = new Datastore(); // singleton

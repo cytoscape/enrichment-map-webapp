@@ -142,30 +142,6 @@ http.get('/:netid/ranks', async function(req, res, next) {
   }
 });
 
-/*
- * Uses mongo do to a gene search.
- */
-http.post('/:netid/genesearch', async function(req, res, next) {
-  try {
-    const { netid } = req.params;
-    const { genes } = req.body;
-    if(!Array.isArray(genes)) {
-      res.sendStatus(404);
-      return;
-    }
-
-    const geneInfo = await Datastore.searchGenes(DB_1, netid, genes);
-    console.log(geneInfo);
-    if(!geneInfo) {
-      res.sendStatus(404);
-    } else {
-      res.send(JSON.stringify(geneInfo));
-    }
-  } catch (err) {
-    next(err);
-  }
-});
-
 /**
  * Returns the IDs of nodes that contain the given gene.
  */
