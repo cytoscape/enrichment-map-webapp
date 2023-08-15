@@ -19,7 +19,7 @@ describe('Gene Set Queries', () => {
 
     networkID = await Datastore.createNetwork(network);
     const ranksDoc = await Datastore.rankedGeneListToDocument(ranks);
-    await Datastore.createRankedGeneList(GENESET_DB, networkID, ranksDoc);
+    await Datastore.initializeGeneRanks(GENESET_DB, networkID, ranksDoc);
   });
 
   it('gets a network', async () => {

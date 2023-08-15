@@ -98,31 +98,6 @@ http.post('/genesets', async function(req, res, next) {
   }
 });
 
-/*
- * Returns the contents of multiple gene sets, including ranks.
- */
-http.post('/:netid/genesets', async function(req, res, next) {
-  try {
-    const { netid } = req.params;
-    const { nodeLimit = DEFAULT_NETWORK_SIZE } = req.query;
-    const { geneSets } = req.body;
-    if(!Array.isArray(geneSets)) {
-      console.log("what?");
-      console.log(geneSets);
-      res.sendStatus(404);
-      return;
-    }
-
-    const geneInfo = await Datastore.getGenesWithRanks(DB_1, netid, geneSets, { nodeLimit });
-    if(!geneInfo) {
-      res.sendStatus(404);
-    } else {
-      res.send(JSON.stringify(geneInfo));
-    }
-  } catch (err) {
-    next(err);
-  }
-});
 
 /*
  * Returns a ranked gene list.
@@ -158,5 +133,35 @@ http.get('/:netid/:gene/nodes', async function(req, res, next) {
     next(err);
   }
 });
+
+
+/*
+ * Returns the contents of multiple gene sets, including ranks.
+ * Can be used to populate the gene search documents on the clinent.
+ */
+http.post('/:netid/genesets', async function(req, res, next) {
+  try {
+    const { netid } = req.params;
+    const { nodeLimit = DEFAULT_NETWORK_SIZE } = req.query;
+    const { geneSets } = req.body;
+
+    if(!Array.isArray(geneSets)) {
+      res.sendStatus(404);
+      return;
+    }
+
+    const geneInfo = await Datastore.getGenesWithRanks(DB_1, netid, geneSets, { nodeLimit });
+    if(!geneInfo) {
+      res.sendStatus(404);
+    } else {
+      res.send(JSON.stringify(geneInfo));
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+
 
 export default http;
