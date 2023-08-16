@@ -63,6 +63,9 @@ async function loadNetwork(cy, controller, id) {
 
   console.log('Successful load from DB');
   console.log('End of editor sync initial phase');
+
+  // make the controller accessible from the chrome console for debugging purposes
+  window.controller = controller;
 }
 
 

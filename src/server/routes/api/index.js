@@ -163,6 +163,20 @@ http.post('/:netid/genesets', async function(req, res, next) {
 
 
 /*
+ * Returns the min and max ranks for the given network.
+ */
+http.get('/:netid/minmaxranks', async function(req, res, next) {
+  try {
+    const { netid } = req.params;
+    const minmax = await Datastore.getMinMaxRanks(netid);
+    res.send(minmax);
+  } catch (err) {
+    next(err);
+  } 
+});
+
+
+/*
  * Returns the all the genes and ranks in the given network.
  */
 http.get('/:netid/genesforsearch', async function(req, res, next) {
@@ -182,16 +196,21 @@ http.get('/:netid/genesforsearch', async function(req, res, next) {
 
 
 /*
- * Returns the min and max ranks for the given network.
+ * Returns the all the genes and ranks in the given network.
  */
-http.get('/:netid/minmaxranks', async function(req, res, next) {
+http.get('/:netid/pathwaysforsearch', async function(req, res, next) {
   try {
     const { netid } = req.params;
-    const minmax = await Datastore.getMinMaxRanks(netid);
-    res.send(minmax);
+
+    const cursor = await Datastore.getPathwaysForSearchCursor(DB_1, netid);
+    await writeCursorToResult(cursor, res);
+    cursor.close();
+
   } catch (err) {
     next(err);
-  } 
+  } finally {
+    res.end();
+  }
 });
 
 

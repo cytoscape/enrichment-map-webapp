@@ -49,7 +49,6 @@ export class NetworkEditorController {
     this.searchController = new SearchController(cy, this.bus);
 
     this.networkLoaded = false;
-    this.geneListIndexed = false;
 
     this.bus.on('networkLoaded', () => {
       this.networkLoaded = true;
@@ -65,8 +64,16 @@ export class NetworkEditorController {
     return this.searchController.isGeneListIndexed();
   }
 
+  isPathwayListIndexed() {
+    return this.searchController.isPathwayListIndexed();
+  }
+
   searchGenes(query) {
     return this.searchController.searchGenes(query);
+  }
+
+  searchPathways(query) {
+    return this.searchController.searchPathways(query);
   }
 
   /**

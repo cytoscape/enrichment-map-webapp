@@ -14,11 +14,16 @@ export class SearchController {
 
     this.bus.on('networkLoaded', () => {
       this.fetchAllGenesInNetwork();
+      this.fetchAllPathwaysInNetwork();
     });
   }
 
   isGeneListIndexed() {
     return this.genesReady;
+  }
+
+  isPathwayListIndexed() {
+    return this.pathwaysReady;
   }
 
   /**
@@ -42,12 +47,54 @@ export class SearchController {
     }
   }
 
+  /**
+   * Fetches all the genes in the network.
+   */
+  async fetchAllPathwaysInNetwork() {
+    const res = await fetch(`/api/${this.networkIDStr}/pathwaysforsearch`);
+
+    if (res.ok) {
+      // TODO add 'description' and 'leadingEdge'
+      this.pathwayMiniSearch = new MiniSearch({
+        idField: 'name',
+        fields: ['name'],
+        storeFields: ['name', 'padj', 'NES', 'pval', 'size', 'genes']
+      });
+
+      const documents = await res.json();
+      
+      documents.map(doc => {
+        const i = doc.name.indexOf('%');
+        if(i > 0) {
+          doc.name = doc.name.substring(0, i);
+        }
+        doc.name = doc.name.toLowerCase();
+        return doc;
+      });
+
+      this.pathwayMiniSearch.addAll(documents);
+
+      this.pathwaysReady = true;
+      this.bus.emit('pathwayListIndexed');
+    }
+  }
+
   searchGenes(query) {
     if (!this.isGeneListIndexed()) {
       throw "The gene list hasn't been fecthed yet!";
     }
     if (query && query.length > 0) {
       return this.geneMiniSearch.search(query, { fields: ['gene'], prefix: true });
+    }
+    return [];
+  }
+
+  searchPathways(query) {
+    if (!this.isPathwayListIndexed()) {
+      throw "The pathway list hasn't been fecthed yet!";
+    }
+    if (query && query.length > 0) {
+      return this.pathwayMiniSearch.search(query, { fields: ['name'], prefix: true });
     }
     return [];
   }

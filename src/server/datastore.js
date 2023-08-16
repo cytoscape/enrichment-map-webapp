@@ -405,28 +405,46 @@ class Datastore {
     return network;
   }
 
+
   /**
-   * Returns an cursor of objects of the form:
-   * [ { "name": "PYROPTOSIS%REACTOME%R-HSA-5620971.3", "padj": 0.0322, "NES": -1.8049, "pval": 0.0022, "size": 27 }, ... ]
+   * Returns the aggregation pipeline stages needed to extract 
+   * the FGSEA enrichment results from the NETWORKS_COLLECTION. 
+   * 
+   * The results are of the form...
+   * 
+   * {
+   *  "padj": 0,
+   *  "NES": -1.8082,
+   *  "name": "MITOTIC METAPHASE AND ANAPHASE%REACTOME%R-HSA-2555396.2",
+   *  "pval": 5.6229e-7,
+   *  "size": 229
+   * }
+   */
+  _enrichmentQuery(networkID) {
+    return [
+      { $match: { _id: networkID.bson } },
+      { $replaceWith: { path: "$network.elements.nodes.data" } },
+      { $unwind: { path: "$path" } },
+      { $replaceRoot: { newRoot: "$path" } },
+      { $project: { 
+          name: { $arrayElemAt: [ "$name", 0 ] },
+          pval: "$pvalue",
+          padj: true,
+          NES: true,
+          size: "$gs_size"
+      }}
+    ];
+  }
+
+  /**
+   * Returns an cursor of renrichment results objects.
    */
   async getEnrichmentResultsCursor(networkIDString) {
     const networkID = makeID(networkIDString);
 
     const cursor = await this.db
       .collection(NETWORKS_COLLECTION)
-      .aggregate([
-        { $match: { _id: networkID.bson } },
-        { $replaceWith: { path: "$network.elements.nodes.data" } },
-        { $unwind: { path: "$path" } },
-        { $replaceRoot: { newRoot: "$path" } },
-        { $project: { 
-            name: { $arrayElemAt: [ "$name", 0 ] },
-            pval: "$pvalue",
-            padj: true,
-            NES: true,
-            size: "$gs_size"
-        }}
-      ]);
+      .aggregate(this._enrichmentQuery(networkID));
 
     return cursor;
   }
@@ -460,11 +478,7 @@ class Datastore {
     const cursor = await this.db
       .collection(NETWORKS_COLLECTION)
       .aggregate([
-        { $match: { _id: networkID.bson } },
-        { $replaceWith: { path: "$network.elements.nodes.data" } },
-        { $unwind: { path: "$path" } },
-        { $replaceRoot: { newRoot: "$path" } },
-        { $project: { name: { $arrayElemAt: [ "$name", 0 ] } } },
+        ...this._enrichmentQuery(networkID),
         { $lookup: {
             from: geneSetCollection,
             localField: "name",
@@ -649,6 +663,25 @@ class Datastore {
         { projection: { _id: 0, gene: 1, rank: 1, pathwayNames: 1 } }
       );
     
+    return cursor;
+  }
+
+
+  async getPathwaysForSearchCursor(geneSetCollection, networkIDStr) {
+    const networkID = makeID(networkIDStr);
+
+    const cursor = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .aggregate([
+        ...this._enrichmentQuery(networkID),
+        { $lookup: {
+            from: geneSetCollection,
+            localField: "name",
+            foreignField: "name",
+            as: "geneSet"
+        }}
+      ]);
+
     return cursor;
   }
 
