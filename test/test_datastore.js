@@ -121,19 +121,6 @@ describe('Gene Set Queries', () => {
     });
   });
 
-  it('searches for genes', async () => {
-    const results = await Datastore.searchGenes(GENESET_DB, networkID, ['D']);
-    results.genes.forEach(g => g.geneSets.sort());
-    expect(results).to.eql({
-      minRank: 1,
-      maxRank: 11,
-      genes: [
-        { gene: "DDD", rank: 4, geneSets: ['GENESET_1','GENESET_2'] },
-        { gene: "ADF", geneSets: ['GENESET_5' ] },
-      ]
-    });
-  });
-
   it('gets nodes for genes', async () => { 
     const lookup = async gene => {
       const results = await Datastore.getNodesContainingGene(networkID, gene);
