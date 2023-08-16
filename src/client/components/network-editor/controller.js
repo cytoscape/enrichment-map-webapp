@@ -1,10 +1,10 @@
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
-import MiniSearch from 'minisearch';
 
 import { DEFAULT_PADDING } from '../defaults';
 import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
+import { SearchController } from './search-contoller';
 
 /**
  * The network editor controller contains all high-level model operations that the network
@@ -46,12 +46,14 @@ export class NetworkEditorController {
       }
     };
 
+    this.searchController = new SearchController(cy, this.bus);
+
     this.networkLoaded = false;
     this.geneListIndexed = false;
 
     this.bus.on('networkLoaded', () => {
       this.networkLoaded = true;
-      this._indexGeneList();
+      this._fetchMinMaxRanks();
     });
   }
 
@@ -60,7 +62,11 @@ export class NetworkEditorController {
   }
 
   isGeneListIndexed() {
-    return this.geneListIndexed;
+    return this.searchController.isGeneListIndexed();
+  }
+
+  searchGenes(query) {
+    return this.searchController.searchGenes(query);
   }
 
   /**
@@ -152,45 +158,16 @@ export class NetworkEditorController {
     this.bus.emit('deletedSelectedElements', deletedEls);
   }
 
-  searchGenes(query) {
-    if (query && query.length > 0) {
-      return this.geneMiniSearch.search(query, { fields: ['gene'], prefix: true });
-    }
-    
-    return [];
+  async _fetchMinMaxRanks() {
+    const res = await fetch(`/api/${this.networkIDStr}/minmaxranks`);
+    const json = await res.json();
+    this.minRank = json ? json.minRank : 0;
+    this.maxRank = json ? json.maxRank : 0;
   }
 
-  getGene(name) {
-    if (!this.isGeneListIndexed()) {
-      throw "The gene list hasn't been fecthed yet!";
-    }
-
-    const res = this.geneMiniSearch.search(name, { fields: ['gene'], prefix: true });
-
-    return res.length > 0 ? res[0] : {};
-  }
-
-  async _indexGeneList() {
-    const res = await this.fetchGeneList([]);
-    const genes = res ? res.genes : [];
-    this.minRank = res ? res.minRank : 0;
-    this.maxRank = res ? res.maxRank : 0;
-
-    if (genes && genes.length > 0) {
-      this.geneMiniSearch = new MiniSearch({
-        idField: 'gene',
-        fields: ['gene'], // fields to index for full-text search
-        storeFields: ['gene', 'rank'] // fields to return with search results
-      });
-      this.geneMiniSearch.addAll(genes);
-
-      this.lastGeneSet1 = res;
-      this.lastGeneSetNames1 = [];
-      this.geneListIndexed = true;
-      this.bus.emit('geneListIndexed');
-    }
-  }
-
+  /**
+   * Still needed by the gene sidebar.
+   */
   async fetchGeneList(geneSetNames) {
     geneSetNames = geneSetNames || [];
     const nameSet = new Set(geneSetNames);
@@ -210,11 +187,12 @@ export class NetworkEditorController {
         geneSets: geneSetNames
       })
     });
+
     if (res.ok) {
       const geneSet = await res.json();
       const rankedGenes = geneSet.genes.filter(g => g.rank);
       geneSet.genes = rankedGenes;
-      
+
       // We cache the last two queries because clicking on an 
       // edge queries for both source/target nodes.
       this.lastGeneSet2 = this.lastGeneSet1;
@@ -226,4 +204,5 @@ export class NetworkEditorController {
       return geneSet;
     }
   }
+
 }

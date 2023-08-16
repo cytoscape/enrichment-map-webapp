@@ -103,9 +103,14 @@ class Datastore {
       .collection(GENE_LISTS_COLLECTION)
       .createIndex({ networkID: 1 });
 
+    // TODO is this index (into an array) still necessary??
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .createIndex({ 'genes.gene': 1 });
+
+    await this.db
+      .collection(GENE_RANKS_COLLECTION)
+      .createIndex({ networkID: 1 });
 
     await this.db
       .collection(GENE_RANKS_COLLECTION)
@@ -572,7 +577,7 @@ class Datastore {
       .collection(GENE_LISTS_COLLECTION)
       .findOne(
         { networkID: networkID.bson },
-        { projection: { min: 1, max: 1 } } // 'projection:' is explicit because min,max have special meaning in mongo
+        { projection: { min: 1, max: 1 } }
       );
 
     return {
@@ -631,6 +636,20 @@ class Datastore {
       maxRank,
       genes: geneListWithRanks
     };
+  }
+
+
+  async getGenesForSearchCursor(networkIDStr) {
+    const networkID = makeID(networkIDStr);
+
+    const cursor = await this.db
+      .collection(GENE_RANKS_COLLECTION)
+      .find(
+        { networkID: networkID.bson }, 
+        { projection: { _id: 0, gene: 1, rank: 1, pathwayNames: 1 } }
+      );
+    
+    return cursor;
   }
 
 }
