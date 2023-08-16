@@ -33,18 +33,6 @@ export class NetworkEditorController {
     this.maxRank = 0;
     /** @type {String} */
     this.networkIDStr = cy.data('id');
-    
-    // Save the last used layout optionst
-    this.layoutOptions = {
-      fcose: {
-        name: 'fcose',
-        idealEdgeLength: 50,
-        nodeSeparation: 75,
-        randomize: true,
-        animate: false,
-        padding: DEFAULT_PADDING
-      }
-    };
 
     this.networkLoaded = false;
     this.geneListIndexed = false;
@@ -79,20 +67,24 @@ export class NetworkEditorController {
     monkeyPatchMathRandom(); // just before the FD layout starts
 
     this.layout = this.cy.layout({
-      name: 'cose',
-      idealEdgeLength: edge => 30 - 25 * (edge.data('similarity_coefficient')),
-      edgeElasticity: edge => 10 / (edge.data('similarity_coefficient')),
-      nodeRepulsion: node => 1000,
-      // nodeSeparation: 75,
-      randomize: true,
-      animate: false,
+      name: 'grid',
+      fit: true,
       padding: DEFAULT_PADDING,
+      cols: 1,
+      sort: (n1, n2) => n2.data('NES') - n1.data('NES'),
+      transform: (n, pos) => {
+        if      (n.data('NES') > 0) { pos.x += n.width() / 2; }
+        else if (n.data('NES') < 0) { pos.x -= n.width() / 2; }
+        return pos;
+      },
+      avoidOverlap: true,
+      condense: true,
       boundingBox: {
         x1: 0,
         y1: 0,
         x2: 600,
         y2: 1000
-      }
+      },
     });
 
     const onStop = this.layout.promiseOn('layoutstop');
@@ -102,37 +94,6 @@ export class NetworkEditorController {
     await onStop;
 
     restoreMathRandom(); // after the FD layout is done
-
-    const allNodes = this.cy.nodes();
-    const disconnectedNodes = allNodes.filter(n => n.degree() === 0);
-    const connectedNodes = allNodes.not(disconnectedNodes);
-
-    const connectedBB = connectedNodes.boundingBox();
-
-    const nodeWidth = disconnectedNodes.max(n => n.boundingBox({ nodeDimensionsIncludeLabels: true }).w).value;
-    const layoutWidth = connectedBB.w;
-    const avoidOverlapPadding = 10;
-    const cols = Math.floor(layoutWidth / (nodeWidth + avoidOverlapPadding));
-
-    const cmpByNES = (a, b) => b.data('NES') - a.data('NES'); // up then down
-
-    disconnectedNodes.sort(cmpByNES).layout({
-      name: 'grid',
-      boundingBox: {
-        x1: connectedBB.x1,
-        x2: connectedBB.x2,
-        y1: connectedBB.y2 + DEFAULT_PADDING,
-        y2: connectedBB.y2 + DEFAULT_PADDING + 10000
-      },
-      avoidOverlapPadding,
-      cols,
-      condense: true,
-      avoidOverlap: true,
-      nodeDimensionsIncludeLabels: true,
-      fit: false
-    }).run();
-
-    this.cy.fit(DEFAULT_PADDING);
 
     // now that we know the zoom level when the graph fits to screen, we can use restrictions
     this.cy.minZoom(this.cy.zoom() * 0.25);
