@@ -79,12 +79,6 @@ export class NetworkEditorController {
       },
       avoidOverlap: true,
       condense: true,
-      boundingBox: {
-        x1: 0,
-        y1: 0,
-        x2: 600,
-        y2: 1000
-      },
     });
 
     const onStop = this.layout.promiseOn('layoutstop');
