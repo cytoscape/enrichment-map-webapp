@@ -232,9 +232,9 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
         }
       });
 
-      if (!targetEle.empty()) {
-        animatedFit(targetEle.component());
-      }
+      // if (!targetEle.empty()) {
+      //   animatedFit(targetEle.component());
+      // }
     };
 
     const clearSearch = _.debounce(() => {
@@ -263,11 +263,11 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     }).on('remove', () => {
       updateSelectionClass();
     }).on('tap', (e) => {
-      const tappedOnBackground = e.target === cy;
+      // const tappedOnBackground = e.target === cy;
 
-      if (tappedOnBackground) {
-        animatedFit(cy.elements());
-      }
+      // if (tappedOnBackground) {
+      //   animatedFit(cy.elements());
+      // }
     });
 
     return function cleanup() {

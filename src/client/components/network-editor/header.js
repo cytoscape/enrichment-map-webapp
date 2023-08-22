@@ -12,7 +12,7 @@ import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Snackbar, SnackbarContent, Toolbar } from '@material-ui/core';
 import { Divider } from '@material-ui/core';
-import { Popover, Menu, MenuItem} from "@material-ui/core";
+import { Menu, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
 import { IconButton, Box } from '@material-ui/core';
 
