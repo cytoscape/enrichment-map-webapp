@@ -7,6 +7,7 @@ import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from '../defaults';
 import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
 import { ShareMenu } from './share-panel';
+import { SearchDialog } from './search-dialog';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -18,6 +19,7 @@ import { IconButton, Box } from '@material-ui/core';
 
 import { AppLogoIcon } from '../svg-icons';
 import MenuIcon from '@material-ui/icons/Menu';
+import SearchIcon from '@material-ui/icons/Search';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
@@ -25,8 +27,11 @@ import { Add, Remove } from '@material-ui/icons';
 import CloseIcon from '@material-ui/icons/Close';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
+
 const MOBILE_MENU_ID = "menu-mobile";
 const SHARE_MENU_ID  = "menu-share";
+
+const SEARCH_DIALOG_ID  = "dialog-search";
 
 
 function createPanner({ cy }) {
@@ -79,10 +84,10 @@ function createPanner({ cy }) {
 }
 
 
-
 export function Header({ controller, classes, showControlPanel, isMobile, onShowControlPanel }) {
 
   const [ menuName, setMenuName ] = useState(null);
+  const [ dialogName, setDialogName ] = useState(null);
   const [ mobileMoreAnchorEl, setMobileMoreAnchorEl ] = useState(null);
   const [ anchorEl, setAnchorEl ] = useState(null);
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
@@ -135,6 +140,11 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     setAnchorEl(null);
   };
 
+  const handleDialogClose = () => {
+    setDialogName(null);
+    setAnchorEl(null); // TODO do we really need to set the anchorEl?
+  };
+
   const showMobileMenu = (event) => {
     setMobileMoreAnchorEl(event.currentTarget);
   };
@@ -148,8 +158,19 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     setAnchorEl(event.currentTarget);
   };
 
+  const showSearchDialog = (event) => {
+    setMenuName(null);
+    setDialogName(SEARCH_DIALOG_ID);
+    setAnchorEl(event.currentTarget); // TODO do we really need to set the anchorEl?
+  };
+
   const buttonsDef = [ 
     {
+      title: "Search",
+      icon: <SearchIcon />,
+      onClick: showSearchDialog,
+      unrelated: true,
+    }, {
       title: "Zoom In",
       icon: <Add />,
       onClick: panner.zoomIn,
@@ -268,6 +289,10 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
         </div>
       </Toolbar>
       <MobileMenu />
+      <SearchDialog
+        open={dialogName === SEARCH_DIALOG_ID}
+        onClose={handleDialogClose}
+      />
       <ShareMenu
         visible={menuName === SHARE_MENU_ID}
         target={anchorEl}

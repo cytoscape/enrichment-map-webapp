@@ -16,8 +16,6 @@ import { NetworkEditorController } from './controller';
 import LeftDrawer from './left-drawer';
 import ClusterPanel from './cluster-panel';
 
-import HSBar from "react-horizontal-stacked-bar-chart";
-
 const useStyles = makeStyles((theme) => ({
   cy: {
     position: 'absolute',
@@ -76,14 +74,14 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
       } else if (e.target && e.target.group() === 'nodes') {
         const node = e.target;
         console.log(node.data());
-        const ref = node.popperRef(); // used only for positioning
+        const popperRef = node.popperRef(); // used only for positioning
 
         // A dummy element must be passed as tippy only accepts dom element(s) as the target
         // https://atomiks.github.io/tippyjs/v6/constructor/#target-types
         const dummyDomEle = document.createElement('div');
 
         const tip = new tippy(dummyDomEle, { // tippy props:
-          getReferenceClientRect: ref.getBoundingClientRect, // https://atomiks.github.io/tippyjs/v6/all-props/#getreferenceclientrect
+          getReferenceClientRect: popperRef.getBoundingClientRect, // https://atomiks.github.io/tippyjs/v6/all-props/#getreferenceclientrect
           trigger: 'manual', // mandatory, we cause the tippy to show programmatically.
           placement: node.data('NES') < 0 ? 'right' : 'left',
           hideOnClick: true,
@@ -100,8 +98,9 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
             ReactDOM.render(comp, div);
             return div;
           }
-       });
-       tip.show();
+        });
+        
+        tip.show();
       }
     });
 

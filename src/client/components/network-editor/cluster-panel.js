@@ -108,14 +108,15 @@ const ClusterPanel = ({ node }) => {
     );
   };
 
+  const isCluster = node.data('mcode_cluster_id') != null;
   const pathwayNames = node.data('name');
 
   return (
     <Box>
       <Typography className={classes.pathwayTitle}>{nodeLabel(node)}</Typography>
       <Typography className={classes.pathwayProp}>NES: {node.data('NES')}</Typography>
-      <Typography className={classes.pathwayProp}>p-value: {node.data('pvalue')}</Typography>
-    {pathwayNames.length > 1 && ( // if length is 1, this is a single pathway node, not a cluster
+      <Typography className={classes.pathwayProp}>P value: {node.data('pvalue')}</Typography>
+    {isCluster && pathwayNames.length > 0 && (
       <div style={{marginTop: '1em'}}>
         <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
           Pathway{pathwayNames.length > 1 ? 's' : ''}:
