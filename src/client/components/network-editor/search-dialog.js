@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 
 import theme from '../../theme';
+import { NetworkEditorController } from './controller';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -28,13 +29,15 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 
-export const SearchDialog = ({ open, onClose }) => {
+export const SearchDialog = ({ open, controller, onClose }) => {
   const [searchValue, setSearchValue] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [genes, setGenes] = useState(null);
 
   const searchValueRef = useRef(searchValue);
   searchValueRef.current = searchValue;
+
+  const cy = controller.cy;
 
   const classes = useStyles();
 
@@ -46,13 +49,13 @@ export const SearchDialog = ({ open, onClose }) => {
     const query = val.trim();
     
     if (val.length > 0) {
-      // // Unselect Cy elements first
-      // const selectedEles = cy.elements().filter(':selected');
-      // selectedEles.unselect();
-      // // Now execute the search
-      // const res = controller.searchGenes(query);
-      // setSearchValue(val);
-      // setSearchResult(res);
+      // Unselect Cy elements first
+      const selectedEles = cy.elements().filter(':selected');
+      selectedEles.unselect();
+      // Now execute the search
+      const res = controller.searchGenes(query);
+      setSearchValue(val);
+      setSearchResult(res);
     } else {
       cancelSearch();
     }
@@ -82,6 +85,7 @@ export const SearchDialog = ({ open, onClose }) => {
 
 SearchDialog.propTypes = {
   open: PropTypes.bool,
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   onClose: PropTypes.func.isRequired,
 };
 

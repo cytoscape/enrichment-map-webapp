@@ -291,12 +291,13 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
       <MobileMenu />
       <SearchDialog
         open={dialogName === SEARCH_DIALOG_ID}
+        controller={controller} 
         onClose={handleDialogClose}
       />
       <ShareMenu
         visible={menuName === SHARE_MENU_ID}
         target={anchorEl}
-        controller={controller} 
+        controller={controller}
         onClose={handleMenuClose}
         setSnackBarState={setSnackBarState}
       />
