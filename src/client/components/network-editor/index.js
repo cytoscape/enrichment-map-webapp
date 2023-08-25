@@ -8,6 +8,7 @@ import { NetworkEditorController } from './controller';
 import theme from '../../theme';
 import Header from './header';
 import Main from './main';
+import SearchDialog from './search-dialog';
 
 import createNetworkStyle from './network-style';
 
@@ -15,6 +16,8 @@ import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import LegendActionButton from './legend-button';
 
+
+const SEARCH_DIALOG_ID  = "dialog-search";
 
 const queryClient = new QueryClient();
 
@@ -104,12 +107,12 @@ function isMobile() {
 
 
 export function NetworkEditor({ id }) {
-
   const [ cy ] = useState(() => createCy(id));
   const [ controller ] = useState(() => new NetworkEditorController(cy));
 
   const [ mobile, setMobile ] = useState(() => isMobile());
   const [ showControlPanel, setShowControlPanel ] = useState(() => !isMobile());
+  const [ dialogName, setDialogName ] = useState(null);
 
   useEffect(() => {
     loadNetwork(cy, controller, id);
@@ -143,10 +146,19 @@ export function NetworkEditor({ id }) {
     }
   };
 
-  const onContentClick = (event) => {
+  const onContentClick = event => {
     if (showControlPanel && mobile && event.target.className === 'MuiBackdrop-root') {
       maybeHideDrawer();
     }
+  };
+
+  const onShowSearchDialog = () => {
+    setShowControlPanel(false);
+    setDialogName(SEARCH_DIALOG_ID);
+  };
+
+  const handleDialogClose = () => {
+    setDialogName(null);
   };
 
   return (
@@ -160,6 +172,7 @@ export function NetworkEditor({ id }) {
             showControlPanel={showControlPanel}
             isMobile={mobile}
             onShowControlPanel={setShowControlPanel}
+            onShowSearchDialog={onShowSearchDialog}
           />
           <Main
             controller={controller}
@@ -168,6 +181,12 @@ export function NetworkEditor({ id }) {
             onContentClick={onContentClick}
           />
         </div>
+        <SearchDialog
+          open={dialogName === SEARCH_DIALOG_ID}
+          controller={controller} 
+          onClose={handleDialogClose}
+          fullScreen={mobile}
+        />
       </ThemeProvider>
     </QueryClientProvider>
   );

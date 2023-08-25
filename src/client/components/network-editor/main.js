@@ -86,6 +86,7 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
           placement: node.data('NES') < 0 ? 'right' : 'left',
           hideOnClick: true,
           interactive: true,
+          sticky: "reference",
           appendTo: document.body, // this is necessary to make the tippy interactive (e.g. clickable links)
           content: () => { // content prop can be used when the target is a single element https://atomiks.github.io/tippyjs/v6/constructor/#prop
             const div = document.createElement('div');

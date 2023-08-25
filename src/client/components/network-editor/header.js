@@ -7,7 +7,6 @@ import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from '../defaults';
 import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
 import { ShareMenu } from './share-panel';
-import { SearchDialog } from './search-dialog';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -30,8 +29,6 @@ import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
 const MOBILE_MENU_ID = "menu-mobile";
 const SHARE_MENU_ID  = "menu-share";
-
-const SEARCH_DIALOG_ID  = "dialog-search";
 
 
 function createPanner({ cy }) {
@@ -84,10 +81,8 @@ function createPanner({ cy }) {
 }
 
 
-export function Header({ controller, classes, showControlPanel, isMobile, onShowControlPanel }) {
-
+export function Header({ controller, classes, showControlPanel, isMobile, onShowControlPanel, onShowSearchDialog }) {
   const [ menuName, setMenuName ] = useState(null);
-  const [ dialogName, setDialogName ] = useState(null);
   const [ mobileMoreAnchorEl, setMobileMoreAnchorEl ] = useState(null);
   const [ anchorEl, setAnchorEl ] = useState(null);
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
@@ -140,11 +135,6 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     setAnchorEl(null);
   };
 
-  const handleDialogClose = () => {
-    setDialogName(null);
-    setAnchorEl(null); // TODO do we really need to set the anchorEl?
-  };
-
   const showMobileMenu = (event) => {
     setMobileMoreAnchorEl(event.currentTarget);
   };
@@ -158,17 +148,16 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     setAnchorEl(event.currentTarget);
   };
 
-  const showSearchDialog = (event) => {
-    setMenuName(null);
-    setDialogName(SEARCH_DIALOG_ID);
-    setAnchorEl(event.currentTarget); // TODO do we really need to set the anchorEl?
+  const onSearchIconsClicked = () => {
+    handleMenuClose();
+    onShowSearchDialog();
   };
 
   const buttonsDef = [ 
     {
       title: "Search",
       icon: <SearchIcon />,
-      onClick: showSearchDialog,
+      onClick: onSearchIconsClicked,
       unrelated: true,
     }, {
       title: "Zoom In",
@@ -289,11 +278,6 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
         </div>
       </Toolbar>
       <MobileMenu />
-      <SearchDialog
-        open={dialogName === SEARCH_DIALOG_ID}
-        controller={controller} 
-        onClose={handleDialogClose}
-      />
       <ShareMenu
         visible={menuName === SHARE_MENU_ID}
         target={anchorEl}
@@ -399,6 +383,7 @@ Header.propTypes = {
   showControlPanel: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
   onShowControlPanel: PropTypes.func.isRequired,
+  onShowSearchDialog: PropTypes.func.isRequired,
 };
 
 export default withStyles(useStyles)(Header);
