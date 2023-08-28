@@ -57,8 +57,8 @@ export class SearchController {
       // TODO add 'description' and 'leadingEdge'
       this.pathwayMiniSearch = new MiniSearch({
         idField: 'name',
-        fields: ['name'],
-        storeFields: ['name', 'padj', 'NES', 'pval', 'size', 'genes']
+        fields: ['name', 'genes'],
+        storeFields: ['name', 'padj', 'NES', 'pval', 'size', 'genes', 'mcode_cluster_id']
       });
 
       const documents = await res.json();
