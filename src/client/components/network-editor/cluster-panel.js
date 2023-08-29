@@ -28,40 +28,32 @@ const GS_DB_LINKS = [
 const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "hover" };
 
 const useStyles = makeStyles((theme) => ({
-  pathwayTitle: {
-    fontSize: '1.25em',
+  title: {
     fontWeight: 'bold',
     marginBottom: '0.75em',
   },
-  pathwayProp: {
-    fontSize: '1em',
+  prop: {
     textAlign: 'left',
     marginBottom: '0.25em',
   },
-  gsLink: {
-    fontSize: '0.875rem',
-    textTransform: 'capitalize',
+  link: {
     color: theme.palette.link.main,
     "&[disabled]": {
-      color: theme.palette.text.primary,
+      color: theme.palette.text.secondary,
       cursor: "default",
       "&:hover": {
         textDecoration: "none"
       }
     }
   },
-  gsListItemIcon: {
+  listItemIcon: {
     marginTop: '8px',
-    minWidth: '24px',
-  },
-  geneListItemIcon: {
-    marginTop: 'auto',
-    marginBottom: 'auto',
     minWidth: '24px',
   },
   bulletIcon: {
     fontSize: '0.875rem',
     color: theme.palette.divider,
+    margin: 0,
   },
 }));
 
@@ -86,24 +78,22 @@ const ClusterPanel = ({ node }) => {
     }
 
     return (
-      <ListItem key={idx} alignItems="flex-start" dense>
-        <ListItemIcon className={classes.gsListItemIcon}>
-          <GSBulletIcon className={classes.bulletIcon} />
+      <ListItem key={idx} alignItems="flex-start" dense disableGutters>
+        <ListItemIcon className={classes.listItemIcon}>
+          <GSBulletIcon className={classes.bulletIcon} fontSize="small" />
         </ListItemIcon>
-        <ListItemText
-          primary={
+        <ListItemText primary={
           <Link
             href={href}
             disabled={href == null}
             variant="body2"
-            color="textPrimary"
-            className={classes.gsLink}
+            color="textSecondary"
+            className={classes.link}
             {...linkoutProps}
           >
             { name }
           </Link>
-          }
-        />
+        } />
       </ListItem>
     );
   };
@@ -113,20 +103,21 @@ const ClusterPanel = ({ node }) => {
 
   return (
     <Box>
-      <Typography className={classes.pathwayTitle}>{nodeLabel(node)}</Typography>
-      <Typography className={classes.pathwayProp}>NES: {node.data('NES')}</Typography>
-      <Typography className={classes.pathwayProp}>P value: {node.data('pvalue')}</Typography>
+      <Typography variant="subtitle1" color="textPrimary" className={classes.title}>{nodeLabel(node)}</Typography>
+      <Typography variant="subtitle2" color="textPrimary" className={classes.prop}>NES: {node.data('NES')}</Typography>
+      <Typography variant="subtitle2" color="textPrimary" className={classes.prop}>P value: {node.data('pvalue')}</Typography>
+      <Typography variant="subtitle2" color="textPrimary" className={classes.prop}>P value (adjustment): {node.data('padj')}</Typography>
     {isCluster && pathwayNames.length > 0 && (
-      <div style={{marginTop: '1em'}}>
-        <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title} gutterBottom>
-          Pathway{pathwayNames.length > 1 ? 's' : ''}:
+      <>
+        <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.prop} gutterBottom>
+          Pathways ({pathwayNames.length}):
         </Typography>
         <Paper variant="outlined" style={{background: 'inherit'}}>
-          <List style={{padding: 0, margin: 0}}>
+          <List dense disablePadding style={{overflow: 'auto', maxHeight: '25vh'}}>
             { pathwayNames.map((name, idx) => renderPathwayRow(name, idx)) }
           </List>
         </Paper>
-      </div>
+      </>
     )}
     </Box>
   );
