@@ -431,7 +431,8 @@ class Datastore {
           pval: "$pvalue",
           padj: true,
           NES: true,
-          size: "$gs_size"
+          size: "$gs_size",
+          mcode_cluster_id: true
       }}
     ];
   }
@@ -679,7 +680,26 @@ class Datastore {
             localField: "name",
             foreignField: "name",
             as: "geneSet"
-        }}
+        }},
+        { $project: { 
+            name: true,
+            pval: true,
+            padj: true,
+            NES: true,
+            size: true,
+            mcode_cluster_id: true,
+            genes: { $arrayElemAt: [ "$geneSet", 0 ] },
+        }},
+        { $project: { 
+            name: true,
+            pval: true,
+            padj: true,
+            NES: true,
+            size: true, 
+            mcode_cluster_id: true,
+            description: "$genes.description",
+            genes: "$genes.genes"
+        }},
       ]);
 
     return cursor;
