@@ -153,7 +153,7 @@ export function NetworkEditor({ id }) {
   };
 
   const onShowSearchDialog = () => {
-    setShowControlPanel(false);
+    // setShowControlPanel(false);
     setDialogName(SEARCH_DIALOG_ID);
   };
 

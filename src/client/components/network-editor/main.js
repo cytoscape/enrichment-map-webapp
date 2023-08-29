@@ -73,7 +73,6 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
          // TODO
       } else if (e.target && e.target.group() === 'nodes') {
         const node = e.target;
-        console.log(node.data());
         const popperRef = node.popperRef(); // used only for positioning
 
         // A dummy element must be passed as tippy only accepts dom element(s) as the target

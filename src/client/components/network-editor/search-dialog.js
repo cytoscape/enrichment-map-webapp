@@ -6,28 +6,31 @@ import { DEFAULT_PADDING } from '../defaults';
 import { NetworkEditorController } from './controller';
 import { NES_COLOR_RANGE } from './network-style';
 
-import { makeStyles, withStyles } from '@material-ui/core/styles';
+import { makeStyles, } from '@material-ui/core/styles';
 
 import { Virtuoso } from 'react-virtuoso';
 import { Box, Dialog, DialogContent, DialogTitle, Grid, Paper } from "@material-ui/core";
-import { List, ListItem, ListItemText } from '@material-ui/core';
+import { ListItem, ListItemText } from '@material-ui/core';
 import { Button, IconButton, Tooltip, Typography, Link } from "@material-ui/core";
 import HSBar from "react-horizontal-stacked-bar-chart";
 import SearchBar from "material-ui-search-bar";
 
 import CloseIcon from '@material-ui/icons/Close';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import CheckCircleOutlineIcon from '@material-ui/icons/CheckCircleOutline';
+import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked';
 import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
 
 
 const CHART_WIDTH = 160;
 const CHART_HEIGHT = 16;
-const GENE_RANK_ROUND_DIGITS = 2;
+const ROUND_DIGITS = 2;
 
-const RANK_RANGE_COLOR = theme.palette.background.focus;
-const UP_RANK_COLOR   = NES_COLOR_RANGE.up;
-const DOWN_RANK_COLOR = NES_COLOR_RANGE.down;
+const RANGE_COLOR = theme.palette.background.focus;
+const UP_COLOR    = NES_COLOR_RANGE.up;
+const DOWN_COLOR  = NES_COLOR_RANGE.down;
 
 
 const useStyles = makeStyles((theme) => ({
@@ -47,20 +50,20 @@ const useStyles = makeStyles((theme) => ({
   },
   listItemHeader: {
     margin: 0,
-    cursor: 'pointer',
-    '&:hover': {
-      color: theme.palette.link.main,
-    },
-    "&[disabled]": {
-      color: theme.palette.divider,
-      cursor: "default",
-      "&:hover": {
-        textDecoration: "none"
-      }
-    },
+    // cursor: 'pointer',
+    // '&:hover': {
+    //   color: theme.palette.link.main,
+    // },
+    // "&[disabled]": {
+    //   color: theme.palette.divider,
+    //   cursor: "default",
+    //   "&:hover": {
+    //     textDecoration: "none"
+    //   }
+    // },
   },
   listItemFooter: {
-    marginTop: theme.spacing(2),
+    marginTop: theme.spacing(1),
   },
   bulletIcon: {
     marginRight: '4px',
@@ -109,12 +112,6 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '0.75rem',
     color: theme.palette.link.main,
   },
-  errorMsg: {
-    color: theme.palette.error.main,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
   rankBarParent: {
     position: 'relative',
     pointerEvents: 'none',
@@ -128,6 +125,14 @@ const useStyles = makeStyles((theme) => ({
     marginLeft: '0.125em',
     marginRight: '0.125em',
     lineHeight: '1.7em'
+  },
+  pathwayIcon: {
+    marginRight: '4px',
+    color: theme.palette.text.disabled,
+  },
+  pathwayInFigIcon: {
+    marginRight: '4px',
+    color: theme.palette.success.main,
   },
   pathwayNameUl: {
     listStyleType: 'none',
@@ -156,12 +161,12 @@ const useStyles = makeStyles((theme) => ({
       opacity: 0.25,
     },
   },
-
-
-
   dialogPaper: {
     minHeight: '95vh',
     maxHeight: '95vh',
+    backgroundColor: 'rgba(0, 0, 0, 0.66)',
+    backdropFilter: 'blur(4px)',
+    border: `1px solid ${theme.palette.text.disabled}`,
   },
   searchBar: {
     marginLeft: 'auto',
@@ -177,8 +182,11 @@ const useStyles = makeStyles((theme) => ({
   },
   emptyMessage: {
     marginTop: '20px',
-    color: theme.palette.text.disabled,
+    color: theme.palette.text.secondary,
     textAlign: 'center',
+  },
+  resultColumn: {
+    backgroundColor: theme.palette.background.default,
   },
 }));
 
@@ -223,25 +231,25 @@ const GeneListPanel = ({ items, controller }) => {
       if (rank < 0) {
         // Low regulated genes
         if (minRank < 0 && minRank !== rank) {
-          data.push({ value: -(minRank - rank), color: RANK_RANGE_COLOR });
+          data.push({ value: -(minRank - rank), color: RANGE_COLOR });
         }
-        data.push({ value: -rank, color: DOWN_RANK_COLOR });
+        data.push({ value: -rank, color: DOWN_COLOR });
         if (maxRank > 0) {
-          data.push({ value: maxRank, color: RANK_RANGE_COLOR });
+          data.push({ value: maxRank, color: RANGE_COLOR });
         }
       } else {
         // Up regulated genes
         if (minRank < 0) {
-          data.push({ value: -minRank, color: RANK_RANGE_COLOR });
+          data.push({ value: -minRank, color: RANGE_COLOR });
         }
-        data.push({ value: rank, color: UP_RANK_COLOR });
+        data.push({ value: rank, color: UP_COLOR });
         if (maxRank > 0 && maxRank !== rank) {
-          data.push({ value: (maxRank - rank), color: RANK_RANGE_COLOR });
+          data.push({ value: (maxRank - rank), color: RANGE_COLOR });
         }
       }
     }
 
-    const roundDigits = GENE_RANK_ROUND_DIGITS;
+    const roundDigits = ROUND_DIGITS;
     const roundedRank = rank != null ? (Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits)) : 0;
     
     const geneTextElemId = `gene_${idx}`;
@@ -277,7 +285,7 @@ const GeneListPanel = ({ items, controller }) => {
                   {data && (
                     <div className={classes.rankBarParent}>
                       <HSBar data={data} height={CHART_HEIGHT} />
-                      <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(GENE_RANK_ROUND_DIGITS)}</span>
+                      <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(ROUND_DIGITS)}</span>
                     </div>
                   )}
                   </Grid>
@@ -293,8 +301,6 @@ const GeneListPanel = ({ items, controller }) => {
     );
   };
 
-  console.log(items);
-
   return (
     <Virtuoso
       ref={virtuoso}
@@ -306,40 +312,21 @@ const GeneListPanel = ({ items, controller }) => {
   );
 };
 
-const PathwayListPanel = ({ items, controller, onPathwayWillBeAdded, onPathwayAdded }) => {
+const PathwayListPanel = ({ items, controller, onNetworkWillChange, onNetworkChanged }) => {
   const cy = controller.cy;
   const classes = useStyles();
   const virtuoso = useRef(null);
 
-  const { minRank, maxRank } = controller;
+  const maxNES = controller.style.magNES;
+  const minNES = -maxNES;
+
+  const nonClusterNodes = cy.nodes('[!mcode_cluster_id]');
 
   const renderPathwayRow = (idx) => {
     const p = items != null && items.length > 0 ? items[idx] : null;
-    const name = p ? p.name : null;
-    const rank = p ? p.NES : null;
+    const nes = p ? p.NES : null;
 
-    // console.log(controller.cy.nodes().data());
-    // const pathwayIsNode = controller.cy.nodes(`[id == ${p.id}]`).length > 0;
-    // console.log(pathwayIsNode);
-
-    const addToFigure = async () => {
-      // Start -- notify
-      onPathwayWillBeAdded();
-      // Add node
-      cy.add({
-        group: 'nodes',
-        data: {
-          'name': [ p.name ], // TODO search item's name is not the same notation
-          'NES': p.NES,
-          'gs_size': p.size,
-          'mcode_cluster_id': null,
-          'gs_type': null,
-          'pvalue': p.pval,
-          'padj': p.padj,
-        },
-        position: { x: 0, y: 0 },
-      });
-      // Apply layout again
+    const applyLayout = async () => {
       const layout = cy.layout({
         name: 'grid',
         fit: true,
@@ -360,40 +347,119 @@ const PathwayListPanel = ({ items, controller, onPathwayWillBeAdded, onPathwayAd
       const onStop = layout.promiseOn('layoutstop');
       layout.run();
       await onStop;
+    };
+
+    const addToFigure = async () => {
+      // Start -- notify
+      onNetworkWillChange();
+      // Add node
+      cy.add({
+        group: 'nodes',
+        data: {
+          'name': [ p.name.toUpperCase() + '%' ], // TODO set the actual name with DB_SOURCE, etc.
+          'NES': p.NES,
+          'gs_size': p.size,
+          'mcode_cluster_id': null,
+          'gs_type': null,
+          'pvalue': p.pval,
+          'padj': p.padj,
+          'added_by_user': true,
+        },
+        position: { x: 0, y: 0 },
+      });
+      // Apply layout again
+      await applyLayout();
       // End -- notify
-      onPathwayAdded();
+      onNetworkChanged();
+    };
+
+    const removeFromFigure = async (nodeId) => {
+      const node = cy.nodes(`[id = '${nodeId}']`);
+      if (!node) { return; }
+      // Start -- notify
+      onNetworkWillChange();
+      // Fit network on node to be removed
+      await cy.animation({ fit: { padding: DEFAULT_PADDING }, duration: 500 });
+      // Animation - node disappears
+      var ani = node.animation({
+        style: {
+          'background-opacity': 0,
+          'label': '',
+          'width': 0
+        },
+        duration: 500,
+      });
+      ani.play().promise().then(async () => {
+        // Remove node
+        node.remove();
+        // Apply layout again
+        await applyLayout();
+        // End -- notify
+        onNetworkChanged();
+      });
     };
 
     let data;
 
-    if (rank != null) {
+    if (nes != null) {
       data = [];
       
-      if (rank < 0) {
+      if (nes < 0) {
         // Negative NES
-        if (minRank < 0 && minRank !== rank) {
-          data.push({ value: -(minRank - rank), color: RANK_RANGE_COLOR });
+        if (nes > minNES) {
+          data.push({ value: Math.abs(minNES - nes), color: RANGE_COLOR });
         }
-        data.push({ value: -rank, color: DOWN_RANK_COLOR });
-        if (maxRank > 0) {
-          data.push({ value: maxRank, color: RANK_RANGE_COLOR });
-        }
+        data.push({ value: Math.abs(nes), color: DOWN_COLOR });
+        data.push({ value: maxNES, color: RANGE_COLOR });
       } else {
         // Positive NES
-        if (minRank < 0) {
-          data.push({ value: -minRank, color: RANK_RANGE_COLOR });
-        }
-        data.push({ value: rank, color: UP_RANK_COLOR });
-        if (maxRank > 0 && maxRank !== rank) {
-          data.push({ value: (maxRank - rank), color: RANK_RANGE_COLOR });
+        data.push({ value: Math.abs(minNES), color: RANGE_COLOR });
+        data.push({ value: nes, color: UP_COLOR });
+        if (nes < maxNES) {
+          data.push({ value: (maxNES - nes), color: RANGE_COLOR });
         }
       }
     }
-
-    const roundDigits = GENE_RANK_ROUND_DIGITS;
-    const roundedRank = rank != null ? (Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits)) : 0;
     
-    const geneTextElemId = `pathway_${idx}`;
+    const description = p.description;
+    const name = p.name.toLowerCase() == description.toLowerCase() ? description : p.name; // if they are the same, description usually has better case
+    const genes = p.genes.sort();
+    const genesText = p.genes.join(', ');
+    
+    const clusterId = p['mcode_cluster_id'];
+    const isInCluster = clusterId != null && cy.nodes(`[mcode_cluster_id = "${clusterId}"]`).length > 0; // Pathways is a cluster node in figure
+    let isInFigure = isInCluster;
+    let addedByUser = false;
+    let addedNodeId = null;
+
+    console.log(p.name);
+    console.log(clusterId);
+    console.log(isInCluster);
+
+    const nameToken = p.name.toUpperCase() + '%';
+    console.log(nameToken + " ... " + addedByUser);
+
+    // Also check wether this pathway is a single-pathway node, not just in a cluster
+    for (const n of nonClusterNodes ) {
+      console.log(n.data());
+      const nodeName = n.data('name');
+
+      if (nodeName && nodeName.length === 1 && nodeName[0].startsWith(nameToken)) {
+        console.log(nodeName[0]);
+        isInFigure = true;
+        addedByUser = Boolean(n.data('added_by_user'));
+        console.log(nameToken + " ... " + addedByUser);
+        addedNodeId = addedByUser ? n.data('id') : null;
+        break;
+      }
+    }
+
+    const roundDigits = ROUND_DIGITS;
+    const roundedNES = nes != null ? (Math.round(nes * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits)) : 0;
+    
+    const bulletIcon = isInFigure
+            ? <CheckCircleOutlineIcon className={classes.pathwayInFigIcon} />
+            : <RadioButtonUncheckedIcon className={classes.pathwayIcon} />;
 
     return (
       <ListItem key={idx} alignItems="flex-start" className={classes.listItem}>
@@ -401,7 +467,7 @@ const PathwayListPanel = ({ items, controller, onPathwayWillBeAdded, onPathwayAd
           className={classes.listItemText}
           primary={
             <Paper variant="outlined" className={classes.listPaper}>
-              <Grid container direction="column" alignItems='flex-start'>
+              <Grid container direction="column" alignItems='flex-start' spacing={1}>
                 <Grid
                   container
                   direction="row"
@@ -409,13 +475,13 @@ const PathwayListPanel = ({ items, controller, onPathwayWillBeAdded, onPathwayAd
                   alignItems='center'
                   className={classes.listItemHeader}
                 >
-                  <Grid item className={classes.geneNameContainer}>
+                  <Grid item>
                     <Grid container direction="row" justifyContent="flex-start">
                       <Grid>
-                        <KeyboardArrowRightIcon fontSize="small" className={classes.bulletIcon} />
+                        { bulletIcon }
                       </Grid>
                       <Grid>
-                        <Typography id={geneTextElemId} variant="body2" color="textPrimary" className={classes.geneName}>
+                        <Typography variant="body1" color="textPrimary">
                           { name }
                         </Typography>
                       </Grid>
@@ -425,21 +491,69 @@ const PathwayListPanel = ({ items, controller, onPathwayWillBeAdded, onPathwayAd
                     {data && (
                       <div className={classes.rankBarParent}>
                         <HSBar data={data} height={CHART_HEIGHT} />
-                        <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(GENE_RANK_ROUND_DIGITS)}</span>
+                        <span className={classes.rankBarText} style={rankBarTextStyle(nes, minNES, maxNES)}>{roundedNES.toFixed(ROUND_DIGITS)}</span>
                       </div>
                     )}
                   </Grid>
                 </Grid>
-                <Grid container direction="row" spacing={2} className={classes.listItemFooter}>
-                  <Grid item>
-                    <Button variant="outlined" color="primary" startIcon={<AddIcon />} onClick={addToFigure}>
-                      Add to Figure
-                    </Button>
-                  </Grid>
-                  <Grid item>
-                    <Button variant="outlined" color="primary" startIcon={<RemoveIcon />}>
-                      Remove from Figure
-                    </Button>
+              {description !== name &&(
+                <Grid item>
+                  <Typography variant="body2" color="textSecondary">
+                    { description }
+                  </Typography>
+                </Grid>
+              )}
+                <Grid item>
+                  <Typography component="span" variant="body2" color="textPrimary">
+                    P value:
+                  </Typography>
+                  &nbsp;
+                  <Typography component="span" variant="body2" color="textSecondary" style={{marginLeft: theme.spacing(1)}}>
+                    { p.pval }
+                  </Typography>
+                </Grid>
+                <Grid item>
+                  <Typography component="span" variant="body2" color="textPrimary">
+                    P value (adjustment):
+                  </Typography>
+                  &nbsp;
+                  <Typography component="span" variant="body2" color="textSecondary" style={{marginLeft: theme.spacing(1)}}>
+                    { p.padj }
+                  </Typography>
+                </Grid>
+                <Grid item>
+                  <Typography component="span" variant="body2" color="textPrimary">
+                    Genes ({genes.length}):
+                  </Typography>
+                  &nbsp;
+                  <Typography component="span" variant="body2" color="textSecondary" style={{marginLeft: theme.spacing(1)}}>
+                    { genesText }
+                  </Typography>
+                </Grid>
+                <Grid item>
+                  <Grid container direction="row" spacing={2} className={classes.listItemFooter}>
+                    <Grid item>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<AddIcon />}
+                        disabled={addedByUser || (isInFigure && !isInCluster)}
+                        onClick={addToFigure}
+                      >
+                        Add to Figure
+                      </Button>
+                    </Grid>
+                    <Grid item>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<RemoveIcon />}
+                        disabled={!isInFigure || !addedByUser}
+                        onClick={() => removeFromFigure(addedNodeId)}
+                      >
+                        Remove from Figure
+                      </Button>
+                    </Grid>
                   </Grid>
                 </Grid>
               </Grid>
@@ -450,8 +564,6 @@ const PathwayListPanel = ({ items, controller, onPathwayWillBeAdded, onPathwayAd
     );
   };
 
-  console.log(items);
-
   return (
     <Virtuoso
       ref={virtuoso}
@@ -460,6 +572,14 @@ const PathwayListPanel = ({ items, controller, onPathwayWillBeAdded, onPathwayAd
       overscan={200}
       style={{ height: '90vh', background: 'rgb(24, 24, 24)'/* fixes scrollbar colour on chrome */ }}
     />
+  );
+};
+
+const ResultTitle = ({ title, total }) => {
+  return (
+    <Typography variant="body2" color="textSecondary" style={{marginLeft: theme.spacing(2), marginTop: theme.spacing(1), marginBottom: theme.spacing(1)}}>
+      { total.toLocaleString("en-US") } { title }{ total === 1 ? '' : 's'}{ total > 0 ? ':' : '' }
+    </Typography>
   );
 };
 
@@ -491,10 +611,10 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
     }
   };
 
-  const onPathwayWillBeAdded = () => {
+  const onNetworkWillChange = () => {
     setAddingPathway(true);
   };
-  const onPathwayAdded = () => {
+  const onNetworkChanged = () => {
     setAddingPathway(false);
   };
 
@@ -526,22 +646,26 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
         <Typography className={classes.emptyMessage}>Search for genes and pathways...</Typography>
       )}
       {searchResult != null && (
-        <Grid container direction="row" alignItems='flex-start' spacing={theme.spacing(4)}>
-          <Grid item xs={4}>
-            <GeneListPanel
-              items={searchResult.genes}
-              controller={controller}
-            />
+        <Paper variant="outlined">
+          <Grid container direction="row" alignItems='flex-start' spacing={0}>
+            <Grid item xs={4} className={classes.resultColumn}>
+              <ResultTitle title="gene" total={searchResult.genes.length} />
+              <GeneListPanel
+                items={searchResult.genes}
+                controller={controller}
+              />
+            </Grid>
+            <Grid item xs={8} className={classes.resultColumn}>
+              <ResultTitle title="pathway" total={searchResult.pathways.length} />
+              <PathwayListPanel
+                items={searchResult.pathways}
+                controller={controller}
+                onNetworkWillChange={onNetworkWillChange}
+                onNetworkChanged={onNetworkChanged}
+              />
+            </Grid>
           </Grid>
-          <Grid item xs={8}>
-            <PathwayListPanel
-              items={searchResult.pathways}
-              controller={controller}
-              onPathwayWillBeAdded={onPathwayWillBeAdded}
-              onPathwayAdded={onPathwayAdded}
-            />
-          </Grid>
-        </Grid>
+        </Paper>
       )}
       </DialogContent>
     </Dialog>
@@ -555,8 +679,12 @@ GeneListPanel.propTypes = {
 PathwayListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   items: PropTypes.array,
-  onPathwayWillBeAdded: PropTypes.func.isRequired,
-  onPathwayAdded: PropTypes.func.isRequired,
+  onNetworkWillChange: PropTypes.func.isRequired,
+  onNetworkChanged: PropTypes.func.isRequired,
+};
+ResultTitle.propTypes = {
+  title: PropTypes.string.isRequired,
+  total: PropTypes.number.isRequired,
 };
 SearchDialog.propTypes = {
   open: PropTypes.bool,
