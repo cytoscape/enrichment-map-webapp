@@ -9,6 +9,7 @@
 
 .tippy-box {
   background-color: rgb(0 0 0 / 66.6%);
+  backdrop-filter: blur(4px);
 }
 
 .tippy-box[data-placement^="top"] > .tippy-arrow::before {
