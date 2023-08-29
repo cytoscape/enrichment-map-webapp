@@ -8,7 +8,7 @@ import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import theme from '../../theme';
 
-import tippy from 'tippy.js';
+import tippy, {sticky} from 'tippy.js';
 
 import { CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
@@ -88,6 +88,7 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
           interactive: true,
           sticky: "reference",
           appendTo: document.body, // this is necessary to make the tippy interactive (e.g. clickable links)
+          plugins: [sticky],
           content: () => { // content prop can be used when the target is a single element https://atomiks.github.io/tippyjs/v6/constructor/#prop
             const div = document.createElement('div');
             const comp = (
@@ -98,7 +99,7 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
             );
             ReactDOM.render(comp, div);
             return div;
-          }
+          },
         });
         
         tip.show();
