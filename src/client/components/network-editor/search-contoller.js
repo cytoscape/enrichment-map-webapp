@@ -94,7 +94,7 @@ export class SearchController {
       throw "The pathway list hasn't been fecthed yet!";
     }
     if (query && query.length > 0) {
-      return this.pathwayMiniSearch.search(query, { fields: ['name'], prefix: true });
+      return this.pathwayMiniSearch.search(query, { fields: ['name', 'description', 'genes'], prefix: true });
     }
     return [];
   }
