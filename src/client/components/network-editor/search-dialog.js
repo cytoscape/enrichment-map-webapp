@@ -8,6 +8,7 @@ import { NES_COLOR_RANGE, nodeLabel } from './network-style';
 
 import { makeStyles, } from '@material-ui/core/styles';
 
+import { Marker } from "react-mark.js";
 import { Virtuoso } from 'react-virtuoso';
 import { Box, Dialog, DialogContent, DialogTitle, Grid, Paper } from "@material-ui/core";
 import { ListItem, ListItemText } from '@material-ui/core';
@@ -202,7 +203,7 @@ const barChartTextStyle = (rank, minRank, maxRank) => {
 };
 
 
-const GeneListPanel = ({ items, controller }) => {
+const GeneListPanel = ({ searchTerms, items, controller }) => {
   const [selectedGene, setSelectedGene] = useState(null);
   const classes = useStyles();
   const virtuoso = useRef(null);
@@ -271,7 +272,7 @@ const GeneListPanel = ({ items, controller }) => {
                       </Grid>
                       <Grid item>
                         <Typography id={geneTextElemId} variant="body2" color="textPrimary" className={classes.geneName}>
-                          { symbol }
+                          <Marker mark={searchTerms}>{ symbol }</Marker>
                         </Typography>
                       </Grid>
                     </Grid>
@@ -307,7 +308,7 @@ const GeneListPanel = ({ items, controller }) => {
   );
 };
 
-const PathwayListPanel = ({ items, controller, onNetworkWillChange, onNetworkChanged }) => {
+const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange, onNetworkChanged }) => {
   const cy = controller.cy;
   const classes = useStyles();
   const virtuoso = useRef(null);
@@ -431,16 +432,15 @@ const PathwayListPanel = ({ items, controller, onNetworkWillChange, onNetworkCha
 
     const nameToken = p.name.toUpperCase() + '%';
 
+    console.log(p);
+
     // Also check wether this pathway is a single-pathway node, not just in a cluster
     for (const n of nonClusterNodes ) {
-      console.log(n.data());
       const nodeName = n.data('name');
 
       if (nodeName && nodeName.length === 1 && nodeName[0].startsWith(nameToken)) {
-        console.log(nodeName[0]);
         isInFigure = true;
         addedByUser = Boolean(n.data('added_by_user'));
-        console.log(nameToken + " ... " + addedByUser);
         addedNodeId = addedByUser ? n.data('id') : null;
         break;
       }
@@ -465,7 +465,11 @@ const PathwayListPanel = ({ items, controller, onNetworkWillChange, onNetworkCha
           <Grid item>
             <Grid container direction="row" justifyContent="flex-start">
               <Grid>{ bulletIcon }</Grid>
-              <Grid><Typography variant="body1" color="textPrimary">{ name }</Typography></Grid>
+              <Grid>
+                <Typography variant="body1" color="textPrimary">
+                  <Marker mark={searchTerms}>{ name }</Marker>
+                </Typography>
+              </Grid>
             </Grid>
           {isInFigure && (
             <Grid item className={classes.pathwayCaption}>
@@ -497,7 +501,7 @@ const PathwayListPanel = ({ items, controller, onNetworkWillChange, onNetworkCha
               {description !== name && (
                 <Grid item>
                   <Typography variant="body2" color="textSecondary">
-                    { description }
+                    <Marker mark={searchTerms}>{ description }</Marker>
                   </Typography>
                 </Grid>
               )}
@@ -538,11 +542,11 @@ const PathwayListPanel = ({ items, controller, onNetworkWillChange, onNetworkCha
                 </Grid>
                 <Grid item>
                   <Typography component="span" variant="body2" color="textPrimary">
-                    Genes ({genes.length}):
+                    Genes ({ genes.length }):
                   </Typography>
                   &nbsp;
                   <Typography component="span" variant="body2" color="textSecondary" style={{marginLeft: theme.spacing(1)}}>
-                    { genesText }
+                    <Marker mark={searchTerms}>{ genesText }</Marker>
                   </Typography>
                 </Grid>
                 <Grid item>
@@ -606,6 +610,8 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
   const searchValueRef = useRef(searchValue);
   searchValueRef.current = searchValue;
 
+  const searchTerms = searchValue.split(' ');
+
   const classes = useStyles();
 
   const cancelSearch = () => {
@@ -666,6 +672,7 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
             <Grid item xs={4} className={classes.resultColumn}>
               <ResultTitle title="gene" total={searchResult.genes.length} />
               <GeneListPanel
+                searchTerms={searchTerms}
                 items={searchResult.genes}
                 controller={controller}
               />
@@ -673,6 +680,7 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
             <Grid item xs={8} className={classes.resultColumn}>
               <ResultTitle title="pathway" total={searchResult.pathways.length} />
               <PathwayListPanel
+                searchTerms={searchTerms}
                 items={searchResult.pathways}
                 controller={controller}
                 onNetworkWillChange={onNetworkWillChange}
@@ -689,10 +697,12 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
 
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  searchTerms: PropTypes.arrayOf(String).isRequired,
   items: PropTypes.array,
 };
 PathwayListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  searchTerms: PropTypes.arrayOf(String).isRequired,
   items: PropTypes.array,
   onNetworkWillChange: PropTypes.func.isRequired,
   onNetworkChanged: PropTypes.func.isRequired,
