@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import theme from '../../theme';
 import { DEFAULT_PADDING } from '../defaults';
 import { NetworkEditorController } from './controller';
-import { NES_COLOR_RANGE } from './network-style';
+import { NES_COLOR_RANGE, nodeLabel } from './network-style';
 
 import { makeStyles, } from '@material-ui/core/styles';
 
@@ -17,7 +17,6 @@ import SearchBar from "material-ui-search-bar";
 
 import CloseIcon from '@material-ui/icons/Close';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import CheckCircleOutlineIcon from '@material-ui/icons/CheckCircleOutline';
 import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked';
 import AddIcon from '@material-ui/icons/Add';
@@ -38,7 +37,7 @@ const useStyles = makeStyles((theme) => ({
     width: '100%',
   },
   listItem: {
-    paddingTop: 4,
+    paddingTop: 0,
     paddingBottom: 0,
   },
   listPaper: {
@@ -50,6 +49,7 @@ const useStyles = makeStyles((theme) => ({
   },
   listItemHeader: {
     margin: 0,
+    marginBottom: theme.spacing(2),
     // cursor: 'pointer',
     // '&:hover': {
     //   color: theme.palette.link.main,
@@ -66,7 +66,7 @@ const useStyles = makeStyles((theme) => ({
     marginTop: theme.spacing(1),
   },
   bulletIcon: {
-    marginRight: '4px',
+    marginRight: theme.spacing(1),
     color: 'inherit',
     opacity: 0.5
   },
@@ -79,9 +79,14 @@ const useStyles = makeStyles((theme) => ({
     // overflow:'hidden', 
     // textOverflow:'ellipsis'
   },
-  chartContainer: {
+  rankChartContainer: {
     width: CHART_WIDTH,
-    padding: '0 8px',
+    padding: 0,
+  },
+  nesChartContainer: {
+    width: CHART_WIDTH,
+    padding: 0,
+    marginTop: theme.spacing(0.75),
   },
   geneMetadata: {
     fontSize: '1.0em',
@@ -112,11 +117,11 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '0.75rem',
     color: theme.palette.link.main,
   },
-  rankBarParent: {
+  barChartParent: {
     position: 'relative',
     pointerEvents: 'none',
   },
-  rankBarText: {
+  barChartText: {
     position: "absolute",
     top: 0,
     fontSize: "0.75rem",
@@ -127,26 +132,12 @@ const useStyles = makeStyles((theme) => ({
     lineHeight: '1.7em'
   },
   pathwayIcon: {
-    marginRight: '4px',
+    marginRight: theme.spacing(1),
     color: theme.palette.text.disabled,
   },
   pathwayInFigIcon: {
-    marginRight: '4px',
+    marginRight: theme.spacing(1),
     color: theme.palette.success.main,
-  },
-  pathwayNameUl: {
-    listStyleType: 'none',
-    margin: 0,
-    padding: 0,
-    paddingLeft: '1em',
-    borderLeft: '1px solid #3A393A'
-  },
-  pathwayNameLi: {
-    whiteSpace:'nowrap', 
-    overflow:'hidden', 
-    textOverflow:'ellipsis',
-    fontSize: '0.75rem',
-    color: 'rgba(255, 255, 255, 0.7)'
   },
   pathwayNameTitle: {
     marginTop: '0.333em',
@@ -160,6 +151,10 @@ const useStyles = makeStyles((theme) => ({
     to: {
       opacity: 0.25,
     },
+  },
+  pathwayCaption: {
+    marginTop: 0,
+    marginLeft: theme.spacing(3),
   },
   dialogPaper: {
     minHeight: '95vh',
@@ -190,7 +185,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const rankBarTextStyle = (rank, minRank, maxRank) => {
+const barChartTextStyle = (rank, minRank, maxRank) => {
   if (minRank > 0 && maxRank > 0) { // all positive => bars start at left and go right
     return { left: 0 };
   } else if (minRank < 0 && maxRank < 0) { // all negative => bars start at right and go left
@@ -281,11 +276,11 @@ const GeneListPanel = ({ items, controller }) => {
                       </Grid>
                     </Grid>
                   </Grid>
-                  <Grid item className={classes.chartContainer}>
+                  <Grid item className={classes.rankChartContainer}>
                   {data && (
-                    <div className={classes.rankBarParent}>
+                    <div className={classes.barChartParent}>
                       <HSBar data={data} height={CHART_HEIGHT} />
-                      <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(ROUND_DIGITS)}</span>
+                      <span className={classes.barChartText} style={barChartTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(ROUND_DIGITS)}</span>
                     </div>
                   )}
                   </Grid>
@@ -423,21 +418,18 @@ const PathwayListPanel = ({ items, controller, onNetworkWillChange, onNetworkCha
     
     const description = p.description;
     const name = p.name.toLowerCase() == description.toLowerCase() ? description : p.name; // if they are the same, description usually has better case
-    const genes = p.genes.sort();
-    const genesText = p.genes.join(', ');
+    const genes = Array.isArray(p.genes) ? p.genes.sort() : [];
+    const genesText = genes.join(', ');
     
     const clusterId = p['mcode_cluster_id'];
-    const isInCluster = clusterId != null && cy.nodes(`[mcode_cluster_id = "${clusterId}"]`).length > 0; // Pathways is a cluster node in figure
+    const clusters = cy.nodes(`[mcode_cluster_id = "${clusterId}"]`);
+    const clusterName = clusters.length > 0 ? nodeLabel(clusters[0]) : null;
+    const isInCluster = clusterId != null && clusters.length > 0; // Pathways is a cluster node in figure
     let isInFigure = isInCluster;
     let addedByUser = false;
     let addedNodeId = null;
 
-    console.log(p.name);
-    console.log(clusterId);
-    console.log(isInCluster);
-
     const nameToken = p.name.toUpperCase() + '%';
-    console.log(nameToken + " ... " + addedByUser);
 
     // Also check wether this pathway is a single-pathway node, not just in a cluster
     for (const n of nonClusterNodes ) {
@@ -461,6 +453,39 @@ const PathwayListPanel = ({ items, controller, onNetworkWillChange, onNetworkCha
             ? <CheckCircleOutlineIcon className={classes.pathwayInFigIcon} />
             : <RadioButtonUncheckedIcon className={classes.pathwayIcon} />;
 
+    const PathwayHeader = () => {
+      return (
+        <Grid
+          container
+          direction="row"
+          justifyContent="space-between"
+          alignItems='center'
+          className={classes.listItemHeader}
+        >
+          <Grid item>
+            <Grid container direction="row" justifyContent="flex-start">
+              <Grid>{ bulletIcon }</Grid>
+              <Grid><Typography variant="body1" color="textPrimary">{ name }</Typography></Grid>
+            </Grid>
+          {isInFigure && (
+            <Grid item className={classes.pathwayCaption}>
+            {isInCluster && clusterName && (
+              <Typography component="p" variant="caption" color="textSecondary">
+                &#10003; In cluster <Typography component="span" variant="caption" color="textPrimary">{ clusterName.toUpperCase() }</Typography>.
+              </Typography>
+            )}
+            {addedByUser && (
+              <Typography component="p" variant="caption" color="textSecondary">
+                &#10003; Added to the figure.
+              </Typography>
+            )}
+            </Grid>
+          )}
+          </Grid>
+        </Grid>
+      );
+    };
+
     return (
       <ListItem key={idx} alignItems="flex-start" className={classes.listItem}>
         <ListItemText
@@ -468,41 +493,31 @@ const PathwayListPanel = ({ items, controller, onNetworkWillChange, onNetworkCha
           primary={
             <Paper variant="outlined" className={classes.listPaper}>
               <Grid container direction="column" alignItems='flex-start' spacing={1}>
-                <Grid
-                  container
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems='center'
-                  className={classes.listItemHeader}
-                >
-                  <Grid item>
-                    <Grid container direction="row" justifyContent="flex-start">
-                      <Grid>
-                        { bulletIcon }
-                      </Grid>
-                      <Grid>
-                        <Typography variant="body1" color="textPrimary">
-                          { name }
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Grid>
-                  <Grid item className={classes.chartContainer}>
-                    {data && (
-                      <div className={classes.rankBarParent}>
-                        <HSBar data={data} height={CHART_HEIGHT} />
-                        <span className={classes.rankBarText} style={rankBarTextStyle(nes, minNES, maxNES)}>{roundedNES.toFixed(ROUND_DIGITS)}</span>
-                      </div>
-                    )}
-                  </Grid>
-                </Grid>
-              {description !== name &&(
+                <PathwayHeader />
+              {description !== name && (
                 <Grid item>
                   <Typography variant="body2" color="textSecondary">
                     { description }
                   </Typography>
                 </Grid>
               )}
+                <Grid item>
+                  <Grid container direction="row" alignItems='center' spacing={2}>
+                    <Grid item>
+                      <Typography component="span" variant="body2" color="textPrimary">
+                        NES:
+                      </Typography>
+                    </Grid>
+                    <Grid item className={classes.nesChartContainer}>
+                    {data && (
+                      <div className={classes.barChartParent}>
+                        <HSBar data={data} height={CHART_HEIGHT} />
+                        <span className={classes.barChartText} style={barChartTextStyle(nes, minNES, maxNES)}>{roundedNES.toFixed(ROUND_DIGITS)}</span>
+                      </div>
+                    )}
+                    </Grid>
+                  </Grid>
+                </Grid>
                 <Grid item>
                   <Typography component="span" variant="body2" color="textPrimary">
                     P value:
