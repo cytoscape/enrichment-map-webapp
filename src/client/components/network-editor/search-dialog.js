@@ -533,15 +533,6 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
                 </Grid>
                 <Grid item>
                   <Typography component="span" variant="body2" color="textPrimary">
-                    P value (adjustment):
-                  </Typography>
-                  &nbsp;
-                  <Typography component="span" variant="body2" color="textSecondary" style={{marginLeft: theme.spacing(1)}}>
-                    { p.padj }
-                  </Typography>
-                </Grid>
-                <Grid item>
-                  <Typography component="span" variant="body2" color="textPrimary">
                     Genes ({ genes.length }):
                   </Typography>
                   &nbsp;
