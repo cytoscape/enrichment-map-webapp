@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 
 import theme from '../../theme';
@@ -10,6 +10,7 @@ import { makeStyles, } from '@material-ui/core/styles';
 
 import { Marker } from "react-mark.js";
 import { Virtuoso } from 'react-virtuoso';
+import Slide from '@material-ui/core/Slide';
 import { Box, Dialog, DialogContent, DialogTitle, Grid, Paper } from "@material-ui/core";
 import { ListItem, ListItemText } from '@material-ui/core';
 import { Button, IconButton, Tooltip, Typography, Link } from "@material-ui/core";
@@ -206,7 +207,7 @@ const barChartTextStyle = (rank, minRank, maxRank) => {
 const GeneListPanel = ({ searchTerms, items, controller }) => {
   const [selectedGene, setSelectedGene] = useState(null);
   const classes = useStyles();
-  const virtuoso = useRef(null);
+  const virtuoso = useRef();
   
   const toggleGeneDetails = async (symbol) => {
     setSelectedGene(selectedGene !== symbol ? symbol : null);
@@ -311,7 +312,7 @@ const GeneListPanel = ({ searchTerms, items, controller }) => {
 const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange, onNetworkChanged }) => {
   const cy = controller.cy;
   const classes = useStyles();
-  const virtuoso = useRef(null);
+  const virtuoso = useRef();
 
   const maxNES = controller.style.magNES;
   const minNES = -maxNES;
@@ -593,6 +594,10 @@ const ResultTitle = ({ title, total }) => {
   );
 };
 
+const Transition = forwardRef(function Transition(props, ref) {
+  return <Slide direction="down" ref={ref} {...props} />;
+});
+
 export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
   const [addingPathway, setAddingPathway] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -633,10 +638,11 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
   return (
     <Dialog
       open={open}
-      classes={fullScreen ? {} : { paper: classes.dialogPaper }}
       maxWidth="lg"
       fullWidth
       fullScreen={fullScreen}
+      TransitionComponent={Transition}
+      classes={fullScreen ? {} : { paper: classes.dialogPaper }}
       style={{opacity: addingPathway ? 0 : 1.0 }}
     >
       <DialogTitle>
