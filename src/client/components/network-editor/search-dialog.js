@@ -44,6 +44,7 @@ const useStyles = makeStyles((theme) => ({
   },
   listPaper: {
     padding: theme.spacing(1),
+    background: 'inherit',
   },
   listItemText: {
     marginTop: 0,
@@ -176,6 +177,10 @@ const useStyles = makeStyles((theme) => ({
   content: {
     height: '100%',
     margin: '0 0 20px 0',
+    overflow: "hidden",
+  },
+  contentPaper: {
+    background: 'inherit',
   },
   emptyMessage: {
     marginTop: '20px',
@@ -183,7 +188,7 @@ const useStyles = makeStyles((theme) => ({
     textAlign: 'center',
   },
   resultColumn: {
-    backgroundColor: theme.palette.background.default,
+    // backgroundColor: theme.palette.background.default,
   },
 }));
 
@@ -304,7 +309,7 @@ const GeneListPanel = ({ searchTerms, items, controller }) => {
       totalCount={items.length}
       itemContent={idx => renderGeneRow(idx)}
       overscan={200}
-      style={{ height: '90vh', background: 'rgb(24, 24, 24)'/* fixes scrollbar colour on chrome */ }}
+      style={{ height: '90vh' }}
     />
   );
 };
@@ -581,7 +586,7 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
       totalCount={items.length}
       itemContent={idx => renderPathwayRow(idx)}
       overscan={200}
-      style={{ height: '90vh', background: 'rgb(24, 24, 24)'/* fixes scrollbar colour on chrome */ }}
+      style={{ height: '90vh' }}
     />
   );
 };
@@ -643,7 +648,7 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
       fullScreen={fullScreen}
       TransitionComponent={Transition}
       classes={fullScreen ? {} : { paper: classes.dialogPaper }}
-      style={{opacity: addingPathway ? 0 : 1.0 }}
+      // style={{opacity: addingPathway ? 0 : 1.0 }}
     >
       <DialogTitle>
         <SearchBar
@@ -659,12 +664,12 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
           <CloseIcon />
         </IconButton>
       </Box>
-      <DialogContent className={classes.content} style={{ overflow: "hidden" }}>
+      <DialogContent className={classes.content}>
       {searchResult == null && (
         <Typography className={classes.emptyMessage}>Search for genes and pathways...</Typography>
       )}
       {searchResult != null && (
-        <Paper variant="outlined">
+        <Paper variant="outlined" className={classes.contentPaper}>
           <Grid container direction="row" alignItems='flex-start' spacing={0}>
             <Grid item xs={4} className={classes.resultColumn}>
               <ResultTitle title="gene" total={searchResult.genes.length} />
