@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 
 import theme from '../../theme';
@@ -13,12 +13,12 @@ import { Virtuoso } from 'react-virtuoso';
 import Slide from '@material-ui/core/Slide';
 import { Box, Dialog, DialogContent, DialogTitle, Grid, Paper } from "@material-ui/core";
 import { ListItem, ListItemText } from '@material-ui/core';
-import { Button, IconButton, Tooltip, Typography, Link } from "@material-ui/core";
+import { Button, IconButton, Typography, Link } from "@material-ui/core";
+import CircularProgress from '@material-ui/core/CircularProgress';
 import HSBar from "react-horizontal-stacked-bar-chart";
 import SearchBar from "material-ui-search-bar";
 
 import CloseIcon from '@material-ui/icons/Close';
-import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import CheckCircleOutlineIcon from '@material-ui/icons/CheckCircleOutline';
 import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked';
 import AddIcon from '@material-ui/icons/Add';
@@ -163,7 +163,6 @@ const useStyles = makeStyles((theme) => ({
     minHeight: '95vh',
     maxHeight: '95vh',
     backgroundColor: 'rgba(0, 0, 0, 0.66)',
-    backdropFilter: 'blur(4px)',
     border: `1px solid ${theme.palette.text.disabled}`,
   },
   searchBar: {
@@ -206,112 +205,6 @@ const barChartTextStyle = (rank, minRank, maxRank) => {
     let offset = Math.abs(minRank) / (Math.abs(minRank) + Math.abs(maxRank)) * 100;
     return { left: `${offset}%` };
   }
-};
-
-
-const GeneListPanel = ({ searchTerms, items, controller }) => {
-  const [selectedGene, setSelectedGene] = useState(null);
-  const classes = useStyles();
-  const virtuoso = useRef();
-  
-  const toggleGeneDetails = async (symbol) => {
-    setSelectedGene(selectedGene !== symbol ? symbol : null);
-  };
-
-  const { minRank, maxRank } = controller;
-
-  const renderGeneRow = (idx) => {
-    const g = items != null && items.length > 0 ? items[idx] : null;
-    const symbol = g ? g.gene : null;
-    const rank = g ? g.rank : null;
-
-    let data;
-
-    if (rank != null) {
-      data = [];
-      
-      if (rank < 0) {
-        // Low regulated genes
-        if (minRank < 0 && minRank !== rank) {
-          data.push({ value: -(minRank - rank), color: RANGE_COLOR });
-        }
-        data.push({ value: -rank, color: DOWN_COLOR });
-        if (maxRank > 0) {
-          data.push({ value: maxRank, color: RANGE_COLOR });
-        }
-      } else {
-        // Up regulated genes
-        if (minRank < 0) {
-          data.push({ value: -minRank, color: RANGE_COLOR });
-        }
-        data.push({ value: rank, color: UP_COLOR });
-        if (maxRank > 0 && maxRank !== rank) {
-          data.push({ value: (maxRank - rank), color: RANGE_COLOR });
-        }
-      }
-    }
-
-    const roundDigits = ROUND_DIGITS;
-    const roundedRank = rank != null ? (Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits)) : 0;
-    
-    const geneTextElemId = `gene_${idx}`;
-
-    return (
-      <ListItem key={idx} alignItems="flex-start" className={classes.listItem}>
-        <ListItemText
-          className={classes.listItemText}
-          primary={
-            <Paper variant="outlined" className={classes.listPaper}>
-              <Grid container direction="column" alignItems='flex-start'>
-                <Grid
-                  container
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems='center'
-                  className={classes.listItemHeader}
-                  onClick={() => { toggleGeneDetails(symbol); }}
-                >
-                  <Grid item className={classes.geneNameContainer}>
-                    <Grid container direction="row" justifyContent="flex-start">
-                      <Grid item>
-                        <KeyboardArrowRightIcon fontSize="small" className={classes.bulletIcon} />
-                      </Grid>
-                      <Grid item>
-                        <Typography id={geneTextElemId} variant="body2" color="textPrimary" className={classes.geneName}>
-                          <Marker mark={searchTerms}>{ symbol }</Marker>
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Grid>
-                  <Grid item className={classes.rankChartContainer}>
-                  {data && (
-                    <div className={classes.barChartParent}>
-                      <HSBar data={data} height={CHART_HEIGHT} />
-                      <span className={classes.barChartText} style={barChartTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(ROUND_DIGITS)}</span>
-                    </div>
-                  )}
-                  </Grid>
-                </Grid>
-                {/* {isSelected && (
-                  <GeneMetadataPanel symbol={symbol} controller={controller} showSymbol={() => isGeneTextOverflowing(geneTextElemId)} />
-                )} */}
-              </Grid>
-            </Paper>
-          }
-        />
-      </ListItem>
-    );
-  };
-
-  return (
-    <Virtuoso
-      ref={virtuoso}
-      totalCount={items.length}
-      itemContent={idx => renderGeneRow(idx)}
-      overscan={200}
-      style={{ height: '90vh' }}
-    />
-  );
 };
 
 const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange, onNetworkChanged }) => {
@@ -437,8 +330,6 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
     let addedNodeId = null;
 
     const nameToken = p.name.toUpperCase() + '%';
-
-    console.log(p);
 
     // Also check wether this pathway is a single-pathway node, not just in a cluster
     for (const n of nonClusterNodes ) {
@@ -599,12 +490,12 @@ const ResultTitle = ({ title, total }) => {
   );
 };
 
-const Transition = forwardRef(function Transition(props, ref) {
+const SlideTransition = forwardRef(function Transition(props, ref) {
   return <Slide direction="down" ref={ref} {...props} />;
 });
 
 export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
-  const [addingPathway, setAddingPathway] = useState(false);
+  const [networkChanging, setNetworkChanging] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [searchResult, setSearchResult] = useState(null);
 
@@ -634,10 +525,10 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
   };
 
   const onNetworkWillChange = () => {
-    setAddingPathway(true);
+    setNetworkChanging(true);
   };
   const onNetworkChanged = () => {
-    setAddingPathway(false);
+    setNetworkChanging(false);
   };
 
   return (
@@ -646,15 +537,16 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
       maxWidth="lg"
       fullWidth
       fullScreen={fullScreen}
-      TransitionComponent={Transition}
+      TransitionComponent={SlideTransition}
       classes={fullScreen ? {} : { paper: classes.dialogPaper }}
-      // style={{opacity: addingPathway ? 0 : 1.0 }}
+      style={{  backdropFilter: networkChanging ? 'blur(2px)' : 'blur(16px)',}}
     >
       <DialogTitle>
         <SearchBar
           autoFocus={true}
           className={classes.searchBar}
           value={searchValue}
+          disabled={networkChanging}
           onChange={search}
           onCancelSearch={cancelSearch}
         />
@@ -665,31 +557,24 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
         </IconButton>
       </Box>
       <DialogContent className={classes.content}>
-      {searchResult == null && (
+      {networkChanging && (
+        <Box style={{textAlign: 'center', marginBottom: theme.spacing(2)}}>
+          <CircularProgress />
+        </Box>
+      )}
+      {!searchResult && (
         <Typography className={classes.emptyMessage}>Search for genes and pathways...</Typography>
       )}
-      {searchResult != null && (
+      {searchResult && !networkChanging && (
         <Paper variant="outlined" className={classes.contentPaper}>
-          <Grid container direction="row" alignItems='flex-start' spacing={0}>
-            <Grid item xs={4} className={classes.resultColumn}>
-              <ResultTitle title="gene" total={searchResult.genes.length} />
-              <GeneListPanel
-                searchTerms={searchTerms}
-                items={searchResult.genes}
-                controller={controller}
-              />
-            </Grid>
-            <Grid item xs={8} className={classes.resultColumn}>
-              <ResultTitle title="pathway" total={searchResult.pathways.length} />
-              <PathwayListPanel
-                searchTerms={searchTerms}
-                items={searchResult.pathways}
-                controller={controller}
-                onNetworkWillChange={onNetworkWillChange}
-                onNetworkChanged={onNetworkChanged}
-              />
-            </Grid>
-          </Grid>
+          <ResultTitle title="pathway" total={searchResult.pathways.length} />
+          <PathwayListPanel
+            searchTerms={searchTerms}
+            items={searchResult.pathways}
+            controller={controller}
+            onNetworkWillChange={onNetworkWillChange}
+            onNetworkChanged={onNetworkChanged}
+          />
         </Paper>
       )}
       </DialogContent>
@@ -697,11 +582,6 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
   );
 };
 
-GeneListPanel.propTypes = {
-  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
-  searchTerms: PropTypes.arrayOf(String).isRequired,
-  items: PropTypes.array,
-};
 PathwayListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   searchTerms: PropTypes.arrayOf(String).isRequired,
