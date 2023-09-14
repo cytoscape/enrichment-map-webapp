@@ -4,7 +4,8 @@ import clsx from 'clsx';
 import Mousetrap from 'mousetrap';
 
 import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from '../defaults';
-import { NetworkEditorController } from './controller';
+import { NetworkEditorController, GridLayoutOptions, CoSELayoutOptions } from './controller';
+import createNetworkStyle from './network-style';
 import TitleEditor from './title-editor';
 import { ShareMenu } from './share-panel';
 
@@ -19,6 +20,8 @@ import { IconButton, Box } from '@material-ui/core';
 import { AppLogoIcon } from '../svg-icons';
 import MenuIcon from '@material-ui/icons/Menu';
 import SearchIcon from '@material-ui/icons/Search';
+import BarChartIcon from '@material-ui/icons/BarChart';
+import BubbleChartIcon from '@material-ui/icons/BubbleChart';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
@@ -153,13 +156,29 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     onShowSearchDialog();
   };
 
+  const onToggleLayoutClicked = () => {
+    const cy = controller.cy;
+    const options = controller.layout.options.name === CoSELayoutOptions.name ? GridLayoutOptions : CoSELayoutOptions;
+    const style = createNetworkStyle(cy, options.name);
+    
+    cy.style().fromJson(style.cyJSON);
+    controller.style = style; // Make available to components
+    controller.applyLayout(options);
+  };
+
   const buttonsDef = [ 
+    // {
+    //   title: "Search",
+    //   icon: <SearchIcon />,
+    //   onClick: onSearchIconsClicked,
+    //   unrelated: true,
+    // }, {
+    //   title: "Toggle Layout",
+    //   icon: <BubbleChartIcon />,//() => controller.layout.options.name === CoSELayoutOptions.name ? <style={{transform: "rotate(90deg)"}} /> : <BubbleChartIcon />,
+    //   onClick: onToggleLayoutClicked,
+    //   unrelated: true,
+    // }, 
     {
-      title: "Search",
-      icon: <SearchIcon />,
-      onClick: onSearchIconsClicked,
-      unrelated: true,
-    }, {
       title: "Zoom In",
       icon: <Add />,
       onClick: panner.zoomIn,
@@ -238,7 +257,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     >
       <Toolbar variant="dense">
         <ToolbarButton
-          title="Control Panel"
+          title="Genes"
           icon={<MenuIcon />}
           edge="start"
           onClick={() => onShowControlPanel(!showControlPanel)}

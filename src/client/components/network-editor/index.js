@@ -53,7 +53,7 @@ async function loadNetwork(cy, controller, id) {
   cy.data({ name: networkJson.networkName, parameters: networkJson.parameters });
 
   // Set network style
-  const style = createNetworkStyle(cy);
+  const style = createNetworkStyle(cy, 'cose');
   cy.style().fromJson(style.cyJSON);
   controller.style = style; // Make available to components
 
@@ -165,7 +165,7 @@ export function NetworkEditor({ id }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <LegendActionButton controller={controller} />
+        {/* <LegendActionButton controller={controller} /> */}
         <div className="network-editor">
           <Header
             controller={controller}
@@ -179,6 +179,7 @@ export function NetworkEditor({ id }) {
             showControlPanel={showControlPanel}
             isMobile={mobile}
             onContentClick={onContentClick}
+            onShowSearchDialog={onShowSearchDialog}
           />
         </div>
         <SearchDialog

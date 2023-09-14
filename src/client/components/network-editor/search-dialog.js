@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import theme from '../../theme';
 import { DEFAULT_PADDING } from '../defaults';
-import { NetworkEditorController } from './controller';
+import { CoSELayoutOptions, NetworkEditorController } from './controller';
 import { NES_COLOR_RANGE, nodeLabel } from './network-style';
 
 import { makeStyles, } from '@material-ui/core/styles';
@@ -222,23 +222,8 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
     const nes = p ? p.NES : null;
 
     const applyLayout = async () => {
-      const layout = cy.layout({
-        name: 'grid',
-        fit: true,
-        padding: DEFAULT_PADDING,
-        cols: 1,
-        sort: (n1, n2) => n2.data('NES') - n1.data('NES'),
-        transform: (n, pos) => {
-          if      (n.data('NES') > 0) { pos.x += n.width() / 2; }
-          else if (n.data('NES') < 0) { pos.x -= n.width() / 2; }
-          return pos;
-        },
-        avoidOverlap: true,
-        condense: true,
-        animate: true,
-        animationDuration: 1000,
-        animationEasing: 'ease-out',
-      });
+      const layoutOptions = Object.assign(CoSELayoutOptions, { animate: true, animationDuration: 1000, animationEasing: 'ease-out' });
+      const layout = cy.layout(layoutOptions);
       const onStop = layout.promiseOn('layoutstop');
       layout.run();
       await onStop;
@@ -491,7 +476,7 @@ const ResultTitle = ({ title, total }) => {
 };
 
 const SlideTransition = forwardRef(function Transition(props, ref) {
-  return <Slide direction="down" ref={ref} {...props} />;
+  return <Slide direction="up" ref={ref} {...props} />;
 });
 
 export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {

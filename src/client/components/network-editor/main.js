@@ -14,7 +14,9 @@ import { CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import LeftDrawer from './left-drawer';
+import BottomDrawer from './bottom-drawer';
 import ClusterPanel from './cluster-panel';
+import { Grid } from '@material-ui/core';
 
 const useStyles = makeStyles((theme) => ({
   cy: {
@@ -57,7 +59,7 @@ const NetworkBackground = ({ controller }) => {
   );
 };
 
-const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
+const Main = ({ controller, showControlPanel, isMobile, onContentClick, onShowSearchDialog }) => {
   const classes = useStyles(); 
 
   const cy = controller.cy;
@@ -110,6 +112,10 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
     };
   }, []);
 
+  const onShowBottomDrawer = (open) => {
+    // TODO...
+  };
+
   return (
     <div
       className="network-editor-content"
@@ -122,6 +128,13 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
           <NetworkBackground controller={controller} />
         </div>
       </div>
+      <BottomDrawer
+        isMobile={isMobile}
+        controlPanelVisible={showControlPanel}
+        onShowDrawer={onShowBottomDrawer}
+        onShowSearchDialog={onShowSearchDialog}
+        controller={controller}
+      />
     </div>
   );
 };
@@ -134,6 +147,7 @@ Main.propTypes = {
   showControlPanel: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
   onContentClick: PropTypes.func.isRequired,
+  onShowSearchDialog: PropTypes.func.isRequired,
 };
 
 export default Main;

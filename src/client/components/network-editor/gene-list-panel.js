@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { useQuery } from "react-query";
 import { linkoutProps } from '../defaults';
 import theme from '../../theme';
-import { NES_COLOR_RANGE, nodeLabel } from './network-style';
+import { NES_COLOR_RANGE } from './network-style';
 import { NetworkEditorController } from './controller';
 
 import { makeStyles, withStyles } from '@material-ui/core/styles';
@@ -173,14 +173,6 @@ const rankBarTextStyle = (rank, minRank, maxRank) => {
   }
 };
 
-function selectNode(controller, node) {
-  const { cy } = controller;
-  cy.batch(() => {
-    cy.nodes().unselect();
-    node.select();
-  });
-}
-
 const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   const classes = useStyles();
 
@@ -208,7 +200,6 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   );
 
   const data = queryGeneData.data;
-  const nodeIDs = queryNodes.data;
 
   const isLoading = queryGeneData.isLoading || queryNodes.isLoading;
 
@@ -230,36 +221,6 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
       }
     }
   }
-
-  const NodeList = (params) => {
-    if(!params.nodeIDs) 
-      return null;
-    
-    const selector = params.nodeIDs.map(id => `[id="${id}"]`).join(',');
-    const byName = (a, b) => nodeLabel(a) < nodeLabel(b) ? -1 : 1;
-    const nodes = controller.cy.nodes(selector).sort(byName);
-
-    // The nodeLabel() function is memoized, no issue to call it twice below.
-    return <>
-      <Typography variant="body2" color="textPrimary" className={classes.pathwayNameTitle}>
-        { nodes.length == 0
-          ? "Not contained in network"
-          : `Gene Sets (${nodes.length}):`
-        }
-      </Typography>
-      <ul className={classes.pathwayNameUl}>
-        { nodes.map(node => 
-            <li key={node.id()} className={classes.pathwayNameLi}>
-              <Tooltip title={nodeLabel(node)}>  
-                <Link href="#" underline="hover" color="inherit" onClick={() => selectNode(controller, node)}>
-                    {nodeLabel(node)}
-                </Link>
-              </Tooltip>
-            </li>
-        )}
-      </ul>
-    </>;
-  };
 
   return (
     <Grid container color="textSecondary" className={classes.geneMetadata}>
@@ -306,9 +267,6 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
                     </Link>
                   </Grid>
                 </Grid>
-              </Grid>
-              <Grid item xs={12}>
-                <NodeList nodeIDs={nodeIDs} />
               </Grid>
             </>
           )}

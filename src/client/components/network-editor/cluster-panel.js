@@ -106,7 +106,7 @@ const ClusterPanel = ({ node }) => {
       <Typography variant="subtitle1" color="textPrimary" className={classes.title}>{nodeLabel(node)}</Typography>
       <Typography variant="subtitle2" color="textPrimary" className={classes.prop}>NES: {node.data('NES')}</Typography>
       <Typography variant="subtitle2" color="textPrimary" className={classes.prop}>P value: {node.data('pvalue')}</Typography>
-    {isCluster && pathwayNames.length > 0 && (
+    {isCluster && pathwayNames && pathwayNames.length > 0 && (
       <>
         <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.prop} gutterBottom>
           Pathways ({pathwayNames.length}):
