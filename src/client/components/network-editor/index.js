@@ -44,10 +44,33 @@ async function loadNetwork(cy, controller, id) {
 
   const networkJson = await res.json();
 
-  setClusterNodeNamesForSummaryNetwork(networkJson);
+  // setClusterNodeNamesForSummaryNetwork(networkJson);
 
-  cy.add(networkJson.summaryNetwork.elements);
-  cy.data({ name: networkJson.networkName, parameters: networkJson.parameters });
+  console.log("network: " + networkJson.network.elements.nodes.length);
+  console.log("summaryNetwork: " + networkJson.summaryNetwork.elements.nodes.length);
+
+  // cy.add(networkJson.summaryNetwork.elements);
+  cy.add(networkJson.network.elements);
+  cy.data({ 
+    name: networkJson.networkName, 
+    parameters: networkJson.parameters
+  });
+
+  await controller.applyLayout();
+
+  // Create bubble sets
+  const clusterIDs = new Set();
+  networkJson.clusterLabels[0].labels.forEach(element => {
+    clusterIDs.add(element.clusterId);
+  });
+  cy.ready(() => {
+    const bb = cy.bubbleSets();
+    clusterIDs.forEach(id => {
+      const cluster = cy.elements(`node[mcode_cluster_id="${id}"]`);
+      const edges = cluster.connectedEdges().filter(edge => cluster.contains(edge.source()) && cluster.contains(edge.target()));
+      bb.addPath(cluster, edges, null);
+    });
+  });
 
   // Set network style
   const style = createNetworkStyle(cy);
@@ -57,9 +80,7 @@ async function loadNetwork(cy, controller, id) {
   // Notify listeners that the network has been loaded
   console.log('Loaded');
   cy.data({ loaded: true });
-  controller.bus.emit('networkLoaded', true);
-
-  await controller.applyLayout();
+  controller.bus.emit('networkLoaded', true); 
 
   console.log('Successful load from DB');
   console.log('End of editor sync initial phase');

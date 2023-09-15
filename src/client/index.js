@@ -2,7 +2,7 @@ import debug from './debug';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Router } from './router';
-import { registerCytoscapeExtensions } from '../model/cy-extensions';
+import { registerCytoscapeExtensions } from './cy-extensions';
 import { fixOldFashionedScrollStyle } from './scroll';
 import * as Sentry from "@sentry/browser";
 import { BrowserTracing } from "@sentry/tracing";

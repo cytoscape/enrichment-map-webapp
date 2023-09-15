@@ -327,7 +327,7 @@ class Datastore {
         { _id: networkID.bson },
         { $set: { lastAccessTime: new Date() } },
         { returnDocument: 'after',
-          projection: { network: false }
+          // projection: { network: false }
         }
       );
     
@@ -336,9 +336,9 @@ class Datastore {
     }
     const network = result.value;
 
-    if(nodeLimit) {
-      this.limitNodesByNES(network.summaryNetwork, nodeLimit);
-    }
+    // if(nodeLimit) {
+    //   this.limitNodesByNES(network.summaryNetwork, nodeLimit);
+    // }
     return network;
   }
 

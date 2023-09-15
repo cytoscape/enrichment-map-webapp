@@ -19,7 +19,6 @@ import { NODE_ENV, PORT, UPLOAD_LIMIT, TESTING, SENTRY, SENTRY_ENVIRONMENT } fro
 import indexRouter from './routes/index.js';
 import apiRouter from './routes/api/index.js';
 import exportRouter from './routes/api/export.js';
-import { registerCytoscapeExtensions } from '../model/cy-extensions.js';
 
 console.info('Starting Express');
 
@@ -28,8 +27,6 @@ import Datastore, { DB_1 } from './datastore.js';
 await Datastore.connect();
 await Datastore.initializeGeneSetDB('./public/geneset-db/', DB_1);
 
-// extensions/plugins
-registerCytoscapeExtensions();
 
 const debugLog = debug('enrichment-map');
 const app = express();
