@@ -6,6 +6,7 @@ import _ from 'lodash';
 import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController, GridLayoutOptions, CoSELayoutOptions } from './controller';
+import { pathwayDBLinkOut } from './links';
 import { nodeLabel } from './network-style';
 import PathwayTable from './pathway-table';
 
@@ -27,18 +28,12 @@ import CloseIcon from '@material-ui/icons/Close';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
 
-const MOBILE_MENU_ID = "menu-mobile";
-const SHARE_MENU_ID  = "menu-share";
-
 const SlideTransition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
 export function BottomDrawer({ controller, classes, controlPanelVisible, isMobile, onShowDrawer, onShowSearchDialog }) {
   const [ open, setOpen ] = useState(false);
-  const [ menuName, setMenuName ] = useState(null);
-  const [ mobileMoreAnchorEl, setMobileMoreAnchorEl ] = useState(null);
-  const [ anchorEl, setAnchorEl ] = useState(null);
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
   const [ selectedNode, setSelectedNode ] = useState(null);
 
@@ -109,35 +104,40 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
       cyEmitter.removeAllListeners();
     };
   }, []);
-  
-  const handleMenuClose = () => {
-    setMenuName(null);
-    setMobileMoreAnchorEl(null);
-    setAnchorEl(null);
-  };
-
-  const showMobileMenu = (event) => {
-    setMobileMoreAnchorEl(event.currentTarget);
-  };
 
   const handleOpenDrawer = (b) => {
     setOpen(b);
     onShowDrawer(b);
   };
 
-  console.log(cy.nodes()[0]);
   const totalPathways = cy.nodes().length;
 
   const data = [];
+  
   for (const n of cy.nodes()) {
-    console.log(n.data());
+    const pathwayArr = n.data('name');
+
     const obj = {};
+    console.log(n.data());
+    
     obj.id = n.data('id');
     obj.name = nodeLabel(n);
+    obj.href = pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
     obj.nes = n.data('NES');
     obj.pvalue = n.data('pvalue');
     obj.cluster = n.data('mcode_cluster_id');
-    obj.pathways = n.data('mcode_cluster_id') ? n.data('name') : [];
+    obj.pathways = [];
+
+    if (pathwayArr.length > 1) {
+      for (const p of pathwayArr) {
+        if (p.indexOf('%') >= 0) {
+          const name = p.substring(0, p.indexOf('%')).toLowerCase();
+          const href = pathwayDBLinkOut(p);
+          obj.pathways.push({ name, href });
+        }
+      }
+    }
+
     obj.genes = [ 'gene1', 'gene2', 'gene3' , 'gene4', 'gene5' ]; //n.data('genes'); // TODO
     data.push(obj);
   }

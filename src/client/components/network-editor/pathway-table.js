@@ -6,7 +6,7 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Collapse, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { Box, Paper, Typography } from '@material-ui/core';
+import { Box, Paper, Typography, Link } from '@material-ui/core';
 import { List, ListItem, ListItemText, IconButton  } from '@material-ui/core';
 
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
@@ -33,6 +33,16 @@ const useStyles = makeStyles((theme) => ({
   pvalue: {
     width: '25%'
   },
+  link: {
+    color: theme.palette.link.main,
+    "&[disabled]": {
+      color: theme.palette.text.secondary,
+      cursor: "default",
+      "&:hover": {
+        textDecoration: "none"
+      }
+    }
+  },
 }));
 
 const CELLS = [
@@ -48,6 +58,10 @@ const TableComponents = {
   TableRow: TableRow,
   TableBody: React.forwardRef((props, ref) => <TableBody {...props} ref={ref} />),
 };
+TableComponents.Scroller.displayName = "Scroller";   // for linting rule (debugging purposes)
+TableComponents.TableBody.displayName = "TableBody"; // for linting rule (debugging purposes)
+
+const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "hover" };
 
 const descendingComparator = (a, b, orderBy) => {
   if (b[orderBy] < a[orderBy]) {
@@ -98,7 +112,20 @@ const ContentRow = ({ row, index }) => {
                 { open ?  <KeyboardArrowDownIcon /> : <KeyboardArrowRightIcon /> }
               </IconButton>
             )}
-              { row[cell.id] }
+            {cell.id === 'name' && row.href ? (
+              <Link
+                href={row.href}
+                disabled={row.href == null}
+                variant="body2"
+                color="textSecondary"
+                className={classes.link}
+                {...linkoutProps}
+              >
+                { row[cell.id] }
+              </Link>
+            ) : (
+              row[cell.id]
+            )}
             </TableCell>
           ))
         }
@@ -106,13 +133,24 @@ const ContentRow = ({ row, index }) => {
         <TableRow className={classes.row}>
           <TableCell key={'details_' + index} colSpan={cellLength} padding="checkbox">
             <Collapse in={open} timeout="auto" unmountOnExit>
-            {row.pathways && row.pathways.length > 0 && (
+            {row.cluster && row.pathways && row.pathways.length > 0 && (
               <Box margin={1}>
                 <Typography variant="subtitle2" gutterBottom component="span">Gene Sets:</Typography>
                 <ul>
                 {row.pathways.map((p, idx) => (
                   <li key={"pathway_" + index + "-" + idx}>
-                    <Typography variant="body2" color="secondary" gutterBottom component="span">{ p }</Typography>
+                    <Typography variant="body2" color="secondary" gutterBottom component="span">
+                      <Link
+                        href={p.href}
+                        disabled={p.href == null}
+                        variant="body2"
+                        color="textSecondary"
+                        className={classes.link}
+                        {...linkoutProps}
+                      >
+                        { p.name }
+                      </Link>
+                    </Typography>
                   </li>
                 ))}
                 </ul>
