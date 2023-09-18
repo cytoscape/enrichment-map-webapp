@@ -222,7 +222,7 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
     const nes = p ? p.NES : null;
 
     const applyLayout = async () => {
-      const layoutOptions = Object.assign(CoSELayoutOptions, { animate: true, animationDuration: 1000, animationEasing: 'ease-out' });
+      const layoutOptions = Object.assign(CoSELayoutOptions, { animationDuration: 1000, animationEasing: 'ease-out' });
       const layout = cy.layout(layoutOptions);
       const onStop = layout.promiseOn('layoutstop');
       layout.run();
@@ -233,7 +233,7 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
       // Start -- notify
       onNetworkWillChange();
       // Add node
-      cy.add({
+      const newNode = cy.add({
         group: 'nodes',
         data: {
           'name': [ p.name.toUpperCase() + '%' ], // TODO set the actual name with DB_SOURCE, etc.
@@ -249,6 +249,9 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
       });
       // Apply layout again
       await applyLayout();
+      // Select the new node
+      cy.elements().unselect();
+      newNode.select();
       // End -- notify
       onNetworkChanged();
     };
