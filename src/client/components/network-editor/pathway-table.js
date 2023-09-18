@@ -171,10 +171,13 @@ const ContentRow = ({ row, index, selected, handleClick }) => {
                   </ul>
                 </div>
               )}
+              {row.genes && row.genes.length > 0 && (
                 <div>
-                  <Typography component="span" variant="subtitle2" gutterBottom>Genes: </Typography>
+                  <Typography component="span" variant="subtitle2" gutterBottom>Genes ({ row.genes.length }):</Typography>
+                  &nbsp;&nbsp;
                   <Typography component="span" variant="body2" color="secondary" gutterBottom>{ row.genes.join(', ') }</Typography>
                 </div>
+              )}
               </Collapse>
             </TableCell>
           </TableRow>

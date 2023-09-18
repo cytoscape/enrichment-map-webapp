@@ -30,6 +30,7 @@ import CircularProgressIcon from '@material-ui/core/CircularProgress';
 export function BottomDrawer({ controller, classes, controlPanelVisible, isMobile, onShowDrawer, onShowSearchDialog }) {
   const [ open, setOpen ] = useState(false);
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
+  const [ pathwayListIndexed, setPathwayListIndexed ] = useState(() => controller.isPathwayListIndexed());
   // const [ selectedNode, setSelectedNode ] = useState(null);
 
   const cy = controller.cy;
@@ -80,8 +81,13 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
 
   useEffect(() => {
     const onNetworkLoaded = () => setNetworkLoaded(true);
+    const onPathwayListIndexed = () => setPathwayListIndexed(true);
     controller.bus.on('networkLoaded', onNetworkLoaded);
-    return () => controller.bus.removeListener('networkLoaded', onNetworkLoaded);
+    controller.bus.on('pathwayListIndexed', onPathwayListIndexed);
+    return () => {
+      controller.bus.removeListener('networkLoaded', onNetworkLoaded);
+      controller.bus.removeListener('pathwayListIndexed', onPathwayListIndexed);
+    };
   }, []);
 
   // useEffect(() => {
@@ -105,38 +111,50 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     onShowDrawer(b);
   };
 
-  const totalPathways = cy.nodes().length;
-
-  const data = [];
-  
-  for (const n of cy.nodes()) {
-    const pathwayArr = n.data('name');
-
-    const obj = {};
-    obj.id = n.data('id');
-    obj.name = nodeLabel(n);
-    obj.href = pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
-    obj.nes = n.data('NES');
-    obj.pvalue = n.data('pvalue');
-    obj.cluster = n.data('mcode_cluster_id');
-    obj.pathways = [];
-
-    if (pathwayArr.length > 1) {
-      for (const p of pathwayArr) {
-        if (p.indexOf('%') >= 0) {
-          const name = p.substring(0, p.indexOf('%')).toLowerCase();
-          const href = pathwayDBLinkOut(p);
-          obj.pathways.push({ name, href });
-        }
+  const searchPathwayGenes = (name) => { // TODO Delete this function
+    const results = controller.searchPathways(name);
+    for (const res of results) {
+      if (res.name === name) {
+        return res.genes;
       }
     }
+    return [];
+  };
 
-    obj.genes = [ 'gene1', 'gene2', 'gene3' , 'gene4', 'gene5' ]; //n.data('genes'); // TODO
-    data.push(obj);
+  const disabled = !networkLoaded || !pathwayListIndexed;
+  const totalPathways = disabled ? 0 : cy.nodes().length;
+  const data = [];
+  
+  if (!disabled) {
+    for (const n of cy.nodes()) {
+      const pathwayArr = n.data('name');
+
+      const obj = {};
+      obj.id = n.data('id');
+      obj.name = nodeLabel(n);
+      obj.href = pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
+      obj.nes = n.data('NES');
+      obj.pvalue = n.data('pvalue');
+      obj.cluster = n.data('mcode_cluster_id');
+      obj.pathways = [];
+
+      if (pathwayArr.length > 1) {
+        for (const p of pathwayArr) {
+          if (p.indexOf('%') >= 0) {
+            const name = p.substring(0, p.indexOf('%')).toLowerCase();
+            const href = pathwayDBLinkOut(p);
+            obj.pathways.push({ name, href });
+          }
+        }
+      }
+
+      obj.genes = obj.cluster ? [] : searchPathwayGenes(obj.name); // TODO better get them from cytoscape/Mongo, because pathway names can be duplicated when from diff DBs
+      data.push(obj);
+    }
   }
 
-  const sel = cy.nodes(':selected');
-  const selectedId = sel.length === 1 ? sel[0].data('id') : null;
+  const sel = disabled ? null : cy.nodes(':selected');
+  const selectedId = (sel && sel.length === 1) ? sel[0].data('id') : null;
 
   const shiftDrawer = controlPanelVisible && !isMobile;
 
@@ -171,7 +189,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
             </Typography>
             <div className={classes.grow} />
           {/* {isMobile ? ( */}
-            <Fab color="primary" className={classes.addButton} onClick={onShowSearchDialog} disabled={!networkLoaded}>
+            <Fab color="primary" className={classes.addButton} onClick={onShowSearchDialog} disabled={disabled}>
               <AddIcon />
             </Fab>
           {/* ) : (
@@ -182,7 +200,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
               title="Pathways"
               icon={open ? <CollapseIcon fontSize="large" /> : <ExpandIcon fontSize="large" />}
               edge="start"
-              disabled={!networkLoaded}
+              disabled={disabled}
               onClick={() => handleOpenDrawer(!open)}
             />
           </Toolbar>
