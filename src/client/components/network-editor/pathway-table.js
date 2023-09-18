@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import _ from 'lodash';
 
 import theme from '../../theme';
+import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
+import { NetworkEditorController } from './controller';
+
 import { makeStyles } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Collapse, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { Box, Paper, Typography, Link } from '@material-ui/core';
-import { List, ListItem, ListItemText, IconButton  } from '@material-ui/core';
+import { Paper, Typography, Link } from '@material-ui/core';
+import { IconButton  } from '@material-ui/core';
 
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
@@ -23,6 +27,16 @@ const useStyles = makeStyles((theme) => ({
     '& > *': {
       borderBottom: 'unset',
     },
+  },
+  collapsibleCell: {
+    paddingLeft: theme.spacing(4),
+    paddingRight: theme.spacing(1),
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  collapseWrapper: {
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
   },
   name: {
     width: '50%'
@@ -46,7 +60,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const CELLS = [
-  { id: 'name',   numeric: false, disablePadding: false,  label: 'Name' },
+  { id: 'name',   numeric: false, disablePadding: false, label: 'Name' },
   { id: 'nes',    numeric: true,  disablePadding: false, label: 'NES' },
   { id: 'pvalue', numeric: true,  disablePadding: false, label: 'P value' },
 ];
@@ -91,93 +105,163 @@ const stableSort = (array, comparator) => {
 
 const cellLength = Object.keys(CELLS[0]).length ;
 
-const ContentRow = ({ row, index }) => {
+const ContentRow = ({ row, index, selected, handleClick }) => {
   const [open, setOpen] = useState(false);
   const classes = useStyles();
 
   return (
     <TableCell key={'details_' + index} colSpan={cellLength} padding="checkbox">
       <Table size="small">
-        <TableRow className={classes.row}>
-    {/* {index % 2 === 0 ? ( */}
-        {CELLS.map((cell, idx) => (
-            <TableCell
-              key={row[cell.id] + '_' + index}
-              align={cell.numeric ? 'right' : 'left'}
-              padding="none"
-              className={classes[cell.id]}
-            >
-            {idx === 0 && (
+        <TableBody>
+          <TableRow hover selected={selected} className={classes.row}>
+            <TableCell align="center" padding="none" style={{verticalAlign: 'top'}}>
               <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
                 { open ?  <KeyboardArrowDownIcon /> : <KeyboardArrowRightIcon /> }
               </IconButton>
-            )}
-            {cell.id === 'name' && row.href ? (
-              <Link
-                href={row.href}
-                disabled={row.href == null}
-                variant="body2"
-                color="textSecondary"
-                className={classes.link}
-                {...linkoutProps}
-              >
-                { row[cell.id] }
-              </Link>
-            ) : (
-              row[cell.id]
-            )}
             </TableCell>
-          ))
-        }
-        </TableRow>
-        <TableRow className={classes.row}>
-          <TableCell key={'details_' + index} colSpan={cellLength} padding="checkbox">
-            <Collapse in={open} timeout="auto" unmountOnExit>
-            {row.cluster && row.pathways && row.pathways.length > 0 && (
-              <Box margin={1}>
-                <Typography variant="subtitle2" gutterBottom component="span">Gene Sets:</Typography>
-                <ul>
-                {row.pathways.map((p, idx) => (
-                  <li key={"pathway_" + index + "-" + idx}>
-                    <Typography variant="body2" color="secondary" gutterBottom component="span">
-                      <Link
-                        href={p.href}
-                        disabled={p.href == null}
-                        variant="body2"
-                        color="textSecondary"
-                        className={classes.link}
-                        {...linkoutProps}
-                      >
-                        { p.name }
-                      </Link>
-                    </Typography>
-                  </li>
-                ))}
-                </ul>
-              </Box>
-            )}
-              <Box margin={1}>
-                <Typography variant="subtitle2" gutterBottom component="span">Genes: </Typography>
-                <Typography variant="body2" color="secondary" gutterBottom component="span">{ row.genes.join(', ') }</Typography>
-              </Box>
-            </Collapse>
-          </TableCell>
-        </TableRow>
+          {CELLS.map((cell, idx) => (
+              <TableCell
+                key={row[cell.id] + '_' + (index + 1)}
+                align={cell.numeric ? 'right' : 'left'}
+                padding="none"
+                className={classes[cell.id]}
+                onClick={(event) => handleClick(event, row.id)}
+              >
+              {cell.id === 'name' && row.href ? (
+                <Link
+                  href={row.href}
+                  disabled={row.href == null}
+                  variant="body2"
+                  color="textSecondary"
+                  className={classes.link}
+                  {...linkoutProps}
+                >
+                  { row[cell.id] }
+                </Link>
+              ) : (
+                row[cell.id]
+              )}
+              </TableCell>
+            ))
+          }
+          </TableRow>
+          <TableRow className={classes.row}>
+            <TableCell colSpan={cellLength + 1} className={classes.collapsibleCell}>
+              <Collapse in={open} timeout="auto" unmountOnExit className={classes.collapseWrapper}>
+              {row.cluster && row.pathways && row.pathways.length > 0 && (
+                <div>
+                  <Typography component="span" variant="subtitle2" gutterBottom>Pathways:</Typography>
+                  <ul>
+                  {row.pathways.map((p, idx) => (
+                    <li key={"pathway_" + index + "-" + idx}>
+                      <Typography component="span" variant="body2" color="secondary" gutterBottom>
+                        <Link
+                          href={p.href}
+                          disabled={p.href == null}
+                          variant="body2"
+                          color="textSecondary"
+                          className={classes.link}
+                          {...linkoutProps}
+                        >
+                          { p.name }
+                        </Link>
+                      </Typography>
+                    </li>
+                  ))}
+                  </ul>
+                </div>
+              )}
+                <div>
+                  <Typography component="span" variant="subtitle2" gutterBottom>Genes: </Typography>
+                  <Typography component="span" variant="body2" color="secondary" gutterBottom>{ row.genes.join(', ') }</Typography>
+                </div>
+              </Collapse>
+            </TableCell>
+          </TableRow>
+        </TableBody>
       </Table>
       </TableCell>
   );
 };
 
-const PathwayTable = ({ visible, data }) => {
+const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('calories');
+  const [selectedId, setSelectedId] = React.useState(initialSelectedId);
 
   const classes = useStyles();
+  
+  const cy = controller.cy;
+  const cyEmitter = new EventEmitterProxy(cy);
+  const sortedDataRef = useRef(null);
+  const virtuosoRef = useRef(null);
+  const selNodeRef = useRef(null);
+
+  const indexOf = (id) => {
+    if (sortedDataRef.current) {
+      const total = sortedDataRef.current.length;
+      for (var i = 0; i < total; i++) {
+        if (sortedDataRef.current[i].id === id) {
+          return i;
+        }
+      }
+    }
+    return -1;
+  };
+
+  const scrollTo = (id) => {
+    if (virtuosoRef.current) {
+      const index = indexOf(id);
+      if (index >= 0) {
+        virtuosoRef.current.scrollToIndex({ index, align: 'start', behavior: 'smooth' });
+      }
+    }
+  };
+
+  const debouncedSelectionHandler = _.debounce(() => {
+    const eles = cy.nodes(':selected');
+
+    if (eles.length === 0) {
+      setSelectedId(null);
+    } else if (eles.length === 1 && eles[0].group() === 'nodes') {
+      const id = eles[0].data('id');
+      if (!selNodeRef.current || selNodeRef.current.data('id') != id) {
+        setSelectedId(id);
+        scrollTo(id);
+      }
+    }
+  }, 200);
+
+  const onCySelectionChanged = () => {
+    debouncedSelectionHandler();
+  };
+
+  useEffect(() => {
+    cyEmitter.on('select unselect', onCySelectionChanged);
+
+    return function cleanup() {
+      cyEmitter.removeAllListeners();
+    };
+  }, []);
+
+  useEffect(() => {
+    const sel = cy.nodes(':selected');
+    selNodeRef.current = sel.length === 1 ? sel[0] : null;
+  }, [selectedId]);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
+  };
+
+  const handleRowClick = (event, id) => {
+    const newSelected = id === selectedId ? null/*toggle*/ : id;
+    setSelectedId(newSelected);
+    cy.elements().unselect(); // Unselect everything first
+    if (newSelected) {
+      cy.elements(`node[id = "${newSelected}"]`).select(); // Finally select the node
+    }
   };
 
   if (!visible) {
@@ -187,29 +271,20 @@ const PathwayTable = ({ visible, data }) => {
   }
 
   const sortedData = stableSort(data, getComparator(order, orderBy));
-  
-  const tableData = sortedData; // TODO remove if it works
-  // const tableData = [];
-  // for (const obj of sortedData) {
-  //   // TODO refactort/improve
-  //   const row = {};
-  //   row.id = obj.id;
-  //   row.name = obj.name;
-  //   row.nes = obj.nes;
-  //   row.pvalue = obj.pvalue;
-  //   row.cluster = obj.cluster;
-  //   tableData.push(obj);
-  //   tableData.push({ pathways: obj.pathways, genes: obj.genes }); // next row is for extra/expandable content
-  //   console.log(obj.pathways);
-  // }
+  sortedDataRef.current = sortedData;
+
+  const initialIndex = selectedId ? indexOf(selectedId) : 0;
 
   return (
     <TableVirtuoso
+      ref={virtuosoRef}
+      data={sortedData}
+      initialTopMostItemIndex={{ index: initialIndex, align: 'start' }}
       style={{height: TABLE_HEIGHT, border: `1px solid ${theme.palette.divider}`}}
-      data={tableData}
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
+          <TableCell />
         {CELLS.map((cell) => (
           <TableCell
             key={cell.id}
@@ -230,7 +305,7 @@ const PathwayTable = ({ visible, data }) => {
         </TableRow>
       )}
       itemContent={(index, obj) => (
-        <ContentRow row={obj} index={index} />
+        <ContentRow row={obj} index={index} selected={selectedId === obj.id} handleClick={handleRowClick} />
       )}
     />
   );
@@ -239,10 +314,14 @@ const PathwayTable = ({ visible, data }) => {
 ContentRow.propTypes = {
   row: PropTypes.object.isRequired,
   index: PropTypes.number.isRequired,
+  selected: PropTypes.bool.isRequired,
+  handleClick: PropTypes.func.isRequired,
 };
 PathwayTable.propTypes = {
   visible: PropTypes.bool.isRequired,
   data: PropTypes.array.isRequired,
+  initialSelectedId: PropTypes.string,
+  controller: PropTypes.instanceOf(NetworkEditorController),
 };
 
 export default PathwayTable;

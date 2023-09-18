@@ -1,11 +1,11 @@
-import React, { forwardRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import _ from 'lodash';
 
-import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from '../defaults';
+import { CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
-import { NetworkEditorController, GridLayoutOptions, CoSELayoutOptions } from './controller';
+import { NetworkEditorController } from './controller';
 import { pathwayDBLinkOut } from './links';
 import { nodeLabel } from './network-style';
 import PathwayTable from './pathway-table';
@@ -13,7 +13,6 @@ import PathwayTable from './pathway-table';
 import { withStyles } from '@material-ui/core/styles';
 
 import Collapse from '@material-ui/core/Collapse';
-import Slide from '@material-ui/core/Slide';
 import { AppBar, Toolbar, Divider } from '@material-ui/core';
 import { Drawer, Container, Box, Grid, Tooltip, Typography } from '@material-ui/core';
 import { Fab, Button, IconButton } from '@material-ui/core';
@@ -28,60 +27,56 @@ import CloseIcon from '@material-ui/icons/Close';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
 
-const SlideTransition = forwardRef(function Transition(props, ref) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
-
 export function BottomDrawer({ controller, classes, controlPanelVisible, isMobile, onShowDrawer, onShowSearchDialog }) {
   const [ open, setOpen ] = useState(false);
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
-  const [ selectedNode, setSelectedNode ] = useState(null);
+  // const [ selectedNode, setSelectedNode ] = useState(null);
 
   const cy = controller.cy;
-  const cyEmitter = new EventEmitterProxy(cy);
+  // const cyEmitter = new EventEmitterProxy(cy);
 
-  const debouncedSelectionHandler = _.debounce(() => {
-    const eles = cy.$(':selected');
+  // const debouncedSelectionHandler = _.debounce(() => {
+  //   const eles = cy.$(':selected');
 
-    if (eles.length > 0) {
-      const ele = eles[eles.length - 1];
-      setSelectedNode(ele);
-      // setSort(ele.data('NES') < 0 ? 'up' : 'down');
-      // fetchGeneListFromNodeOrEdge(ele);
-    } else { //if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
-      setSelectedNode(null);
-      // fetchAllRankedGenes();
-    }
-  }, 250);
+  //   if (eles.length > 0) {
+  //     const ele = eles[eles.length - 1];
+  //     setSelectedNode(ele);
+  //     // setSort(ele.data('NES') < 0 ? 'up' : 'down');
+  //     // fetchGeneListFromNodeOrEdge(ele);
+  //   } else { //if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
+  //     setSelectedNode(null);
+  //     // fetchAllRankedGenes();
+  //   }
+  // }, 250);
 
-  const onGeneListIndexed = () => {
-    // setGeneListIndexed(true);
-    debouncedSelectionHandler();
-  };
+  // const onGeneListIndexed = () => {
+  //   // setGeneListIndexed(true);
+  //   debouncedSelectionHandler();
+  // };
 
-  const onCySelectionChanged = () => {
-    debouncedSelectionHandler();
-  };
+  // const onCySelectionChanged = () => {
+  //   debouncedSelectionHandler();
+  // };
 
-  const cancelSearch = () => {
-    // setSearchValue('');
-    // setSearchResult(null);
-  };
-  const search = (val) => {
-    // const query = val.trim();
+  // const cancelSearch = () => {
+  //   // setSearchValue('');
+  //   // setSearchResult(null);
+  // };
+  // const search = (val) => {
+  //   // const query = val.trim();
     
-    // if (val.length > 0) {
-    //   // Unselect Cy elements first
-    //   const selectedEles = cy.elements().filter(':selected');
-    //   selectedEles.unselect();
-    //   // Now execute the search
-    //   const res = controller.searchGenes(query);
-    //   setSearchValue(val);
-    //   setSearchResult(res);
-    // } else {
-    //   cancelSearch();
-    // }
-  };
+  //   // if (val.length > 0) {
+  //   //   // Unselect Cy elements first
+  //   //   const selectedEles = cy.elements().filter(':selected');
+  //   //   selectedEles.unselect();
+  //   //   // Now execute the search
+  //   //   const res = controller.searchGenes(query);
+  //   //   setSearchValue(val);
+  //   //   setSearchResult(res);
+  //   // } else {
+  //   //   cancelSearch();
+  //   // }
+  // };
 
   useEffect(() => {
     const onNetworkLoaded = () => setNetworkLoaded(true);
@@ -89,21 +84,21 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     return () => controller.bus.removeListener('networkLoaded', onNetworkLoaded);
   }, []);
 
-  useEffect(() => {
-    const clearSearch = _.debounce(() => {
-      cancelSearch();
-    }, 128);
+  // useEffect(() => {
+  //   const clearSearch = _.debounce(() => {
+  //     cancelSearch();
+  //   }, 128);
 
-    cyEmitter.on('select unselect', onCySelectionChanged);
+  //   cyEmitter.on('select unselect', onCySelectionChanged);
 
-    cyEmitter.on('select', () => {
-      clearSearch();
-    });
+  //   cyEmitter.on('select', () => {
+  //     clearSearch();
+  //   });
 
-    return function cleanup() {
-      cyEmitter.removeAllListeners();
-    };
-  }, []);
+  //   return function cleanup() {
+  //     cyEmitter.removeAllListeners();
+  //   };
+  // }, []);
 
   const handleOpenDrawer = (b) => {
     setOpen(b);
@@ -118,8 +113,6 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     const pathwayArr = n.data('name');
 
     const obj = {};
-    console.log(n.data());
-    
     obj.id = n.data('id');
     obj.name = nodeLabel(n);
     obj.href = pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
@@ -141,6 +134,9 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     obj.genes = [ 'gene1', 'gene2', 'gene3' , 'gene4', 'gene5' ]; //n.data('genes'); // TODO
     data.push(obj);
   }
+
+  const sel = cy.nodes(':selected');
+  const selectedId = sel.length === 1 ? sel[0].data('id') : null;
 
   const shiftDrawer = controlPanelVisible && !isMobile;
 
@@ -175,7 +171,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
             </Typography>
             <div className={classes.grow} />
           {/* {isMobile ? ( */}
-            <Fab color="primary" className={classes.addButton} onClick={onShowSearchDialog}>
+            <Fab color="primary" className={classes.addButton} onClick={onShowSearchDialog} disabled={!networkLoaded}>
               <AddIcon />
             </Fab>
           {/* ) : (
@@ -186,11 +182,12 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
               title="Pathways"
               icon={open ? <CollapseIcon fontSize="large" /> : <ExpandIcon fontSize="large" />}
               edge="start"
+              disabled={!networkLoaded}
               onClick={() => handleOpenDrawer(!open)}
             />
           </Toolbar>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <PathwayTable visible={open} data={data} />
+            <PathwayTable visible={open} data={data} initialSelectedId={selectedId} controller={controller} />
           </Collapse>
         </AppBar>
       </div>
