@@ -150,7 +150,7 @@ const ContentRow = ({ row, index, selected, handleClick }) => {
               <Collapse in={open} timeout="auto" unmountOnExit className={classes.collapseWrapper}>
               {row.cluster && row.pathways && row.pathways.length > 0 && (
                 <div>
-                  <Typography component="span" variant="subtitle2" gutterBottom>Pathways:</Typography>
+                  <Typography component="span" variant="subtitle2" gutterBottom>Pathways ({ row.pathways.length }):</Typography>
                   <ul>
                   {row.pathways.map((p, idx) => (
                     <li key={"pathway_" + index + "-" + idx}>
@@ -175,7 +175,7 @@ const ContentRow = ({ row, index, selected, handleClick }) => {
                 <div>
                   <Typography component="span" variant="subtitle2" gutterBottom>Genes ({ row.genes.length }):</Typography>
                   &nbsp;&nbsp;
-                  <Typography component="span" variant="body2" color="secondary" gutterBottom>{ row.genes.join(', ') }</Typography>
+                  <Typography component="span" variant="body2" color="textSecondary" gutterBottom>{ row.genes.join(', ') }</Typography>
                 </div>
               )}
               </Collapse>

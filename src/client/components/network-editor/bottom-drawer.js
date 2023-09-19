@@ -138,17 +138,29 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
       obj.cluster = n.data('mcode_cluster_id');
       obj.pathways = [];
 
+      const pathwayNames = [];
       if (pathwayArr.length > 1) {
         for (const p of pathwayArr) {
           if (p.indexOf('%') >= 0) {
             const name = p.substring(0, p.indexOf('%')).toLowerCase();
             const href = pathwayDBLinkOut(p);
             obj.pathways.push({ name, href });
+            pathwayNames.push(name);
           }
         }
       }
+      // TODO better get them from cytoscape/Mongo, because pathway names can be duplicated when from diff DBs
+      if (obj.cluster) {
+        obj.genes = [];
+        for (const pn of pathwayNames) {
+          obj.genes = obj.genes.concat(searchPathwayGenes(pn));
+          obj.genes = [...new Set(obj.genes)]; // remove duplicates
+        }
+      } else {
+        obj.genes = searchPathwayGenes(obj.name);
+      }
+      obj.genes.sort();
 
-      obj.genes = obj.cluster ? [] : searchPathwayGenes(obj.name); // TODO better get them from cytoscape/Mongo, because pathway names can be duplicated when from diff DBs
       data.push(obj);
     }
   }
