@@ -197,10 +197,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
         paper: classes.drawerPaper,
       }}
     >
-      <div
-        className={clsx(classes.drawerContent, { [classes.drawerContentShift]: shiftDrawer })}
-        role="presentation"
-      >
+      <div role="presentation" className={clsx(classes.drawerContent, { [classes.drawerContentShift]: shiftDrawer })}>
         <AppBar position="fixed" color="default" className={clsx(classes.appBar, { [classes.appBarShift]: shiftDrawer })}>
           <Toolbar variant="dense">
             <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
@@ -268,6 +265,7 @@ function ToolbarDivider({ classes, unrelated }) {
 
 const useStyles = theme => ({
   appBar: {
+    minHeight: BOTTOM_DRAWER_HEIGHT,
     top: 'auto',
     bottom: 0,
     transition: theme.transitions.create(['margin', 'width'], {
@@ -305,7 +303,6 @@ const useStyles = theme => ({
     }),
   },
   drawerPaper: {
-    minHeight: BOTTOM_DRAWER_HEIGHT,
     height: 'auto',
     background: theme.palette.background.default,
   },
