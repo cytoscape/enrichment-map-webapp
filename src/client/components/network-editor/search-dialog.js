@@ -262,7 +262,7 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
       // Start -- notify
       onNetworkWillChange();
       // Fit network on node to be removed
-      await cy.animation({ fit: { padding: DEFAULT_PADDING }, duration: 500 });
+      await cy.animate({ fit: { eles: node, padding: DEFAULT_PADDING }, duration: 500 });
       // Animation - node disappears
       var ani = node.animation({
         style: {

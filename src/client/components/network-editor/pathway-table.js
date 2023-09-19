@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 
 import theme from '../../theme';
+import { DEFAULT_PADDING } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 
@@ -11,10 +12,11 @@ import { makeStyles } from '@material-ui/core/styles';
 import { TableVirtuoso } from 'react-virtuoso';
 import { Collapse, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
 import { Paper, Typography, Link } from '@material-ui/core';
-import { IconButton  } from '@material-ui/core';
+import { IconButton, Tooltip  } from '@material-ui/core';
 
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
+import RemoveIcon from '@material-ui/icons/Remove';
 
 
 const TABLE_HEIGHT = 400;
@@ -38,14 +40,20 @@ const useStyles = makeStyles((theme) => ({
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
   },
-  name: {
-    width: '50%'
+  nameHeaderCell: {
+    width: '60%',
   },
-  nes: {
-    width: '25%'
+  nesHeaderCell: {
+    width: '30%',
   },
-  pvalue: {
-    width: '25%'
+  pvalueHeaderCell: {
+    width: '10%',
+  },
+  firstCell: {
+    verticalAlign: 'top',
+  },
+  lastCell: {
+    verticalAlign: 'top',
   },
   link: {
     color: theme.palette.link.main,
@@ -56,6 +64,16 @@ const useStyles = makeStyles((theme) => ({
         textDecoration: "none"
       }
     }
+  },
+  removeButton: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    border: '1px solid',
+    verticalAlign: 'middle',
+    "&[disabled]": {
+      color: 'transparent',
+    },
   },
 }));
 
@@ -105,16 +123,16 @@ const stableSort = (array, comparator) => {
 
 const cellLength = Object.keys(CELLS[0]).length ;
 
-const ContentRow = ({ row, index, selected, handleClick }) => {
+const ContentRow = ({ row, index, selected, handleClick, handleRemove }) => {
   const [open, setOpen] = useState(false);
   const classes = useStyles();
 
   return (
-    <TableCell key={'details_' + index} colSpan={cellLength} padding="checkbox">
+    <TableCell key={'details_' + index} colSpan={cellLength + 2} padding="checkbox">
       <Table size="small">
         <TableBody>
           <TableRow hover selected={selected} className={classes.row}>
-            <TableCell align="center" padding="none" style={{verticalAlign: 'top'}}>
+            <TableCell align="center" padding="none" className={classes.firstCell}>
               <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
                 { open ?  <KeyboardArrowDownIcon /> : <KeyboardArrowRightIcon /> }
               </IconButton>
@@ -124,7 +142,7 @@ const ContentRow = ({ row, index, selected, handleClick }) => {
                 key={row[cell.id] + '_' + (index + 1)}
                 align={cell.numeric ? 'right' : 'left'}
                 padding="none"
-                className={classes[cell.id]}
+                className={classes[cell.id + 'HeaderCell']}
                 onClick={(event) => handleClick(event, row.id)}
               >
               {cell.id === 'name' && row.href ? (
@@ -144,9 +162,25 @@ const ContentRow = ({ row, index, selected, handleClick }) => {
               </TableCell>
             ))
           }
+            <TableCell align="right" padding="none">
+              <Tooltip title="Remove Pathway">
+                <span>
+                  <IconButton
+                    aria-label="remove pathway"
+                    color="primary"
+                    size="small"
+                    disabled={!row.added}
+                    className={classes.removeButton}
+                    onClick={() => handleRemove(row.id)}
+                  >
+                    <RemoveIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </TableCell>
           </TableRow>
           <TableRow className={classes.row}>
-            <TableCell colSpan={cellLength + 1} className={classes.collapsibleCell}>
+            <TableCell colSpan={cellLength + 2} className={classes.collapsibleCell}>
               <Collapse in={open} timeout="auto" unmountOnExit className={classes.collapseWrapper}>
               {row.cluster && row.pathways && row.pathways.length > 0 && (
                 <div>
@@ -183,7 +217,7 @@ const ContentRow = ({ row, index, selected, handleClick }) => {
           </TableRow>
         </TableBody>
       </Table>
-      </TableCell>
+    </TableCell>
   );
 };
 
@@ -252,6 +286,12 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
     selNodeRef.current = sel.length === 1 ? sel[0] : null;
   }, [selectedId]);
 
+  if (!visible) {
+    // Returns an empty div with the same height as the table just so the open/close animation works properly,
+    // but we don't want to spend resources to build an invisible table
+    return <div style={{height: TABLE_HEIGHT}} />;
+  }
+
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
@@ -267,11 +307,28 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
     }
   };
 
-  if (!visible) {
-    // Returns an empty div with the same height as the table just so the open/close animation works properly,
-    // but we don't want to spend resources to build an invisible table
-    return <div style={{height: TABLE_HEIGHT}} />;
-  }
+  const handleRemoveRow = async (nodeId) => {
+    const node = cy.nodes(`[id = '${nodeId}']`);
+    if (!node) { return; }
+    // Fit network on node to be removed
+    await cy.animate({ fit: { eles: node, padding: DEFAULT_PADDING }, duration: 500 });
+    // Animation - node disappears
+    var ani = node.animation({
+      style: {
+        'background-opacity': 0,
+        'label': '',
+        'width': 0
+      },
+      duration: 250,
+    });
+    node.unselect();
+    ani.play().promise().then(async () => {
+      // Remove node
+      node.remove();
+      // Apply layout again
+      controller.applyLayout();
+    });
+  };
 
   const sortedData = stableSort(data, getComparator(order, orderBy));
   sortedDataRef.current = sortedData;
@@ -294,7 +351,7 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
             align="left"
             padding={cell.disablePadding ? 'none' : 'checkbox'}
             sortDirection={orderBy === cell.id ? order : false}
-            className={classes[cell.id]}
+            className={classes[cell.id + 'HeaderCell']}
           >
             <TableSortLabel
               active={orderBy === cell.id}
@@ -305,10 +362,11 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
             </TableSortLabel>
           </TableCell>
         ))}
+          <TableCell />
         </TableRow>
       )}
       itemContent={(index, obj) => (
-        <ContentRow row={obj} index={index} selected={selectedId === obj.id} handleClick={handleRowClick} />
+        <ContentRow row={obj} index={index} selected={selectedId === obj.id} handleClick={handleRowClick} handleRemove={handleRemoveRow} />
       )}
     />
   );
@@ -319,6 +377,7 @@ ContentRow.propTypes = {
   index: PropTypes.number.isRequired,
   selected: PropTypes.bool.isRequired,
   handleClick: PropTypes.func.isRequired,
+  handleRemove: PropTypes.func.isRequired,
 };
 PathwayTable.propTypes = {
   visible: PropTypes.bool.isRequired,

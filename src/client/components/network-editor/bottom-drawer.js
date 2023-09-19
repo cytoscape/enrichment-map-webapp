@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import _ from 'lodash';
@@ -31,6 +31,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   const [ open, setOpen ] = useState(false);
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
   const [ pathwayListIndexed, setPathwayListIndexed ] = useState(() => controller.isPathwayListIndexed());
+  const [ignored, forceUpdate] = useReducer(x => x + 1, 0);
   // const [ selectedNode, setSelectedNode ] = useState(null);
 
   const cy = controller.cy;
@@ -90,6 +91,16 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     };
   }, []);
 
+  useEffect(() => {
+    const onNetworkChanged = () => {
+      if (controller.isNetworkLoaded()) {
+        forceUpdate();
+      }
+    };
+    cy.on('add remove', onNetworkChanged);
+    return () => cy.removeListener('add remove', onNetworkChanged);
+  }, []);
+
   // useEffect(() => {
   //   const clearSearch = _.debounce(() => {
   //     cancelSearch();
@@ -136,6 +147,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
       obj.nes = n.data('NES');
       obj.pvalue = n.data('pvalue');
       obj.cluster = n.data('mcode_cluster_id');
+      obj.added = Boolean(n.data('added_by_user'));
       obj.pathways = [];
 
       const pathwayNames = [];
@@ -201,9 +213,13 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
             </Typography>
             <div className={classes.grow} />
           {/* {isMobile ? ( */}
-            <Fab color="primary" className={classes.addButton} onClick={onShowSearchDialog} disabled={disabled}>
-              <AddIcon />
-            </Fab>
+            <Tooltip title="Add Pathway">
+              <span>
+                <Fab color="primary" disabled={disabled} className={classes.addButton} onClick={onShowSearchDialog}>
+                  <AddIcon />
+                </Fab>
+              </span>
+            </Tooltip>
           {/* ) : (
             <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={onShowSearchDialog}>Add Pathway</Button>
           )} */}
@@ -228,17 +244,18 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
 
 function ToolbarButton({ title, icon, color, className, disabled, onClick }) {
   return (
-    <Tooltip arrow placement="bottom" title={title}>
-      <IconButton
-        disabled={disabled}
-        component={disabled ? "div" : undefined} // To prevent error: 'Material-UI: You are providing a disabled `button` child to the Tooltip component.'
-        size="small"
-        color={color || 'inherit'}
-        className={className}
-        onClick={onClick}
-      >
-        { icon }
-      </IconButton>
+    <Tooltip title={title}>
+      <span>
+        <IconButton
+          disabled={disabled}
+          size="small"
+          color={color || 'inherit'}
+          className={className}
+          onClick={onClick}
+        >
+          { icon }
+        </IconButton>
+      </span>
     </Tooltip>
   );
 }
@@ -356,6 +373,9 @@ const useStyles = theme => ({
       right: 0,
       margin: '0 auto',
       boxShadow: '0 0 10px black',
+      "&[disabled]": {
+        display: 'none',
+      },
     // },
   },
 });
