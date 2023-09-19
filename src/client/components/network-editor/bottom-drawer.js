@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import _ from 'lodash';
 
-import { CONTROL_PANEL_WIDTH } from '../defaults';
+import { CONTROL_PANEL_WIDTH, BOTTOM_DRAWER_HEIGHT } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { pathwayDBLinkOut } from './links';
@@ -288,12 +288,9 @@ const useStyles = theme => ({
   },
   drawer: {
     position: 'absolute',
-    // zIndex: 999,
     top: 'auto',
     bottom: 0,
     background: theme.palette.background.default,
-    // width: '100%',
-    // flexShrink: 0,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
@@ -308,15 +305,13 @@ const useStyles = theme => ({
     }),
   },
   drawerPaper: {
-    // width: CONTROL_PANEL_WIDTH,
+    minHeight: BOTTOM_DRAWER_HEIGHT,
     height: 'auto',
     background: theme.palette.background.default,
   },
   drawerContent: {
     background: 'inherit',
-    // height: 460,
     width: '100%',
-    // flexShrink: 0,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,

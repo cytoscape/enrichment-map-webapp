@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 
 import theme from '../../theme';
-import { DEFAULT_PADDING } from '../defaults';
+import { DEFAULT_PADDING, PATHWAY_TABLE_HEIGHT } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 
@@ -18,8 +18,6 @@ import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import RemoveIcon from '@material-ui/icons/Remove';
 
-
-const TABLE_HEIGHT = 400;
 
 const useStyles = makeStyles((theme) => ({
   headerRow: {
@@ -289,7 +287,7 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
   if (!visible) {
     // Returns an empty div with the same height as the table just so the open/close animation works properly,
     // but we don't want to spend resources to build an invisible table
-    return <div style={{height: TABLE_HEIGHT}} />;
+    return <div style={{height: PATHWAY_TABLE_HEIGHT}} />;
   }
 
   const handleRequestSort = (event, property) => {
@@ -340,7 +338,7 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
       ref={virtuosoRef}
       data={sortedData}
       initialTopMostItemIndex={{ index: initialIndex, align: 'start' }}
-      style={{height: TABLE_HEIGHT, border: `1px solid ${theme.palette.divider}`}}
+      style={{height: PATHWAY_TABLE_HEIGHT, border: `1px solid ${theme.palette.divider}`}}
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>

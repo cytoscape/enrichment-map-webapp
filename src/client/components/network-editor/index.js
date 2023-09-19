@@ -165,7 +165,7 @@ export function NetworkEditor({ id }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {/* <LegendActionButton controller={controller} /> */}
+        <LegendActionButton controller={controller} />
         <div className="network-editor">
           <Header
             controller={controller}

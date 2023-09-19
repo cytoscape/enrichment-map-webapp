@@ -1,12 +1,15 @@
 import React, { useEffect, useReducer, useState } from 'react';
 import PropTypes from 'prop-types';
-import { makeStyles } from '@material-ui/core/styles';
-import { NodeColorLegend } from './legend-svg';
+
+import { BOTTOM_DRAWER_HEIGHT } from '../defaults';
+import EventEmitterProxy from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
+import { NodeColorLegend } from './legend-svg';
+
+import { makeStyles } from '@material-ui/core/styles';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import { Chip, Tooltip } from '@material-ui/core';
-import EventEmitterProxy from '../../../model/event-emitter-proxy';
 
 export const NODE_COLOR_SVG_ID = 'node-color-legend-svg';
 
@@ -19,7 +22,7 @@ const BUTTON_ICON_COLOR = '#999';
 const useStyles = makeStyles((theme) => ({
   menu: {
     position: 'absolute',
-    bottom: '20px',
+    bottom: `${20 + BOTTOM_DRAWER_HEIGHT}px`,
     right: '20px',
     padding: '3px 10px',
     width: '39px',
