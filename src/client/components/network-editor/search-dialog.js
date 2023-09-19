@@ -3,8 +3,9 @@ import PropTypes from 'prop-types';
 
 import theme from '../../theme';
 import { DEFAULT_PADDING } from '../defaults';
-import { CoSELayoutOptions, NetworkEditorController } from './controller';
-import { NES_COLOR_RANGE, nodeLabel } from './network-style';
+import { NetworkEditorController } from './controller';
+import { NODE_OPACITY, TEXT_OPACITY, NES_COLOR_RANGE, nodeLabel } from './network-style';
+import { UpDownHBar } from './charts';
 
 import { makeStyles, } from '@material-ui/core/styles';
 
@@ -15,7 +16,6 @@ import { Box, Dialog, DialogContent, DialogTitle, Grid, Paper } from "@material-
 import { ListItem, ListItemText } from '@material-ui/core';
 import { Button, IconButton, Typography, Link } from "@material-ui/core";
 import CircularProgress from '@material-ui/core/CircularProgress';
-import HSBar from "react-horizontal-stacked-bar-chart";
 import SearchBar from "material-ui-search-bar";
 
 import CloseIcon from '@material-ui/icons/Close';
@@ -28,10 +28,6 @@ import RemoveIcon from '@material-ui/icons/Remove';
 const CHART_WIDTH = 160;
 const CHART_HEIGHT = 16;
 const ROUND_DIGITS = 2;
-
-const RANGE_COLOR = theme.palette.background.focus;
-const UP_COLOR    = NES_COLOR_RANGE.up;
-const DOWN_COLOR  = NES_COLOR_RANGE.down;
 
 
 const useStyles = makeStyles((theme) => ({
@@ -120,20 +116,6 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '0.75rem',
     color: theme.palette.link.main,
   },
-  barChartParent: {
-    position: 'relative',
-    pointerEvents: 'none',
-  },
-  barChartText: {
-    position: "absolute",
-    top: 0,
-    fontSize: "0.75rem",
-    color: "#999",
-    mixBlendMode: 'difference',
-    marginLeft: '0.125em',
-    marginRight: '0.125em',
-    lineHeight: '1.7em'
-  },
   pathwayIcon: {
     marginRight: theme.spacing(1),
     color: theme.palette.text.disabled,
@@ -212,28 +194,19 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
   const classes = useStyles();
   const virtuoso = useRef();
 
-  const maxNES = controller.style.magNES;
-  const minNES = -maxNES;
-
   const nonClusterNodes = cy.nodes('[!mcode_cluster_id]');
 
   const renderPathwayRow = (idx) => {
     const p = items != null && items.length > 0 ? items[idx] : null;
     const nes = p ? p.NES : null;
 
-    const applyLayout = async () => {
-      const layoutOptions = Object.assign(CoSELayoutOptions, { animationDuration: 1000, animationEasing: 'ease-out' });
-      const layout = cy.layout(layoutOptions);
-      const onStop = layout.promiseOn('layoutstop');
-      layout.run();
-      await onStop;
-    };
-
     const addToFigure = async () => {
       // Start -- notify
       onNetworkWillChange();
+      // Unselect everything
+      cy.elements().unselect();
       // Add node
-      const newNode = cy.add({
+      const node = await cy.add({
         group: 'nodes',
         data: {
           'name': [ p.name.toUpperCase() + '%' ], // TODO set the actual name with DB_SOURCE, etc.
@@ -245,15 +218,25 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
           'padj': p.padj,
           'added_by_user': true,
         },
-        position: { x: 0, y: 0 },
+        style: {
+          'opacity': 0,
+          'text-opacity': 0,
+        },
+        position: { x: Math.round(Math.random() * 100), y: Math.round(Math.random() * 100)},
       });
-      // Apply layout again
-      await applyLayout();
-      // Select the new node
-      cy.elements().unselect();
-      newNode.select();
-      // End -- notify
-      onNetworkChanged();
+      var ani = node.animation({
+        style: {
+          'opacity': NODE_OPACITY,
+          'text-opacity': TEXT_OPACITY,
+        },
+        duration: 500,
+      });
+      ani.play().promise().then(async () => {
+        // Select the new node
+        node.select();
+        // End -- notify
+        onNetworkChanged();
+      });
     };
 
     const removeFromFigure = async (nodeId) => {
@@ -263,46 +246,23 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
       onNetworkWillChange();
       // Fit network on node to be removed
       await cy.animate({ fit: { eles: node, padding: DEFAULT_PADDING }, duration: 500 });
+      // Unselect before removing (the next animation will look better)
+      node.unselect();
       // Animation - node disappears
       var ani = node.animation({
         style: {
           'background-opacity': 0,
-          'label': '',
-          'width': 0
+          'text-opacity': 0,
         },
         duration: 500,
       });
       ani.play().promise().then(async () => {
         // Remove node
         node.remove();
-        // Apply layout again
-        await applyLayout();
         // End -- notify
         onNetworkChanged();
       });
     };
-
-    let data;
-
-    if (nes != null) {
-      data = [];
-      
-      if (nes < 0) {
-        // Negative NES
-        if (nes > minNES) {
-          data.push({ value: Math.abs(minNES - nes), color: RANGE_COLOR });
-        }
-        data.push({ value: Math.abs(nes), color: DOWN_COLOR });
-        data.push({ value: maxNES, color: RANGE_COLOR });
-      } else {
-        // Positive NES
-        data.push({ value: Math.abs(minNES), color: RANGE_COLOR });
-        data.push({ value: nes, color: UP_COLOR });
-        if (nes < maxNES) {
-          data.push({ value: (maxNES - nes), color: RANGE_COLOR });
-        }
-      }
-    }
     
     const description = p.description;
     const name = p.name.toLowerCase() == description.toLowerCase() ? description : p.name; // if they are the same, description usually has better case
@@ -398,11 +358,17 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
                       </Typography>
                     </Grid>
                     <Grid item className={classes.nesChartContainer}>
-                    {data && (
-                      <div className={classes.barChartParent}>
-                        <HSBar data={data} height={CHART_HEIGHT} />
-                        <span className={classes.barChartText} style={barChartTextStyle(nes, minNES, maxNES)}>{roundedNES.toFixed(ROUND_DIGITS)}</span>
-                      </div>
+                    {nes != null && (
+                      <UpDownHBar
+                        value={nes}
+                        minValue={-controller.style.magNES}
+                        maxValue={controller.style.magNES}
+                        upColor={NES_COLOR_RANGE.up}
+                        downColor={NES_COLOR_RANGE.down}
+                        bgColor={theme.palette.background.focus}
+                        height={CHART_HEIGHT}
+                        text={roundedNES.toFixed(ROUND_DIGITS)}
+                      />
                     )}
                     </Grid>
                   </Grid>

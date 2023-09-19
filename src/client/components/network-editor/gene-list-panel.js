@@ -6,6 +6,7 @@ import { linkoutProps } from '../defaults';
 import theme from '../../theme';
 import { NES_COLOR_RANGE } from './network-style';
 import { NetworkEditorController } from './controller';
+import { UpDownHBar } from './charts';
 
 import { makeStyles, withStyles } from '@material-ui/core/styles';
 
@@ -13,7 +14,6 @@ import { Virtuoso } from 'react-virtuoso';
 import { ListItem, ListItemText, Tooltip } from '@material-ui/core';
 import { Grid, Typography, Link } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
-import HSBar from "react-horizontal-stacked-bar-chart";
 
 import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
@@ -22,10 +22,6 @@ import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 const CHART_WIDTH = 160;
 const CHART_HEIGHT = 16;
 const GENE_RANK_ROUND_DIGITS = 2;
-
-const RANK_RANGE_COLOR = theme.palette.background.focus;
-const UP_RANK_COLOR   = NES_COLOR_RANGE.up;
-const DOWN_RANK_COLOR = NES_COLOR_RANGE.down;
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -40,6 +36,7 @@ const useStyles = makeStyles((theme) => ({
     marginBottom: 0,
   },
   listItemHeader: {
+    height: 24,
     margin: 0,
     cursor: 'pointer',
     '&:hover': {
@@ -53,12 +50,17 @@ const useStyles = makeStyles((theme) => ({
       }
     },
   },
+  bulletIconContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    height: '100%',
+  },
   bulletIcon: {
     marginRight: '4px',
     color: 'inherit',
     opacity: 0.5
   },
-  geneNameContainer: {
+  geneContainer: {
     width: '40%',
   },
   geneName: {
@@ -114,20 +116,6 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
-  rankBarParent: {
-    position: 'relative',
-    pointerEvents: 'none',
-  },
-  rankBarText: {
-    position: "absolute",
-    top: 0,
-    fontSize: "0.75rem",
-    color: "#999",
-    mixBlendMode: 'difference',
-    marginLeft: '0.125em',
-    marginRight: '0.125em',
-    lineHeight: '1.7em'
-  },
   pathwayNameUl: {
     listStyleType: 'none',
     margin: 0,
@@ -157,22 +145,6 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const rankBarTextStyle = (rank, minRank, maxRank) => {
-  if (minRank > 0 && maxRank > 0) { // all positive => bars start at left and go right
-    return { left: 0 };
-  } else if (minRank < 0 && maxRank < 0) { // all negative => bars start at right and go left
-    return { right: 0 };
-  } else if (rank < 0) { // neg. rank should be shifted right by the size of the pos. max. bar size
-    let offset = Math.abs(maxRank) / (Math.abs(minRank) + Math.abs(maxRank)) * 100;
-    return {
-      right: `${offset}%`
-    };
-  } else { // pos. rank should be shifted left by the size of the neg. max. bar size
-    let offset = Math.abs(minRank) / (Math.abs(minRank) + Math.abs(maxRank)) * 100;
-    return { left: `${offset}%` };
-  }
-};
-
 const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   const classes = useStyles();
 
@@ -200,6 +172,7 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   );
 
   const data = queryGeneData.data;
+  console.log(data);
 
   const isLoading = queryGeneData.isLoading || queryNodes.isLoading;
 
@@ -318,32 +291,6 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
     const symbol = g ? g.gene : null;
     const rank = g ? g.rank : null;
 
-    let data;
-
-    if (rank != null) {
-      data = [];
-      
-      if (rank < 0) {
-        // Low regulated genes
-        if (minRank < 0 && minRank !== rank) {
-          data.push({ value: -(minRank - rank), color: RANK_RANGE_COLOR });
-        }
-        data.push({ value: -rank, color: DOWN_RANK_COLOR });
-        if (maxRank > 0) {
-          data.push({ value: maxRank, color: RANK_RANGE_COLOR });
-        }
-      } else {
-        // Up regulated genes
-        if (minRank < 0) {
-          data.push({ value: -minRank, color: RANK_RANGE_COLOR });
-        }
-        data.push({ value: rank, color: UP_RANK_COLOR });
-        if (maxRank > 0 && maxRank !== rank) {
-          data.push({ value: (maxRank - rank), color: RANK_RANGE_COLOR });
-        }
-      }
-    }
-
     const isGeneTextOverflowing = (id) => {
       const elem = document.getElementById(id);
 
@@ -391,9 +338,9 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
                 className={classes.listItemHeader}
                 onClick={() => { if (!loading) toggleGeneDetails(symbol); }}
               >
-                <Grid item className={classes.geneNameContainer}>
-                  <Grid container direction="row" justifyContent="flex-start">
-                    <Grid item xs={3}>
+                <Grid item className={classes.geneContainer}>
+                  <Grid container direction="row" justifyContent="flex-start" alignItems="center">
+                    <Grid item xs={3} className={classes.bulletIconContainer}>
                       {isSelected ?
                         <KeyboardArrowDownIcon fontSize="small" className={classes.bulletIcon} />
                       :
@@ -412,11 +359,17 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
                     {loading ?
                       <Skeleton variant="rect" height={CHART_HEIGHT} />
                       :
-                      data && (
-                        <div className={classes.rankBarParent}>
-                          <HSBar data={data} height={CHART_HEIGHT} />
-                          <span className={classes.rankBarText} style={rankBarTextStyle(rank, minRank, maxRank)}>{roundedRank.toFixed(GENE_RANK_ROUND_DIGITS)}</span>
-                        </div>
+                      rank != null && (
+                        <UpDownHBar
+                          value={rank}
+                          minValue={minRank}
+                          maxValue={maxRank}
+                          upColor={NES_COLOR_RANGE.up}
+                          downColor={NES_COLOR_RANGE.down}
+                          bgColor={theme.palette.background.focus}
+                          height={CHART_HEIGHT}
+                          text={roundedRank.toFixed(GENE_RANK_ROUND_DIGITS)}
+                        />
                       )
                     }
                   </Grid>

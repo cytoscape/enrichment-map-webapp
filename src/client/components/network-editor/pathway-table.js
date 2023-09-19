@@ -6,6 +6,8 @@ import theme from '../../theme';
 import { DEFAULT_PADDING, PATHWAY_TABLE_HEIGHT } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
+import { NES_COLOR_RANGE } from './network-style';
+import { UpDownHBar } from './charts';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -38,14 +40,21 @@ const useStyles = makeStyles((theme) => ({
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
   },
-  nameHeaderCell: {
-    width: '60%',
+  nameCell: {
+    width: '70%',
+    padding: '0 4px',
   },
-  nesHeaderCell: {
-    width: '30%',
+  nesCell: {
+    width: '20%',
+    padding: '0 4px',
   },
-  pvalueHeaderCell: {
+  pvalueCell: {
     width: '10%',
+    padding: '0 4px',
+    maxWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   firstCell: {
     verticalAlign: 'top',
@@ -80,6 +89,8 @@ const CELLS = [
   { id: 'nes',    numeric: true,  disablePadding: false, label: 'NES' },
   { id: 'pvalue', numeric: true,  disablePadding: false, label: 'P value' },
 ];
+
+const CHART_HEIGHT = 16;
 
 const TableComponents = {
   Scroller: React.forwardRef((props, ref) => <TableContainer component={Paper} {...props} ref={ref} />),
@@ -121,9 +132,13 @@ const stableSort = (array, comparator) => {
 
 const cellLength = Object.keys(CELLS[0]).length ;
 
-const ContentRow = ({ row, index, selected, handleClick, handleRemove }) => {
+const ContentRow = ({ row, index, selected, handleClick, handleRemove, controller }) => {
   const [open, setOpen] = useState(false);
   const classes = useStyles();
+
+  const roundNES = (nes) => {
+    return nes != null ? (Math.round(nes * Math.pow(10, 2)) / Math.pow(10, 2)) : 0;
+  };
 
   return (
     <TableCell key={'details_' + index} colSpan={cellLength + 2} padding="checkbox">
@@ -136,32 +151,44 @@ const ContentRow = ({ row, index, selected, handleClick, handleRemove }) => {
               </IconButton>
             </TableCell>
           {CELLS.map((cell, idx) => (
-              <TableCell
-                key={row[cell.id] + '_' + (index + 1)}
-                align={cell.numeric ? 'right' : 'left'}
-                padding="none"
-                className={classes[cell.id + 'HeaderCell']}
-                onClick={(event) => handleClick(event, row.id)}
+            <TableCell
+              key={cell.id + '_' + index + '_' + idx}
+              align={cell.numeric ? 'right' : 'left'}
+              padding="none"
+              className={classes[cell.id + 'Cell']}
+              onClick={(event) => handleClick(event, row.id)}
+            >
+            {cell.id === 'name' && (
+              <Link
+                href={row.href}
+                disabled={row.href == null}
+                variant="body2"
+                color="textSecondary"
+                className={classes.link}
+                {...linkoutProps}
               >
-              {cell.id === 'name' && row.href ? (
-                <Link
-                  href={row.href}
-                  disabled={row.href == null}
-                  variant="body2"
-                  color="textSecondary"
-                  className={classes.link}
-                  {...linkoutProps}
-                >
-                  { row[cell.id] }
-                </Link>
-              ) : (
-                row[cell.id]
-              )}
-              </TableCell>
-            ))
-          }
+                { row[cell.id] }
+              </Link>
+            )}
+            {cell.id === 'nes' && (
+              <UpDownHBar
+                value={row[cell.id]}
+                minValue={-controller.style.magNES}
+                maxValue={controller.style.magNES}
+                upColor={NES_COLOR_RANGE.up}
+                downColor={NES_COLOR_RANGE.down}
+                bgColor={theme.palette.background.focus}
+                height={CHART_HEIGHT}
+                text={roundNES(row[cell.id]).toFixed(2)}
+              />
+            )}
+            {cell.id === 'pvalue' && (
+              row[cell.id]
+            )}
+            </TableCell>
+          ))}
             <TableCell align="right" padding="none">
-              <Tooltip title="Remove Pathway">
+              <Tooltip title={row.added ? 'Remove Pathway' : ''}>
                 <span>
                   <IconButton
                     aria-label="remove pathway"
@@ -220,8 +247,8 @@ const ContentRow = ({ row, index, selected, handleClick, handleRemove }) => {
 };
 
 const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
-  const [order, setOrder] = useState('asc');
-  const [orderBy, setOrderBy] = useState('calories');
+  const [order, setOrder] = useState('desc');
+  const [orderBy, setOrderBy] = useState('nes');
   const [selectedId, setSelectedId] = React.useState(initialSelectedId);
 
   const classes = useStyles();
@@ -310,21 +337,19 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
     if (!node) { return; }
     // Fit network on node to be removed
     await cy.animate({ fit: { eles: node, padding: DEFAULT_PADDING }, duration: 500 });
+    // Unselect before removing (the next animation will look better)
+    node.unselect();
     // Animation - node disappears
     var ani = node.animation({
       style: {
-        'background-opacity': 0,
-        'label': '',
-        'width': 0
+        'opacity': 0,
+        'text-opacity': 0,
       },
       duration: 250,
     });
-    node.unselect();
     ani.play().promise().then(async () => {
       // Remove node
       node.remove();
-      // Apply layout again
-      controller.applyLayout();
     });
   };
 
@@ -349,7 +374,7 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
             align="left"
             padding={cell.disablePadding ? 'none' : 'checkbox'}
             sortDirection={orderBy === cell.id ? order : false}
-            className={classes[cell.id + 'HeaderCell']}
+            className={classes[cell.id + 'Cell']}
           >
             <TableSortLabel
               active={orderBy === cell.id}
@@ -364,7 +389,14 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
         </TableRow>
       )}
       itemContent={(index, obj) => (
-        <ContentRow row={obj} index={index} selected={selectedId === obj.id} handleClick={handleRowClick} handleRemove={handleRemoveRow} />
+        <ContentRow
+          row={obj}
+          index={index}
+          selected={selectedId === obj.id}
+          controller={controller}
+          handleClick={handleRowClick}
+          handleRemove={handleRemoveRow}
+        />
       )}
     />
   );
@@ -374,6 +406,7 @@ ContentRow.propTypes = {
   row: PropTypes.object.isRequired,
   index: PropTypes.number.isRequired,
   selected: PropTypes.bool.isRequired,
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   handleClick: PropTypes.func.isRequired,
   handleRemove: PropTypes.func.isRequired,
 };
@@ -381,7 +414,7 @@ PathwayTable.propTypes = {
   visible: PropTypes.bool.isRequired,
   data: PropTypes.array.isRequired,
   initialSelectedId: PropTypes.string,
-  controller: PropTypes.instanceOf(NetworkEditorController),
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
 };
 
 export default PathwayTable;

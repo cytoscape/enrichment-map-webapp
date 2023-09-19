@@ -1,6 +1,8 @@
 import _ from 'lodash';
 import chroma from 'chroma-js';
 
+export const NODE_OPACITY = 1;
+export const TEXT_OPACITY = 1;
 
 export const NES_COLOR_RANGE = (() => {
   const colors = ['#7b3294', '#c2a5cf', '#f7f7f7', '#a6dba0', '#008837']; // PRGn
@@ -54,7 +56,7 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node',
         style: {
-          'opacity': 1,
+          'opacity': NODE_OPACITY,
           'border-width': 12,
           'border-opacity': 0,
           'label': nodeLabel,
@@ -65,7 +67,8 @@ export const createNetworkStyle = (cy) => {
           'text-wrap': 'wrap',
           'text-max-width': 80,
           'text-outline-width': 2,
-          'text-outline-opacity': 1,
+          'text-opacity': TEXT_OPACITY,
+          'text-outline-opacity': TEXT_OPACITY,
           'color': '#fff'
         }
       },
