@@ -13,15 +13,38 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Collapse, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { Paper, Typography, Link } from '@material-ui/core';
+import { Box, Paper, Typography, Link } from '@material-ui/core';
 import { IconButton, Tooltip  } from '@material-ui/core';
 
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import RemoveIcon from '@material-ui/icons/Remove';
+import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
+import AddCircleIcon from '@material-ui/icons/AddCircle';
 
 
 const useStyles = makeStyles((theme) => ({
+  noResultsBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    width: '100%',
+    height: PATHWAY_TABLE_HEIGHT,
+    padding: theme.spacing(2),
+    textAlign: 'center',
+  },
+  noResultsInfoBox: {
+    maxWidth: 540,
+    marginTop: theme.spacing(2),
+    padding: theme.spacing(2),
+    textAlign: 'center',
+    backgroundColor: theme.palette.background.default,
+    borderRadius: 16,
+  },
+  noResultsLine: {
+    marginTop: theme.spacing(1),
+  },
   headerRow: {
     backgroundColor: theme.palette.background.default
   },
@@ -250,7 +273,7 @@ const ContentRow = ({ row, index, selected, handleClick, handleRemove, controlle
   );
 };
 
-const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
+const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controller }) => {
   const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('nes');
   const [selectedId, setSelectedId] = React.useState(initialSelectedId);
@@ -362,6 +385,28 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
 
   const initialIndex = selectedId ? indexOf(selectedId) : 0;
 
+  if (data.length === 0 && searchTerms && searchTerms.length > 0) {
+    return (
+      <Paper className={classes.noResultsBox}>
+        <Typography component="p" color="textSecondary" className={classes.noResultsLine}>
+          <SadFaceIcon style={{fontSize: '4em', opacity: 0.4}} />
+        </Typography>
+        <Typography component="p" variant="title1" color="textSecondary" className={classes.noResultsLine} style={{fontSize: '1.5em', opacity: 0.4}}>
+           No results found
+        </Typography>
+        <Paper variant="outlined" className={classes.noResultsInfoBox}>
+          <Typography component="p" variant="body2" color="textSecondary" className={classes.noResultsLine}>
+            Can&#39;t find your pathway in the current network?
+          </Typography>
+          <Typography component="p" variant="body2" color="textSecondary" className={classes.noResultsLine}>
+            You can also click the <AddCircleIcon fontSize="medium" /> button above to search and add more pathways.
+            {/* <Link underline="hover" onClick={this}>search for more pathways</Link>. */}
+          </Typography>
+        </Paper>
+      </Paper>
+    );
+  }
+
   return (
     <TableVirtuoso
       ref={virtuosoRef}
@@ -421,6 +466,7 @@ PathwayTable.propTypes = {
   visible: PropTypes.bool.isRequired,
   data: PropTypes.array.isRequired,
   initialSelectedId: PropTypes.string,
+  searchTerms: PropTypes.array,
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
 };
 

@@ -220,6 +220,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
               visible={open}
               data={filteredData ? filteredData : data}
               initialSelectedId={selectedId}
+              searchTerms={searchTerms}
               controller={controller}
             />
           </Collapse>
