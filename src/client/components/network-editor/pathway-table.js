@@ -85,7 +85,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const CELLS = [
-  { id: 'name',   numeric: false, disablePadding: false, label: 'Name' },
+  { id: 'name',   numeric: false, disablePadding: false, label: 'Pathway' },
   { id: 'nes',    numeric: true,  disablePadding: false, label: 'NES' },
   { id: 'pvalue', numeric: true,  disablePadding: false, label: 'P value' },
 ];
@@ -386,6 +386,9 @@ const PathwayTable = ({ visible, data, initialSelectedId, controller }) => {
               onClick={(event) => handleRequestSort(event, cell.id)}
             >
               { cell.label }
+            {cell.id === 'name' && data && (
+              <Typography component="span" variant="body2" color="textSecondary">&nbsp;({ data.length })</Typography>
+            )}
             </TableSortLabel>
           </TableCell>
         ))}

@@ -19,9 +19,6 @@ import { IconButton, Box } from '@material-ui/core';
 
 import { AppLogoIcon } from '../svg-icons';
 import MenuIcon from '@material-ui/icons/Menu';
-import SearchIcon from '@material-ui/icons/Search';
-import BarChartIcon from '@material-ui/icons/BarChart';
-import BubbleChartIcon from '@material-ui/icons/BubbleChart';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
@@ -334,6 +331,7 @@ function ToolbarDivider({ classes, unrelated }) {
 
 const useStyles = theme => ({
   appBar: {
+    backgroundColor: theme.palette.background.default,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,

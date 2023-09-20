@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useReducer } from 'react';
+import React, { useState, useEffect, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import _ from 'lodash';
 
 import { CONTROL_PANEL_WIDTH, BOTTOM_DRAWER_HEIGHT } from '../defaults';
-import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { pathwayDBLinkOut } from './links';
 import { nodeLabel } from './network-style';
@@ -14,71 +13,39 @@ import { withStyles } from '@material-ui/core/styles';
 
 import Collapse from '@material-ui/core/Collapse';
 import { AppBar, Toolbar, Divider } from '@material-ui/core';
-import { Drawer, Container, Box, Grid, Tooltip, Typography } from '@material-ui/core';
-import { Fab, Button, IconButton } from '@material-ui/core';
-import { List, ListItem, ListItemText } from '@material-ui/core';
+import { Drawer, Tooltip, Typography } from '@material-ui/core';
+import { Fab, IconButton } from '@material-ui/core';
+import SearchBar from "material-ui-search-bar";
 
 import ExpandIcon from '@material-ui/icons/ExpandLess';
 import CollapseIcon from '@material-ui/icons/ExpandMore';
-import SearchIcon from '@material-ui/icons/Search';
-import MoreIcon from '@material-ui/icons/MoreVert';
 import AddIcon from '@material-ui/icons/Add';
-import CloseIcon from '@material-ui/icons/Close';
-import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
 
 export function BottomDrawer({ controller, classes, controlPanelVisible, isMobile, onShowDrawer, onShowSearchDialog }) {
   const [ open, setOpen ] = useState(false);
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
   const [ pathwayListIndexed, setPathwayListIndexed ] = useState(() => controller.isPathwayListIndexed());
+  const [searchValue, setSearchValue] = useState('');
   const [ignored, forceUpdate] = useReducer(x => x + 1, 0);
-  // const [ selectedNode, setSelectedNode ] = useState(null);
+
+  const searchValueRef = useRef(searchValue);
+  searchValueRef.current = searchValue;
 
   const cy = controller.cy;
   // const cyEmitter = new EventEmitterProxy(cy);
 
-  // const debouncedSelectionHandler = _.debounce(() => {
-  //   const eles = cy.$(':selected');
-
-  //   if (eles.length > 0) {
-  //     const ele = eles[eles.length - 1];
-  //     setSelectedNode(ele);
-  //     // setSort(ele.data('NES') < 0 ? 'up' : 'down');
-  //     // fetchGeneListFromNodeOrEdge(ele);
-  //   } else { //if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
-  //     setSelectedNode(null);
-  //     // fetchAllRankedGenes();
-  //   }
-  // }, 250);
-
-  // const onGeneListIndexed = () => {
-  //   // setGeneListIndexed(true);
-  //   debouncedSelectionHandler();
-  // };
-
-  // const onCySelectionChanged = () => {
-  //   debouncedSelectionHandler();
-  // };
-
-  // const cancelSearch = () => {
-  //   // setSearchValue('');
-  //   // setSearchResult(null);
-  // };
-  // const search = (val) => {
-  //   // const query = val.trim();
-    
-  //   // if (val.length > 0) {
-  //   //   // Unselect Cy elements first
-  //   //   const selectedEles = cy.elements().filter(':selected');
-  //   //   selectedEles.unselect();
-  //   //   // Now execute the search
-  //   //   const res = controller.searchGenes(query);
-  //   //   setSearchValue(val);
-  //   //   setSearchResult(res);
-  //   // } else {
-  //   //   cancelSearch();
-  //   // }
-  // };
+  const cancelSearch = () => {
+    setSearchValue('');
+  };
+  const search = (val) => {
+    const query = val.trim();
+    if (query.length > 0) {
+      setSearchValue(val);
+    } else {
+      cancelSearch();
+    }
+  };
 
   useEffect(() => {
     const onNetworkLoaded = () => setNetworkLoaded(true);
@@ -101,28 +68,12 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     return () => cy.removeListener('add remove', onNetworkChanged);
   }, []);
 
-  // useEffect(() => {
-  //   const clearSearch = _.debounce(() => {
-  //     cancelSearch();
-  //   }, 128);
-
-  //   cyEmitter.on('select unselect', onCySelectionChanged);
-
-  //   cyEmitter.on('select', () => {
-  //     clearSearch();
-  //   });
-
-  //   return function cleanup() {
-  //     cyEmitter.removeAllListeners();
-  //   };
-  // }, []);
-
   const handleOpenDrawer = (b) => {
     setOpen(b);
     onShowDrawer(b);
   };
 
-  const searchPathwayGenes = (name) => { // TODO Delete this function
+  const searchPathwayGenes = (name) => { // TODO Delete this function when genes are returned from cytoscape/mongodb
     const results = controller.searchPathways(name);
     for (const res of results) {
       if (res.name === name) {
@@ -177,6 +128,30 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     }
   }
 
+  // Filter out pathways that don't match the search terms
+  let filteredData; 
+  const searchTerms = searchValue == null ? [] : searchValue.toLowerCase().trim().split(' ');
+
+  if (searchTerms.length > 0) {
+    filteredData = [];
+
+    OUTER:
+    for (const obj of data) {
+      for (const term of searchTerms) {
+        if (obj.name.toLowerCase().includes(term)) {
+          filteredData.push(obj);
+          continue OUTER;
+        }
+        for (const p of obj.pathways) {
+          if (p.name.toLowerCase().includes(term)) {
+            filteredData.push(obj);
+            continue OUTER;
+          }
+        }
+      }
+    }
+  }
+
   const sel = disabled ? null : cy.nodes(':selected');
   const selectedId = (sel && sel.length === 1) ? sel[0].data('id') : null;
 
@@ -199,7 +174,8 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     >
       <div role="presentation" className={clsx(classes.drawerContent, { [classes.drawerContentShift]: shiftDrawer })}>
         <AppBar position="fixed" color="default" className={clsx(classes.appBar, { [classes.appBarShift]: shiftDrawer })}>
-          <Toolbar variant="dense">
+          <Toolbar variant="dense" className={classes.toolbar}>
+          {!open && (
             <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
               Pathways&nbsp;
             {totalPathways >= 0 && (
@@ -208,6 +184,16 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
               </Typography>
             )}
             </Typography>
+          )}
+          {open && (
+            <SearchBar
+              className={classes.searchBar}
+              placeholder="Find pathways..."
+              value={searchValue}
+              onChange={search}
+              onCancelSearch={cancelSearch}
+            />
+          )}
             <div className={classes.grow} />
           {/* {isMobile ? ( */}
             <Tooltip title="Add Pathway">
@@ -230,7 +216,12 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
             />
           </Toolbar>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <PathwayTable visible={open} data={data} initialSelectedId={selectedId} controller={controller} />
+            <PathwayTable
+              visible={open}
+              data={filteredData ? filteredData : data}
+              initialSelectedId={selectedId}
+              controller={controller}
+            />
           </Collapse>
         </AppBar>
       </div>
@@ -265,6 +256,7 @@ function ToolbarDivider({ classes, unrelated }) {
 
 const useStyles = theme => ({
   appBar: {
+    backgroundColor: theme.palette.background.default,
     minHeight: BOTTOM_DRAWER_HEIGHT,
     top: 'auto',
     bottom: 0,
@@ -280,6 +272,10 @@ const useStyles = theme => ({
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
+  },
+  toolbar: {
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
   },
   hide: {
     display: 'none',
@@ -334,6 +330,14 @@ const useStyles = theme => ({
   grow: {
     flexGrow: 1,
   },
+  searchBar: {
+    marginLeft: -theme.spacing(1),
+    borderColor: theme.palette.divider,
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderRadius: theme.spacing(4),
+    height: 36,
+  },
   divider: {
     marginLeft: theme.spacing(1),
     marginRight: theme.spacing(1),
@@ -343,18 +347,6 @@ const useStyles = theme => ({
     marginLeft: theme.spacing(3),
     marginRight: theme.spacing(3),
     width: 0,
-  },
-  sectionDesktop: {
-    display: 'none',
-    [theme.breakpoints.up('sm')]: {
-      display: 'flex',
-    },
-  },
-  sectionMobile: {
-    display: 'flex',
-    [theme.breakpoints.up('sm')]: {
-      display: 'none',
-    },
   },
   addButton: {
     // [theme.breakpoints.down('sm')]: {

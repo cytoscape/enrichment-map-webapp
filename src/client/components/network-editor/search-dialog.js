@@ -436,7 +436,7 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
   const searchValueRef = useRef(searchValue);
   searchValueRef.current = searchValue;
 
-  const searchTerms = searchValue.split(' ');
+  const searchTerms = searchValue.toLowerCase().split(' ');
 
   const classes = useStyles();
 
@@ -447,7 +447,7 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
   const search = (val) => {
     const query = val.trim();
     
-    if (val.length > 0) {
+    if (query.length > 0) {
       const res = { };
       res['genes'] = controller.searchGenes(query);
       res['pathways'] = controller.searchPathways(query);
