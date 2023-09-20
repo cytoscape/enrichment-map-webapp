@@ -5,7 +5,7 @@ import theme from '../../theme';
 import { DEFAULT_PADDING } from '../defaults';
 import { NetworkEditorController } from './controller';
 import { NODE_OPACITY, TEXT_OPACITY, NES_COLOR_RANGE, nodeLabel } from './network-style';
-import { UpDownHBar } from './charts';
+import { UpDownHBar, PValueStarRating } from './charts';
 
 import { makeStyles, } from '@material-ui/core/styles';
 
@@ -14,7 +14,7 @@ import { Virtuoso } from 'react-virtuoso';
 import Slide from '@material-ui/core/Slide';
 import { Box, Dialog, DialogContent, DialogTitle, Grid, Paper } from "@material-ui/core";
 import { ListItem, ListItemText } from '@material-ui/core';
-import { Button, IconButton, Typography, Link } from "@material-ui/core";
+import { Button, IconButton, Typography, Tooltip } from "@material-ui/core";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import SearchBar from "material-ui-search-bar";
 
@@ -78,39 +78,12 @@ const useStyles = makeStyles((theme) => ({
     // overflow:'hidden', 
     // textOverflow:'ellipsis'
   },
-  rankChartContainer: {
-    width: CHART_WIDTH,
-    padding: 0,
+  subtitleContainer: {
+    width: 100,
   },
   nesChartContainer: {
     width: CHART_WIDTH,
     padding: 0,
-    marginTop: theme.spacing(0.75),
-  },
-  geneMetadata: {
-    fontSize: '1.0em',
-    marginLeft: '0.6em',
-    marginBottom: '0.25em',
-    padding: '0.25em 1.2em 0 1.05em',
-    borderWidth: 1,
-    borderColor: theme.palette.divider,
-    borderStyle: 'hidden hidden hidden solid',
-  },
-  geneRankCollapsed: {
-    fontSize: '0.75rem',
-    fontFamily: 'monospace',
-    color: theme.palette.text.disabled,
-    marginTop: '-0.25em',
-    paddingRight: '0.75em',
-  },
-  geneRankExpanded: {
-    fontSize: '0.75rem',
-    fontFamily: 'monospace',
-    textAlign: 'right',
-    color: theme.palette.text.disabled,
-    marginTop: '-0.25em',
-    marginBottom: '0.75em',
-    paddingRight: '0.05em',
   },
   linkout: {
     fontSize: '0.75rem',
@@ -352,8 +325,24 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
               )}
                 <Grid item>
                   <Grid container direction="row" alignItems='center' spacing={2}>
-                    <Grid item>
-                      <Typography component="span" variant="body2" color="textPrimary">
+                    <Grid item className={classes.subtitleContainer}>
+                      <Typography variant="body2" color="textPrimary">
+                        P value:
+                      </Typography>
+                    </Grid>
+                    <Grid>
+                      <Tooltip title={p.pval}>
+                        <span>
+                          <PValueStarRating value={p.pval} />
+                        </span>
+                      </Tooltip>
+                    </Grid>
+                  </Grid>
+                </Grid>
+                <Grid item>
+                  <Grid container direction="row" alignItems='center' spacing={2}>
+                    <Grid item className={classes.subtitleContainer}>
+                      <Typography variant="body2" color="textPrimary">
                         NES:
                       </Typography>
                     </Grid>
@@ -373,16 +362,7 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
                     </Grid>
                   </Grid>
                 </Grid>
-                <Grid item>
-                  <Typography component="span" variant="body2" color="textPrimary">
-                    P value:
-                  </Typography>
-                  &nbsp;
-                  <Typography component="span" variant="body2" color="textSecondary" style={{marginLeft: theme.spacing(1)}}>
-                    { p.pval }
-                  </Typography>
-                </Grid>
-                <Grid item>
+                <Grid item className={classes.listItemFooter}>
                   <Typography component="span" variant="body2" color="textPrimary">
                     Genes ({ genes.length }):
                   </Typography>
@@ -417,7 +397,7 @@ const PathwayListPanel = ({ searchTerms, items, controller, onNetworkWillChange,
                     </Grid>
                   </Grid>
                 </Grid>
-              </Grid>
+              </Grid> 
             </Paper>
           }
         />

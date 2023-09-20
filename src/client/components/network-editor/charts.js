@@ -4,7 +4,11 @@ import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
 
 import HSBar from "react-horizontal-stacked-bar-chart";
+import StarIcon from '@material-ui/icons/Star';
+import StarOutlineIcon from '@material-ui/icons/StarOutline';
 
+
+// ==[ Up-Down Horizontal Bar ]==============================================================================================================
 
 const useUpDownHBarStyles = makeStyles(() => ({
   parent: {
@@ -80,7 +84,6 @@ export const UpDownHBar = ({ value, minValue, maxValue, downColor, upColor, bgCo
     </div>
   );
 };
-
 UpDownHBar.propTypes = {
   value: PropTypes.number.isRequired,
   minValue: PropTypes.number.isRequired,
@@ -90,4 +93,50 @@ UpDownHBar.propTypes = {
   bgColor: PropTypes.string.isRequired,
   height: PropTypes.number.isRequired,
   text: PropTypes.string,
+};
+
+// ==[ P-Value Star Rating ]=================================================================================================================
+
+const usePValueStarRatingStyles = makeStyles(() => ({
+  parent: {
+    display: 'flex',
+    alignItems: 'center',
+    height: '100%',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+  },
+}));
+
+export const PValueStarRating = ({ value }) => {
+  const classes = usePValueStarRatingStyles();
+
+  // Many people add asterisks to tables and graphs to show how low the P value is.
+  // The standards for one to three asterisks are quite standard (<0.05, <0.01, <0.001), and both the NEJM and APA agree.
+  // Prism (since 5.04/d) will also show four asterisks when the P value is less than 0.0001, which is what we use here.
+  // (https://www.graphpad.com/support/faq/how-to-report-p-values-in-journals/)
+  const standards = [ 0.05, 0.01, 0.001, 0.0001 ];
+  const max = standards.length;
+  let rating = 0;
+  
+  for (let i = max; i > 0; i--) {
+    const limit = standards[i - 1];
+    if (value < limit) {
+      rating = i;
+      break;
+    }
+  }
+
+  return (
+    <div className={classes.parent}>
+    {[...Array(rating)].map((v, i) => (
+      <StarIcon key={i} fontSize="small" />
+    ))}
+    {[...Array(max - rating)].map((v, i) => (
+      <StarOutlineIcon key={i + rating} fontSize="small" />
+    ))}
+    </div>
+  );
+};
+PValueStarRating.propTypes = {
+  value: PropTypes.number.isRequired,
 };

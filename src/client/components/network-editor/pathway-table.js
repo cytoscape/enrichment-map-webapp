@@ -7,7 +7,7 @@ import { DEFAULT_PADDING, PATHWAY_TABLE_HEIGHT } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { NES_COLOR_RANGE } from './network-style';
-import { UpDownHBar } from './charts';
+import { UpDownHBar, PValueStarRating } from './charts';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -183,7 +183,11 @@ const ContentRow = ({ row, index, selected, handleClick, handleRemove, controlle
               />
             )}
             {cell.id === 'pvalue' && (
-              row[cell.id]
+              <Tooltip title={row[cell.id]}>
+                <span>
+                  <PValueStarRating value={row[cell.id]} />
+                </span>
+              </Tooltip>
             )}
             </TableCell>
           ))}
