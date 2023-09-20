@@ -22,6 +22,14 @@ function getMinMaxValues(cy, attr) {
   };
 }
 
+function truncateString(str, num) {
+  if (str.length > num) {
+    return str.slice(0, num) + "...";
+  } else {
+    return str;
+  }
+}
+
 export const nodeLabel = _.memoize(node => {
   const label = (() => {
     const label = node.data('label');
@@ -32,7 +40,8 @@ export const nodeLabel = _.memoize(node => {
   })();
   const text = label.replace(/_/g, ' ');
   const percent = text.indexOf('%');
-  return (percent > 0 ? text.substring(0, percent) : text).toLowerCase();
+  const sublabel = (percent > 0 ? text.substring(0, percent) : text).toLowerCase();
+  return truncateString(sublabel, 35);
 }, node => node.id());
 
 
@@ -66,7 +75,19 @@ export const createNetworkStyle = (cy) => {
           'text-max-width': 80,
           'text-outline-width': 2,
           'text-outline-opacity': 1,
-          'color': '#fff'
+          'color': '#000'
+        }
+      },
+      {
+        selector: ':parent',
+        style: {
+          'background-opacity': 0.0,
+          'border-width': 0,
+          'font-size': '14px',
+          'text-valign':'top',
+          'text-outline-width': 0,
+          'text-outline-opacity': 0,
+          'color': '#000'
         }
       },
       {
@@ -77,31 +98,26 @@ export const createNetworkStyle = (cy) => {
         }
       },
       {
+        selector: 'node[parent][collapsed="true"]',
+        style: {
+          'label': n => ''
+        }
+      },
+      {
         selector: 'edge',
         style: {
           'line-color' : '#888',
-          'line-opacity': 0.6,
+          'line-opacity': 0.3,
           'curve-style': 'haystack',
           'haystack-radius': 0,
-          'width': ele => ele.data('similarity_coefficient') * 30,
+          // 'width': ele => ele.data('similarity_coefficient') * 30,
+          'width': ele => ele.data('similarity_coefficient') * 15,
         }
       },
       {
         selector: 'edge[interaction = "Geneset_Overlap"]',
         style: {
           'line-color' : 'red',
-        }
-      },
-      {
-        selector: ':parent',
-        style: {
-          'background-opacity': 0.2,
-          'border-color': '#2B65EC',
-          'font-size': '24px',
-          'text-valign':'top',
-          'text-outline-width': 0,
-          'text-outline-opacity': 0,
-          'color': '#000'
         }
       },
       {
@@ -129,7 +145,7 @@ export const createNetworkStyle = (cy) => {
         style: {
           'line-color': '#5aaae0'
         }
-      }
+      },
     ]
   };
 };

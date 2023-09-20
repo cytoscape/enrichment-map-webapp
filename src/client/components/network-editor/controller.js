@@ -80,19 +80,19 @@ export class NetworkEditorController {
 
     this.layout = this.cy.layout({
       name: 'cose',
-      // idealEdgeLength: edge => 30 - 25 * (edge.data('similarity_coefficient')),
-      // edgeElasticity: edge => 10 / (edge.data('similarity_coefficient')),
-      // nodeRepulsion: node => 1000,
-      // // nodeSeparation: 75,
-      // randomize: true,
+      idealEdgeLength: edge => 50 - 25 * (edge.data('similarity_coefficient')),
+      edgeElasticity: edge => 10 / (edge.data('similarity_coefficient')),
+      nodeRepulsion: node => 1000,
+      // nodeSeparation: 75,
+      randomize: true,
       animate: false,
-      padding: DEFAULT_PADDING,
-      // boundingBox: {
-      //   x1: 0,
-      //   y1: 0,
-      //   x2: 600,
-      //   y2: 1000
-      // }
+      // padding: DEFAULT_PADDING,
+      boundingBox: {
+        x1: 0,
+        y1: 0,
+        x2: 1800,
+        y2: 3000
+      }
     });
 
     const onStop = this.layout.promiseOn('layoutstop');
