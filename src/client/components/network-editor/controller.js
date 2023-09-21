@@ -198,8 +198,10 @@ export class NetworkEditorController {
       // Collapse all clusters initially
       this.toggleExpandCollapse(parent, false);
   
-      parent.on('tap', () => {
-        this.toggleExpandCollapse(parent, true);
+      parent.on('tap', (event) => {
+        if(!event.target.data('parent')) {
+          this.toggleExpandCollapse(parent, true);
+        }
       });
     });
   }
