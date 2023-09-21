@@ -77,7 +77,6 @@
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
     "mark.js": "^8.11.1",
-    "material-ui-search-bar": "^1.0.0",
     "mathjs": "^9.5.1",
     "minisearch": "^5.0.0",
     "mongodb": "^4.5.0",

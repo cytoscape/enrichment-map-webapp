@@ -16,7 +16,7 @@ import { Box, Dialog, DialogContent, DialogTitle, Grid, Paper } from "@material-
 import { ListItem, ListItemText } from '@material-ui/core';
 import { Button, IconButton, Typography, Tooltip } from "@material-ui/core";
 import CircularProgress from '@material-ui/core/CircularProgress';
-import SearchBar from "material-ui-search-bar";
+import SearchBar from './search-bar';
 
 import CloseIcon from '@material-ui/icons/Close';
 import CheckCircleOutlineIcon from '@material-ui/icons/CheckCircleOutline';
@@ -119,14 +119,6 @@ const useStyles = makeStyles((theme) => ({
     maxHeight: '95vh',
     backgroundColor: 'rgba(0, 0, 0, 0.66)',
     border: `1px solid ${theme.palette.text.disabled}`,
-  },
-  searchBar: {
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    borderColor: theme.palette.divider,
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    maxWidth: '400px',
   },
   content: {
     height: '100%',
@@ -478,7 +470,7 @@ export const SearchDialog = ({ open, controller, onClose, fullScreen }) => {
       <DialogTitle>
         <SearchBar
           autoFocus={true}
-          className={classes.searchBar}
+          style={{ marginLeft: 'auto', marginRight: 'auto', maxWidth: '400px'}}
           value={searchValue}
           disabled={networkChanging}
           onChange={search}

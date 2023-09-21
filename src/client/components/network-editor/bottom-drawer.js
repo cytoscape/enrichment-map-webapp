@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
-import _ from 'lodash';
 
 import { CONTROL_PANEL_WIDTH, BOTTOM_DRAWER_HEIGHT } from '../defaults';
 import { NetworkEditorController } from './controller';
 import { pathwayDBLinkOut } from './links';
 import { nodeLabel } from './network-style';
 import PathwayTable from './pathway-table';
+import SearchBar from './search-bar';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -15,7 +15,6 @@ import Collapse from '@material-ui/core/Collapse';
 import { AppBar, Toolbar, Divider } from '@material-ui/core';
 import { Drawer, Tooltip, Typography } from '@material-ui/core';
 import { Fab, IconButton } from '@material-ui/core';
-import SearchBar from "material-ui-search-bar";
 
 import ExpandIcon from '@material-ui/icons/ExpandLess';
 import CollapseIcon from '@material-ui/icons/ExpandMore';
@@ -187,7 +186,6 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
           )}
           {open && (
             <SearchBar
-              className={classes.searchBar}
               placeholder="Find pathways..."
               value={searchValue}
               onChange={search}
@@ -330,14 +328,6 @@ const useStyles = theme => ({
   },
   grow: {
     flexGrow: 1,
-  },
-  searchBar: {
-    marginLeft: -theme.spacing(1),
-    borderColor: theme.palette.divider,
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderRadius: theme.spacing(4),
-    height: 36,
   },
   divider: {
     marginLeft: theme.spacing(1),

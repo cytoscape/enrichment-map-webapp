@@ -12,7 +12,7 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
-import SearchBar from "material-ui-search-bar";
+import SearchBar from './search-bar';
 
 import { GeneSetIcon, VennIntersectionIcon } from '../svg-icons';
 import NetworkIcon from '@material-ui/icons/Share';
@@ -62,17 +62,6 @@ const useStyles = makeStyles((theme) => ({
   },
   geneList: {
     overflowY: "auto",
-  },
-  searchBar: {
-    height: 36,
-    borderColor: theme.palette.divider,
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderRadius: theme.spacing(4),
-    marginLeft: theme.spacing(1),
-    marginRight: theme.spacing(1),
-    marginTop: theme.spacing(1.5),
-    marginBottom: theme.spacing(2),
   },
 }));
 
@@ -375,8 +364,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             <GeneListHeader />
             <SearchBar
               disabled={!networkLoaded || !geneListIndexed}
-              className={classes.searchBar}
-              style={{}}
+              style={{margin: theme.spacing(1.5, 1, 2, 1)}}
               placeholder="Find genes..."
               value={searchValue}
               onChange={search}

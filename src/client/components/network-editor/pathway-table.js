@@ -13,7 +13,7 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Collapse, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { Box, Paper, Typography, Link } from '@material-ui/core';
+import { Paper, Typography, Link } from '@material-ui/core';
 import { IconButton, Tooltip  } from '@material-ui/core';
 
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
@@ -109,7 +109,7 @@ const useStyles = makeStyles((theme) => ({
 
 const CELLS = [
   { id: 'name',   numeric: false, disablePadding: false, label: 'Pathway' },
-  { id: 'nes',    numeric: true,  disablePadding: false, label: 'NES' },
+  { id: 'nes',    numeric: true,  disablePadding: false, label: 'NES',    tooltip: "Normalized Enrichment Score" },
   { id: 'pvalue', numeric: true,  disablePadding: false, label: 'P value' },
 ];
 
@@ -391,7 +391,7 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
         <Typography component="p" color="textSecondary" className={classes.noResultsLine}>
           <SadFaceIcon style={{fontSize: '4em', opacity: 0.4}} />
         </Typography>
-        <Typography component="p" variant="title1" color="textSecondary" className={classes.noResultsLine} style={{fontSize: '1.5em', opacity: 0.4}}>
+        <Typography component="p" variant="subtitle1" color="textSecondary" className={classes.noResultsLine} style={{fontSize: '1.5em', opacity: 0.4}}>
            No results found
         </Typography>
         <Paper variant="outlined" className={classes.noResultsInfoBox}>
@@ -399,7 +399,7 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
             Can&#39;t find your pathway in the current network?
           </Typography>
           <Typography component="p" variant="body2" color="textSecondary" className={classes.noResultsLine}>
-            You can also click the <AddCircleIcon fontSize="medium" /> button above to search and add more pathways.
+            You can click the <AddCircleIcon fontSize="medium" /> button above to search and add more pathways.
             {/* <Link underline="hover" onClick={this}>search for more pathways</Link>. */}
           </Typography>
         </Paper>
@@ -430,10 +430,14 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
               direction={orderBy === cell.id ? order : 'asc'}
               onClick={(event) => handleRequestSort(event, cell.id)}
             >
-              { cell.label }
-            {cell.id === 'name' && data && (
-              <Typography component="span" variant="body2" color="textSecondary">&nbsp;({ data.length })</Typography>
-            )}
+              <Tooltip title={cell.tooltip ? cell.tooltip : ''}>
+                <span>
+                  { cell.label }
+                {cell.id === 'name' && data && (
+                  <Typography component="span" variant="body2" color="textSecondary">&nbsp;({ data.length })</Typography>
+                )}
+                </span>
+              </Tooltip>
             </TableSortLabel>
           </TableCell>
         ))}
