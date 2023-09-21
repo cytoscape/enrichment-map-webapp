@@ -139,6 +139,71 @@ export class NetworkEditorController {
     this.cy.maxZoom(2);
   }
 
+
+  toggleExpandCollapse(parent, animate=false) {
+    const collapsed = parent.data('collapsed');
+    const shrinkFactor = 0.2;
+    const spacingFactor = collapsed ? (1.0 / shrinkFactor) : shrinkFactor;
+    parent.data('collapsed', !collapsed);
+
+    if(!collapsed) {
+      parent.children().data('collapsed', "" + !collapsed);
+    }
+    
+    const layout = parent.children().layout({
+      name: 'preset',
+      positions: node => node.position(),
+      fit: false,
+      animate,
+      spacingFactor
+    });
+    
+    if(collapsed) {
+      const onStop = layout.promiseOn('layoutstop');
+      onStop.then(() => {
+        parent.children().data('collapsed', "" + !collapsed);
+      });
+    }
+
+    layout.run();
+  }
+
+  /**
+   * clusterDefs: array of objects of the form { clusterId: 'Cluster 1', label: 'neuclotide synthesis' }
+   */
+  createClusters(clusterDefs, clusterAttr) {
+    const { cy } = this;
+
+    clusterDefs.forEach(({ clusterId, label }) => {
+      const cluster = cy.elements(`node[${clusterAttr}="${clusterId}"]`);
+  
+      // Create compound nodes
+      const parent = cy.add({
+        group: 'nodes',
+        name: label,
+        data: { 
+          label: label, 
+          id: clusterId,
+        }
+      });
+
+      cluster.forEach(node => {
+        node.move({ parent: clusterId });
+      });
+        
+      // Create bubble sets
+      const edges = cluster.connectedEdges().filter(e => cluster.contains(e.source()) && cluster.contains(e.target()));
+      cy.bubbleSets().addPath(cluster, edges, null);
+  
+      // Collapse all clusters initially
+      this.toggleExpandCollapse(parent, false);
+  
+      parent.on('tap', () => {
+        this.toggleExpandCollapse(parent, true);
+      });
+    });
+  }
+
   /**
    * Delete the selected (i.e. :selected) elements in the graph
    */

@@ -43,11 +43,7 @@ async function loadNetwork(cy, controller, id) {
   }
 
   const networkJson = await res.json();
-
   // setClusterNodeNamesForSummaryNetwork(networkJson);
-
-  console.log("network: " + networkJson.network.elements.nodes.length);
-  console.log("summaryNetwork: " + networkJson.summaryNetwork.elements.nodes.length);
 
   // cy.add(networkJson.summaryNetwork.elements);
   cy.add(networkJson.network.elements);
@@ -57,68 +53,7 @@ async function loadNetwork(cy, controller, id) {
   });
 
   await controller.applyLayout();
-
-
-  const toggleExpandCollapse = (parent, animate=false) => {
-    const collapsed = parent.data('collapsed');
-    const shrinkFactor = 0.2;
-    const spacingFactor = collapsed ? (1.0 / shrinkFactor) : shrinkFactor;
-    parent.data('collapsed', !collapsed);
-
-    if(!collapsed) {
-      parent.children().data('collapsed', "" + !collapsed);
-    }
-    
-    const layout = parent.children().layout({
-      name: 'preset',
-      positions: node => node.position(),
-      fit: false,
-      animate,
-      spacingFactor
-    });
-    
-    if(collapsed) {
-      const onStop = layout.promiseOn('layoutstop');
-      onStop.then(() => {
-        parent.children().data('collapsed', "" + !collapsed);
-      });
-    }
-
-    layout.run();
-  };
-
-  networkJson.clusterLabels[0].labels.forEach(element => {
-    const { clusterId, label } = element;
-    const cluster = cy.elements(`node[mcode_cluster_id="${clusterId}"]`);
-    // cluster.ungrabify();
-
-    // Create compound nodes
-    const parent = cy.add({
-      group: 'nodes',
-      name: label,
-      data: { 
-        label: label, 
-        id: clusterId,
-        collapsed: false
-      }
-    });
-    cluster.forEach(node => {
-      node.move({ parent: clusterId });
-    });
-      
-    // Create bubble sets
-    // TODO: do this after running the layout???
-    const bb = cy.bubbleSets();
-    const edges = cluster.connectedEdges().filter(edge => cluster.contains(edge.source()) && cluster.contains(edge.target()));
-    bb.addPath(cluster, edges, null);
-
-    // "Collapse" clusters
-    toggleExpandCollapse(parent);
-
-    parent.on('tap', () => {
-      toggleExpandCollapse(parent, true);
-    });
-  });
+  await controller.createClusters(networkJson.clusterLabels[0].labels, 'mcode_cluster_id');
 
   // Set network style
   const style = createNetworkStyle(cy);
