@@ -10,7 +10,6 @@ import CloseIcon from '@material-ui/icons/Close';
 
 const useStyles = makeStyles((theme) => ({
   search: {
-    width: '100%',
     position: 'relative',
     marginLeft: 0,
     marginRight: 0,
@@ -21,9 +20,6 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.palette.background.paper,
     '&:hover': {
       backgroundColor: alpha(theme.palette.secondary.main, 0.1),
-    },
-    [theme.breakpoints.up('sm')]: {
-      width: 'auto',
     },
   },
   inputRoot: {

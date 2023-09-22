@@ -146,6 +146,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
           )}
           {open && (
             <SearchBar
+              style={{width: 276}}
               placeholder="Find pathways..."
               value={searchValue}
               onChange={search}

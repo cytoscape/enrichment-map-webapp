@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 
 import theme from '../../theme';
-import { CONTROL_PANEL_WIDTH, DEFAULT_PADDING } from '../defaults';
+import { CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import GeneListPanel from './gene-list-panel';
@@ -364,7 +364,13 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             <GeneListHeader />
             <SearchBar
               disabled={!networkLoaded || !geneListIndexed}
-              style={{margin: theme.spacing(1.5, 1, 2, 1)}}
+              style={{
+                maxWidth: 276,
+                marginTop: theme.spacing(1.5),
+                marginBottom: theme.spacing(2),
+                marginLeft: 'auto',
+                marginRight: 'auto',
+              }}
               placeholder="Find genes..."
               value={searchValue}
               onChange={search}

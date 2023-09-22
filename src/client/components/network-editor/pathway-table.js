@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
+import clsx from 'clsx';
 
 import theme from '../../theme';
 import { PATHWAY_TABLE_HEIGHT } from '../defaults';
@@ -33,7 +34,7 @@ const useStyles = makeStyles((theme) => ({
     marginTop: theme.spacing(1),
   },
   headerRow: {
-    backgroundColor: theme.palette.background.default
+    backgroundColor: theme.palette.background.default,
   },
   nameCell: {
     width: '65%',
@@ -47,6 +48,9 @@ const useStyles = makeStyles((theme) => ({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+  },
+  selectedCell: {
+    backgroundColor: theme.palette.action.selected,
   },
   link: {
     color: theme.palette.link.main,
@@ -72,10 +76,11 @@ const TableComponents = {
   Scroller: React.forwardRef((props, ref) => <TableContainer component={Paper} {...props} ref={ref} />),
   Table: (props) => <Table size="small" {...props} style={{ borderCollapse: 'separate' }} />,
   TableHead: TableHead,
-  TableRow: TableRow,
+  TableRow: React.forwardRef((props, ref) => <TableRow {...props} hover ref={ref} />),
   TableBody: React.forwardRef((props, ref) => <TableBody {...props} ref={ref} />),
 };
 TableComponents.Scroller.displayName = "Scroller";   // for linting rule (debugging purposes)
+TableComponents.TableRow.displayName = "TableRow"; // for linting rule (debugging purposes)
 TableComponents.TableBody.displayName = "TableBody"; // for linting rule (debugging purposes)
 
 const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "hover" };
@@ -119,7 +124,7 @@ const ContentRow = ({ row, index, selected, handleClick, controller }) => {
         key={cell.id + '_' + index + '_' + idx}
         align={cell.numeric ? 'right' : 'left'}
         selected={selected}
-        className={classes[cell.id + 'Cell']}
+        className={clsx(classes[cell.id + 'Cell'], { [classes.selectedCell]: selected })}
         onClick={(event) => handleClick(event, row.id)}
       >
       {cell.id === 'name' && (
