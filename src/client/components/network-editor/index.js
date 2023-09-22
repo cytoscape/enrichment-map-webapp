@@ -67,6 +67,9 @@ async function loadNetwork(cy, controller, id) {
 
   console.log('Successful load from DB');
   console.log('End of editor sync initial phase');
+
+  // make the controller accessible from the chrome console for debugging purposes
+  window.controller = controller;
 }
 
 
@@ -105,7 +108,6 @@ function isMobile() {
 
 
 export function NetworkEditor({ id }) {
-
   const [ cy ] = useState(() => createCy(id));
   const [ controller ] = useState(() => new NetworkEditorController(cy));
 
@@ -144,7 +146,7 @@ export function NetworkEditor({ id }) {
     }
   };
 
-  const onContentClick = (event) => {
+  const onContentClick = event => {
     if (showControlPanel && mobile && event.target.className === 'MuiBackdrop-root') {
       maybeHideDrawer();
     }

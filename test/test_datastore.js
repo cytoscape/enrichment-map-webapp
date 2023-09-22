@@ -19,7 +19,7 @@ describe('Gene Set Queries', () => {
 
     networkID = await Datastore.createNetwork(network);
     const ranksDoc = await Datastore.rankedGeneListToDocument(ranks);
-    await Datastore.createRankedGeneList(GENESET_DB, networkID, ranksDoc);
+    await Datastore.initializeGeneRanks(GENESET_DB, networkID, ranksDoc);
   });
 
   it('gets a network', async () => {
@@ -117,19 +117,6 @@ describe('Gene Set Queries', () => {
         { gene: "III", rank: 9 },
         { gene: "JJJ", rank: 10 },
         { gene: "LLL", rank: 11 }
-      ]
-    });
-  });
-
-  it('searches for genes', async () => {
-    const results = await Datastore.searchGenes(GENESET_DB, networkID, ['D']);
-    results.genes.forEach(g => g.geneSets.sort());
-    expect(results).to.eql({
-      minRank: 1,
-      maxRank: 11,
-      genes: [
-        { gene: "DDD", rank: 4, geneSets: ['GENESET_1','GENESET_2'] },
-        { gene: "ADF", geneSets: ['GENESET_5' ] },
       ]
     });
   });

@@ -18,6 +18,7 @@ import * as Tracing from "@sentry/tracing";
 import { NODE_ENV, PORT, UPLOAD_LIMIT, TESTING, SENTRY, SENTRY_ENVIRONMENT } from './env.js';
 import indexRouter from './routes/index.js';
 import apiRouter from './routes/api/index.js';
+import createRouter from './routes/api/create.js';
 import exportRouter from './routes/api/export.js';
 
 console.info('Starting Express');
@@ -99,9 +100,10 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../..', 'public')));
 
-app.use('/api', apiRouter);
-app.use('/api/export', exportRouter);
 app.use('/', indexRouter);
+app.use('/api', apiRouter);
+app.use('/api/create', createRouter);
+app.use('/api/export', exportRouter);
 
 // The error handler must be before any other error middleware and after all controllers
 if (SENTRY) {

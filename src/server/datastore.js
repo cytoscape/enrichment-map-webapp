@@ -103,9 +103,14 @@ class Datastore {
       .collection(GENE_LISTS_COLLECTION)
       .createIndex({ networkID: 1 });
 
+    // TODO is this index (into an array) still necessary??
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .createIndex({ 'genes.gene': 1 });
+
+    await this.db
+      .collection(GENE_RANKS_COLLECTION)
+      .createIndex({ networkID: 1 });
 
     await this.db
       .collection(GENE_RANKS_COLLECTION)
@@ -225,7 +230,7 @@ class Datastore {
    * Inserts gene documents into the "geneRanks" collection.
    * @returns The id of the created document in the geneLists collection.
    */
-  async createRankedGeneList(geneSetCollection, networkIDString, rankedGeneListDocument) {
+  async initializeGeneRanks(geneSetCollection, networkIDString, rankedGeneListDocument) {
     const networkID  = makeID(networkIDString);
     const geneListID = makeID();
 
@@ -235,9 +240,7 @@ class Datastore {
       _id: geneListID.bson,
       networkID: networkID.bson,
       networkIDStr: networkID.string,
-      min,
-      max,
-      genes
+      min, max, genes
     };
 
     // Insert the gene list as a single document into GENE_LISTS_COLLECTION
@@ -245,6 +248,19 @@ class Datastore {
       .collection(GENE_LISTS_COLLECTION)
       .insertOne(geneListDocument);
 
+    // Create an initialize the documents in the GENE_RANKS_COLLECTION, used for quick lookups.
+    await this.createGeneRanksDocuments(networkID);
+    await this.mergeSummaryNodeIDsIntoGeneRanks(geneSetCollection, networkID);
+    await this.mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID);
+
+    return geneListID.string;
+  }
+
+  /**
+   * Creates individual documents in the gene ranks collection.
+   * This must be called before the mergeXXX functions.
+   */
+  async createGeneRanksDocuments(networkID) {
     // Create a collection with { networkID, gene } as the key, for quick lookup of gene ranks.
     await this.db
       .collection(GENE_LISTS_COLLECTION)
@@ -258,11 +274,14 @@ class Datastore {
             on: [ "networkID", "gene" ] 
           }
         }
-      ])
-      .toArray(); // Still need toArray() even though this is a merge
+      ]).toArray();
+  }
 
-    // Update the documents in the geneRanks collection to add a mapping from 
-    // { networkID, gene } to a list of node IDs that contain that gene.
+
+  /**
+   * Update the documents in the geneRanks collection to add the 'summaryNodeIDs' field.
+   */
+  async mergeSummaryNodeIDsIntoGeneRanks(geneSetCollection, networkID) {
     await this.db
       .collection(NETWORKS_COLLECTION)
       .aggregate([
@@ -298,13 +317,57 @@ class Datastore {
             on: [ "networkID", "gene" ],
             whenNotMatched: "discard",
             let: { nodeIDs: "$nodeIDs" },
-            whenMatched: [{ $addFields: { nodeIDs: "$$nodeIDs" } }],
+            whenMatched: [{ $addFields: { summaryNodeIDs: "$$nodeIDs" } }],
           }
         }
-      ])
-      .toArray();
+      ]).toArray(); 
+  }
 
-    return geneListID.string;
+  /**
+   * Update the documents in the geneRanks collection to add the 'pathways' field.
+   */
+  async mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID) {
+    await this.db
+      .collection(NETWORKS_COLLECTION)
+      .aggregate([
+        // Get the nodeIDs and the names of the Pathways they represent
+        { $match: { _id: networkID.bson } },
+        { $replaceWith: { path: "$network.elements.nodes.data" } },
+        { $unwind: { path: "$path" } },
+        { $replaceRoot: { newRoot: "$path" } },
+        { $addFields: { splitNames: { 
+            $cond: {
+              if: { $isArray: "$name" },
+              then: { $getField: "name" },
+              else: { $split: [ "$name", "," ] }
+            }
+        } } },
+        { $unwind: { path: "$splitNames" } },
+      
+        // Lookup the genes contained in each node
+        { $lookup: {
+            from: DB_1,
+            localField: "splitNames",
+            foreignField: "name",
+            as: "geneSet"
+        }},
+        { $replaceRoot: { newRoot: { $mergeObjects: [ { $arrayElemAt: [ "$geneSet", 0 ] }, "$$ROOT" ] } } },
+        { $project: { name: 1, genes: 1 } },
+        { $unwind: { path: "$genes" } },
+        { $project: { genes: 1, name: { $arrayElemAt: [ "$name", 0 ] } } },
+        { $group: { _id: "$genes", names: { $addToSet: "$name" } }},
+        { $project: { _id: 0, gene: "$_id", names: 1, networkID: networkID.bson } },
+      
+        // Update the geneRanks collection
+        { $merge: {
+            into: GENE_RANKS_COLLECTION,
+            on: [ "networkID", "gene" ],
+            whenNotMatched: "discard",
+            let: { names: "$names" },
+            whenMatched: [{ $addFields: { pathwayNames: "$$names" } }],
+          }
+        }
+      ]).toArray();
   }
 
   /**
@@ -342,28 +405,47 @@ class Datastore {
     return network;
   }
 
+
   /**
-   * Returns an cursor of objects of the form:
-   * [ { "name": "PYROPTOSIS%REACTOME%R-HSA-5620971.3", "padj": 0.0322, "NES": -1.8049, "pval": 0.0022, "size": 27 }, ... ]
+   * Returns the aggregation pipeline stages needed to extract 
+   * the FGSEA enrichment results from the NETWORKS_COLLECTION. 
+   * 
+   * The results are of the form...
+   * 
+   * {
+   *  "padj": 0,
+   *  "NES": -1.8082,
+   *  "name": "MITOTIC METAPHASE AND ANAPHASE%REACTOME%R-HSA-2555396.2",
+   *  "pval": 5.6229e-7,
+   *  "size": 229
+   * }
+   */
+  _enrichmentQuery(networkID) {
+    return [
+      { $match: { _id: networkID.bson } },
+      { $replaceWith: { path: "$network.elements.nodes.data" } },
+      { $unwind: { path: "$path" } },
+      { $replaceRoot: { newRoot: "$path" } },
+      { $project: { 
+          name: { $arrayElemAt: [ "$name", 0 ] },
+          pval: "$pvalue",
+          padj: true,
+          NES: true,
+          size: "$gs_size",
+          mcode_cluster_id: true
+      }}
+    ];
+  }
+
+  /**
+   * Returns an cursor of renrichment results objects.
    */
   async getEnrichmentResultsCursor(networkIDString) {
     const networkID = makeID(networkIDString);
 
     const cursor = await this.db
       .collection(NETWORKS_COLLECTION)
-      .aggregate([
-        { $match: { _id: networkID.bson } },
-        { $replaceWith: { path: "$network.elements.nodes.data" } },
-        { $unwind: { path: "$path" } },
-        { $replaceRoot: { newRoot: "$path" } },
-        { $project: { 
-            name: { $arrayElemAt: [ "$name", 0 ] },
-            pval: "$pvalue",
-            padj: true,
-            NES: true,
-            size: "$gs_size"
-        }}
-      ]);
+      .aggregate(this._enrichmentQuery(networkID));
 
     return cursor;
   }
@@ -397,11 +479,7 @@ class Datastore {
     const cursor = await this.db
       .collection(NETWORKS_COLLECTION)
       .aggregate([
-        { $match: { _id: networkID.bson } },
-        { $replaceWith: { path: "$network.elements.nodes.data" } },
-        { $unwind: { path: "$path" } },
-        { $replaceRoot: { newRoot: "$path" } },
-        { $project: { name: { $arrayElemAt: [ "$name", 0 ] } } },
+        ...this._enrichmentQuery(networkID),
         { $lookup: {
             from: geneSetCollection,
             localField: "name",
@@ -500,7 +578,7 @@ class Datastore {
       .collection(GENE_RANKS_COLLECTION)
       .findOne(
         { networkID: networkID.bson, gene: geneName },
-        { projection: { _id: 0, nodeIDs: 1 } }
+        { projection: { _id: 0, nodeIDs: "$summaryNodeIDs" } }
       );
   }
 
@@ -514,7 +592,7 @@ class Datastore {
       .collection(GENE_LISTS_COLLECTION)
       .findOne(
         { networkID: networkID.bson },
-        { projection: { min: 1, max: 1 } } // 'projection:' is explicit because min,max have special meaning in mongo
+        { projection: { min: 1, max: 1 } }
       );
 
     return {
@@ -524,7 +602,7 @@ class Datastore {
   }
 
   /**
-   * Returns the genes from one or more gene sets joined with ranks.
+   * Returns the genes from one or more given gene sets joined with ranks.
    * The returned array is sorted so that the genes with ranks are first (sorted by rank),
    * then the genes without rankes are after (sorted alphabetically).
    */
@@ -576,51 +654,57 @@ class Datastore {
   }
 
 
-  async searchGenes(geneSetCollection, networkIDStr, geneTokens) {
-    if(geneTokens === undefined || geneTokens.length === 0)
-      return { genes: [] };
-
+  async getGenesForSearchCursor(networkIDStr) {
     const networkID = makeID(networkIDStr);
-    const queryRE = new RegExp(geneTokens.join('|'));
 
-    const geneListWithRanksAndGeneSets = await this.db
-      .collection(geneSetCollection)
-      .aggregate([
-        { $match: { genes: queryRE } },
-        { $unwind: '$genes' },
-        { $match: { genes: queryRE } },
-        { $limit: 100 },
-        { $group: { _id: { gene: '$genes' }, geneSets: { $addToSet: '$name' } } },
-        { $project: { _id: 0, gene: '$_id.gene', geneSets: 1 }},
-        { $lookup: {
-            from: GENE_RANKS_COLLECTION,
-            let: { gene: "$gene" },
-            pipeline: [
-              { $match: 
-                { $expr: 
-                  { $and: [ 
-                    { $eq: [ '$networkID', networkID.bson ] }, 
-                    { $eq: [ '$gene', '$$gene' ] } ] 
-                  }
-                }
-              }
-            ],
-            as: "newField"
-          }
-        },
-        { $project: { _id: 0, gene: 1, geneSets: 1, rank: { $first: "$newField.rank" } } },
-        { $sort: { rank: -1, gene: 1 } }
-      ])
-      .toArray();
-
-    const { minRank, maxRank } = await this.getMinMaxRanks(networkID);
-
-    return {
-      minRank,
-      maxRank,
-      genes: geneListWithRanksAndGeneSets
-    };
+    const cursor = await this.db
+      .collection(GENE_RANKS_COLLECTION)
+      .find(
+        { networkID: networkID.bson }, 
+        { projection: { _id: 0, gene: 1, rank: 1, pathwayNames: 1 } }
+      );
+    
+    return cursor;
   }
+
+
+  async getPathwaysForSearchCursor(geneSetCollection, networkIDStr) {
+    const networkID = makeID(networkIDStr);
+
+    const cursor = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .aggregate([
+        ...this._enrichmentQuery(networkID),
+        { $lookup: {
+            from: geneSetCollection,
+            localField: "name",
+            foreignField: "name",
+            as: "geneSet"
+        }},
+        { $project: { 
+            name: true,
+            pval: true,
+            padj: true,
+            NES: true,
+            size: true,
+            mcode_cluster_id: true,
+            genes: { $arrayElemAt: [ "$geneSet", 0 ] },
+        }},
+        { $project: { 
+            name: true,
+            pval: true,
+            padj: true,
+            NES: true,
+            size: true, 
+            mcode_cluster_id: true,
+            description: "$genes.description",
+            genes: "$genes.genes"
+        }},
+      ]);
+
+    return cursor;
+  }
+
 }
 
 const ds = new Datastore(); // singleton

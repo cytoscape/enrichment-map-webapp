@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 
+import theme from '../../theme';
 import { CONTROL_PANEL_WIDTH, DEFAULT_PADDING } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
@@ -11,7 +12,7 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
-import SearchBar from "material-ui-search-bar";
+import SearchBar from './search-bar';
 
 import { GeneSetIcon, VennIntersectionIcon } from '../svg-icons';
 import NetworkIcon from '@material-ui/icons/Share';
@@ -61,11 +62,6 @@ const useStyles = makeStyles((theme) => ({
   },
   geneList: {
     overflowY: "auto",
-  },
-  searchBar: {
-    borderColor: theme.palette.divider,
-    borderWidth: '1px',
-    borderStyle: 'hidden hidden solid hidden',
   },
 }));
 
@@ -173,7 +169,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
   const search = (val) => {
     const query = val.trim();
     
-    if (val.length > 0) {
+    if (query.length > 0) {
       // Unselect Cy elements first
       const selectedEles = cy.elements().filter(':selected');
       selectedEles.unselect();
@@ -365,14 +361,15 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
       >
         <div className={classes.drawerContent}>
           <div className={classes.drawerHeader}>
+            <GeneListHeader />
             <SearchBar
               disabled={!networkLoaded || !geneListIndexed}
-              className={classes.searchBar}
+              style={{margin: theme.spacing(1.5, 1, 2, 1)}}
+              placeholder="Find genes..."
               value={searchValue}
               onChange={search}
               onCancelSearch={cancelSearch}
             />
-            <GeneListHeader />
           </div>
           <div className={classes.drawerSection}>
           {networkLoaded && geneListIndexed && (

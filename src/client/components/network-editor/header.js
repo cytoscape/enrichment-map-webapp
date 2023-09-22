@@ -12,7 +12,7 @@ import { withStyles } from '@material-ui/core/styles';
 
 import { AppBar, Snackbar, SnackbarContent, Toolbar } from '@material-ui/core';
 import { Divider } from '@material-ui/core';
-import { Popover, Menu, MenuItem} from "@material-ui/core";
+import { Menu, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
 import { IconButton, Box } from '@material-ui/core';
 
@@ -24,6 +24,7 @@ import MoreIcon from '@material-ui/icons/MoreVert';
 import { Add, Remove } from '@material-ui/icons';
 import CloseIcon from '@material-ui/icons/Close';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
+
 
 const MOBILE_MENU_ID = "menu-mobile";
 const SHARE_MENU_ID  = "menu-share";
@@ -79,9 +80,7 @@ function createPanner({ cy }) {
 }
 
 
-
 export function Header({ controller, classes, showControlPanel, isMobile, onShowControlPanel }) {
-
   const [ menuName, setMenuName ] = useState(null);
   const [ mobileMoreAnchorEl, setMobileMoreAnchorEl ] = useState(null);
   const [ anchorEl, setAnchorEl ] = useState(null);
@@ -228,7 +227,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     >
       <Toolbar variant="dense">
         <ToolbarButton
-          title="Control Panel"
+          title="Genes"
           icon={<MenuIcon />}
           edge="start"
           onClick={() => onShowControlPanel(!showControlPanel)}
@@ -271,7 +270,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
       <ShareMenu
         visible={menuName === SHARE_MENU_ID}
         target={anchorEl}
-        controller={controller} 
+        controller={controller}
         onClose={handleMenuClose}
         setSnackBarState={setSnackBarState}
       />
@@ -305,6 +304,7 @@ function ToolbarDivider({ classes, unrelated }) {
 
 const useStyles = theme => ({
   appBar: {
+    backgroundColor: theme.palette.background.default,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
