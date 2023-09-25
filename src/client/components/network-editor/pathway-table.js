@@ -4,7 +4,7 @@ import _ from 'lodash';
 import clsx from 'clsx';
 
 import theme from '../../theme';
-import { PATHWAY_TABLE_HEIGHT } from '../defaults';
+import { DEFAULT_PADDING, PATHWAY_TABLE_HEIGHT } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { NES_COLOR_RANGE } from './network-style';
@@ -14,8 +14,9 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { Paper, Typography, Link, Tooltip } from '@material-ui/core';
+import { Button, Paper, Typography, Link, Tooltip } from '@material-ui/core';
 
+import NearMeIcon from '@material-ui/icons/NearMe';
 import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
 
 
@@ -34,23 +35,43 @@ const useStyles = makeStyles((theme) => ({
     marginTop: theme.spacing(1),
   },
   headerRow: {
+    height: 40,
     backgroundColor: theme.palette.background.default,
   },
+  gotoCell: {
+    maxWidth: 32,
+    padding: 0,
+  },
   nameCell: {
-    width: '65%',
-  },
-  nesCell: {
-    width: '20%',
-  },
-  pvalueCell: {
-    width: '15%',
+    width: '75%',
+    paddingLeft: theme.spacing(0.5),
+    paddingRight: theme.spacing(0.5),
     maxWidth: 0,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
+  nesCell: {
+    width: '20%',
+    minWidth: 80,
+    maxWidth: 300,
+    paddingLeft: theme.spacing(0.5),
+    paddingRight: theme.spacing(0.5),
+  },
+  pvalueCell: {
+    width: '5%',
+    maxWidth: 90,
+    paddingLeft: theme.spacing(0.5),
+    paddingRight: theme.spacing(0.5),
+  },
   selectedCell: {
     backgroundColor: theme.palette.action.selected,
+  },
+  gotoButton: {
+    minWidth: 32,
+    padding: theme.spacing(0.5),
+    margin: '0 auto 0 auto',
+    color: theme.palette.primary.main,
   },
   link: {
     color: theme.palette.link.main,
@@ -65,9 +86,9 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const CELLS = [
-  { id: 'name',   numeric: false, disablePadding: false, label: 'Pathway' },
-  { id: 'nes',    numeric: true,  disablePadding: false, label: 'NES',    tooltip: "Normalized Enrichment Score" },
-  { id: 'pvalue', numeric: true,  disablePadding: false, label: 'P value' },
+  { id: 'name',   numeric: false, label: 'Pathway' },
+  { id: 'nes',    numeric: true,  label: 'NES',    tooltip: "Normalized Enrichment Score" },
+  { id: 'pvalue', numeric: true,  label: 'P value' },
 ];
 
 const CHART_HEIGHT = 16;
@@ -111,15 +132,37 @@ const stableSort = (array, comparator) => {
   return stabilizedThis.map((el) => el[0]);
 };
 
+const roundNES = (nes) => {
+  return nes != null ? (Math.round(nes * Math.pow(10, 2)) / Math.pow(10, 2)) : 0;
+};
+
+const gotoNode = (id, cy) => {
+  const eles = cy.nodes(`[id = "${id}"]`);
+
+  cy.animate({
+    fit: { eles: eles, padding: DEFAULT_PADDING },
+    easing: 'ease-out',
+    duration: 500
+  });
+};
+
 const ContentRow = ({ row, index, selected, handleClick, controller }) => {
   const classes = useStyles();
 
-  const roundNES = (nes) => {
-    return nes != null ? (Math.round(nes * Math.pow(10, 2)) / Math.pow(10, 2)) : 0;
-  };
-
   return (
-    CELLS.map((cell, idx) => (
+    <>
+      <TableCell
+        align="center"
+        selected={selected}
+        className={clsx(classes.gotoCell, { [classes.selectedCell]: selected })}
+      >
+        <Tooltip title="Go to node">
+          <Button variant="text" className={classes.gotoButton} onClick={() => gotoNode(row.id, controller.cy)}>
+            <NearMeIcon fontSize="small" />
+          </Button>
+        </Tooltip>
+      </TableCell>
+    {CELLS.map((cell, idx) => (
       <TableCell
         key={cell.id + '_' + index + '_' + idx}
         align={cell.numeric ? 'right' : 'left'}
@@ -159,7 +202,8 @@ const ContentRow = ({ row, index, selected, handleClick, controller }) => {
         </Tooltip>
       )}
       </TableCell>
-    ))
+    ))}
+    </>
   );
 };
 
@@ -276,11 +320,11 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
+          <TableCell className={classes.gotoCell} />
         {CELLS.map((cell) => (
           <TableCell
             key={cell.id}
             align="left"
-            padding={cell.disablePadding ? 'none' : 'checkbox'}
             sortDirection={orderBy === cell.id ? order : false}
             className={classes[cell.id + 'Cell']}
           >

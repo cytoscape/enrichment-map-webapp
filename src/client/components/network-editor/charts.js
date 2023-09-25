@@ -105,6 +105,9 @@ const usePValueStarRatingStyles = makeStyles(() => ({
     overflow: 'hidden',
     whiteSpace: 'nowrap',
   },
+  icon: {
+    fontSize: '1.25em',
+  },
 }));
 
 export const PValueStarRating = ({ value }) => {
@@ -129,10 +132,10 @@ export const PValueStarRating = ({ value }) => {
   return (
     <div className={classes.parent}>
     {[...Array(rating)].map((v, i) => (
-      <StarIcon key={i} fontSize="small" />
+      <StarIcon key={i} className={classes.icon} />
     ))}
     {[...Array(max - rating)].map((v, i) => (
-      <StarOutlineIcon key={i + rating} fontSize="small" />
+      <StarOutlineIcon key={i + rating} color="disabled" className={classes.icon} />
     ))}
     </div>
   );
