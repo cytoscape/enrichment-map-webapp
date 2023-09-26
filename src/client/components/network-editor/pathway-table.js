@@ -7,7 +7,6 @@ import theme from '../../theme';
 import { DEFAULT_PADDING, PATHWAY_TABLE_HEIGHT } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
-import { NES_COLOR_RANGE } from './network-style';
 import { UpDownHBar, PValueStarRating } from './charts';
 
 import { makeStyles } from '@material-ui/core/styles';
@@ -52,15 +51,15 @@ const useStyles = makeStyles((theme) => ({
     whiteSpace: 'nowrap',
   },
   nesCell: {
-    width: '20%',
-    minWidth: 80,
-    maxWidth: 300,
+    width: '25%',
+    minWidth: 94,
+    maxWidth: 288,
     paddingLeft: theme.spacing(0.5),
     paddingRight: theme.spacing(0.5),
   },
   pvalueCell: {
-    width: '5%',
-    maxWidth: 90,
+    minWidth: 94,
+    maxWidth: 94,
     paddingLeft: theme.spacing(0.5),
     paddingRight: theme.spacing(0.5),
   },
@@ -146,8 +145,11 @@ const gotoNode = (id, cy) => {
   });
 };
 
-const ContentRow = ({ row, index, selected, handleClick, controller }) => {
+const ContentRow = ({ row, index, selected, controller, handleClick }) => {
   const classes = useStyles();
+
+  const node = controller.cy.nodes(`[id = "${row.id}"]`);
+  const nesColor = controller.style.getNodeColor(node);
 
   return (
     <>
@@ -187,8 +189,7 @@ const ContentRow = ({ row, index, selected, handleClick, controller }) => {
           value={row[cell.id]}
           minValue={-controller.style.magNES}
           maxValue={controller.style.magNES}
-          upColor={NES_COLOR_RANGE.up}
-          downColor={NES_COLOR_RANGE.down}
+          color={nesColor}
           bgColor={theme.palette.background.focus}
           height={CHART_HEIGHT}
           text={roundNES(row[cell.id]).toFixed(2)}

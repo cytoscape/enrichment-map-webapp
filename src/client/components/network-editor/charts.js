@@ -22,7 +22,7 @@ const useUpDownHBarStyles = makeStyles(() => ({
     position: "absolute",
     top: 'auto',
     fontSize: "0.75rem",
-    color: "#999",
+    color: "#666",
     mixBlendMode: 'difference',
     marginLeft: '0.125em',
     marginRight: '0.125em',
@@ -30,7 +30,7 @@ const useUpDownHBarStyles = makeStyles(() => ({
   },
 }));
 
-export const UpDownHBar = ({ value, minValue, maxValue, downColor, upColor, bgColor, height, text }) => {
+export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, text }) => {
   const classes = useUpDownHBarStyles();
 
   let textStyle;
@@ -59,7 +59,7 @@ export const UpDownHBar = ({ value, minValue, maxValue, downColor, upColor, bgCo
       if (minValue < 0 && minValue !== value) {
         data.push({ value: -(minValue - value), color: bgColor });
       }
-      data.push({ value: -value, color: downColor });
+      data.push({ value: -value, color: color });
       if (maxValue > 0) {
         data.push({ value: maxValue, color: bgColor });
       }
@@ -68,7 +68,7 @@ export const UpDownHBar = ({ value, minValue, maxValue, downColor, upColor, bgCo
       if (minValue < 0) {
         data.push({ value: -minValue, color: bgColor });
       }
-      data.push({ value: value, color: upColor });
+      data.push({ value: value, color: color });
       if (maxValue > 0 && maxValue !== value) {
         data.push({ value: (maxValue - value), color: bgColor });
       }
@@ -88,8 +88,7 @@ UpDownHBar.propTypes = {
   value: PropTypes.number.isRequired,
   minValue: PropTypes.number.isRequired,
   maxValue: PropTypes.number.isRequired,
-  downColor: PropTypes.string.isRequired,
-  upColor: PropTypes.string.isRequired,
+  color: PropTypes.string.isRequired,
   bgColor: PropTypes.string.isRequired,
   height: PropTypes.number.isRequired,
   text: PropTypes.string,

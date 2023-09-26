@@ -2,9 +2,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import { useQuery } from "react-query";
+import chroma from 'chroma-js';
 import { linkoutProps } from '../defaults';
 import theme from '../../theme';
-import { NES_COLOR_RANGE } from './network-style';
+import { REG_COLOR_RANGE } from './network-style';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar } from './charts';
 
@@ -276,6 +277,12 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
 
   const { minRank, maxRank } = controller;
 
+  const rankColorScale = chroma.scale(REG_COLOR_RANGE.range3).domain([minRank, 0, maxRank]);
+
+  const getRankColor = rank => {
+    return rankColorScale(rank).toString();
+  };
+
   const RankTooltip = withStyles(theme => ({
     tooltipPlacementTop: {
       marginBottom: 8,
@@ -311,6 +318,8 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
 
     const loading = genes == null;
     const isSelected = !loading && selectedGene != null && selectedGene === symbol;
+
+    const rankColor = getRankColor(rank);
 
     const roundDigits = GENE_RANK_ROUND_DIGITS;
     const roundedRank = rank != null ? (Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits)) : 0;
@@ -364,8 +373,7 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
                           value={rank}
                           minValue={minRank}
                           maxValue={maxRank}
-                          upColor={NES_COLOR_RANGE.up}
-                          downColor={NES_COLOR_RANGE.down}
+                          color={rankColor}
                           bgColor={theme.palette.background.focus}
                           height={CHART_HEIGHT}
                           text={roundedRank.toFixed(GENE_RANK_ROUND_DIGITS)}

@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { NES_COLOR_RANGE } from './network-style';
+import { REG_COLOR_RANGE } from './network-style';
 import chroma from 'chroma-js';
 
 
@@ -35,7 +35,7 @@ function mapRange(num, inMin, inMax, outMin, outMax) {
 }
 
 function getNESColor(nesVal, magNES) {
-  return chroma.scale(NES_COLOR_RANGE.range3).domain([-magNES, 0, magNES])(nesVal).toString();
+  return chroma.scale(REG_COLOR_RANGE.range3).domain([-magNES, 0, magNES])(nesVal).toString();
 }
 
 
@@ -67,9 +67,9 @@ export function NodeColorLegend({ height, svgID, magNES, nesVal }) {
       <svg height={height} id={svgID} viewBox="0 0 100 260" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="nes-gradient" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%"   style={{stopColor: NES_COLOR_RANGE.upMax}} />
-            <stop offset="50%"  style={{stopColor: NES_COLOR_RANGE.zero}} />
-            <stop offset="100%" style={{stopColor: NES_COLOR_RANGE.downMax}} />
+            <stop offset="0%"   style={{stopColor: REG_COLOR_RANGE.upMax}} />
+            <stop offset="50%"  style={{stopColor: REG_COLOR_RANGE.zero}} />
+            <stop offset="100%" style={{stopColor: REG_COLOR_RANGE.downMax}} />
           </linearGradient>
         </defs>
         <rect x="20" y="40" width="60" height="180" style={{stroke: 'black', fill: 'url(#nes-gradient)'}}/>

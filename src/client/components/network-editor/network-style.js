@@ -4,8 +4,10 @@ import chroma from 'chroma-js';
 export const NODE_OPACITY = 1;
 export const TEXT_OPACITY = 1;
 
-export const NES_COLOR_RANGE = (() => {
-  const colors = ['#7b3294', '#c2a5cf', '#f7f7f7', '#a6dba0', '#008837']; // PRGn
+/** Color range for up-down regulation. */
+export const REG_COLOR_RANGE = (() => {
+  // PRGn -- https://colorbrewer2.org/#type=diverging&scheme=RdBu&n=5
+  const colors = ['#7b3294', '#c2a5cf', '#f7f7f7', '#a6dba0', '#008837'];
   const downMax = colors[0];
   const down = colors[1];
   const zero = colors[2];
@@ -15,7 +17,6 @@ export const NES_COLOR_RANGE = (() => {
   const range5 = colors;
   return { downMax, down, zero, up, upMax, range3, range5 };
 })();
-
 
 function getMinMaxValues(cy, attr) {
   return {
@@ -46,13 +47,13 @@ export const nodeLabel = _.memoize(node => {
   return truncateString(sublabel, 35);
 }, node => node.id());
 
-
 export const createNetworkStyle = (cy) => {
   const { min:minNES, max:maxNES } = getMinMaxValues(cy, 'NES');
   const magNES = Math.max(Math.abs(maxNES), Math.abs(minNES));
-  const nesColorScale = chroma.scale(NES_COLOR_RANGE.range3).domain([-magNES, 0, magNES]);
-  
-  const getBGColor = _.memoize(node => {
+
+  const nesColorScale = chroma.scale(REG_COLOR_RANGE.range3).domain([-magNES, 0, magNES]);
+
+  const getNodeColor = _.memoize(node => {
     return nesColorScale(node.data('NES')).toString();
   }, node => node.id());
 
@@ -60,7 +61,7 @@ export const createNetworkStyle = (cy) => {
     maxNES,
     minNES,
     magNES,
-    getBGColor,
+    getNodeColor,
     cyJSON: [
       {
         selector: 'node',
@@ -95,8 +96,8 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node[NES]',
         style: {
-          'background-color':   getBGColor,
-          'text-outline-color': getBGColor,
+          'background-color':   getNodeColor,
+          'text-outline-color': getNodeColor,
         }
       },
       {
