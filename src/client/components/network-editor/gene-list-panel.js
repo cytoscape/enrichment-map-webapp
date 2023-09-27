@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
+import _ from 'lodash';
 
 import { useQuery } from "react-query";
 import chroma from 'chroma-js';
@@ -274,7 +275,7 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
     setSelectedGene(selectedGene !== symbol ? symbol : null);
   };
 
-  const updateCyHighlights = (symbol) => {
+  const debouncedUpdateCyHighlights = _.debounce((symbol) => {
     let hl;
     if (symbol) {
       hl= cy.nodes(':childless').filter(n => {
@@ -327,6 +328,10 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
       toUnhl.removeClass('highlighted');
       toUnhl.not(cy.nodes(':compound')).addClass('unhighlighted');
     });
+  }, 200);
+
+  const updateCyHighlights = (symbol) => {
+    debouncedUpdateCyHighlights(symbol);
   };
 
   const { minRank, maxRank } = controller;
