@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
+import _ from 'lodash';
 import clsx from 'clsx';
 
 import { CONTROL_PANEL_WIDTH, BOTTOM_DRAWER_HEIGHT } from '../defaults';
+import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { pathwayDBLinkOut } from './links';
-import { nodeLabel } from './network-style';
+import { REG_COLOR_RANGE, nodeLabel } from './network-style';
 import PathwayTable from './pathway-table';
 import SearchBar from './search-bar';
+import { UpDownLegend } from './charts';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -20,18 +23,29 @@ import ExpandIcon from '@material-ui/icons/ExpandLess';
 import CollapseIcon from '@material-ui/icons/ExpandMore';
 
 
+export const NODE_COLOR_SVG_ID = 'node-color-legend-svg';
+
+
 export function BottomDrawer({ controller, classes, controlPanelVisible, isMobile, onShowDrawer }) {
   const [ open, setOpen ] = useState(false);
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
   const [ pathwayListIndexed, setPathwayListIndexed ] = useState(() => controller.isPathwayListIndexed());
-  const [searchValue, setSearchValue] = useState('');
-  const [ignored, forceUpdate] = useReducer(x => x + 1, 0);
+  const [ searchValue, setSearchValue ] = useState('');
+  const [ selectedNES, setSelectedNES ] = useState();
+  const [ ignored, forceUpdate ] = useReducer(x => x + 1, 0);
 
   const searchValueRef = useRef(searchValue);
   searchValueRef.current = searchValue;
 
+  const selNodeRef = useRef(null);
+
   const cy = controller.cy;
-  // const cyEmitter = new EventEmitterProxy(cy);
+  const cyEmitter = new EventEmitterProxy(cy);
+
+  const disabled = !networkLoaded || !pathwayListIndexed;
+  const sel = disabled ? null : cy.nodes(":childless:selected");
+  const selNode = (sel && sel.length === 1) ? sel[0] : null;
+  const selectedId = selNode ? selNode.data('id') : null;
 
   const cancelSearch = () => {
     setSearchValue('');
@@ -43,6 +57,23 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     } else {
       cancelSearch();
     }
+  };
+
+  const debouncedSelectionHandler = _.debounce(() => {
+    const eles = cy.nodes(':selected');
+
+    if (eles.length === 0) {
+      setSelectedNES(null);
+    } else if (eles.length === 1 && eles[0].group() === 'nodes') {
+      const id = eles[0].data('id');
+      if (!selNodeRef.current || selNodeRef.current.data('id') != id) {
+        setSelectedNES(eles[0].data('NES'));
+      }
+    }
+  }, 200);
+
+  const onCySelectionChanged = () => {
+    debouncedSelectionHandler();
   };
 
   useEffect(() => {
@@ -62,16 +93,23 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
         forceUpdate();
       }
     };
-    cy.on('add remove', onNetworkChanged);
-    return () => cy.removeListener('add remove', onNetworkChanged);
+    cyEmitter.on('add remove', onNetworkChanged);
+    cyEmitter.on('select unselect', onCySelectionChanged);
+    return () => {
+      cyEmitter.removeAllListeners();
+    };
   }, []);
+
+  useEffect(() => {
+    const sel = cy.nodes(':selected');
+    selNodeRef.current = sel.length === 1 ? sel[0] : null;
+  }, [selectedId]);
 
   const handleOpenDrawer = (b) => {
     setOpen(b);
     onShowDrawer(b);
   };
-
-  const disabled = !networkLoaded || !pathwayListIndexed;
+  
   const nodes = cy.nodes(':childless'); // ignore compound nodes!
   const totalPathways = disabled ? 0 : nodes.length;
   const data = [];
@@ -111,10 +149,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     }
   }
 
-  const sel = disabled ? null : cy.nodes(":childless:selected");
-  const selectedId = (sel && sel.length === 1) ? sel[0].data('id') : null;
-
-  const shiftDrawer = controlPanelVisible && !isMobile;
+  const shiftDrawer = controlPanelVisible && !isMobile; 
 
   return (
     <Drawer
@@ -153,8 +188,22 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
               onCancelSearch={cancelSearch}
             />
           )}
+            <ToolbarDivider classes={classes} />
             <div className={classes.grow} />
-            <div className={classes.grow} />
+          {!open && controller.style && (
+            <UpDownLegend
+              value={selectedNES}
+              minValue={-controller.style.magNES}
+              maxValue={controller.style.magNES}
+              downColor={REG_COLOR_RANGE.downMax}
+              zeroColor={REG_COLOR_RANGE.zero}
+              upColor={REG_COLOR_RANGE.upMax}
+              height={16}
+              tooltip="Normalized Enrichment Score (NES)"
+              style={{height: 16, minWidth: 40, maxWidth: 400, width: '100%'}}
+            />
+          )}
+            <ToolbarDivider classes={classes} />
             <ToolbarButton
               title="Pathways"
               icon={open ? <CollapseIcon fontSize="large" /> : <ExpandIcon fontSize="large" />}

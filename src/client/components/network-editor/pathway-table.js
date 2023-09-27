@@ -262,8 +262,7 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
 
   useEffect(() => {
     cyEmitter.on('select unselect', onCySelectionChanged);
-
-    return function cleanup() {
+    return () => {
       cyEmitter.removeAllListeners();
     };
   }, []);

@@ -1,12 +1,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { makeStyles } from '@material-ui/core/styles';
+import theme from '../../theme';
 
+import { makeStyles } from '@material-ui/core/styles';
+import { Typography, Tooltip } from '@material-ui/core';
 import HSBar from "react-horizontal-stacked-bar-chart";
+
 import StarIcon from '@material-ui/icons/Star';
 import StarOutlineIcon from '@material-ui/icons/StarOutline';
 
+
+function numToText(num) {
+  return (Math.round((num || 1.0) * 100) / 100).toFixed(2);
+}
 
 // ==[ Up-Down Horizontal Bar ]==============================================================================================================
 
@@ -92,6 +99,71 @@ UpDownHBar.propTypes = {
   bgColor: PropTypes.string.isRequired,
   height: PropTypes.number.isRequired,
   text: PropTypes.string,
+};
+
+// ==[ Up-Down Gradient LEGEND ]=============================================================================================================
+
+export const UpDownLegend = ({ value, minValue, maxValue, downColor, zeroColor, upColor, height, tooltip, style }) => {
+  let left = 0;
+  if (value) {
+    left = (value - minValue) / (maxValue - minValue);
+    left *= 100;
+  }
+
+  return (
+    <div style={style}>
+      <div 
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: height,
+          background: `linear-gradient(to right, ${downColor} 0%, ${zeroColor} 50%, ${upColor} 100%)`,
+          border: `2px solid ${theme.palette.divider}`,
+        }}
+      >
+      {value && (
+        <>
+          <Tooltip title={tooltip ? tooltip : ''}>
+            <Typography
+              color="textPrimary"
+              style={{
+                position: 'absolute',
+                left: `${left}%`,
+                transform: 'translate(-50%, -100%)',
+                fontSize: '0.85em',
+              }}
+            >
+              { numToText(value) }
+            </Typography>
+          </Tooltip>
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: `${left}%`,
+              width: 3,
+              height: height,
+              marginTop: -height / 2,
+              backgroundColor: theme.palette.text.primary,
+              border: `1px solid ${theme.palette.background.default}`,
+            }}
+          />
+        </>
+      )}
+      </div>
+    </div>
+  );
+};
+UpDownLegend.propTypes = {
+  value: PropTypes.number,
+  minValue: PropTypes.number.isRequired,
+  maxValue: PropTypes.number.isRequired,
+  downColor: PropTypes.string.isRequired,
+  zeroColor: PropTypes.string.isRequired,
+  upColor: PropTypes.string.isRequired,
+  height: PropTypes.number.isRequired,
+  tooltip: PropTypes.string,
+  style: PropTypes.object,
 };
 
 // ==[ P-Value Star Rating ]=================================================================================================================

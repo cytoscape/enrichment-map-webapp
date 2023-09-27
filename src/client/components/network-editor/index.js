@@ -13,7 +13,6 @@ import createNetworkStyle from './network-style';
 
 import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
-import LegendActionButton from './legend-button';
 
 
 const queryClient = new QueryClient();
@@ -156,7 +155,6 @@ export function NetworkEditor({ id }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <LegendActionButton controller={controller} />
         <div className="network-editor">
           <Header
             controller={controller}
