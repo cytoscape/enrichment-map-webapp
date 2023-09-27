@@ -322,8 +322,10 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
       const eles = cy.elements();
       eles.not(toHl).removeClass('highlighted');
       eles.not(toUnhl).removeClass('unhighlighted');
-      toHl.removeClass('unhighlighted').addClass('highlighted');
-      toUnhl.removeClass('highlighted').addClass('unhighlighted');
+      toHl.removeClass('unhighlighted');
+      toHl.not(cy.nodes(':compound')).addClass('highlighted');
+      toUnhl.removeClass('highlighted');
+      toUnhl.not(cy.nodes(':compound')).addClass('unhighlighted');
     });
   };
 
