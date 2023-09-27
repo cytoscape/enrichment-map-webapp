@@ -173,12 +173,9 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   );
 
   const data = queryGeneData.data;
-  console.log(data);
-
   const isLoading = queryGeneData.isLoading || queryNodes.isLoading;
 
   let error = queryGeneData.error;
-
   let description, ncbiId;
   
   if (!isLoading && !error && data) {
@@ -255,6 +252,8 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
   const [resetScroll, setResetScroll] = useState(true);
   const classes = useStyles();
   const virtuoso = useRef();
+
+  const cy = controller.cy;
   
   // Resets the scroll position when either the gene list or the sort has changed
   useEffect(() => {
@@ -273,6 +272,59 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
   const toggleGeneDetails = async (symbol) => {
     setResetScroll(false);
     setSelectedGene(selectedGene !== symbol ? symbol : null);
+  };
+
+  const updateCyHighlights = (symbol) => {
+    let hl;
+    if (symbol) {
+      hl= cy.nodes(':childless').filter(n => {
+        for (const gene of n.data('genes')) {
+          if (symbol === gene)
+            return true;
+        }
+        return false;
+      });
+    }
+
+    let toHl = cy.nodes(':childless').add(cy.edges());
+    let toUnhl = cy.collection();
+
+    const highlight = (eles) => {
+      toHl = toHl.add(eles);
+      toUnhl = toUnhl.not(eles);
+    };
+    const unhighlight = (eles) => {
+      toHl = toHl.not(eles);
+      toUnhl = toUnhl.add(eles);
+    };
+    const normlight = (eles) => {
+      toUnhl = toUnhl.not(eles);
+    };
+
+    cy.batch(() => {
+      let initted = false;
+
+      const initAllUnhighlighted = () => {
+        if (initted) { return; }
+        unhighlight(cy.elements());
+        initted = true;
+      };
+
+      // genes
+      if (hl && hl.length > 0) {
+        initAllUnhighlighted();
+        const nodes = cy.nodes( hl.map(n => { return '#' + n.data('id'); }).join(', ') );
+        highlight(nodes);
+        normlight(nodes.neighborhood());
+      }
+
+      // Apply highlights
+      const eles = cy.elements();
+      eles.not(toHl).removeClass('highlighted');
+      eles.not(toUnhl).removeClass('unhighlighted');
+      toHl.removeClass('unhighlighted').addClass('highlighted');
+      toUnhl.removeClass('highlighted').addClass('unhighlighted');
+    });
   };
 
   const { minRank, maxRank } = controller;
@@ -346,6 +398,8 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
                 disabled={loading}
                 className={classes.listItemHeader}
                 onClick={() => { if (!loading) toggleGeneDetails(symbol); }}
+                onMouseEnter={() => { if (!loading) updateCyHighlights(symbol); }}
+                onMouseLeave={() => { if (!loading) updateCyHighlights(); }}
               >
                 <Grid item className={classes.geneContainer}>
                   <Grid container direction="row" justifyContent="flex-start" alignItems="center">

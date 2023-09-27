@@ -149,6 +149,25 @@ export const createNetworkStyle = (cy) => {
           'line-color': '#5aaae0'
         }
       },
+      {
+        selector: 'node.unhighlighted',
+        style: {
+          'opacity': 0.2,
+        }
+      },
+
+      {
+        selector: 'edge.unhighlighted',
+        style: {
+          'opacity': 0.05,
+        }
+      },
+      {
+        selector: '.highlighted',
+        style: {
+          'z-index': 999999,
+        }
+      },
     ]
   };
 };
