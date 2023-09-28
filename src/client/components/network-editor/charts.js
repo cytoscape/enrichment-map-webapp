@@ -11,7 +11,7 @@ import StarIcon from '@material-ui/icons/Star';
 import StarOutlineIcon from '@material-ui/icons/StarOutline';
 
 
-function numToText(num) {
+export function numToText(num) {
   return (Math.round((num || 1.0) * 100) / 100).toFixed(2);
 }
 

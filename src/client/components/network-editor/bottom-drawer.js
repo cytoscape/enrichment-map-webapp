@@ -10,12 +10,12 @@ import { pathwayDBLinkOut } from './links';
 import { REG_COLOR_RANGE } from './network-style';
 import PathwayTable from './pathway-table';
 import SearchBar from './search-bar';
-import { UpDownLegend } from './charts';
+import { UpDownLegend, numToText } from './charts';
 
 import { withStyles } from '@material-ui/core/styles';
 
 import Collapse from '@material-ui/core/Collapse';
-import { AppBar, Toolbar, Divider } from '@material-ui/core';
+import { AppBar, Toolbar, Divider, Grid} from '@material-ui/core';
 import { Drawer, Tooltip, Typography } from '@material-ui/core';
 import { IconButton } from '@material-ui/core';
 
@@ -150,6 +150,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   }
 
   const shiftDrawer = controlPanelVisible && !isMobile; 
+  const magNES = controller.style ? controller.style.magNES : undefined;
 
   return (
     <Drawer
@@ -190,18 +191,32 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
           )}
             <ToolbarDivider classes={classes} />
             <div className={classes.grow} />
-          {!open && controller.style && (
-            <UpDownLegend
-              value={selectedNES}
-              minValue={-controller.style.magNES}
-              maxValue={controller.style.magNES}
-              downColor={REG_COLOR_RANGE.downMax}
-              zeroColor={REG_COLOR_RANGE.zero}
-              upColor={REG_COLOR_RANGE.upMax}
-              height={16}
-              tooltip="Normalized Enrichment Score (NES)"
-              style={{height: 16, minWidth: 40, maxWidth: 400, width: '100%'}}
-            />
+          {!(open && isMobile) && magNES && (
+            <Grid container direction="column" spacing={0} style={{minWidth: 40, maxWidth: 300, width: '100%', marginTop: 16}}>
+              <Grid item>
+                <UpDownLegend
+                  value={selectedNES}
+                  minValue={-magNES}
+                  maxValue={magNES}
+                  downColor={REG_COLOR_RANGE.downMax}
+                  zeroColor={REG_COLOR_RANGE.zero}
+                  upColor={REG_COLOR_RANGE.upMax}
+                  height={16}
+                  tooltip="Normalized Enrichment Score (NES)"
+                  style={{width: '100%'}}
+                />
+              </Grid>
+              <Grid item>
+                <Grid container direction="row" spacing={0} justifyContent="space-between">
+                <Tooltip title={`Downregulated (-${numToText(magNES)})`}>
+                    <Typography variant="body2" component="div" className={classes.legendText}>DOWN</Typography>
+                  </Tooltip>
+                  <Tooltip title={`Upregulated (+${numToText(magNES)})`}>
+                    <Typography variant="body2" component="div" className={classes.legendText}>UP</Typography>
+                  </Tooltip>
+                </Grid>
+              </Grid>
+            </Grid>
           )}
             <ToolbarDivider classes={classes} />
             <ToolbarButton
@@ -337,6 +352,10 @@ const useStyles = theme => ({
     marginLeft: theme.spacing(3),
     marginRight: theme.spacing(3),
     width: 0,
+  },
+  legendText: {
+    fontSize: '0.75em',
+    color: theme.palette.text.secondary,
   },
 });
 
