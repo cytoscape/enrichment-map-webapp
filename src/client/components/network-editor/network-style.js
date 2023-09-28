@@ -69,13 +69,13 @@ export const createNetworkStyle = (cy) => {
     const diff = Math.abs(idx2 - idx1); // absolute indexes delta
     let inv = (idx2 - idx1) / diff; // invert ctrl point if the target node is before the source node
     if (edge.source().data('NES') < 0 || edge.target  ().data('NES') < 0) inv *= -1; // invert again if at least one of the nodes is on the left of the chart (negative NES)
-    let d = inv * 1.8 * Math.sqrt(diff) * MAX_NODE_WIDTH / 8;
+    let d = inv * diff * (MAX_NODE_WIDTH / 20);
     if (d >= 0 ) {
       d = Math.min(d, MAX_NODE_WIDTH);
-      d = Math.max(d, MAX_NODE_WIDTH / 2.2);
+      d = Math.max(d, MAX_NODE_WIDTH / 6);
     } else {
       d = Math.max(d, -MAX_NODE_WIDTH);
-      d = Math.min(d, MAX_NODE_WIDTH / -2.2);
+      d = Math.min(d, MAX_NODE_WIDTH / -6);
     }
     return d;
   }, edge => edge.id());
@@ -117,6 +117,7 @@ export const createNetworkStyle = (cy) => {
           'control-point-weights': 0.5,
           'source-endpoint': ele => ele.source().data('NES') >= 0 ? '270deg' : '90deg',
           'target-endpoint': ele => ele.target().data('NES') >= 0 ? '270deg' : '90deg',
+          'edge-distances': 'endpoints',
           'width': ele => ele.data('similarity_coefficient') * 10,
         }
       },
