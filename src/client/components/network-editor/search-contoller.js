@@ -2,11 +2,10 @@ import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape'; // eslint-disable-line
 import MiniSearch from 'minisearch';
 
-import { nodeLabel } from './network-style';
-
 export class SearchController {
 
   constructor(cy, bus) {
+    this.cy = cy;
     this.networkIDStr = cy.data('id');
     this.bus = bus || new EventEmitter();
 
@@ -15,19 +14,7 @@ export class SearchController {
 
     this.bus.on('networkLoaded', () => {
       this.fetchAllGenesInNetwork();
-      this.fetchAllPathwaysInNetwork()
-      // TODO: better get the genes from the database -- DELETE this!!!
-      // #################################################################
-      .then(() => {
-        for (const node of cy.nodes(':childless')) {
-          const pathway = nodeLabel(node);
-          const res = this.pathwayMiniSearch.search(pathway, { fields: ['name'], prefix: false });
-          if (res.length > 0) {
-            node.data('genes', res[0].genes.sort());
-          }
-        }
-      });
-      // #################################################################
+      this.fetchAllPathwaysInNetwork();
     });
   }
 
@@ -75,16 +62,32 @@ export class SearchController {
       });
 
       const documents = await res.json();
+      const nodes = this.cy.nodes(':childless');
       
-      documents.map(doc => {
-        const i = doc.name.indexOf('%');
-        if(i > 0) {
-          doc.name = doc.name.substring(0, i);
+      documents.forEach(doc => {
+        const name = doc.name;
+        const i = name.indexOf('%');
+        if (i > 0) {
+          doc.name = name.substring(0, i);
         }
-        doc.name = doc.name.toLowerCase();
-        return doc;
-      });
+        doc.name = doc.name.toLowerCase().replace(/_/g, ' ');
 
+        // Add other required data fields to Cytoscape nodes
+        OUTER:
+        for (const n of nodes) {
+          const pathways = n.data('name');
+          if (pathways) {
+            for (const p of pathways) {
+              if (name === p) {
+                n.data('label', doc.name);
+                n.data('genes', doc.genes.sort());
+                break OUTER;
+              }
+            }
+          }
+        }
+      });
+      
       this.pathwayMiniSearch.addAll(documents);
 
       this.pathwaysReady = true;

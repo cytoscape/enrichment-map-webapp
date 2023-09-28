@@ -25,27 +25,27 @@ function getMinMaxValues(cy, attr) {
   };
 }
 
-function truncateString(str, num) {
-  if (str.length > num) {
-    return str.slice(0, num) + "...";
-  } else {
-    return str;
-  }
-}
+// function truncateString(str, num) {
+//   if (str.length > num) {
+//     return str.slice(0, num) + "...";
+//   } else {
+//     return str;
+//   }
+// }
 
-export const nodeLabel = _.memoize(node => {
-  const label = (() => {
-    const label = node.data('label');
-    if(label)
-      return label;
-    const name = node.data('name');
-    return Array.isArray(name) ? name[0] : name;
-  })();
-  const text = label.replace(/_/g, ' ');
-  const percent = text.indexOf('%');
-  const sublabel = (percent > 0 ? text.substring(0, percent) : text).toLowerCase();
-  return truncateString(sublabel, 35);
-}, node => node.id());
+// export const nodeLabel = _.memoize(node => {
+//   const label = (() => {
+//     const label = node.data('label');
+//     if(label)
+//       return label;
+//     const name = node.data('name');
+//     return Array.isArray(name) ? name[0] : name;
+//   })();
+//   const text = label.replace(/_/g, ' ');
+//   const percent = text.indexOf('%');
+//   const sublabel = (percent > 0 ? text.substring(0, percent) : text).toLowerCase();
+//   return truncateString(sublabel, 35);
+// }, node => node.id());
 
 export const createNetworkStyle = (cy) => {
   const { min:minNES, max:maxNES } = getMinMaxValues(cy, 'NES');
@@ -69,7 +69,6 @@ export const createNetworkStyle = (cy) => {
           'opacity': NODE_OPACITY,
           'border-width': 12,
           'border-opacity': 0,
-          'label': nodeLabel,
           'width':  40,
           'height': 40,
           'font-size': '8px',
@@ -91,6 +90,12 @@ export const createNetworkStyle = (cy) => {
           'text-outline-width': 0,
           'text-outline-opacity': 0,
           'color': '#000'
+        }
+      },
+      {
+        selector: 'node[?label]',
+        style: {
+          'label': 'data(label)',
         }
       },
       {

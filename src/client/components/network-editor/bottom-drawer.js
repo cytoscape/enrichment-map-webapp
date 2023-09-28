@@ -7,7 +7,7 @@ import { CONTROL_PANEL_WIDTH, BOTTOM_DRAWER_HEIGHT } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { pathwayDBLinkOut } from './links';
-import { REG_COLOR_RANGE, nodeLabel } from './network-style';
+import { REG_COLOR_RANGE } from './network-style';
 import PathwayTable from './pathway-table';
 import SearchBar from './search-bar';
 import { UpDownLegend } from './charts';
@@ -120,7 +120,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
 
       const obj = {};
       obj.id = n.data('id');
-      obj.name = nodeLabel(n);
+      obj.name = n.data('label');
       obj.href = pathwayArr && pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
       obj.nes = n.data('NES');
       obj.pvalue = n.data('pvalue');
