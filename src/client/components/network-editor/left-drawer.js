@@ -18,17 +18,17 @@ import { GeneSetIcon, VennIntersectionIcon } from '../svg-icons';
 import NetworkIcon from '@material-ui/icons/Share';
 
 const sortOptions = {
-  down: {
-    label: 'Sort by RANK (from highest to lowest)',
-    icon: <Typography>UP</Typography>,
-    iteratees: ['rank', 'gene'],
-    orders: ['desc', 'asc']
-  },
   up: {
     label: 'Sort by RANK (from lowest to highest)',
     icon: <Typography>DOWN</Typography>,
     iteratees: ['rank', 'gene'],
     orders: ['asc', 'asc']
+  },
+  down: {
+    label: 'Sort by RANK (from highest to lowest)',
+    icon: <Typography>UP</Typography>,
+    iteratees: ['rank', 'gene'],
+    orders: ['desc', 'asc']
   },
 };
 
