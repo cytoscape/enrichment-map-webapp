@@ -152,7 +152,7 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node.unhighlighted',
         style: {
-          'opacity': 0.2,
+          'opacity': 0.1,
         }
       },
 
