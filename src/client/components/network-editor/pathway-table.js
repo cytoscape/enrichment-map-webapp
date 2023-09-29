@@ -14,9 +14,11 @@ import { makeStyles } from '@material-ui/core/styles';
 import { TableVirtuoso } from 'react-virtuoso';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
 import { Button, Paper, Typography, Link, Tooltip } from '@material-ui/core';
+import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 
 import NearMeIcon from '@material-ui/icons/NearMe';
 import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
+import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -30,8 +32,40 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(2),
     textAlign: 'center',
   },
+  noResultsInfoBox: {
+    width: '100%',
+    maxWidth: 360,
+    marginTop: theme.spacing(2),
+    padding: theme.spacing(2),
+    backgroundColor: theme.palette.background.default,
+    borderRadius: 16,
+  },
   noResultsLine: {
     marginTop: theme.spacing(1),
+  },
+  noResultsSubheader: {
+    lineHeight: '1.25em',
+    textAlign: 'left',
+    marginBottom: theme.spacing(2),
+    color: theme.palette.text.disabled,
+  },
+  noResultsItem: {
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  noResultsItemIcon: {
+    minWidth: 'unset',
+  },
+  noResultsItemIconIcon: {
+    transform: 'scaleX(-1)',
+    fontSize: '1em',
+    marginRight: theme.spacing(1),
+    color: theme.palette.text.disabled,
+    opacity: 0.5,
+  },
+  noResultsItemText: {
+    margin: 0,
+    color: theme.palette.text.disabled,
   },
   headerRow: {
     height: 40,
@@ -304,9 +338,38 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
         <Typography component="p" color="textSecondary" className={classes.noResultsLine}>
           <SadFaceIcon style={{fontSize: '4em', opacity: 0.4}} />
         </Typography>
-        <Typography component="p" variant="subtitle1" color="textSecondary" className={classes.noResultsLine} style={{fontSize: '1.5em', opacity: 0.4}}>
+        <Typography
+          component="p"
+          variant="subtitle1"
+          color="textSecondary"
+          className={classes.noResultsLine}
+          style={{fontSize: '1.5em', opacity: 0.4}}
+        >
            No results found
         </Typography>
+        <Paper variant="outlined" className={classes.noResultsInfoBox}>
+          <List
+            dense
+            subheader={
+              <ListSubheader className={classes.noResultsSubheader}>
+                The pathway you are looking for:
+              </ListSubheader>
+            }
+          >
+            <ListItem className={classes.noResultsItem}>
+              <ListItemIcon className={classes.noResultsItemIcon}>
+                <KeyboardReturnIcon className={classes.noResultsItemIconIcon} />
+              </ListItemIcon>
+              <ListItemText className={classes.noResultsItemText} primary="is not in our database" />
+            </ListItem>
+            <ListItem className={classes.noResultsItem}>
+              <ListItemIcon className={classes.noResultsItemIcon}>
+                <KeyboardReturnIcon className={classes.noResultsItemIconIcon} />
+              </ListItemIcon>
+              <ListItemText className={classes.noResultsItemText} primary="or it has not been enriched" />
+            </ListItem>
+          </List>
+        </Paper>
       </Paper>
     );
   }
