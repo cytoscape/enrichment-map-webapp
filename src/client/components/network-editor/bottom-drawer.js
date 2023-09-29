@@ -171,7 +171,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
         <AppBar position="fixed" color="default" className={clsx(classes.appBar, { [classes.appBarShift]: shiftDrawer })}>
           <Toolbar variant="dense" className={classes.toolbar}>
           {!open && (
-            <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
+            <Typography display="block" variant="subtitle2" color="textPrimary">
               Pathways&nbsp;
             {totalPathways >= 0 && (
               <Typography display="inline" variant="body2" color="textSecondary">
@@ -336,9 +336,6 @@ const useStyles = theme => ({
   },
   fullList: {
     width: 'auto',
-  },
-  title: {
-    // fontWeight: 'bold',
   },
   grow: {
     flexGrow: 1,

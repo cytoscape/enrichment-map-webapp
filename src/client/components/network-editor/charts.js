@@ -17,7 +17,7 @@ export function numToText(num) {
 
 // ==[ Up-Down Horizontal Bar ]==============================================================================================================
 
-const useUpDownHBarStyles = makeStyles(() => ({
+const useUpDownHBarStyles = makeStyles((theme) => ({
   parent: {
     position: 'relative',
     display: 'flex',
@@ -29,8 +29,7 @@ const useUpDownHBarStyles = makeStyles(() => ({
     position: "absolute",
     top: 'auto',
     fontSize: "0.75rem",
-    color: "#666",
-    mixBlendMode: 'difference',
+    color: theme.palette.text.secondary,
     marginLeft: '0.125em',
     marginRight: '0.125em',
     lineHeight: '1.7em'
@@ -44,15 +43,15 @@ export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, 
 
   if (text != null) {
     if (minValue > 0 && maxValue > 0) { // all positive => bars start at left and go right
-      textStyle = { left: 0 };
+      textStyle = { right: 0 };
     } else if (minValue < 0 && maxValue < 0) { // all negative => bars start at right and go left
-      textStyle =  { right: 0 };
+      textStyle =  { left: 0 };
     } else if (value < 0) { // neg. value should be shifted right by the size of the pos. max. bar size
-      let offset = Math.abs(maxValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
-      textStyle =  { right: `${offset}%` };
-    } else { // pos. value should be shifted left by the size of the neg. max. bar size
       let offset = Math.abs(minValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
-      textStyle = { left: `${offset}%` };
+      textStyle =  { left: `${offset + 2}%` };
+    } else { // pos. value should be shifted left by the size of the neg. max. bar size
+      let offset = Math.abs(maxValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
+      textStyle = { right: `${offset + 2}%` };
     }
   }
 
