@@ -71,14 +71,17 @@ const useStyles = makeStyles((theme) => ({
     height: 40,
     backgroundColor: theme.palette.background.default,
   },
+  tableCell: {
+    // --> WHATCH OUT! `padding: 0` may cause a defect where the
+    //     TableVirtuoso's initialTopMostItemIndex prop doesn't work
+    padding: theme.spacing(0, 0.5, 0, 0.5),
+    // <------------------------------------------------------------
+  },
   gotoCell: {
-    maxWidth: 32,
-    padding: 0,
+    maxWidth: 48,
   },
   nameCell: {
     width: '75%',
-    paddingLeft: theme.spacing(0.5),
-    paddingRight: theme.spacing(0.5),
     maxWidth: 0,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -88,14 +91,10 @@ const useStyles = makeStyles((theme) => ({
     width: '25%',
     minWidth: 94,
     maxWidth: 288,
-    paddingLeft: theme.spacing(0.5),
-    paddingRight: theme.spacing(0.5),
   },
   pvalueCell: {
     minWidth: 94,
     maxWidth: 94,
-    paddingLeft: theme.spacing(0.5),
-    paddingRight: theme.spacing(0.5),
   },
   selectedCell: {
     backgroundColor: theme.palette.action.selected,
@@ -190,7 +189,7 @@ const ContentRow = ({ row, index, selected, controller, handleClick }) => {
       <TableCell
         align="center"
         selected={selected}
-        className={clsx(classes.gotoCell, { [classes.selectedCell]: selected })}
+        className={clsx(classes.gotoCell, { [classes.tableCell]: true, [classes.selectedCell]: selected })}
       >
         <Tooltip title="Go to node">
           <Button variant="text" className={classes.gotoButton} onClick={() => gotoNode(row.id, controller.cy)}>
@@ -203,7 +202,7 @@ const ContentRow = ({ row, index, selected, controller, handleClick }) => {
         key={cell.id + '_' + index + '_' + idx}
         align={cell.numeric ? 'right' : 'left'}
         selected={selected}
-        className={clsx(classes[cell.id + 'Cell'], { [classes.selectedCell]: selected })}
+        className={clsx(classes[cell.id + 'Cell'], { [classes.tableCell]: true, [classes.selectedCell]: selected })}
         onClick={(event) => handleClick(event, row.id)}
       >
       {cell.id === 'name' && (
@@ -383,13 +382,13 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
-          <TableCell className={classes.gotoCell} />
+          <TableCell className={clsx(classes.gotoCell, { [classes.tableCell]: true })} />
         {CELLS.map((cell) => (
           <TableCell
             key={cell.id}
             align="left"
             sortDirection={orderBy === cell.id ? order : false}
-            className={classes[cell.id + 'Cell']}
+            className={clsx(classes[cell.id + 'Cell'], { [classes.tableCell]: true })}
           >
             <TableSortLabel
               active={orderBy === cell.id}
