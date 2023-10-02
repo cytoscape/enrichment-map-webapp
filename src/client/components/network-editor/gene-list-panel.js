@@ -40,9 +40,10 @@ const useStyles = makeStyles((theme) => ({
   listItemHeader: {
     height: 24,
     margin: 0,
+    borderRadius: 4,
     cursor: 'pointer',
     '&:hover': {
-      color: theme.palette.link.main,
+      backgroundColor: theme.palette.action.hover,
     },
     "&[disabled]": {
       color: theme.palette.divider,
