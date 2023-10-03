@@ -149,6 +149,12 @@ export const createNetworkStyle = (cy) => {
         }
       },
       {
+        selector: 'node:parent.selected',
+        style: {
+          'border-width': 0,
+        }
+      },
+      {
         selector: 'edge.selected',
         style: {
           'line-color': '#5aaae0'
