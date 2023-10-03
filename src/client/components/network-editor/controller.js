@@ -191,7 +191,14 @@ export class NetworkEditorController {
         
       // Create bubble sets
       const edges = cluster.connectedEdges().filter(e => cluster.contains(e.source()) && cluster.contains(e.target()));
-      cy.bubbleSets().addPath(cluster, edges, null);
+      cy.bubbleSets().addPath(cluster, edges, null, {
+        virtualEdges: false,
+        style: {
+          'fill': 'rgb(31, 120, 180, 0.2)', // same as the logo's blue color (#1F78B4), but transparent
+          'stroke': 'rgb(31, 120, 180, 0.2)',
+          'stroke-width': 1,
+        }
+    });
   
       // Collapse all clusters initially
       this.toggleExpandCollapse(parent, false);

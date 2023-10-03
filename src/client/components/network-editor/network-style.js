@@ -77,7 +77,7 @@ export const createNetworkStyle = (cy) => {
           'text-max-width': 80,
           'text-outline-width': 2,
           'text-outline-opacity': TEXT_OPACITY,
-          'color': '#000'
+          'color': '#fff',
         }
       },
       {
@@ -89,7 +89,7 @@ export const createNetworkStyle = (cy) => {
           'text-valign':'top',
           'text-outline-width': 0,
           'text-outline-opacity': 0,
-          'color': '#000'
+          'color': '#6190bf', // just a lighter tint of the logo's blue color (#1F78B4)
         }
       },
       {
@@ -108,7 +108,7 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node[parent][collapsed="true"]',
         style: {
-          'label': n => ''
+          'label': n => '',
         }
       },
       {
@@ -157,14 +157,14 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node.unhighlighted',
         style: {
-          'opacity': 0.1,
+          'opacity': 0.05,
         }
       },
 
       {
         selector: 'edge.unhighlighted',
         style: {
-          'opacity': 0.05,
+          'opacity': 0.0,
         }
       },
       {
