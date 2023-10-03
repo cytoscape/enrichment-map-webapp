@@ -137,6 +137,53 @@ export class NetworkEditorController {
     this.cy.maxZoom(2);
   }
 
+  highlightElements(nodes, highlightNeighbors) {
+    let toHl = this.cy.nodes(':childless').add(this.cy.edges());
+    let toUnhl = this.cy.collection();
+
+    const highlight = (eles) => {
+      toHl = toHl.add(eles);
+      toUnhl = toUnhl.not(eles);
+    };
+    const unhighlight = (eles) => {
+      toHl = toHl.not(eles);
+      toUnhl = toUnhl.add(eles);
+    };
+    const normlight = (eles) => {
+      toUnhl = toUnhl.not(eles);
+    };
+
+    this.cy.batch(() => {
+      let initted = false;
+      
+      const initAllUnhighlighted = () => {
+        if (initted) {
+          return;
+        }
+        unhighlight(this.cy.elements());
+        initted = true;
+      };
+
+      if (nodes && nodes.length > 0) {
+        initAllUnhighlighted();
+        highlight(nodes);
+        if (highlightNeighbors) {
+          normlight(nodes.neighborhood());
+        } else {
+          normlight(nodes.edgesWith(nodes));
+        }
+      }
+
+      // Apply highlights
+      const eles = this.cy.elements();
+      eles.not(toHl).removeClass('highlighted');
+      eles.not(toUnhl).removeClass('unhighlighted');
+      toHl.removeClass('unhighlighted');
+      toHl.not(this.cy.nodes(':compound')).addClass('highlighted');
+      toUnhl.removeClass('highlighted');
+      toUnhl.not(this.cy.nodes(':compound')).addClass('unhighlighted');
+    });
+  }
 
   toggleExpandCollapse(parent, animate=false) {
     const collapsed = parent.data('collapsed');

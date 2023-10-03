@@ -277,9 +277,9 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
   };
 
   const debouncedUpdateCyHighlights = _.debounce((symbol) => {
-    let hl;
+    let nodes;
     if (symbol) {
-      hl= cy.nodes(':childless').filter(n => {
+      nodes = cy.nodes(':childless').filter(n => {
         for (const gene of n.data('genes')) {
           if (symbol === gene)
             return true;
@@ -287,48 +287,7 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
         return false;
       });
     }
-
-    let toHl = cy.nodes(':childless').add(cy.edges());
-    let toUnhl = cy.collection();
-
-    const highlight = (eles) => {
-      toHl = toHl.add(eles);
-      toUnhl = toUnhl.not(eles);
-    };
-    const unhighlight = (eles) => {
-      toHl = toHl.not(eles);
-      toUnhl = toUnhl.add(eles);
-    };
-    const normlight = (eles) => {
-      toUnhl = toUnhl.not(eles);
-    };
-
-    cy.batch(() => {
-      let initted = false;
-
-      const initAllUnhighlighted = () => {
-        if (initted) { return; }
-        unhighlight(cy.elements());
-        initted = true;
-      };
-
-      // genes
-      if (hl && hl.length > 0) {
-        initAllUnhighlighted();
-        const nodes = cy.nodes( hl.map(n => { return '#' + n.data('id'); }).join(', ') );
-        highlight(nodes);
-        normlight(nodes.neighborhood());
-      }
-
-      // Apply highlights
-      const eles = cy.elements();
-      eles.not(toHl).removeClass('highlighted');
-      eles.not(toUnhl).removeClass('unhighlighted');
-      toHl.removeClass('unhighlighted');
-      toHl.not(cy.nodes(':compound')).addClass('highlighted');
-      toUnhl.removeClass('highlighted');
-      toUnhl.not(cy.nodes(':compound')).addClass('unhighlighted');
-    });
+    controller.highlightElements(nodes);
   }, 200);
 
   const updateCyHighlights = (symbol) => {
