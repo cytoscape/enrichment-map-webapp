@@ -3,6 +3,7 @@ import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
 
 import { DEFAULT_PADDING } from '../defaults';
+import { clusterColor } from './network-style';
 import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 import { SearchController } from './search-contoller';
 
@@ -232,20 +233,27 @@ export class NetworkEditorController {
         }
       });
 
+      let nes = 0;
       cluster.forEach(node => {
+        nes += node.data('NES');
         node.move({ parent: clusterId });
       });
-        
+      nes = _.round(nes / cluster.length, 4);
+      parent.data('NES', nes); // Also add the average NES to the parent!
+
       // Create bubble sets
       const edges = cluster.connectedEdges().filter(e => cluster.contains(e.source()) && cluster.contains(e.target()));
+      const c = clusterColor(parent);
+      const rgb = `rgb(${c.r}, ${c.g}, ${c.b}, 0.2)`;
+
       cy.bubbleSets().addPath(cluster, edges, null, {
         virtualEdges: false,
         style: {
-          'fill': 'rgb(31, 120, 180, 0.2)', // same as the logo's blue color (#1F78B4), but transparent
-          'stroke': 'rgb(31, 120, 180, 0.2)',
+          'fill': rgb,
+          'stroke': rgb,
           'stroke-width': 1,
         }
-    });
+      });
   
       // Collapse all clusters initially
       this.toggleExpandCollapse(parent, false);

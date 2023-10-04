@@ -6,8 +6,14 @@ export const TEXT_OPACITY = 1;
 
 /** Color range for up-down regulation. */
 export const REG_COLOR_RANGE = (() => {
-  // PRGn -- https://colorbrewer2.org/#type=diverging&scheme=RdBu&n=5
-  const colors = ['#7b3294', '#c2a5cf', '#f7f7f7', '#a6dba0', '#008837'];
+  // ColorBrewer 2.0 -- Diverging (Colorblind Safe)
+  // IMPORTANT: Use only hex format, do NOT use 'rgb()'!
+  const colors = ['#0571b0', '#92c5de', '#f7f7f7', '#f4a582', '#ca0020']; // 5-class RdBu: https://colorbrewer2.org/#type=diverging&scheme=RdBu&n=5
+  // const colors = ['#2c7bb6', '#abd9e9', '#ffffbf', '#fdae61', '#d7191c']; // 5-class RdYlBu: https://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5
+  // const colors = ['#5e3c99', '#b2abd2', '#f7f7f7', '#fdb863', '#e66101']; // 5-class PuOr: https://colorbrewer2.org/#type=diverging&scheme=PuOr&n=5
+  // const colors = ['#008837', '#a6dba0', '#f7f7f7', '#c2a5cf', '#7b3294']; // 5-class PRGn: // https://colorbrewer2.org/#type=diverging&scheme=PRGn&n=5
+  // const colors = ['#4dac26', '#b8e186', '#f7f7f7', '#f1b6da', '#d01c8b']; // 5-class PiYG: https://colorbrewer2.org/#type=diverging&scheme=PiYG&n=5
+  // const colors = ['#018571', '#80cdc1', '#f5f5f5', '#dfc27d', '#a6611a']; // 5-class BrBG: https://colorbrewer2.org/#type=diverging&scheme=BrBG&n=5
   const downMax = colors[0];
   const down = colors[1];
   const zero = colors[2];
@@ -17,6 +23,29 @@ export const REG_COLOR_RANGE = (() => {
   const range5 = colors;
   return { downMax, down, zero, up, upMax, range3, range5 };
 })();
+  
+export const clusterColor = (node) => {
+  const nes = node.data('NES'); 
+  // For now, just use the downMax or upMax colors
+  // -- do we want to use an interpolated color from the gradient instead?
+  // -- TODO: what if NES is zero?
+  const hex = nes < 0 ? REG_COLOR_RANGE.downMax : REG_COLOR_RANGE.upMax;
+  return hexToRgb(hex);
+};
+
+function hexToRgb(hex) {
+  // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+  var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+    return r + r + g + g + b + b;
+  });
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
 
 function getMinMaxValues(cy, attr) {
   return {
@@ -57,6 +86,11 @@ export const createNetworkStyle = (cy) => {
     return nesColorScale(node.data('NES')).toString();
   }, node => node.id());
 
+  const clusterTextColor = _.memoize(parentNode => {
+    const c = clusterColor(parentNode);
+    return `rgb(${c.r}, ${c.g}, ${c.b})`;
+  }, parentNode => parentNode.id());
+
   return {
     maxNES,
     minNES,
@@ -89,7 +123,8 @@ export const createNetworkStyle = (cy) => {
           'text-valign':'top',
           'text-outline-width': 0,
           'text-outline-opacity': 0,
-          'color': '#6190bf', // just a lighter tint of the logo's blue color (#1F78B4)
+          'text-opacity': 0.6,
+          'color': clusterTextColor,
         }
       },
       {
@@ -123,12 +158,6 @@ export const createNetworkStyle = (cy) => {
         }
       },
       {
-        selector: 'edge[interaction = "Geneset_Overlap"]',
-        style: {
-          'line-color' : 'red',
-        }
-      },
-      {
         selector: 'node.unselected',
         style: {
           
@@ -143,9 +172,9 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node.selected',
         style: {
-          'border-width': 12,
-          'border-color': '#5aaae0',
-          'border-opacity': 0.8
+          'border-width': 8,
+          'border-color': '#333',
+          'border-opacity': 1.0,
         }
       },
       {
@@ -157,20 +186,23 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'edge.selected',
         style: {
-          'line-color': '#5aaae0'
+          'line-color': '#333333',
+          'line-opacity': 1.0,
         }
       },
       {
         selector: 'node.unhighlighted',
         style: {
           'opacity': 0.05,
+          'z-index': 1,
         }
       },
 
       {
         selector: 'edge.unhighlighted',
         style: {
-          'opacity': 0.0,
+          'line-opacity': 0.0,
+          'z-index': 1,
         }
       },
       {
