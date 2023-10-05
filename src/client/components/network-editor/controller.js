@@ -187,15 +187,17 @@ export class NetworkEditorController {
   }
 
   toggleExpandCollapse(parent, animate=false) {
-    const collapsed = parent.data('collapsed');
+    const collapsed = "true" == parent.data('collapsed');
     const shrinkFactor = 0.2;
     const spacingFactor = collapsed ? (1.0 / shrinkFactor) : shrinkFactor;
-    parent.data('collapsed', !collapsed);
 
-    if(!collapsed) {
-      parent.children().data('collapsed', "" + !collapsed);
-    }
-    
+    const nodes = parent.children();
+    const edges = this.internalEdges(nodes);
+
+    const toggleCollapsedFlag = eles => eles.data('collapsed', "" + !collapsed);
+
+    toggleCollapsedFlag(parent);
+
     const layout = parent.children().layout({
       name: 'preset',
       positions: node => node.position(),
@@ -204,14 +206,22 @@ export class NetworkEditorController {
       spacingFactor
     });
     
+    const onStop = layout.promiseOn('layoutstop');
+
     if(collapsed) {
-      const onStop = layout.promiseOn('layoutstop');
-      onStop.then(() => {
-        parent.children().data('collapsed', "" + !collapsed);
-      });
+      edges.style('visibility', 'visible');
+      onStop.then(() => toggleCollapsedFlag(nodes));
+    } else {
+      toggleCollapsedFlag(nodes);
+      onStop.then(() => edges.style('visibility', 'hidden'));
     }
 
     layout.run();
+  }
+
+
+  internalEdges(cluster) {
+    return cluster.connectedEdges().filter(e => cluster.contains(e.source()) && cluster.contains(e.target()));
   }
 
   /**
@@ -242,7 +252,7 @@ export class NetworkEditorController {
       parent.data('NES', nes); // Also add the average NES to the parent!
 
       // Create bubble sets
-      const edges = cluster.connectedEdges().filter(e => cluster.contains(e.source()) && cluster.contains(e.target()));
+      const edges = this.internalEdges(cluster);
       const c = clusterColor(parent);
       const rgb = `rgb(${c.r}, ${c.g}, ${c.b}, 0.2)`;
 

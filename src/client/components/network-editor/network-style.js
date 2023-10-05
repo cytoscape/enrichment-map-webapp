@@ -100,6 +100,7 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node',
         style: {
+          'min-zoomed-font-size': 10,
           'opacity': NODE_OPACITY,
           'border-width': 12,
           'border-opacity': 0,
@@ -125,6 +126,7 @@ export const createNetworkStyle = (cy) => {
           'text-outline-opacity': 0,
           'text-opacity': 0.6,
           'color': clusterTextColor,
+          'text-events': 'yes'
         }
       },
       {
