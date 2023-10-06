@@ -40,12 +40,6 @@ async function createSVGLegendBlob(svgID) {
   return new Blob([svg], { type: 'text/plain;charset=utf-8' });
 }
 
-async function clearSelectionStyle(controller) {
-  const eles = controller.cy.elements('.unselected');
-  eles.removeClass('unselected');
-  return async () => eles.addClass('unselected');
-}
-
 function getZipFileName(controller, suffix) {
   const networkName = controller.cy.data('name');
   if(networkName) {
@@ -66,8 +60,6 @@ async function saveZip(controller, zip, type) {
 
 
 async function handleExportImageArchive(controller) {
-  const restoreStyle = await clearSelectionStyle(controller);
-
   const blobs = await Promise.all([
     createNetworkImageBlob(controller, ImageSize.SMALL),
     createNetworkImageBlob(controller, ImageSize.MEDIUM),
@@ -75,13 +67,11 @@ async function handleExportImageArchive(controller) {
     createSVGLegendBlob(NODE_COLOR_SVG_ID),
   ]);
 
-  restoreStyle();
-
   const zip = new JSZip();
   zip.file('enrichment_map_small.png',  blobs[0]);
   zip.file('enrichment_map_medium.png', blobs[1]);
   zip.file('enrichment_map_large.png',  blobs[2]);
-  zip.file('node_color_legend.svg',     blobs[3]);
+  // zip.file('node_color_legend.svg',     blobs[3]);
 
   saveZip(controller, zip, 'images');
 }
