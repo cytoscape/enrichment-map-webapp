@@ -24,7 +24,7 @@ function createCy(id) {
   const cy = new Cytoscape({
     headless: true,
     styleEnabled: true,
-    boxSelectionEnabled: false,
+    boxSelectionEnabled: true,
     selectionType: 'single',
   });
   cy.data({ id });

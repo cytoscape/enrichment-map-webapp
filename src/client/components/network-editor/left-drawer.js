@@ -92,61 +92,83 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
   const fetchGeneList = async (geneSetNames) => {
     const res = await controller.fetchGeneList(geneSetNames);
     const genes = res ? res.genes : [];
-    setGenes(sortGenes(genes, sortRef.current));
+
+    return genes;
   };
 
   const fetchGeneListForEdge = async (geneSetNamesSource, geneSetNamesTarget) => {
-    const resSource = await controller.fetchGeneList(geneSetNamesSource);
-    const resTarget = await controller.fetchGeneList(geneSetNamesTarget);
-    const genesSource = resSource ? resSource.genes : [];
-    const genesTarget = resTarget ? resTarget.genes : [];
-    const genesCommon = _.intersectionBy(genesSource, genesTarget, x => x.gene);
-    setGenes(sortGenes(genesCommon, sortRef.current));
-    setGenes(sortGenes(genesCommon, sortRef.current));
+    const genesSource = await fetchGeneList(geneSetNamesSource);
+    const genesTarget = await fetchGeneList(geneSetNamesTarget);
+    const genes = _.intersectionBy(genesSource, genesTarget, 'gene');
+
+    return genes;
   };
 
   const fetchAllRankedGenes = async () => {
-    fetchGeneList([]);
+    return await fetchGeneList([]);
   };
 
-  const fetchGeneListFromNodeOrEdge = async (ele) => {
-    const getNames = ele => {
-      const name = ele.data('name');
+  const fetchGeneListFromElements = async (eles) => {
+    const genes = [];
+    const nodes = eles.nodes();
+    const edges = eles.edges();
+
+    const getNames = n => {
+      const name = n.data('name');
       return Array.isArray(name) ? name : name.split(',');
     };
 
-    if (ele.group() === 'nodes') {
-      const gsNames = [];
-      const children = ele.children();
-     
-      if (children.length > 0) { // Compound node (cluster)...
-        children.forEach(n => gsNames.push(...getNames(n)));
-      } else { // Regular node (gene set)...
-        gsNames.push(...getNames(ele));
+    // Fetch genes from nodes
+    let gsNames = [];
+
+    for (const el of nodes) {
+      // Ignore compound nodes
+      if (el.isParent()) {
+        continue;
+      }
+      gsNames = gsNames.concat(getNames(el));
+    }
+    
+    if (gsNames.length > 0) {
+      gsNames = _.uniq(gsNames);
+      const nodeGenes = await fetchGeneList(gsNames);
+      genes.push(...nodeGenes);
+    }
+
+    // Fetch genes from edges
+    for (const el of edges) {
+      // If both this edge's source and target nodes are selected,
+      // we don't need to get the overlapping genes from the edge,
+      // because we'll already get all the same genes from its nodes
+      if (el.source().selected() && el.source().selected()) {
+        continue;
       }
 
-      fetchGeneList(gsNames);
-
-    } else if (ele.group() === 'edges') {
       // Edge (get overlapping genes)...
-      const gsNamesSource = [...getNames(ele.source())];
-      const gsNamesTarget = [...getNames(ele.target())];
-
-      fetchGeneListForEdge(gsNamesSource, gsNamesTarget);
+      const edgeGenes = await fetchGeneListForEdge(getNames(el.source()),  getNames(el.target()));
+      genes.push(...edgeGenes);
     }
+    
+    // Remove duplicates
+    const unique = _.uniqBy(genes, 'gene');
+
+    return unique;
   };
 
-  const debouncedSelectionHandler = _.debounce(() => {
+  const debouncedSelectionHandler = _.debounce(async () => {
     const eles = cy.$(':selected');
 
     if (eles.length > 0) {
-      const ele = eles[eles.length - 1];
       setGenes(null);
-      setSort(ele.data('NES') < 0 ? 'up' : 'down');
-      fetchGeneListFromNodeOrEdge(ele);
+      if (eles.length === 1) {
+        setSort(eles[0].data('NES') < 0 ? 'up' : 'down');
+      }
+      const genes = await fetchGeneListFromElements(eles);
+      setGenes(sortGenes(genes, sortRef.current));
     } else if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
       setGenes(null);
-      fetchAllRankedGenes();
+      const genes = await fetchAllRankedGenes();
+      setGenes(sortGenes(genes, sortRef.current));
     }
   }, 250);
 
@@ -190,81 +212,12 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     cy.mount(container);
     cy.resize();
 
-    // function randomArg(...args) {
-    //   return args[Math.floor(Math.random() * args.length)];
-    // }
-    // this.eh = controller.eh = cy.edgehandles({
-    //   snap: true,
-    //   edgeParams: () => ({
-    //     // TODO temporary data
-    //     data: {
-    //       attr1: Math.random(), // betwen 0 and 1
-    //       attr2: Math.random() * 2.0 - 1.0, // between -1 and 1
-    //       attr3: randomArg("A", "B", "C")
-    //     }
-    //   })
-    // });
-
-    // const animatedFit = eles => {
-    //   cy.animate({
-    //     fit: { eles: eles, padding: DEFAULT_PADDING },
-    //     easing: 'ease-out',
-    //     duration: 500
-    //   });
-    // };
-    
-    const updateSelectionClass = () => {
-      const allEles = cy.elements();
-      const targetEle = allEles.filter(':selected'); // 1 ele
-      const selectedEles = targetEle.isNode() ? targetEle : targetEle.add(targetEle.connectedNodes());
-      const unselectedEles = allEles.subtract(selectedEles);
-
-      cy.batch(() => {
-        if (allEles.length === unselectedEles.length) {
-          allEles.removeClass('unselected').removeClass('selected');
-        } else {
-          selectedEles.removeClass('unselected').addClass('selected');
-          unselectedEles.addClass('unselected').removeClass('selected');
-        }
-      });
-
-      // if (!targetEle.empty()) {
-      //   animatedFit(targetEle.component());
-      // }
-    };
-
     const clearSearch = _.debounce(() => {
       cancelSearch();
     }, 128);
     
-    cyEmitter.on('click', evt => {
-      // Prevents multi-selection when shift/ctrl/command is pressed...
-      if (evt.originalEvent.ctrlKey || evt.originalEvent.metaKey || evt.originalEvent.shiftKey) {
-        const ele = evt.target;
-
-        if (ele.group && !ele.selected()) {
-          // This is a node/edge and is not selected yet--if already selected, ignore it,
-          // otherwise shift-clicking the same element won't deselect it as usually expected.
-          cy.$(':selected').unselect(); // Unselect everything, so only this clicked element can be selected by Cytoscape.
-        }
-      }
-    });
     cyEmitter.on('select unselect', onCySelectionChanged);
-
-    cyEmitter.on('select', () => {
-      updateSelectionClass();
-      clearSearch();
-    }).on('unselect', () => {
-      updateSelectionClass();
-    }).on('remove', () => {
-      updateSelectionClass();
-    }).on('tap', (e) => {
-      const tappedOnBackground = e.target === cy;
-
-      // if (tappedOnBackground) {
-      //   animatedFit(cy.elements());
-      // }
-    });
+    cyEmitter.on('select', () => clearSearch());
 
     return function cleanup() {
       cyEmitter.removeAllListeners();

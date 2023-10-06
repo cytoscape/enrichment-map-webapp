@@ -113,6 +113,7 @@ export const createNetworkStyle = (cy) => {
           'text-outline-width': 2,
           'text-outline-opacity': TEXT_OPACITY,
           'color': '#fff',
+          'z-index': 1,
         }
       },
       {
@@ -126,7 +127,7 @@ export const createNetworkStyle = (cy) => {
           'text-outline-opacity': 0,
           'text-opacity': 0.6,
           'color': clusterTextColor,
-          'text-events': 'yes'
+          'text-events': 'yes',
         }
       },
       {
@@ -156,22 +157,11 @@ export const createNetworkStyle = (cy) => {
           'curve-style': 'haystack',
           'haystack-radius': 0,
           'width': ele => ele.data('similarity_coefficient') * 15,
-        }
-      },
-      {
-        selector: 'node.unselected',
-        style: {
           'z-index': 1,
         }
       },
       {
-        selector: 'edge.unselected',
-        style: {
-          'z-index': 1,
-        }
-      },
-      {
-        selector: 'node.selected',
+        selector: 'node:selected',
         style: {
           'border-width': 8,
           'border-color': '#333',
@@ -180,13 +170,13 @@ export const createNetworkStyle = (cy) => {
         }
       },
       {
-        selector: 'node:parent.selected',
+        selector: 'node:parent:selected',
         style: {
           'border-width': 0,
         }
       },
       {
-        selector: 'edge.selected',
+        selector: 'edge:selected',
         style: {
           'line-color': '#333333',
           'line-opacity': 1.0,
