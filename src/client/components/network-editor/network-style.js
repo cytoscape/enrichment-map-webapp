@@ -144,7 +144,7 @@ export const createNetworkStyle = (cy) => {
         }
       },
       {
-        selector: 'node[parent][collapsed="true"]',
+        selector: 'node[parent][?collapsed]',
         style: {
           'label': n => '',
         }

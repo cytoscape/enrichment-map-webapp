@@ -187,14 +187,14 @@ export class NetworkEditorController {
   }
 
   toggleExpandCollapse(parent, animate=false) {
-    const collapsed = "true" == parent.data('collapsed');
+    const collapsed = parent.data('collapsed');
     const shrinkFactor = 0.2;
     const spacingFactor = collapsed ? (1.0 / shrinkFactor) : shrinkFactor;
 
     const nodes = parent.children();
     const edges = this.internalEdges(nodes);
 
-    const toggleCollapsedFlag = eles => eles.data('collapsed', "" + !collapsed);
+    const toggleCollapsedFlag = eles => eles.data('collapsed', !collapsed);
 
     toggleCollapsedFlag(parent);
 
@@ -268,8 +268,17 @@ export class NetworkEditorController {
       // Collapse all clusters initially
       this.toggleExpandCollapse(parent, false);
   
-      parent.on('tap', (event) => {
-        if(!event.target.data('parent')) {
+      parent.on('tap', evt => {
+        const ele = evt.target;
+        const collapsed = parent.data('collapsed');
+        
+        // Clicking a child node must not select it if it's collapsed
+        if (ele.isChild() && collapsed) {
+          ele.once('select', () => ele.unselect());
+        }
+        // Click a compound node to toggle its collapsed state
+        // or click any collapsed child node to expand the cluster
+        if (ele.isParent() || collapsed) {
           this.toggleExpandCollapse(parent, true);
         }
       });
