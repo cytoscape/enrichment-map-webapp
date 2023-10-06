@@ -241,10 +241,10 @@ const ContentRow = ({ row, index, selected, controller, handleClick }) => {
   );
 };
 
-const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controller }) => {
+const PathwayTable = ({ visible, data, initialSelectedIds=[], searchTerms, controller, onTableSelectionChanged }) => {
   const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('nes');
-  const [selectedId, setSelectedId] = React.useState(initialSelectedId);
+  const [selectedIds, setSelectedIds] = React.useState(initialSelectedIds);
 
   const classes = useStyles();
   
@@ -252,7 +252,18 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
   const cyEmitter = new EventEmitterProxy(cy);
   const sortedDataRef = useRef(null);
   const virtuosoRef = useRef(null);
-  const selNodeRef = useRef(null);
+
+  const getSelectedIds = () => {
+    const nodes = cy.nodes(":childless:selected");
+    if (nodes) {
+      const ids = nodes.map(n => n.data('id'));
+      return ids.sort();
+    }
+    return [];
+  };
+
+  const selNodesRef = useRef(null);
+  const lastSelectedRowRef = useRef(); // Will be used to prevent the table from auto-scrolling to the clicked row
 
   const indexOf = (id) => {
     if (sortedDataRef.current) {
@@ -276,17 +287,12 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
   };
 
   const debouncedSelectionHandler = _.debounce(() => {
-    const eles = cy.nodes(':selected');
-
-    if (eles.length === 0) {
-      setSelectedId(null);
-    } else if (eles.length === 1 && eles[0].group() === 'nodes') {
-      const id = eles[0].data('id');
-      if (!selNodeRef.current || selNodeRef.current.data('id') != id) {
-        setSelectedId(id);
-        scrollTo(id);
-      }
+    const ids = getSelectedIds();
+    // Only auto-scroll if the selection action was done on the network, not by selecting a row
+    if (ids.length > 0 && ids[0] !== lastSelectedRowRef.current) {
+      scrollTo(ids[0]);
     }
+    setSelectedIds(ids);
   }, 200);
 
   const onCySelectionChanged = () => {
@@ -301,9 +307,9 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
   }, []);
 
   useEffect(() => {
-    const sel = cy.nodes(':selected');
-    selNodeRef.current = sel.length === 1 ? sel[0] : null;
-  }, [selectedId]);
+    const sel = cy.nodes(":childless:selected");
+    selNodesRef.current = sel.length > 0 ? sel : null;
+  }, []);
 
   if (!visible) {
     // Returns an empty div with the same height as the table just so the open/close animation works properly,
@@ -318,8 +324,12 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
   };
 
   const handleRowClick = (event, id) => {
-    const newSelected = id === selectedId ? null/*toggle*/ : id;
-    setSelectedId(newSelected);
+    const newSelected = selectedIds.length === 1 && selectedIds[0] === id ? null/*toggle*/ : id;
+    lastSelectedRowRef.current = newSelected;
+    if (onTableSelectionChanged) {
+      onTableSelectionChanged(newSelected);
+    }
+    setSelectedIds([newSelected]);
     cy.elements().unselect(); // Unselect everything first
     if (newSelected) {
       cy.elements(`node[id = "${newSelected}"]`).select(); // Finally select the node
@@ -329,7 +339,7 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
   const sortedData = stableSort(data, getComparator(order, orderBy));
   sortedDataRef.current = sortedData;
 
-  const initialIndex = selectedId ? indexOf(selectedId) : 0;
+  const initialIndex = selectedIds.length > 0 ? indexOf(selectedIds[0]) : 0;
 
   if (data.length === 0 && searchTerms && searchTerms.length > 0) {
     return (
@@ -412,7 +422,7 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
         <ContentRow
           row={obj}
           index={index}
-          selected={selectedId === obj.id}
+          selected={selectedIds.includes(obj.id)}
           controller={controller}
           handleClick={handleRowClick}
         />
@@ -431,9 +441,10 @@ ContentRow.propTypes = {
 PathwayTable.propTypes = {
   visible: PropTypes.bool.isRequired,
   data: PropTypes.array.isRequired,
-  initialSelectedId: PropTypes.string,
+  initialSelectedIds: PropTypes.array,
   searchTerms: PropTypes.array,
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  onTableSelectionChanged: PropTypes.func,
 };
 
 export default PathwayTable;

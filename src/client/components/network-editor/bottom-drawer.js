@@ -37,20 +37,32 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   const searchValueRef = useRef(searchValue);
   searchValueRef.current = searchValue;
 
-  const selNodeRef = useRef(null);
-
   const cy = controller.cy;
   const cyEmitter = new EventEmitterProxy(cy);
 
   const disabled = !networkLoaded || !pathwayListIndexed;
-  const sel = disabled ? null : cy.nodes(":childless:selected");
-  const selNode = (sel && sel.length === 1) ? sel[0] : null;
-  const selectedId = selNode ? selNode.data('id') : null;
+
+  const getSelectedIds = () => {
+    const nodes = disabled ? null : cy.nodes(":childless:selected");
+    if (nodes) {
+      const ids = nodes.map(n => n.data('id'));
+      return ids.sort();
+    }
+    return [];
+  };
+
+  const selNodesRef = useRef(null);
+  const lastSelectedRowRef = useRef(); // Will be used to clear the search only when selecting a node on the network
+  const selectedIds = getSelectedIds();
 
   const cancelSearch = () => {
     setSearchValue('');
   };
   const search = (val) => {
+    // Unselect Cy elements first
+    const selectedEles = cy.elements().filter(':selected');
+    selectedEles.unselect();
+    // Now execute the search
     const query = val.trim();
     if (query.length > 0) {
       setSearchValue(val);
@@ -60,15 +72,15 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   };
 
   const debouncedSelectionHandler = _.debounce(() => {
-    const eles = cy.nodes(':selected');
-
-    if (eles.length === 0) {
-      setSelectedNES(null);
-    } else if (eles.length === 1 && eles[0].group() === 'nodes') {
-      const id = eles[0].data('id');
-      if (!selNodeRef.current || selNodeRef.current.data('id') != id) {
-        setSelectedNES(eles[0].data('NES'));
+    const eles = cy.nodes(":childless:selected");
+    
+    if (eles.length === 1 && eles[0].group() === 'nodes') {
+      const nes = eles[0].data('NES');
+      if (nes !== selectedNES) {
+        setSelectedNES(nes);
       }
+    } else {
+      setSelectedNES(null);
     }
   }, 200);
 
@@ -93,21 +105,34 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
         forceUpdate();
       }
     };
+    const clearSearch = _.debounce(() => {
+      cancelSearch();
+    }, 128);
     cyEmitter.on('add remove', onNetworkChanged);
     cyEmitter.on('select unselect', onCySelectionChanged);
+    cyEmitter.on('select', evt => {
+      const selId = evt.target.length === 1 ? evt.target.data('id') : null;
+      if (lastSelectedRowRef.current !== selId) {
+        clearSearch();
+      }
+    });
     return () => {
       cyEmitter.removeAllListeners();
     };
   }, []);
 
   useEffect(() => {
-    const sel = cy.nodes(':selected');
-    selNodeRef.current = sel.length === 1 ? sel[0] : null;
-  }, [selectedId]);
+    const sel = cy.nodes(":childless:selected");
+    selNodesRef.current = sel;
+  }, []);
 
   const handleOpenDrawer = (b) => {
     setOpen(b);
     onShowDrawer(b);
+  };
+
+  const onTableSelectionChanged = (lastSelectedRow) => {
+    lastSelectedRowRef.current = lastSelectedRow;
   };
   
   const nodes = cy.nodes(':childless'); // ignore compound nodes!
@@ -231,9 +256,10 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
             <PathwayTable
               visible={open}
               data={filteredData ? filteredData : data}
-              initialSelectedId={selectedId}
+              initialSelectedIds={selectedIds}
               searchTerms={searchTerms}
               controller={controller}
+              onTableSelectionChanged={onTableSelectionChanged}
             />
           </Collapse>
         </AppBar>
