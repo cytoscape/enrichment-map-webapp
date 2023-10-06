@@ -178,7 +178,7 @@ const gotoNode = (id, cy) => {
   });
 };
 
-const ContentRow = ({ row, index, selected, controller, handleClick, updateCyHighlights }) => {
+const ContentRow = ({ row, index, selected, controller, handleClick }) => {
   const classes = useStyles();
 
   const node = controller.cy.nodes(`[id = "${row.id}"]`);
@@ -190,8 +190,6 @@ const ContentRow = ({ row, index, selected, controller, handleClick, updateCyHig
         align="center"
         selected={selected}
         className={clsx(classes.gotoCell, { [classes.tableCell]: true, [classes.selectedCell]: selected })}
-        onMouseEnter={() => updateCyHighlights(row['name'])}
-        onMouseLeave={() => updateCyHighlights()}
       >
         <Tooltip title="Go to node">
           <Button variant="text" className={classes.gotoButton} onClick={() => gotoNode(row.id, controller.cy)}>
@@ -206,8 +204,6 @@ const ContentRow = ({ row, index, selected, controller, handleClick, updateCyHig
         selected={selected}
         className={clsx(classes[cell.id + 'Cell'], { [classes.tableCell]: true, [classes.selectedCell]: selected })}
         onClick={(event) => handleClick(event, row.id)}
-        onMouseEnter={() => updateCyHighlights(row['name'])}
-        onMouseLeave={() => updateCyHighlights()}
       >
       {cell.id === 'name' && (
         <Link
@@ -330,18 +326,6 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
     }
   };
 
-  const debouncedUpdateCyHighlights = _.debounce((pathway) => {
-    let nodes;
-    if (pathway) {
-      nodes = cy.nodes(':childless').filter(n => pathway === n.data('label'));
-    }
-    controller.highlightElements(nodes, true);
-  }, 200);
-
-  const updateCyHighlights = (pathway) => {
-    debouncedUpdateCyHighlights(pathway);
-  };
-
   const sortedData = stableSort(data, getComparator(order, orderBy));
   sortedDataRef.current = sortedData;
 
@@ -431,7 +415,6 @@ const PathwayTable = ({ visible, data, initialSelectedId, searchTerms, controlle
           selected={selectedId === obj.id}
           controller={controller}
           handleClick={handleRowClick}
-          updateCyHighlights={updateCyHighlights}
         />
       )}
     />
@@ -444,7 +427,6 @@ ContentRow.propTypes = {
   selected: PropTypes.bool.isRequired,
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   handleClick: PropTypes.func.isRequired,
-  updateCyHighlights: PropTypes.func.isRequired,
 };
 PathwayTable.propTypes = {
   visible: PropTypes.bool.isRequired,
