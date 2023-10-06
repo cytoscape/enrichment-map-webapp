@@ -373,9 +373,7 @@ class Datastore {
   /**
    * Returns the network document. 
    */
-  async getNetwork(networkIDString, options) {
-    const { nodeLimit } = options;
-
+  async getNetwork(networkIDString) {
     let networkID;
     try {
       networkID = makeID(networkIDString);
@@ -398,10 +396,6 @@ class Datastore {
       return null;
     }
     const network = result.value;
-
-    // if(nodeLimit) {
-    //   this.limitNodesByNES(network.summaryNetwork, nodeLimit);
-    // }
     return network;
   }
 
@@ -501,8 +495,7 @@ class Datastore {
   /**
    * Returns names 
    */
-  async getNodeDataSetNames(networkIDString, options) {
-    const { nodeLimit } = options;
+  async getNodeDataSetNames(networkIDString) {
     const networkID = makeID(networkIDString);
 
     const names = await this.db
@@ -513,12 +506,6 @@ class Datastore {
         { $replaceWith: { path: "$summaryNetwork.elements.nodes.data" } },
         { $unwind: { path: "$path" } },
         { $replaceRoot: { newRoot: "$path" } },
-      
-        // Limit to top 50 by NES magnitude
-        { $addFields: { magNES: { $abs: "$NES" } } },
-        { $sort: { magNES: -1 } },
-        { $limit: nodeLimit },
-      
         // Get the names
         { $unwind: { path: "$name" } },
         { $project: { name: 1 }}
@@ -527,16 +514,6 @@ class Datastore {
       .toArray();
 
     return names;
-  }
-
-
-  limitNodesByNES(network, nodeLimit) {
-    const { elements } = network;
-    // Take top nodes sorted by NES magnitude
-    elements.nodes.sort((a, b) => Math.abs(b.data.NES) - Math.abs(a.data.NES));
-    elements.nodes = elements.nodes.slice(0, nodeLimit);
-    const nodeIDs = new Set(elements.nodes.map(n => n.data.id));
-    elements.edges = elements.edges.filter(e => nodeIDs.has(e.data.source) && nodeIDs.has(e.data.target));
   }
 
 
@@ -606,12 +583,11 @@ class Datastore {
    * The returned array is sorted so that the genes with ranks are first (sorted by rank),
    * then the genes without rankes are after (sorted alphabetically).
    */
-  async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames, options) {
-    const { nodeLimit } = options;
+  async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames) {
     const networkID = makeID(networkIDStr);
 
     if(geneSetNames === undefined || geneSetNames.length == 0) {
-      geneSetNames = await this.getNodeDataSetNames(networkID, { nodeLimit });
+      geneSetNames = await this.getNodeDataSetNames(networkID);
     }
     
     const geneListWithRanks = await this.db
