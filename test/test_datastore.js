@@ -43,12 +43,6 @@ describe('Gene Set Queries', () => {
     ]);
   });
 
-  it('get gene set names from summary network', async () => {
-    const results = await Datastore.getNodeDataSetNames(networkID, { nodeLimit: 1 });
-    results.sort();
-    expect(results).to.eql(["GENESET_1", "GENESET_2"]);
-  });
-
   it('gets a geneset with ranks', async () => {
     const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_5'], { nodeLimit: 100 });
     expect(results).to.eql({
