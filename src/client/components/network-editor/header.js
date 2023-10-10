@@ -21,7 +21,8 @@ import MenuIcon from '@material-ui/icons/Menu';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
-import { Add, Remove } from '@material-ui/icons';
+import { Add, Remove,  } from '@material-ui/icons';
+import { AddLocation } from '@material-ui/icons';
 import CloseIcon from '@material-ui/icons/Close';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
@@ -147,8 +148,18 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     setAnchorEl(event.currentTarget);
   };
 
+  const savePositions = () => {
+    controller.savePositions();
+  };
+
   const buttonsDef = [ 
     {
+      // TEMPORARY, this should happen on debounced cy event handlers
+      title: "Save Positions",
+      icon: <AddLocation />,
+      onClick: savePositions,
+      unrelated: false,
+    }, {
       title: "Zoom In",
       icon: <Add />,
       onClick: panner.zoomIn,

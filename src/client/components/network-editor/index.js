@@ -35,24 +35,41 @@ function createCy(id) {
 async function loadNetwork(cy, controller, id) {
   console.log('Loading...');
 
-  const res = await fetch(`/api/${id}`);
-  if(!res.ok) {
+  const networkPromise = fetch(`/api/${id}`);
+  const positionsPromise = fetch(`/api/${id}/positions`);
+
+  const networkResult = await networkPromise;
+  if(!networkResult.ok) {
     location.href = '/';
     return;
   }
+  const networkJson = await networkResult.json();
 
-  const networkJson = await res.json();
-  // setClusterNodeNamesForSummaryNetwork(networkJson);
-
-  // cy.add(networkJson.summaryNetwork.elements);
   cy.add(networkJson.network.elements);
   cy.data({ 
     name: networkJson.networkName, 
     parameters: networkJson.parameters
   });
 
-  await controller.applyLayout();
-  await controller.createClusters(networkJson.clusterLabels[0].labels, 'mcode_cluster_id');
+  // await controller.applyLayout();
+
+  let positionsMap;
+  const positionsResult = await positionsPromise;
+  if(positionsResult.status == 404) {
+    console.log('running layout');
+    await controller.applyLayout();
+  } else {
+    console.log('got positions from mongo');
+    const positionsJson = await positionsResult.json();
+    positionsMap = controller.applyPositions(positionsJson.positions);
+  }
+
+  const clusterDefs = networkJson.clusterLabels[0].labels;
+  await controller.createClusters(clusterDefs, 'mcode_cluster_id', positionsMap);
+
+  // cy.on('position', 'node', _.debounce(() => {
+  //   controller.savePositions();
+  // }, 4000));
 
   // Set network style
   const style = createNetworkStyle(cy);

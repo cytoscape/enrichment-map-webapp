@@ -11,6 +11,7 @@ const GENE_RANKS_COLLECTION = 'geneRanks';
 const GENE_LISTS_COLLECTION = 'geneLists';
 const NETWORKS_COLLECTION = 'networks';
 const PERFORMANCE_COLLECTION = 'performance';
+const POSITIONS_COLLECTION = 'positions';
 
 /**
  * When called with no args will returns a new unique mongo ID.
@@ -49,7 +50,7 @@ class Datastore {
     // await this.loadGenesetDB('./public/geneset-db/', DB_1);
     await this.loadGenesetDB(dbFilePath, dbFileName);
     console.info('Loading done');
-    await this.createGeneListIndexes();
+    await this.createIndexes();
     console.info('Mongo initialized');
   }
 
@@ -98,7 +99,7 @@ class Datastore {
   }
 
 
-  async createGeneListIndexes() {
+  async createIndexes() {
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .createIndex({ networkID: 1 });
@@ -110,6 +111,10 @@ class Datastore {
 
     await this.db
       .collection(GENE_RANKS_COLLECTION)
+      .createIndex({ networkID: 1 });
+
+    await this.db
+      .collection(POSITIONS_COLLECTION)
       .createIndex({ networkID: 1 });
 
     await this.db
@@ -400,6 +405,51 @@ class Datastore {
   }
 
 
+  /**
+   * {
+   *   _id: 'asdf',
+   *   networkID: "abcdefg",
+   *   positions: [
+   *     {
+   *        id: "asdf-asdf-asdf",
+   *        x: 12.34
+   *        y: 56.78
+   *        collapsed: false
+   *     }
+   *   ]
+   * }
+   */
+  async setPositions(networkIDString, positions) {
+    const networkID = makeID(networkIDString);
+
+    const document = {
+      networkID: networkID.bson,
+      positions
+    };
+
+    await this.db
+      .collection(POSITIONS_COLLECTION)
+      .replaceOne(
+        { networkID: networkID.bson },
+        document,
+        { upsert: true }
+      );
+  }
+
+
+  async getPositions(networkIDString) {
+    const networkID = makeID(networkIDString);
+
+    const result = await this.db
+      .collection(POSITIONS_COLLECTION)
+      .findOne(
+        { networkID: networkID.bson },
+      );
+
+    return result;  
+  }
+
+    
   /**
    * Returns the aggregation pipeline stages needed to extract 
    * the FGSEA enrichment results from the NETWORKS_COLLECTION. 

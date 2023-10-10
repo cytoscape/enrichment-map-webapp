@@ -210,6 +210,43 @@ http.get('/:netid/pathwaysforsearch', async function(req, res, next) {
 });
 
 
+http.get('/:netid/positions', async function(req, res, next) {
+  try {
+    const { netid } = req.params;
+
+    const positions = await Datastore.getPositions(netid);
+    if(!positions) {
+      res.sendStatus(404);
+    } else {
+      res.send(JSON.stringify(positions));
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+http.post('/:netid/positions', async function(req, res, next) {
+  try {
+    const { netid } = req.params;
+    const { positions } = req.body;
+
+    console.log("positions");
+    console.log(positions);
+
+    if(!Array.isArray(positions)) {
+      res.sendStatus(404);
+      return;
+    }
+
+    await Datastore.setPositions(netid, positions);
+
+    res.send('OK');
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 async function writeCursorToResult(cursor, res) {
   res.write('[');
   if(await cursor.hasNext()) {

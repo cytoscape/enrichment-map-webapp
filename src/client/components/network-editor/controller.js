@@ -131,12 +131,59 @@ export class NetworkEditorController {
       fit: false
     }).run();
 
-    this.cy.fit(DEFAULT_PADDING);
+    this._setZoomMinMax();
+  }
 
+
+  // TODO, not sure if this is needed
+  _setZoomMinMax() {
+    this.cy.fit(DEFAULT_PADDING);
     // now that we know the zoom level when the graph fits to screen, we can use restrictions
     this.cy.minZoom(this.cy.zoom() * 0.25);
     this.cy.maxZoom(2);
   }
+
+  /**
+   * positions is an array of objects of the form...
+   * [ { id: "node-id", x:1.2, y:3.4 }, ...]
+   * 
+   * Returns a Map object of nodeID -> position object
+   */
+  applyPositions(positions) {
+    // TODO: apply deleted status
+    // TODO: apply expand/collapsed status
+    const positionsMap = new Map(positions.map((obj) => [obj.id, obj]));
+    this.cy.nodes().positions(node => positionsMap.get(node.data('id')));
+    this._setZoomMinMax();
+
+    return positionsMap;
+  }
+
+  async savePositions() {
+    console.log("saving positions...");
+
+    // Deleted nodes are not present in the 'positions' document
+    const positions = this.cy.nodes()
+      .map(node => ({ 
+        id: node.data('id'),
+        x:  node.position().x,
+        y:  node.position().y,
+        collapsed: node.data('collapsed')
+      }));
+
+    const res = await fetch(`/api/${this.networkIDStr}/positions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        positions
+      })
+    });
+
+    if(res.ok) {
+      console.log("positions saved");
+    } 
+  }
+
 
   highlightElements(nodes, highlightNeighbors) {
     let toHl = this.cy.nodes(':childless').add(this.cy.edges());
@@ -226,8 +273,9 @@ export class NetworkEditorController {
 
   /**
    * clusterDefs: array of objects of the form { clusterId: 'Cluster 1', label: 'neuclotide synthesis' }
+   * positions: a Map object returned by applyPositions(), or undefined
    */
-  createClusters(clusterDefs, clusterAttr) {
+  createClusters(clusterDefs, clusterAttr, positionsMap) {
     const { cy } = this;
 
     clusterDefs.forEach(({ clusterId, label }) => {
@@ -243,13 +291,30 @@ export class NetworkEditorController {
         }
       });
 
+      cluster.forEach(node => {
+        node.move({ parent: clusterId });
+      });
+
+      if(positionsMap) {
+        const id = cluster.slice(0,1).data('id');
+        const obj = positionsMap.get(id);
+        if(obj && obj.collapsed) {
+          cluster.data('collapsed', true);
+          parent.data('collapsed', true);
+          console.log("Cluster '" + clusterId + "' is collapsed? " + obj.collapsed);
+        }
+      } else {
+        // If collapsed status was not saved on the server then collapse all clusters initially
+        this.toggleExpandCollapse(parent, false);
+      }
+
+      // Set the average NES to the parent
       let nes = 0;
       cluster.forEach(node => {
         nes += node.data('NES');
-        node.move({ parent: clusterId });
       });
       nes = _.round(nes / cluster.length, 4);
-      parent.data('NES', nes); // Also add the average NES to the parent!
+      parent.data('NES', nes); 
 
       // Create bubble sets
       const edges = this.internalEdges(cluster);
@@ -264,9 +329,6 @@ export class NetworkEditorController {
           'stroke-width': 1,
         }
       });
-  
-      // Collapse all clusters initially
-      this.toggleExpandCollapse(parent, false);
   
       parent.on('tap', evt => {
         const ele = evt.target;
