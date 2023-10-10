@@ -10,10 +10,9 @@ import Header from './header';
 import Main from './main';
 
 import createNetworkStyle from './network-style';
-
 import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
-
+import _ from 'lodash';
 
 const queryClient = new QueryClient();
 
@@ -76,6 +75,10 @@ async function loadNetwork(cy, controller, id) {
   cy.style().fromJson(style.cyJSON);
   controller.style = style; // Make available to components
 
+  cy.on('position remove', 'node', _.debounce(() => {
+    controller.savePositions();
+  }, 4000));
+
   // Notify listeners that the network has been loaded
   console.log('Loaded');
   cy.data({ loaded: true });
@@ -86,34 +89,6 @@ async function loadNetwork(cy, controller, id) {
 
   // make the controller accessible from the chrome console for debugging purposes
   window.controller = controller;
-}
-
-
-function setClusterNodeNamesForSummaryNetwork(result) {
-  function createClusterLabelMap() {
-    if(!result.clusterLabels)
-      return new Map();
-    
-    let labels;
-    if(Array.isArray(result.clusterLabels))
-      labels = result.clusterLabels[result.clusterLabels.length - 1].labels;
-    else
-      labels = result.clusterLabels.labels;
-      
-    return new Map(labels.map(obj => [obj.clusterId, obj.label]));
-  }
-
-  const { summaryNetwork } = result;
-  const clusterLabelMap = createClusterLabelMap();
-
-  summaryNetwork.elements.nodes.forEach(node => {
-    const clusterID = node.data['mcode_cluster_id'];
-    if(clusterID) {
-      const name = clusterLabelMap.get(clusterID);
-      node.data['label'] = name;
-      node.data['summary'] = true;
-    }
-  });
 }
 
 

@@ -421,12 +421,10 @@ class Datastore {
    */
   async setPositions(networkIDString, positions) {
     const networkID = makeID(networkIDString);
-
     const document = {
       networkID: networkID.bson,
       positions
     };
-
     await this.db
       .collection(POSITIONS_COLLECTION)
       .replaceOne(
@@ -436,18 +434,25 @@ class Datastore {
       );
   }
 
-
   async getPositions(networkIDString) {
     const networkID = makeID(networkIDString);
-
     const result = await this.db
       .collection(POSITIONS_COLLECTION)
       .findOne(
-        { networkID: networkID.bson },
+        { networkID: networkID.bson }
       );
-
     return result;  
   }
+
+  async deletePositions(networkIDString) {
+    const networkID = makeID(networkIDString);
+    await this.db
+      .collection(POSITIONS_COLLECTION)
+      .deleteOne(
+        { networkID: networkID.bson }
+      );
+  }
+
 
     
   /**

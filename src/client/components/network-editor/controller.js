@@ -143,22 +143,6 @@ export class NetworkEditorController {
     this.cy.maxZoom(2);
   }
 
-  /**
-   * positions is an array of objects of the form...
-   * [ { id: "node-id", x:1.2, y:3.4 }, ...]
-   * 
-   * Returns a Map object of nodeID -> position object
-   */
-  applyPositions(positions) {
-    // TODO: apply deleted status
-    // TODO: apply expand/collapsed status
-    const positionsMap = new Map(positions.map((obj) => [obj.id, obj]));
-    this.cy.nodes().positions(node => positionsMap.get(node.data('id')));
-    this._setZoomMinMax();
-
-    return positionsMap;
-  }
-
   async savePositions() {
     console.log("saving positions...");
 
@@ -182,6 +166,15 @@ export class NetworkEditorController {
     if(res.ok) {
       console.log("positions saved");
     } 
+  }
+
+  async restoreNetwork() {
+    const res = await fetch(`/api/${this.networkIDStr}/positions`, {
+      method: 'DELETE',
+    });
+    if(res.ok) {
+      location.reload();
+    }
   }
 
 
@@ -272,25 +265,84 @@ export class NetworkEditorController {
   }
 
   /**
+   * positions is an array of objects of the form...
+   * [ { id: "node-id", x:1.2, y:3.4 }, ...]
+   * 
+   * Returns a Map object of nodeID -> position object
+   */
+  applyPositions(positions) {
+    // TODO: apply deleted status
+    // TODO: apply expand/collapsed status
+    const positionsMap = new Map(positions.map((obj) => [obj.id, obj]));
+    this.cy.nodes().positions(node => positionsMap.get(node.data('id')));
+    this._setZoomMinMax();
+
+    return positionsMap;
+  }
+
+
+  _setAverageNES(parent) {
+    // Set the average NES to the parent
+    let nes = 0;
+    const cluster = parent.children();
+    cluster.forEach(node => {
+      nes += node.data('NES');
+    });
+    nes = _.round(nes / cluster.length, 4);
+    parent.data('NES', nes); 
+    return nes;
+  }
+
+
+  _createBubblePath(parent) {
+    if(!this.bubbleSets) {
+      this.bubbleSets = this.cy.bubbleSets(); // only create one instance of this plugin
+    }
+    
+    const cluster = parent.children();
+    const edges = this.internalEdges(cluster);
+    const c = clusterColor(parent); // Average NES needs to be set on the parent first
+    const rgb = `rgb(${c.r}, ${c.g}, ${c.b}, 0.2)`;
+
+    const bubblePath = this.bubbleSets.addPath(cluster, edges, null, {
+      virtualEdges: false,
+      interactive: true,
+      style: {
+        'fill': rgb,
+        'stroke': rgb,
+        'stroke-width': 1,
+      }
+    });
+
+    // Save the bubblePath object in the parent node
+    parent.scratch('_bubble', bubblePath);
+  }
+
+
+  /**
    * clusterDefs: array of objects of the form { clusterId: 'Cluster 1', label: 'neuclotide synthesis' }
    * positions: a Map object returned by applyPositions(), or undefined
    */
   createClusters(clusterDefs, clusterAttr, positionsMap) {
     const { cy } = this;
 
+    if(positionsMap) {
+      const deletedNodes = cy.nodes().filter(n => !positionsMap.has(n.data('id')));
+      console.log("there are " + deletedNodes.size() + " deleted nodes");
+      cy.remove(deletedNodes);
+    }
+
     clusterDefs.forEach(({ clusterId, label }) => {
       const cluster = cy.elements(`node[${clusterAttr}="${clusterId}"]`);
+      if(cluster.empty())
+        return;
   
       // Create compound nodes
       const parent = cy.add({
         group: 'nodes',
         name: label,
-        data: { 
-          label: label, 
-          id: clusterId,
-        }
+        data: { label: label, id: clusterId }
       });
-
       cluster.forEach(node => {
         node.move({ parent: clusterId });
       });
@@ -301,34 +353,14 @@ export class NetworkEditorController {
         if(obj && obj.collapsed) {
           cluster.data('collapsed', true);
           parent.data('collapsed', true);
-          console.log("Cluster '" + clusterId + "' is collapsed? " + obj.collapsed);
         }
       } else {
         // If collapsed status was not saved on the server then collapse all clusters initially
         this.toggleExpandCollapse(parent, false);
       }
 
-      // Set the average NES to the parent
-      let nes = 0;
-      cluster.forEach(node => {
-        nes += node.data('NES');
-      });
-      nes = _.round(nes / cluster.length, 4);
-      parent.data('NES', nes); 
-
-      // Create bubble sets
-      const edges = this.internalEdges(cluster);
-      const c = clusterColor(parent);
-      const rgb = `rgb(${c.r}, ${c.g}, ${c.b}, 0.2)`;
-
-      cy.bubbleSets().addPath(cluster, edges, null, {
-        virtualEdges: false,
-        style: {
-          'fill': rgb,
-          'stroke': rgb,
-          'stroke-width': 1,
-        }
-      });
+      this._setAverageNES(parent);
+      this._createBubblePath(parent);
   
       parent.on('tap', evt => {
         const ele = evt.target;
@@ -350,15 +382,35 @@ export class NetworkEditorController {
   /**
    * Delete the selected (i.e. :selected) elements in the graph
    */
-  deletedSelectedElements() {
-    let selectedEles = this.cy.$(':selected');
-    if (selectedEles.empty()) {
-      selectedEles = this.cy.elements();
-    }
+  deleteSelectedNodes() {
+    let selectedNodes = this.cy.elements('node:child:selected');
+    if(selectedNodes.empty())
+      return;
 
-    const deletedEls = selectedEles.remove();
-    this.bus.emit('deletedSelectedElements', deletedEls);
+    const parentNodes  = selectedNodes.parent();
+
+    // Remove the bubble paths before deleting their contents, or else an error occurs
+    parentNodes.forEach(parent => {
+      const bubblePath = parent.scratch('_bubble');
+      if(bubblePath) {
+        this.bubbleSets.removePath(bubblePath);
+      }
+    });
+
+    const deletedNodes = selectedNodes.remove();
+
+    parentNodes.forEach(parent => {
+      if(parent.children().empty()) {
+        this.cy.remove(parent);
+      } else {
+        this._setAverageNES(parent);
+        this._createBubblePath(parent);
+      }
+    });
+
+    this.bus.emit('deletedSelectedNodes', deletedNodes);
   }
+
 
   async _fetchMinMaxRanks() {
     const res = await fetch(`/api/${this.networkIDStr}/minmaxranks`);

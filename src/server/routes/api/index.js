@@ -246,6 +246,16 @@ http.post('/:netid/positions', async function(req, res, next) {
   }
 });
 
+http.delete('/:netid/positions', async function(req, res, next) {
+  try {
+    const { netid } = req.params;
+    await Datastore.deletePositions(netid);
+    res.send('OK');
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 async function writeCursorToResult(cursor, res) {
   res.write('[');

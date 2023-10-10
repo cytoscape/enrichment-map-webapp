@@ -23,6 +23,8 @@ import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
 import { Add, Remove,  } from '@material-ui/icons';
 import { AddLocation } from '@material-ui/icons';
+import { Delete } from '@material-ui/icons';
+import { RestoreFromTrash } from '@material-ui/icons';
 import CloseIcon from '@material-ui/icons/Close';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
@@ -148,17 +150,21 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     setAnchorEl(event.currentTarget);
   };
 
-  const savePositions = () => {
-    controller.savePositions();
-  };
+  const savePositions =  () => controller.savePositions();
+  const deleteNodes =    () => controller.deleteSelectedNodes();
+  const restoreNetwork = () => controller.restoreNetwork();
 
   const buttonsDef = [ 
     {
-      // TEMPORARY, this should happen on debounced cy event handlers
-      title: "Save Positions",
-      icon: <AddLocation />,
-      onClick: savePositions,
+      title: "Delete Selected Nodes",
+      icon: <Delete />,
+      onClick: deleteNodes,
       unrelated: false,
+    }, {
+      title: "Restore Deleted Nodes",
+      icon: <RestoreFromTrash />,
+      onClick: restoreNetwork,
+      unrelated: true,
     }, {
       title: "Zoom In",
       icon: <Add />,
