@@ -234,13 +234,9 @@ export class NetworkEditorController {
     const nodes = parent.children();
     const edges = this.internalEdges(nodes);
 
-    const toggleCollapsedFlag = eles => eles.data('collapsed', !collapsed);
-
-    toggleCollapsedFlag(parent);
-
     const layout = parent.children().layout({
       name: 'preset',
-      positions: node => node.position(),
+      positions: n => n.position(),
       fit: false,
       animate,
       spacingFactor
@@ -248,12 +244,20 @@ export class NetworkEditorController {
     
     const onStop = layout.promiseOn('layoutstop');
 
+    parent.data('collapsed', !collapsed);
+
     if(collapsed) {
       edges.style('visibility', 'visible');
-      onStop.then(() => toggleCollapsedFlag(nodes));
+      onStop.then(() => { 
+        nodes.data('collapsed', !collapsed);
+        nodes.grabify();
+      });
     } else {
-      toggleCollapsedFlag(nodes);
-      onStop.then(() => edges.style('visibility', 'hidden'));
+      nodes.data('collapsed', !collapsed);
+      nodes.ungrabify();
+      onStop.then(() => {
+        edges.style('visibility', 'hidden');
+      });
     }
 
     layout.run();
@@ -307,6 +311,7 @@ export class NetworkEditorController {
     const bubblePath = this.bubbleSets.addPath(cluster, edges, null, {
       virtualEdges: false,
       interactive: true,
+      throttle: 10, // makes animation much smoother
       style: {
         'fill': rgb,
         'stroke': rgb,
@@ -316,6 +321,7 @@ export class NetworkEditorController {
 
     // Save the bubblePath object in the parent node
     parent.scratch('_bubble', bubblePath);
+    return bubblePath;
   }
 
 
@@ -353,6 +359,7 @@ export class NetworkEditorController {
         if(obj && obj.collapsed) {
           cluster.data('collapsed', true);
           parent.data('collapsed', true);
+          cluster.ungrabify();
         }
       } else {
         // If collapsed status was not saved on the server then collapse all clusters initially
@@ -360,7 +367,14 @@ export class NetworkEditorController {
       }
 
       this._setAverageNES(parent);
-      this._createBubblePath(parent);
+      const bubblePath = this._createBubblePath(parent);
+
+      parent.on('position', () => {
+        // When the children are ungrabified the 'position' event is not fired for them, must update the bubble path manually.
+        if(!parent.children().grabbable()) { 
+          bubblePath.update();
+        }
+      });
   
       parent.on('tap', evt => {
         const ele = evt.target;
@@ -387,7 +401,7 @@ export class NetworkEditorController {
     if(selectedNodes.empty())
       return;
 
-    const parentNodes  = selectedNodes.parent();
+    const parentNodes = selectedNodes.parent();
 
     // Remove the bubble paths before deleting their contents, or else an error occurs
     parentNodes.forEach(parent => {
