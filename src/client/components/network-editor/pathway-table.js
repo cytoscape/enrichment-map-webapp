@@ -13,10 +13,9 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { Button, Paper, Typography, Link, Tooltip } from '@material-ui/core';
+import { Checkbox, Paper, Typography, Link, Tooltip } from '@material-ui/core';
 import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 
-import NearMeIcon from '@material-ui/icons/NearMe';
 import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
 
@@ -99,11 +98,11 @@ const useStyles = makeStyles((theme) => ({
   selectedCell: {
     backgroundColor: theme.palette.action.selected,
   },
-  gotoButton: {
+  checkbox: {
     minWidth: 32,
     padding: theme.spacing(0.5),
     margin: '0 auto 0 auto',
-    color: theme.palette.primary.main,
+    // color: theme.palette.primary.main,
   },
   link: {
     color: theme.palette.link.main,
@@ -191,11 +190,12 @@ const ContentRow = ({ row, index, selected, controller, handleClick }) => {
         selected={selected}
         className={clsx(classes.gotoCell, { [classes.tableCell]: true, [classes.selectedCell]: selected })}
       >
-        <Tooltip title="Go to node">
-          <Button variant="text" className={classes.gotoButton} onClick={() => gotoNode(row.id, controller.cy)}>
-            <NearMeIcon fontSize="small" />
-          </Button>
-        </Tooltip>
+        <Checkbox
+          checked={selected}
+          size="small"
+          className={classes.checkbox}
+          onClick={() => handleClick(row.id)}
+        />
       </TableCell>
     {CELLS.map((cell, idx) => (
       <TableCell
@@ -203,7 +203,7 @@ const ContentRow = ({ row, index, selected, controller, handleClick }) => {
         align={cell.numeric ? 'right' : 'left'}
         selected={selected}
         className={clsx(classes[cell.id + 'Cell'], { [classes.tableCell]: true, [classes.selectedCell]: selected })}
-        onClick={(event) => handleClick(event, row.id)}
+        onClick={() => handleClick(row.id)}
       >
       {cell.id === 'name' && (
         <Link
@@ -263,7 +263,7 @@ const PathwayTable = ({ visible, data, initialSelectedIds=[], searchTerms, contr
   };
 
   const selNodesRef = useRef(null);
-  const lastSelectedRowRef = useRef(); // Will be used to prevent the table from auto-scrolling to the clicked row
+  const lastSelectedRowsRef = useRef([]); // Will be used to prevent the table from auto-scrolling to the clicked row
 
   const indexOf = (id) => {
     if (sortedDataRef.current) {
@@ -289,7 +289,7 @@ const PathwayTable = ({ visible, data, initialSelectedIds=[], searchTerms, contr
   const debouncedSelectionHandler = _.debounce(() => {
     const ids = getSelectedIds();
     // Only auto-scroll if the selection action was done on the network, not by selecting a row
-    if (ids.length > 0 && ids[0] !== lastSelectedRowRef.current) {
+    if (ids.length > 0 && !lastSelectedRowsRef.current.includes(ids[0])) {
       scrollTo(ids[0]);
     }
     setSelectedIds(ids);
@@ -323,17 +323,26 @@ const PathwayTable = ({ visible, data, initialSelectedIds=[], searchTerms, contr
     setOrderBy(property);
   };
 
-  const handleRowClick = (event, id) => {
-    const newSelected = selectedIds.length === 1 && selectedIds[0] === id ? null/*toggle*/ : id;
-    lastSelectedRowRef.current = newSelected;
-    if (onTableSelectionChanged) {
-      onTableSelectionChanged(newSelected);
+  const handleRowClick = (id) => {
+    console.log(id);
+    let newSelectedIds = selectedIds ? selectedIds : [];
+
+    if (selectedIds.includes(id)) {
+      // Toggle: unselect this row/id
+      newSelectedIds = newSelectedIds.filter(nextId => nextId !== id);
+      lastSelectedRowsRef.current = [...newSelectedIds];
+      cy.elements(`node[id = "${id}"]`).unselect();
+    } else {
+      // Add this id to the selection list
+      newSelectedIds.push(id);
+      lastSelectedRowsRef.current = [...newSelectedIds];
+      if (onTableSelectionChanged) {
+        onTableSelectionChanged(id);
+      }
+      cy.elements(`node[id = "${id}"]`).select();
     }
-    setSelectedIds([newSelected]);
-    cy.elements().unselect(); // Unselect everything first
-    if (newSelected) {
-      cy.elements(`node[id = "${newSelected}"]`).select(); // Finally select the node
-    }
+   
+    setSelectedIds(newSelectedIds);
   };
 
   const sortedData = stableSort(data, getComparator(order, orderBy));
@@ -422,7 +431,7 @@ const PathwayTable = ({ visible, data, initialSelectedIds=[], searchTerms, contr
         <ContentRow
           row={obj}
           index={index}
-          selected={selectedIds.includes(obj.id)}
+          selected={selectedIds && selectedIds.includes(obj.id)}
           controller={controller}
           handleClick={handleRowClick}
         />

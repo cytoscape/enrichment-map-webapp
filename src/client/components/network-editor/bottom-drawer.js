@@ -52,7 +52,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   };
 
   const selNodesRef = useRef(null);
-  const lastSelectedRowRef = useRef(); // Will be used to clear the search only when selecting a node on the network
+  const lastSelectedRowsRef = useRef([]); // Will be used to clear the search only when selecting a node on the network
   const selectedIds = getSelectedIds();
 
   const cancelSearch = () => {
@@ -112,7 +112,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     cyEmitter.on('select unselect', onCySelectionChanged);
     cyEmitter.on('select', evt => {
       const selId = evt.target.length === 1 ? evt.target.data('id') : null;
-      if (lastSelectedRowRef.current !== selId) {
+      if (!lastSelectedRowsRef.current.includes(selId)) {
         clearSearch();
       }
     });
@@ -131,8 +131,8 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     onShowDrawer(b);
   };
 
-  const onTableSelectionChanged = (lastSelectedRow) => {
-    lastSelectedRowRef.current = lastSelectedRow;
+  const onTableSelectionChanged = (lastSelectedRows) => {
+    lastSelectedRowsRef.current = lastSelectedRows;
   };
   
   const nodes = cy.nodes(':childless'); // ignore compound nodes!
