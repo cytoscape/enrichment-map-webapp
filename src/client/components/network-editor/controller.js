@@ -397,7 +397,8 @@ export class NetworkEditorController {
    * Delete the selected (i.e. :selected) elements in the graph
    */
   deleteSelectedNodes() {
-    let selectedNodes = this.cy.elements('node:child:selected');
+    let selectedNodes = this.cy.nodes(':selected');
+    selectedNodes = selectedNodes.filter(n => n.children().empty()); // Filter out parent nodes
     if(selectedNodes.empty())
       return;
 
