@@ -227,6 +227,10 @@ export class NetworkEditorController {
   }
 
   toggleExpandCollapse(parent, animate=false) {
+    if(parent.scratch('_layoutRunning'))
+      return;
+    parent.scratch('_layoutRunning', true);
+
     const collapsed = parent.data('collapsed');
     const shrinkFactor = 0.2;
     const spacingFactor = collapsed ? (1.0 / shrinkFactor) : shrinkFactor;
@@ -259,6 +263,10 @@ export class NetworkEditorController {
         edges.style('visibility', 'hidden');
       });
     }
+
+    onStop.then(() => {
+      parent.scratch('_layoutRunning', false);
+    });
 
     layout.run();
   }
