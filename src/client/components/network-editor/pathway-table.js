@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { forwardRef, useRef, useImperativeHandle, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 import clsx from 'clsx';
@@ -76,8 +76,12 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(0, 0.5, 0, 0.5),
     // <------------------------------------------------------------
   },
-  gotoCell: {
+  checkCell: {
     maxWidth: 48,
+  },
+  currentRow: {
+    padding: theme.spacing(0, 0.5, 0, 0),
+    borderLeft: `${theme.spacing(0.5)}px solid ${theme.palette.primary.main}`,
   },
   nameCell: {
     width: '75%',
@@ -102,7 +106,6 @@ const useStyles = makeStyles((theme) => ({
     minWidth: 32,
     padding: theme.spacing(0.5),
     margin: '0 auto 0 auto',
-    // color: theme.palette.primary.main,
   },
   link: {
     color: theme.palette.link.main,
@@ -125,11 +128,11 @@ const CELLS = [
 const CHART_HEIGHT = 16;
 
 const TableComponents = {
-  Scroller: React.forwardRef((props, ref) => <TableContainer component={Paper} {...props} ref={ref} />),
+  Scroller: forwardRef((props, ref) => <TableContainer component={Paper} {...props} ref={ref} />),
   Table: (props) => <Table size="small" {...props} style={{ borderCollapse: 'separate' }} />,
   TableHead: TableHead,
-  TableRow: React.forwardRef((props, ref) => <TableRow {...props} hover ref={ref} />),
-  TableBody: React.forwardRef((props, ref) => <TableBody {...props} ref={ref} />),
+  TableRow: forwardRef((props, ref) => <TableRow {...props} hover ref={ref} />),
+  TableBody: forwardRef((props, ref) => <TableBody {...props} ref={ref} />),
 };
 TableComponents.Scroller.displayName = "Scroller";   // for linting rule (debugging purposes)
 TableComponents.TableRow.displayName = "TableRow"; // for linting rule (debugging purposes)
@@ -177,7 +180,7 @@ const gotoNode = (id, cy) => {
   });
 };
 
-const ContentRow = ({ row, index, selected, controller, handleClick }) => {
+const ContentRow = ({ row, index, selected, current, controller, handleClick }) => {
   const classes = useStyles();
 
   const node = controller.cy.nodes(`[id = "${row.id}"]`);
@@ -188,7 +191,7 @@ const ContentRow = ({ row, index, selected, controller, handleClick }) => {
       <TableCell
         align="center"
         selected={selected}
-        className={clsx(classes.gotoCell, { [classes.tableCell]: true, [classes.selectedCell]: selected })}
+        className={clsx(classes.checkCell, { [classes.tableCell]: true, [classes.selectedCell]: selected, [classes.currentRow]: current })}
       >
         <Checkbox
           checked={selected}
@@ -213,6 +216,7 @@ const ContentRow = ({ row, index, selected, controller, handleClick }) => {
           color="textSecondary"
           className={classes.link}
           {...linkoutProps}
+          title={row.id} // TODO REMOVE this!!! <<<<<<<<<<<<<<<<<<<<<<<<<<
         >
           { row[cell.id] }
         </Link>
@@ -240,76 +244,71 @@ const ContentRow = ({ row, index, selected, controller, handleClick }) => {
     </>
   );
 };
+ContentRow.propTypes = {
+  row: PropTypes.object.isRequired,
+  index: PropTypes.number.isRequired,
+  selected: PropTypes.bool,
+  current: PropTypes.bool,
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  handleClick: PropTypes.func.isRequired,
+};
 
-const PathwayTable = ({ visible, data, initialSelectedIds=[], searchTerms, controller, onTableSelectionChanged }) => {
+const PathwayTable = (
+  {
+    visible,
+    data,
+    selectedIds = [],
+    currentSelectedIndex = -1,
+    scrollToId,
+    searchTerms,
+    controller,
+    onTableSelectionChanged,
+    onDataSorted,
+  }
+) => {
   const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('nes');
-  const [selectedIds, setSelectedIds] = React.useState(initialSelectedIds);
 
   const classes = useStyles();
-  
   const cy = controller.cy;
-  const cyEmitter = new EventEmitterProxy(cy);
-  const sortedDataRef = useRef(null);
-  const virtuosoRef = useRef(null);
-
-  const getSelectedIds = () => {
-    const nodes = cy.nodes(":childless:selected");
-    if (nodes) {
-      const ids = nodes.map(n => n.data('id'));
-      return ids.sort();
-    }
-    return [];
-  };
-
+  
+  const virtuosoRef = useRef();
+  const sortedDataRef = useRef(stableSort(data, getComparator(order, orderBy)));
   const selNodesRef = useRef(null);
   const lastSelectedRowsRef = useRef([]); // Will be used to prevent the table from auto-scrolling to the clicked row
 
-  const indexOf = (id) => {
-    if (sortedDataRef.current) {
-      const total = sortedDataRef.current.length;
-      for (var i = 0; i < total; i++) {
-        if (sortedDataRef.current[i].id === id) {
-          return i;
-        }
-      }
-    }
-    return -1;
-  };
-
-  const scrollTo = (id) => {
-    if (virtuosoRef.current) {
-      const index = indexOf(id);
-      if (index >= 0) {
-        virtuosoRef.current.scrollToIndex({ index, align: 'start', behavior: 'smooth' });
-      }
-    }
-  };
-
-  const debouncedSelectionHandler = _.debounce(() => {
-    const ids = getSelectedIds();
-    // Only auto-scroll if the selection action was done on the network, not by selecting a row
-    if (ids.length > 0 && !lastSelectedRowsRef.current.includes(ids[0])) {
-      scrollTo(ids[0]);
-    }
-    setSelectedIds(ids);
-  }, 200);
-
-  const onCySelectionChanged = () => {
-    debouncedSelectionHandler();
-  };
-
+  // Sorting
   useEffect(() => {
-    cyEmitter.on('select unselect', onCySelectionChanged);
-    return () => {
-      cyEmitter.removeAllListeners();
-    };
-  }, []);
-
+    console.log('sortingData...');
+    const comparator = getComparator(order, orderBy);
+    const sortedData = stableSort(data, comparator);
+    sortedDataRef.current = sortedData;
+    if (onDataSorted) {
+      onDataSorted(anyData => stableSort(anyData, comparator));
+    }
+  }, [order, orderBy]);
+  // Selection
   useEffect(() => {
     const sel = cy.nodes(":childless:selected");
     selNodesRef.current = sel.length > 0 ? sel : null;
   }, []);
+  // Scroll to
+  useEffect(() => {
+    if (scrollToId && virtuosoRef.current) {
+      const index = sortedDataRef.current.findIndex(obj => obj.id === scrollToId);
+      const offset = index > 0 ? -15 : 0; // So the user can see that there are more rows above this one
+      virtuosoRef.current.scrollToIndex({ index, align: 'start', offset });
+    }
+  }, [scrollToId]);
+  // Current item
+  useEffect(() => {
+    if (currentSelectedIndex >= 0 && sortedDataRef.current) {
+      const sortedSelectedIds = sortedDataRef.current.map(obj => obj.id).filter(id => selectedIds.includes(id));
+      if (sortedSelectedIds.length > currentSelectedIndex) {
+        gotoNode(sortedSelectedIds[currentSelectedIndex], cy);
+      }
+    }
+  }, [currentSelectedIndex]);
 
   if (!visible) {
     // Returns an empty div with the same height as the table just so the open/close animation works properly,
@@ -341,14 +340,7 @@ const PathwayTable = ({ visible, data, initialSelectedIds=[], searchTerms, contr
       }
       cy.elements(`node[id = "${id}"]`).select();
     }
-   
-    setSelectedIds(newSelectedIds);
   };
-
-  const sortedData = stableSort(data, getComparator(order, orderBy));
-  sortedDataRef.current = sortedData;
-
-  const initialIndex = selectedIds.length > 0 ? indexOf(selectedIds[0]) : 0;
 
   if (data.length === 0 && searchTerms && searchTerms.length > 0) {
     return (
@@ -392,16 +384,40 @@ const PathwayTable = ({ visible, data, initialSelectedIds=[], searchTerms, contr
     );
   }
 
+  // Find the "current" id
+  let currentId = null;
+  if (currentSelectedIndex >= 0 && selectedIds.length > currentSelectedIndex) {
+    // Sort the array of selected Ids by the same order as the table rows so the passed index matches the current order
+    const sortedSelectedIds = sortedDataRef.current.map(obj => obj.id).filter(id => selectedIds.includes(id));
+    currentId = sortedSelectedIds[currentSelectedIndex];
+  }
+  // Find the "initial" index, which is where the table must auto-scroll to
+  let initialIndex = 0;
+  let initialId = scrollToId || currentId;
+  const initialTopMostItemIndex = { index: 0, align: 'start' };
+  if (!initialId && selectedIds.length > 0) {
+    initialId = selectedIds[0];
+  }
+  if (initialId && sortedDataRef.current) {
+    initialIndex = sortedDataRef.current.findIndex(obj => obj.id === initialId);
+    if (initialIndex > 0) {
+      // Small offset to show the previous row so the user can see that there are more rows above this one
+      initialTopMostItemIndex.offset = -15;
+    }
+    initialTopMostItemIndex.index = initialIndex;
+    console.log(initialTopMostItemIndex);
+  }
+
   return (
     <TableVirtuoso
       ref={virtuosoRef}
-      data={sortedData}
-      initialTopMostItemIndex={{ index: initialIndex, align: 'start' }}
+      data={sortedDataRef.current}
+      initialTopMostItemIndex={initialTopMostItemIndex}
       style={{height: PATHWAY_TABLE_HEIGHT, border: `1px solid ${theme.palette.divider}`}}
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
-          <TableCell className={clsx(classes.gotoCell, { [classes.tableCell]: true })} />
+          <TableCell className={clsx(classes.checkCell, { [classes.tableCell]: true })} />
         {CELLS.map((cell) => (
           <TableCell
             key={cell.id}
@@ -432,6 +448,7 @@ const PathwayTable = ({ visible, data, initialSelectedIds=[], searchTerms, contr
           row={obj}
           index={index}
           selected={selectedIds && selectedIds.includes(obj.id)}
+          current={currentId === obj.id}
           controller={controller}
           handleClick={handleRowClick}
         />
@@ -439,21 +456,17 @@ const PathwayTable = ({ visible, data, initialSelectedIds=[], searchTerms, contr
     />
   );
 };
-
-ContentRow.propTypes = {
-  row: PropTypes.object.isRequired,
-  index: PropTypes.number.isRequired,
-  selected: PropTypes.bool.isRequired,
-  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
-  handleClick: PropTypes.func.isRequired,
-};
+PathwayTable.displayName = "PathwayTable"; // for linting rule (debugging purposes)
 PathwayTable.propTypes = {
   visible: PropTypes.bool.isRequired,
   data: PropTypes.array.isRequired,
-  initialSelectedIds: PropTypes.array,
+  selectedIds: PropTypes.array,
+  currentSelectedIndex: PropTypes.number,
+  scrollToId: PropTypes.string,
   searchTerms: PropTypes.array,
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   onTableSelectionChanged: PropTypes.func,
+  onDataSorted: PropTypes.func,
 };
 
 export default PathwayTable;

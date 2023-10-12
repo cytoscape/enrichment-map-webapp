@@ -19,11 +19,34 @@ import { AppBar, Toolbar, Divider, Grid} from '@material-ui/core';
 import { Drawer, Tooltip, Typography } from '@material-ui/core';
 import { IconButton } from '@material-ui/core';
 
+import NavigateBeforeIcon from '@material-ui/icons/NavigateBefore';
+import NavigateNextIcon from '@material-ui/icons/NavigateNext';
 import ExpandIcon from '@material-ui/icons/ExpandLess';
 import CollapseIcon from '@material-ui/icons/ExpandMore';
 
 
 export const NODE_COLOR_SVG_ID = 'node-color-legend-svg';
+
+function toTableData(nodes, sortFn) {
+  const data = [];
+
+  for (const n of nodes) {
+    const pathwayArr = n.data('name');
+
+    const obj = {};
+    obj.id = n.data('id');
+    obj.name = n.data('label');
+    obj.href = pathwayArr && pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
+    obj.nes = n.data('NES');
+    obj.pvalue = n.data('pvalue');
+    obj.cluster = n.data('mcode_cluster_id');
+    obj.added = Boolean(n.data('added_by_user'));
+
+    data.push(obj);
+  }
+
+  return sortFn ? sortFn(data) : data;
+}
 
 
 export function BottomDrawer({ controller, classes, controlPanelVisible, isMobile, onShowDrawer }) {
@@ -31,29 +54,46 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
   const [ pathwayListIndexed, setPathwayListIndexed ] = useState(() => controller.isPathwayListIndexed());
   const [ searchValue, setSearchValue ] = useState('');
+  const [ totalSelected, setTotalSelected ] = useState(controller.cy.nodes(":childless:selected").length);
   const [ selectedNES, setSelectedNES ] = useState();
+  const [ selectedIds, setSelectedIds ] = useState([]);
+  const [ currentSelectedIndex, setCurrentSelectedIndex ] = useState(-1);
+  const [ scrollToId, setScrollToId ] = useState();
   const [ ignored, forceUpdate ] = useReducer(x => x + 1, 0);
+
+  const openRef = useRef(false);
+  openRef.current = open;
 
   const searchValueRef = useRef(searchValue);
   searchValueRef.current = searchValue;
 
+  const dataRef = useRef();
+  const sortFnRef = useRef();
+
+  const disabledRef = useRef(true);
+  disabledRef.current = !networkLoaded || !pathwayListIndexed;
+  
   const cy = controller.cy;
   const cyEmitter = new EventEmitterProxy(cy);
 
-  const disabled = !networkLoaded || !pathwayListIndexed;
-
   const getSelectedIds = () => {
-    const nodes = disabled ? null : cy.nodes(":childless:selected");
-    if (nodes) {
-      const ids = nodes.map(n => n.data('id'));
-      return ids.sort();
-    }
-    return [];
+    const eles = disabledRef.current ? null : cy.$(":selected");
+    const set = new Set();
+    eles.forEach(el => {
+      if (el.group() === 'nodes') { // nodes, except compounds
+        if (!el.isParent()) {
+          set.add(el.data('id'));
+        }
+      } else { // edges
+        set.add(el.source().data('id'));
+        set.add(el.target().data('id'));
+      }
+    });
+    return Array.from(set);
   };
 
-  const selNodesRef = useRef(null);
+  const selNodesRef = useRef();
   const lastSelectedRowsRef = useRef([]); // Will be used to clear the search only when selecting a node on the network
-  const selectedIds = getSelectedIds();
 
   const cancelSearch = () => {
     setSearchValue('');
@@ -72,10 +112,14 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   };
 
   const debouncedSelectionHandler = _.debounce(() => {
-    const eles = cy.nodes(":childless:selected");
-    
-    if (eles.length === 1 && eles[0].group() === 'nodes') {
-      const nes = eles[0].data('NES');
+    // Selected IDs
+    const selIds = getSelectedIds();
+    setSelectedIds(selIds);
+    setTotalSelected(selIds.length);
+    // NES (only if there's only one selected pathway)
+    if (selIds.length === 1) {
+      const sel = cy.filter(`[id = "${selIds[0]}"]`);
+      const nes = sel.length === 1 ? sel[0].data('NES') : null;
       if (nes !== selectedNES) {
         setSelectedNES(nes);
       }
@@ -116,6 +160,22 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
         clearSearch();
       }
     });
+    cyEmitter.on('tap', evt => {
+      if (openRef.current) {
+        // When the table is opened, scroll to the clicked pathway
+        var ele = evt.target;
+        if (ele !== cy) { // Ignore clicks on the background!
+          if (ele.group() === 'nodes') {
+            setScrollToId(ele.data('id'));
+          } else {
+            // Sort the two nodes connected by this edge and get the id of the first one
+            const tmpData = toTableData([ ele.source(), ele.target() ], sortFnRef.current);
+            const id = tmpData[0].id;
+            setScrollToId(id);
+          }
+        }
+      }
+    });
     return () => {
       cyEmitter.removeAllListeners();
     };
@@ -131,30 +191,30 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     onShowDrawer(b);
   };
 
-  const onTableSelectionChanged = (lastSelectedRows) => {
-    lastSelectedRowsRef.current = lastSelectedRows;
+  const onTableSelectionChanged = (selectedIds) => {
+    lastSelectedRowsRef.current = selectedIds;
+  };
+  const onDataSorted = (sortFn) => {
+    sortFnRef.current = sortFn; // Save the current sort function for later use
+  };
+
+  const goToRow = (idx) => {
+    setCurrentSelectedIndex(idx);
+    // Sort selected Ids
+    if (dataRef && sortFnRef.current) {
+      const sortedData = sortFnRef.current(dataRef.current);
+      const sortedSelectedIds = sortedData.filter(obj => selectedIds.includes(obj.id)).map(obj => obj.id);
+      const id = sortedSelectedIds[idx];
+      console.log('==> goToRow: ' + idx);
+      setScrollToId(id);
+    }
   };
   
   const nodes = cy.nodes(':childless'); // ignore compound nodes!
+  const disabled = disabledRef.current;
   const totalPathways = disabled ? 0 : nodes.length;
-  const data = [];
-  
-  if (!disabled) {
-    for (const n of nodes) {
-      const pathwayArr = n.data('name');
-
-      const obj = {};
-      obj.id = n.data('id');
-      obj.name = n.data('label');
-      obj.href = pathwayArr && pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
-      obj.nes = n.data('NES');
-      obj.pvalue = n.data('pvalue');
-      obj.cluster = n.data('mcode_cluster_id');
-      obj.added = Boolean(n.data('added_by_user'));
-
-      data.push(obj);
-    }
-  }
+  const data = disabled ? [] : toTableData(nodes);
+  dataRef.current = data;
 
   // Filter out pathways that don't match the search terms
   let filteredData; 
@@ -206,13 +266,17 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
             </Typography>
           )}
           {open && (
-            <SearchBar
-              style={{width: 276}}
-              placeholder="Find pathways..."
-              value={searchValue}
-              onChange={search}
-              onCancelSearch={cancelSearch}
-            />
+            <>
+              <SearchBar
+                style={{width: 276}}
+                placeholder="Find pathways..."
+                value={searchValue}
+                onChange={search}
+                onCancelSearch={cancelSearch}
+              />
+              <ToolbarDivider classes={classes} />
+              <SelectionNavigator length={totalSelected} onChange={goToRow} />
+            </>
           )}
             <ToolbarDivider classes={classes} />
             <div className={classes.grow} />
@@ -256,10 +320,13 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
             <PathwayTable
               visible={open}
               data={filteredData ? filteredData : data}
-              initialSelectedIds={selectedIds}
+              selectedIds={selectedIds}
+              currentSelectedIndex={currentSelectedIndex}
+              scrollToId={scrollToId}
               searchTerms={searchTerms}
               controller={controller}
               onTableSelectionChanged={onTableSelectionChanged}
+              onDataSorted={onDataSorted}
             />
           </Collapse>
         </AppBar>
@@ -286,11 +353,58 @@ function ToolbarButton({ title, icon, color, className, disabled, onClick }) {
     </Tooltip>
   );
 }
+ToolbarButton.propTypes = {
+  title: PropTypes.string.isRequired,
+  icon: PropTypes.element.isRequired,
+  color: PropTypes.string,
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+  onClick: PropTypes.func.isRequired,
+};
 
 
 function ToolbarDivider({ classes, unrelated }) {
   return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
 }
+ToolbarDivider.propTypes = {
+  classes: PropTypes.object.isRequired,
+  unrelated: PropTypes.bool
+};
+
+
+const SelectionNavigator = ({ length, initialIndex = -1, onChange }) => {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  
+  const navigateTo = (index) => {
+    setCurrentIndex(index);
+    if (onChange) {
+      onChange(index);
+    }
+  };
+  console.log(length + " :: " + currentIndex);
+
+  return (
+    <div style={{minWidth: 100}}>
+      <IconButton
+        disabled={length < 2 || currentIndex <= 0}
+        onClick={() => navigateTo(currentIndex - 1)}
+      >
+        <NavigateBeforeIcon size="small" />
+      </IconButton>
+      <IconButton
+        disabled={length < 2 || currentIndex === length - 1}
+        onClick={() => navigateTo(currentIndex + 1)}
+      >
+        <NavigateNextIcon size="small" />
+      </IconButton>
+    </div>
+  );
+};
+SelectionNavigator.propTypes = {
+  length: PropTypes.number.isRequired,
+  initialIndex: PropTypes.number,
+  onChange: PropTypes.func,
+};
 
 
 const useStyles = theme => ({
@@ -381,20 +495,6 @@ const useStyles = theme => ({
     color: theme.palette.text.secondary,
   },
 });
-
-ToolbarButton.propTypes = {
-  title: PropTypes.string.isRequired,
-  icon: PropTypes.element.isRequired,
-  color: PropTypes.string,
-  className: PropTypes.string,
-  disabled: PropTypes.bool,
-  onClick: PropTypes.func.isRequired,
-};
-
-ToolbarDivider.propTypes = {
-  classes: PropTypes.object.isRequired,
-  unrelated: PropTypes.bool
-};
 
 BottomDrawer.propTypes = {
   classes: PropTypes.object.isRequired,
