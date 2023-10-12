@@ -66,10 +66,6 @@ async function loadNetwork(cy, controller, id) {
   const clusterDefs = networkJson.clusterLabels[0].labels;
   await controller.createClusters(clusterDefs, 'mcode_cluster_id', positionsMap);
 
-  // cy.on('position', 'node', _.debounce(() => {
-  //   controller.savePositions();
-  // }, 4000));
-
   // Set network style
   const style = createNetworkStyle(cy);
   cy.style().fromJson(style.cyJSON);
@@ -78,6 +74,13 @@ async function loadNetwork(cy, controller, id) {
   cy.on('position remove', 'node', _.debounce(() => {
     controller.savePositions();
   }, 4000));
+  
+  cy.on('click', e => {
+    if(e.target === cy) {
+      const pointFactory = document.getElementById('svg_point_factory');
+      controller.handleNetworkBackgroundClick(pointFactory, e.position);
+    }
+  });
 
   // Notify listeners that the network has been loaded
   console.log('Loaded');
@@ -148,6 +151,7 @@ export function NetworkEditor({ id }) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className="network-editor">
+          <svg id="svg_point_factory" style={{ position:'absolute', pointerEvents:'none'}}/>
           <Header
             controller={controller}
             showControlPanel={showControlPanel}

@@ -264,6 +264,27 @@ export class NetworkEditorController {
   }
 
 
+  // TODO only tested in Chrome so far, may not work in other browsers
+  handleNetworkBackgroundClick(svgPointFactory, position) {
+    const point = svgPointFactory.createSVGPoint();
+    point.x = position.x;
+    point.y = position.y;
+
+    const paths = this.bubbleSets.getPaths();
+    for(const path of paths) {
+      const inside = path.node.isPointInFill(point);
+      if(inside) {
+        const parentNodes = this.cy.nodes(':parent');
+        const parent = parentNodes.filter(parent => path === parent.scratch('_bubble'));
+        if(!parent.empty()) {
+          this.toggleExpandCollapse(parent, true);
+        }
+        break;
+      }
+    }
+  }
+
+
   internalEdges(cluster) {
     return cluster.connectedEdges().filter(e => cluster.contains(e.source()) && cluster.contains(e.target()));
   }
