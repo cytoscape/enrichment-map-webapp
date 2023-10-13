@@ -8,7 +8,7 @@ import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { pathwayDBLinkOut } from './links';
 import { REG_COLOR_RANGE } from './network-style';
-import PathwayTable from './pathway-table';
+import PathwayTable, { DEF_SORT_FN } from './pathway-table';
 import SearchBar from './search-bar';
 import { UpDownLegend, numToText } from './charts';
 
@@ -27,22 +27,28 @@ import CollapseIcon from '@material-ui/icons/ExpandMore';
 
 export const NODE_COLOR_SVG_ID = 'node-color-legend-svg';
 
+
+function toTableRow(node) {
+  const pathwayArr = node.data('name');
+
+  const row = {};
+  row.id = node.data('id');
+  row.name = node.data('label');
+  row.href = pathwayArr && pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
+  row.nes = node.data('NES');
+  row.pvalue = node.data('pvalue');
+  row.cluster = node.data('mcode_cluster_id');
+  row.added = Boolean(node.data('added_by_user'));
+
+  return row;
+}
+
 function toTableData(nodes, sortFn) {
   const data = [];
 
   for (const n of nodes) {
-    const pathwayArr = n.data('name');
-
-    const obj = {};
-    obj.id = n.data('id');
-    obj.name = n.data('label');
-    obj.href = pathwayArr && pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
-    obj.nes = n.data('NES');
-    obj.pvalue = n.data('pvalue');
-    obj.cluster = n.data('mcode_cluster_id');
-    obj.added = Boolean(n.data('added_by_user'));
-
-    data.push(obj);
+    const row = toTableRow(n);
+    data.push(row);
   }
 
   return sortFn ? sortFn(data) : data;
@@ -54,10 +60,9 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
   const [ pathwayListIndexed, setPathwayListIndexed ] = useState(() => controller.isPathwayListIndexed());
   const [ searchValue, setSearchValue ] = useState('');
-  const [ totalSelected, setTotalSelected ] = useState(controller.cy.nodes(":childless:selected").length);
   const [ selectedNES, setSelectedNES ] = useState();
-  const [ selectedIds, setSelectedIds ] = useState([]);
-  const [ currentSelectedIndex, setCurrentSelectedIndex ] = useState(-1);
+  const [ selectedRows, setSelectedRows ] = useState([]);
+  const [ currentRow, setCurrentRow ] = useState();
   const [ scrollToId, setScrollToId ] = useState();
   const [ ignored, forceUpdate ] = useReducer(x => x + 1, 0);
 
@@ -68,7 +73,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   searchValueRef.current = searchValue;
 
   const dataRef = useRef();
-  const sortFnRef = useRef();
+  const sortFnRef = useRef(DEF_SORT_FN);
 
   const disabledRef = useRef(true);
   disabledRef.current = !networkLoaded || !pathwayListIndexed;
@@ -76,20 +81,31 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   const cy = controller.cy;
   const cyEmitter = new EventEmitterProxy(cy);
 
-  const getSelectedIds = () => {
+  const getSelectedRows = (sortFn) => {
     const eles = disabledRef.current ? null : cy.$(":selected");
-    const set = new Set();
-    eles.forEach(el => {
-      if (el.group() === 'nodes') { // nodes, except compounds
-        if (!el.isParent()) {
-          set.add(el.data('id'));
-        }
-      } else { // edges
-        set.add(el.source().data('id'));
-        set.add(el.target().data('id'));
+    // Get unique objects/rows (by id)
+    const map = new Map();
+    // Nodes first
+    eles.filter('node').forEach(n => {
+      if (!n.isParent()) {
+          map.set(n.data('id'), toTableRow(n));
       }
     });
-    return Array.from(set);
+    // Edges -- get their source/target data, but only if they haven't been included before
+    eles.filter('edge').forEach(e => {
+      const srcId = e.source().data('id');
+      const tgtId = e.target().data('id');
+      if (!map.has(srcId)) {
+        map.set(srcId, toTableRow(e.source()));
+      }
+      if (!map.has(tgtId)) {
+        map.set(tgtId, toTableRow(e.target()));
+      }
+    });
+    // Convert the map values to array and sort it
+    const arr = Array.from(map.values());
+
+    return sortFn(arr);
   };
 
   const selNodesRef = useRef();
@@ -113,20 +129,25 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
 
   const debouncedSelectionHandler = _.debounce(() => {
     // Selected IDs
-    const selIds = getSelectedIds();
-    setSelectedIds(selIds);
-    setTotalSelected(selIds.length);
+    const selData = getSelectedRows(sortFnRef.current);
+    setSelectedRows(selData);
     // NES (only if there's only one selected pathway)
-    if (selIds.length === 1) {
-      const sel = cy.filter(`[id = "${selIds[0]}"]`);
-      const nes = sel.length === 1 ? sel[0].data('NES') : null;
+    if (selData.length === 1) {
+      const nes = selData[0].nes;
       if (nes !== selectedNES) {
         setSelectedNES(nes);
       }
     } else {
       setSelectedNES(null);
+      if (selData.length === 0) {
+        setCurrentRow(null);
+      }
     }
   }, 200);
+  const debouncedBoxSelectHandler = _.debounce((target) => {
+    // Scroll to the last box selected element
+    setScrollToId(target.data('id'));
+  }, 100);
 
   const onCySelectionChanged = () => {
     debouncedSelectionHandler();
@@ -176,6 +197,11 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
         }
       }
     });
+    cyEmitter.on('boxselect', evt => {
+      if (openRef.current && evt.target.group() === 'nodes' && !evt.target.isParent()) {
+        debouncedBoxSelectHandler(evt.target);
+      }
+    });
     return () => {
       cyEmitter.removeAllListeners();
     };
@@ -191,22 +217,25 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     onShowDrawer(b);
   };
 
-  const onTableSelectionChanged = (selectedIds) => {
-    lastSelectedRowsRef.current = selectedIds;
+  const onRowSelectionChange = (row, selected) => {
+    if (selected) {
+      lastSelectedRowsRef.current = selectedRows;
+      cy.nodes(`[id = "${row.id}"]`).select();
+      setCurrentRow(row);
+    } else {
+      cy.nodes(`[id = "${row.id}"]`).unselect();
+      setCurrentRow(null);
+    }
   };
-  const onDataSorted = (sortFn) => {
+  const onDataSort = (sortFn) => {
     sortFnRef.current = sortFn; // Save the current sort function for later use
   };
 
-  const goToRow = (idx) => {
-    setCurrentSelectedIndex(idx);
+  const onSelectionNavigatorChange = (row, idx) => {
+    setCurrentRow(row);
     // Sort selected Ids
-    if (dataRef && sortFnRef.current) {
-      const sortedData = sortFnRef.current(dataRef.current);
-      const sortedSelectedIds = sortedData.filter(obj => selectedIds.includes(obj.id)).map(obj => obj.id);
-      const id = sortedSelectedIds[idx];
-      console.log('==> goToRow: ' + idx);
-      setScrollToId(id);
+    if (dataRef) {
+      setScrollToId(row.id);
     }
   };
   
@@ -260,7 +289,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
               Pathways&nbsp;
             {totalPathways >= 0 && (
               <Typography display="inline" variant="body2" color="textSecondary">
-                ({ totalPathways })
+                &nbsp;({!isMobile && selectedRows.length > 0 ? selectedRows.length + ' selected of ' : ''}{ totalPathways })
               </Typography>
             )}
             </Typography>
@@ -275,7 +304,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
                 onCancelSearch={cancelSearch}
               />
               <ToolbarDivider classes={classes} />
-              <SelectionNavigator length={totalSelected} onChange={goToRow} />
+              <SelectionNavigator selectedRows={selectedRows} onChange={onSelectionNavigatorChange} />
             </>
           )}
             <ToolbarDivider classes={classes} />
@@ -320,13 +349,13 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
             <PathwayTable
               visible={open}
               data={filteredData ? filteredData : data}
-              selectedIds={selectedIds}
-              currentSelectedIndex={currentSelectedIndex}
+              selectedRows={selectedRows}
+              currentRow={currentRow}
               scrollToId={scrollToId}
               searchTerms={searchTerms}
               controller={controller}
-              onTableSelectionChanged={onTableSelectionChanged}
-              onDataSorted={onDataSorted}
+              onRowSelectionChange={onRowSelectionChange}
+              onDataSort={onDataSort}
             />
           </Collapse>
         </AppBar>
@@ -372,16 +401,16 @@ ToolbarDivider.propTypes = {
 };
 
 
-const SelectionNavigator = ({ length, initialIndex = -1, onChange }) => {
+const SelectionNavigator = ({ selectedRows, initialIndex = -1, onChange }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   
   const navigateTo = (index) => {
     setCurrentIndex(index);
     if (onChange) {
-      onChange(index);
+      onChange(selectedRows[index], index);
     }
   };
-  console.log(length + " :: " + currentIndex);
+  const length = selectedRows.length;
 
   return (
     <div style={{minWidth: 100}}>
@@ -401,7 +430,7 @@ const SelectionNavigator = ({ length, initialIndex = -1, onChange }) => {
   );
 };
 SelectionNavigator.propTypes = {
-  length: PropTypes.number.isRequired,
+  selectedRows: PropTypes.array.isRequired,
   initialIndex: PropTypes.number,
   onChange: PropTypes.func,
 };

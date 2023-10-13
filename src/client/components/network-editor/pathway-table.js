@@ -1,11 +1,10 @@
-import React, { forwardRef, useRef, useImperativeHandle, useState, useEffect } from 'react';
+import React, { forwardRef, useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 import clsx from 'clsx';
 
 import theme from '../../theme';
 import { DEFAULT_PADDING, PATHWAY_TABLE_HEIGHT } from '../defaults';
-import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar, PValueStarRating } from './charts';
 
@@ -140,6 +139,9 @@ TableComponents.TableBody.displayName = "TableBody"; // for linting rule (debugg
 
 const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "hover" };
 
+const DEF_ORDER = 'desc';
+const DEF_ORDER_BY = 'nes';
+
 const descendingComparator = (a, b, orderBy) => {
   if (b[orderBy] < a[orderBy]) {
     return -1;
@@ -156,8 +158,8 @@ const getComparator = (order, orderBy) => {
     : (a, b) => -descendingComparator(a, b, orderBy);
 };
 
-const stableSort = (array, comparator) => {
-  const stabilizedThis = array.map((el, index) => [el, index]);
+const stableSort = (rows, comparator) => {
+  const stabilizedThis = rows.map((el, index) => [el, index]);
   stabilizedThis.sort((a, b) => {
     const order = comparator(a[0], b[0]);
     if (order !== 0) return order;
@@ -165,6 +167,8 @@ const stableSort = (array, comparator) => {
   });
   return stabilizedThis.map((el) => el[0]);
 };
+
+export const DEF_SORT_FN = (rows) => stableSort(rows, getComparator(DEF_ORDER, DEF_ORDER_BY));
 
 const roundNES = (nes) => {
   return nes != null ? (Math.round(nes * Math.pow(10, 2)) / Math.pow(10, 2)) : 0;
@@ -197,7 +201,7 @@ const ContentRow = ({ row, index, selected, current, controller, handleClick }) 
           checked={selected}
           size="small"
           className={classes.checkbox}
-          onClick={() => handleClick(row.id)}
+          onClick={() => handleClick(row)}
         />
       </TableCell>
     {CELLS.map((cell, idx) => (
@@ -206,7 +210,7 @@ const ContentRow = ({ row, index, selected, current, controller, handleClick }) 
         align={cell.numeric ? 'right' : 'left'}
         selected={selected}
         className={clsx(classes[cell.id + 'Cell'], { [classes.tableCell]: true, [classes.selectedCell]: selected })}
-        onClick={() => handleClick(row.id)}
+        onClick={() => handleClick(row)}
       >
       {cell.id === 'name' && (
         <Link
@@ -216,7 +220,6 @@ const ContentRow = ({ row, index, selected, current, controller, handleClick }) 
           color="textSecondary"
           className={classes.link}
           {...linkoutProps}
-          title={row.id} // TODO REMOVE this!!! <<<<<<<<<<<<<<<<<<<<<<<<<<
         >
           { row[cell.id] }
         </Link>
@@ -257,41 +260,34 @@ const PathwayTable = (
   {
     visible,
     data,
-    selectedIds = [],
-    currentSelectedIndex = -1,
+    selectedRows = [],
+    currentRow,
     scrollToId,
     searchTerms,
     controller,
-    onTableSelectionChanged,
-    onDataSorted,
+    onRowSelectionChange,
+    onDataSort,
   }
 ) => {
-  const [order, setOrder] = useState('desc');
-  const [orderBy, setOrderBy] = useState('nes');
+  const [order, setOrder] = useState(DEF_ORDER);
+  const [orderBy, setOrderBy] = useState(DEF_ORDER_BY);
 
   const classes = useStyles();
   const cy = controller.cy;
   
   const virtuosoRef = useRef();
   const sortedDataRef = useRef(stableSort(data, getComparator(order, orderBy)));
-  const selNodesRef = useRef(null);
-  const lastSelectedRowsRef = useRef([]); // Will be used to prevent the table from auto-scrolling to the clicked row
+  const selectedRowsRef = useRef(selectedRows); // Will be used to prevent the table from auto-scrolling to the clicked row
 
   // Sorting
   useEffect(() => {
-    console.log('sortingData...');
     const comparator = getComparator(order, orderBy);
     const sortedData = stableSort(data, comparator);
     sortedDataRef.current = sortedData;
-    if (onDataSorted) {
-      onDataSorted(anyData => stableSort(anyData, comparator));
+    if (onDataSort) {
+      onDataSort(anyData => stableSort(anyData, comparator));
     }
   }, [order, orderBy]);
-  // Selection
-  useEffect(() => {
-    const sel = cy.nodes(":childless:selected");
-    selNodesRef.current = sel.length > 0 ? sel : null;
-  }, []);
   // Scroll to
   useEffect(() => {
     if (scrollToId && virtuosoRef.current) {
@@ -302,13 +298,10 @@ const PathwayTable = (
   }, [scrollToId]);
   // Current item
   useEffect(() => {
-    if (currentSelectedIndex >= 0 && sortedDataRef.current) {
-      const sortedSelectedIds = sortedDataRef.current.map(obj => obj.id).filter(id => selectedIds.includes(id));
-      if (sortedSelectedIds.length > currentSelectedIndex) {
-        gotoNode(sortedSelectedIds[currentSelectedIndex], cy);
-      }
+    if (currentRow) {
+      gotoNode(currentRow.id, cy);
     }
-  }, [currentSelectedIndex]);
+  }, [currentRow]);
 
   if (!visible) {
     // Returns an empty div with the same height as the table just so the open/close animation works properly,
@@ -322,23 +315,23 @@ const PathwayTable = (
     setOrderBy(property);
   };
 
-  const handleRowClick = (id) => {
-    console.log(id);
-    let newSelectedIds = selectedIds ? selectedIds : [];
+  const handleRowClick = (row) => {
+    let newSelectedRows = selectedRows;
+    let selected = false;
 
-    if (selectedIds.includes(id)) {
+    if (selectedRows.findIndex(r => r.id === row.id) >= 0) {
       // Toggle: unselect this row/id
-      newSelectedIds = newSelectedIds.filter(nextId => nextId !== id);
-      lastSelectedRowsRef.current = [...newSelectedIds];
-      cy.elements(`node[id = "${id}"]`).unselect();
+      newSelectedRows = newSelectedRows.filter(r => r.id !== row.id);
+      selectedRowsRef.current = [...newSelectedRows];
     } else {
       // Add this id to the selection list
-      newSelectedIds.push(id);
-      lastSelectedRowsRef.current = [...newSelectedIds];
-      if (onTableSelectionChanged) {
-        onTableSelectionChanged(id);
-      }
-      cy.elements(`node[id = "${id}"]`).select();
+      newSelectedRows.push(row);
+      newSelectedRows = stableSort(data, getComparator(order, orderBy)); // Don't forget to sort it again!
+      selectedRowsRef.current = [...newSelectedRows];
+      selected = true;
+    }
+    if (onRowSelectionChange) {
+      onRowSelectionChange(row, selected);
     }
   };
 
@@ -385,18 +378,13 @@ const PathwayTable = (
   }
 
   // Find the "current" id
-  let currentId = null;
-  if (currentSelectedIndex >= 0 && selectedIds.length > currentSelectedIndex) {
-    // Sort the array of selected Ids by the same order as the table rows so the passed index matches the current order
-    const sortedSelectedIds = sortedDataRef.current.map(obj => obj.id).filter(id => selectedIds.includes(id));
-    currentId = sortedSelectedIds[currentSelectedIndex];
-  }
+  let currentId = currentRow ? currentRow.id : null;
   // Find the "initial" index, which is where the table must auto-scroll to
   let initialIndex = 0;
   let initialId = scrollToId || currentId;
   const initialTopMostItemIndex = { index: 0, align: 'start' };
-  if (!initialId && selectedIds.length > 0) {
-    initialId = selectedIds[0];
+  if (!initialId && selectedRows.length > 0) {
+    initialId = selectedRows[0].id;
   }
   if (initialId && sortedDataRef.current) {
     initialIndex = sortedDataRef.current.findIndex(obj => obj.id === initialId);
@@ -405,7 +393,6 @@ const PathwayTable = (
       initialTopMostItemIndex.offset = -15;
     }
     initialTopMostItemIndex.index = initialIndex;
-    console.log(initialTopMostItemIndex);
   }
 
   return (
@@ -434,7 +421,9 @@ const PathwayTable = (
                 <span>
                   { cell.label }
                 {cell.id === 'name' && data && (
-                  <Typography component="span" variant="body2" color="textSecondary">&nbsp;({ data.length })</Typography>
+                  <Typography component="span" variant="body2" color="textSecondary">
+                    &nbsp;({selectedRows.length > 0 ? selectedRows.length + ' selected of ' : ''}{ data.length })
+                  </Typography>
                 )}
                 </span>
               </Tooltip>
@@ -443,12 +432,12 @@ const PathwayTable = (
         ))}
         </TableRow>
       )}
-      itemContent={(index, obj) => (
+      itemContent={(index, row) => (
         <ContentRow
-          row={obj}
+          row={row}
           index={index}
-          selected={selectedIds && selectedIds.includes(obj.id)}
-          current={currentId === obj.id}
+          selected={selectedRows.findIndex(r => r.id === row.id) >= 0}
+          current={currentRow && currentRow.id === row.id}
           controller={controller}
           handleClick={handleRowClick}
         />
@@ -460,13 +449,13 @@ PathwayTable.displayName = "PathwayTable"; // for linting rule (debugging purpos
 PathwayTable.propTypes = {
   visible: PropTypes.bool.isRequired,
   data: PropTypes.array.isRequired,
-  selectedIds: PropTypes.array,
-  currentSelectedIndex: PropTypes.number,
+  selectedRows: PropTypes.array,
+  currentRow: PropTypes.object,
   scrollToId: PropTypes.string,
   searchTerms: PropTypes.array,
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
-  onTableSelectionChanged: PropTypes.func,
-  onDataSorted: PropTypes.func,
+  onRowSelectionChange: PropTypes.func,
+  onDataSort: PropTypes.func,
 };
 
 export default PathwayTable;
