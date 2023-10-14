@@ -1,6 +1,9 @@
 import _ from 'lodash';
 
 
+const MAX_STACK_DEPTH = 30;
+
+
 export class UndoHandler {
 
   constructor(cy) {
@@ -57,10 +60,7 @@ export class UndoHandler {
       }
 
       if(positionsToUndo.length > 0) {
-        this.undoStack.push({
-          type: 'position',
-          action: () => restorePositions(positionsToUndo)
-        });
+        this._push('position', () => restorePositions(positionsToUndo));
       }
 
       savedPositions = null;
@@ -74,25 +74,33 @@ export class UndoHandler {
     let deletedEles = [];
 
     const restoreEles = elesToRestore => {
+      console.log("elesToRestore: " + elesToRestore.length);
       cy.add(elesToRestore);
     };
 
-    // deleting multiple nodes calls this handler once for each node deleted
+    // Deleting multiple nodes calls this handler once for each node deleted.
+    // A short debounce is used to coalesce the deleted elements into one list.
     const handleDelete = _.debounce(() => {
       const elesToRestore = deletedEles;
-      this.undoStack.push({
-        type: 'delete',
-        action: () => restoreEles(elesToRestore)
-      });
+      console.log("handleDelete " + elesToRestore.length);
+      this._push('delete', () => restoreEles(elesToRestore));
       deletedEles = [];
     }, 50);
 
     cy.on('remove', (evt) => {
-      deletedEles.push(evt.target);
+      deletedEles.push(evt.target.json());
       handleDelete();
     });
   }
 
+
+  _push(type, action) {
+    console.log("undo pushed " + type);
+    if(this.undoStack.length == MAX_STACK_DEPTH) {
+      this.undoStack.shift();
+    }
+    this.undoStack.push({ type, action });
+  }
 
   empty() {
     return this.undoStack.length <= 0;
@@ -104,6 +112,7 @@ export class UndoHandler {
       return;
     }
     const action = this.undoStack.pop();
+    console.log("undoing " + action.type);
     action.action();
   }
 
