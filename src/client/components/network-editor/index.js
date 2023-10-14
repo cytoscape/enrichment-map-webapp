@@ -74,11 +74,11 @@ async function loadNetwork(cy, controller, id) {
   cy.on('position remove', 'node', _.debounce(() => {
     controller.savePositions();
   }, 4000));
-  
+
   cy.on('click', e => {
     if(e.target === cy) {
       const pointFactory = document.getElementById('svg_point_factory');
-      controller.handleNetworkBackgroundClick(pointFactory, e.position);
+      controller.detectBubbleSetClick(pointFactory, e.position);
     }
   });
 
@@ -87,8 +87,7 @@ async function loadNetwork(cy, controller, id) {
   cy.data({ loaded: true });
   controller.bus.emit('networkLoaded', true); 
 
-  console.log('Successful load from DB');
-  console.log('End of editor sync initial phase');
+  console.log('Successful Network Load');
 
   // make the controller accessible from the chrome console for debugging purposes
   window.controller = controller;

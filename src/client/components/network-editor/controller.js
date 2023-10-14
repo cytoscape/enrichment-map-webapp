@@ -6,6 +6,7 @@ import { DEFAULT_PADDING } from '../defaults';
 import { clusterColor } from './network-style';
 import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 import { SearchController } from './search-contoller';
+import { UndoHandler } from './undo-stack';
 
 export const CoSELayoutOptions = {
   name: 'cose',
@@ -47,11 +48,13 @@ export class NetworkEditorController {
     this.networkIDStr = cy.data('id');
 
     this.searchController = new SearchController(cy, this.bus);
+    this.undoHandler = new UndoHandler(cy);
 
     this.networkLoaded = false;
 
     this.bus.on('networkLoaded', () => {
       this.networkLoaded = true;
+      this.undoHandler.init();
       this._fetchMinMaxRanks();
     });
   }
@@ -273,7 +276,7 @@ export class NetworkEditorController {
 
 
   // TODO only tested in Chrome so far, may not work in other browsers
-  handleNetworkBackgroundClick(svgPointFactory, position) {
+  detectBubbleSetClick(svgPointFactory, position) {
     const point = svgPointFactory.createSVGPoint();
     point.x = position.x;
     point.y = position.y;

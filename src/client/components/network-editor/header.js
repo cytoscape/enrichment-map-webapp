@@ -22,7 +22,7 @@ import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
 import { Add, Remove,  } from '@material-ui/icons';
-import { AddLocation } from '@material-ui/icons';
+import { Undo } from '@material-ui/icons';
 import { Delete } from '@material-ui/icons';
 import { RestoreFromTrash } from '@material-ui/icons';
 import CloseIcon from '@material-ui/icons/Close';
@@ -150,20 +150,21 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     setAnchorEl(event.currentTarget);
   };
 
-  const savePositions =  () => controller.savePositions();
-  const deleteNodes =    () => controller.deleteSelectedNodes();
-  const restoreNetwork = () => controller.restoreNetwork();
-
   const buttonsDef = [ 
     {
+      title: "Undo",
+      icon: <Undo />,
+      onClick: () => controller.undoHandler.undo(),
+      unrelated: false,
+    }, {
       title: "Delete Selected Nodes",
       icon: <Delete />,
-      onClick: deleteNodes,
+      onClick: () => controller.deleteSelectedNodes(),
       unrelated: false,
     }, {
       title: "Restore Deleted Nodes",
       icon: <RestoreFromTrash />,
-      onClick: restoreNetwork,
+      onClick: () => controller.restoreNetwork(),
       unrelated: true,
     }, {
       title: "Zoom In",
