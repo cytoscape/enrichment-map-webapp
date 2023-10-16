@@ -7,6 +7,7 @@ import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from '../defaults';
 import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
 import { ShareMenu } from './share-panel';
+import { TYPE as UNDO_TYPE } from './undo-stack';
 
 import { withStyles } from '@material-ui/core/styles';
 
@@ -83,11 +84,22 @@ function createPanner({ cy }) {
 }
 
 
+function getUndoButtonTitle(undoType) {
+  switch(undoType) {
+    case UNDO_TYPE.DELETE: return "Undo Delete";
+    case UNDO_TYPE.POSITION: return "Undo Move";
+    default: return "Undo";
+  }
+}
+
+
 export function Header({ controller, classes, showControlPanel, isMobile, onShowControlPanel }) {
   const [ menuName, setMenuName ] = useState(null);
   const [ mobileMoreAnchorEl, setMobileMoreAnchorEl ] = useState(null);
   const [ anchorEl, setAnchorEl ] = useState(null);
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
+  const [ undoEnabled, setUndoEnabled ] = useState(false);
+  const [ undoType, setUndoType] = useState(null);
 
   const [ snackBarState, setSnackBarState ] = useState({
     open: false,
@@ -103,6 +115,15 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     const onNetworkLoaded = () => setNetworkLoaded(true);
     controller.bus.on('networkLoaded', onNetworkLoaded);
     return () => controller.bus.removeListener('networkLoaded', onNetworkLoaded);
+  }, []);
+
+  useEffect(() => {
+    const onUndo = (pushOrPop, type, empty, peekType) => {
+      setUndoEnabled(!empty);
+      setUndoType(peekType);
+    };
+    controller.bus.on('undo', onUndo);
+    return () => controller.bus.removeListener('undo', onUndo);
   }, []);
 
   useEffect(() => {
@@ -152,9 +173,10 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
 
   const buttonsDef = [ 
     {
-      title: "Undo",
+      title: getUndoButtonTitle(undoType),
       icon: <Undo />,
       onClick: () => controller.undoHandler.undo(),
+      isEnabled: () => undoEnabled,
       unrelated: false,
     }, {
       title: "Delete Selected Nodes",
@@ -264,12 +286,12 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
         <TitleEditor controller={controller} disabled={!networkLoaded} />
         <ToolbarDivider classes={classes} unrelated />
         <div className={classes.sectionDesktop}>
-          { buttonsDef.map(({title, icon, onClick, unrelated}, idx) =>
+          { buttonsDef.map(({title, icon, onClick, unrelated, isEnabled }, idx) =>
             <Fragment key={idx}>
               <ToolbarButton
                 title={title}
                 icon={icon}
-                disabled={!networkLoaded}
+                disabled={!networkLoaded || (isEnabled && !isEnabled())}
                 onClick={onClick}
               />
               <ToolbarDivider classes={classes} unrelated={unrelated} />
@@ -300,16 +322,18 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
 function ToolbarButton({ title, icon, color, className, disabled, onClick }) {
   return (
     <Tooltip arrow placement="bottom" title={title}>
-      <IconButton
-        disabled={disabled}
-        component={disabled ? "div" : undefined} // To prevent error: 'Material-UI: You are providing a disabled `button` child to the Tooltip component.'
-        size="small"
-        color={color || 'inherit'}
-        className={className}
-        onClick={onClick}
-      >
-        { icon }
-      </IconButton>
+      <span> {/* span needed to prevent issues with tooltips on disabled buttons */}
+        <IconButton
+          disabled={disabled}
+          component={disabled ? "div" : undefined} // To prevent error: 'Material-UI: You are providing a disabled `button` child to the Tooltip component.'
+          size="small"
+          color={color || 'inherit'}
+          className={className}
+          onClick={onClick}
+        >
+          { icon }
+        </IconButton>
+      </span>
     </Tooltip>
   );
 }

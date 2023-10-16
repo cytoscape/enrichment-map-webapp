@@ -3,6 +3,10 @@ import _ from 'lodash';
 
 const MAX_STACK_DEPTH = 30;
 
+export const TYPE = {
+  DELETE: 'DELETE',
+  POSITION: 'POSITION'
+};
 
 export class UndoHandler {
 
@@ -61,7 +65,7 @@ export class UndoHandler {
       }
 
       if(positionsToUndo.length > 0) {
-        this._push('position', () => restorePositions(positionsToUndo));
+        this._push(TYPE.POSITION, () => restorePositions(positionsToUndo));
       }
 
       savedPositions = null;
@@ -99,7 +103,7 @@ export class UndoHandler {
     // A short debounce is used to coalesce the deleted elements into one list.
     const handleDelete = _.debounce(() => {
       const elesToRestore = deletedEles;
-      this._push('delete', () => restoreEles(elesToRestore));
+      this._push(TYPE.DELETE, () => restoreEles(elesToRestore));
       deletedEles = [];
     }, 50);
 
@@ -111,11 +115,12 @@ export class UndoHandler {
 
 
   _push(type, action) {
-    console.log("undo pushed " + type);
     if(this.undoStack.length == MAX_STACK_DEPTH) {
       this.undoStack.shift();
     }
     this.undoStack.push({ type, action });
+
+    this.controller.bus.emit('undo', 'push', action.type, this.empty(), this.peekType());
   }
 
   empty() {
@@ -127,9 +132,17 @@ export class UndoHandler {
       console.log("no undo action on stack");
       return;
     }
+
     const action = this.undoStack.pop();
-    console.log("undoing " + action.type);
     action.action();
+
+    this.controller.bus.emit('undo', 'pop', action.type, this.empty(), this.peekType());
+  }
+
+  peekType() {
+    if(!this.empty()) {
+      return this.undoStack.slice(-1)[0].type;
+    }
   }
 
 }
