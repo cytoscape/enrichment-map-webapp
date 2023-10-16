@@ -6,8 +6,9 @@ const MAX_STACK_DEPTH = 30;
 
 export class UndoHandler {
 
-  constructor(cy) {
-    this.cy = cy;
+  constructor(controller) {
+    this.controller = controller;
+    this.cy = controller.cy;
     this.undoStack = [];
   }
 
@@ -71,18 +72,33 @@ export class UndoHandler {
   _addDeleteUndoListeners() {
     const { cy } = this;
 
-    let deletedEles = [];
-
     const restoreEles = elesToRestore => {
-      console.log("elesToRestore: " + elesToRestore.length);
+      const parentIDs = new Set();
+      for(const ele of elesToRestore) {
+        if(ele.group === 'nodes') {
+          if(ele.data._isParent) {
+            parentIDs.add(ele.data.id);
+          }
+          if(ele.data.parent) {
+            parentIDs.add(ele.data.parent);
+          }
+        }
+      }
+
       cy.add(elesToRestore);
+
+      for(const id of parentIDs) {
+        const parent = cy.elements(`node[id="${id}"]`);
+        this.controller._updateBubblePath(parent);
+      }
     };
+
+    let deletedEles = [];
 
     // Deleting multiple nodes calls this handler once for each node deleted.
     // A short debounce is used to coalesce the deleted elements into one list.
     const handleDelete = _.debounce(() => {
       const elesToRestore = deletedEles;
-      console.log("handleDelete " + elesToRestore.length);
       this._push('delete', () => restoreEles(elesToRestore));
       deletedEles = [];
     }, 50);

@@ -48,7 +48,7 @@ export class NetworkEditorController {
     this.networkIDStr = cy.data('id');
 
     this.searchController = new SearchController(cy, this.bus);
-    this.undoHandler = new UndoHandler(cy);
+    this.undoHandler = new UndoHandler(this);
 
     this.networkLoaded = false;
 
@@ -329,21 +329,31 @@ export class NetworkEditorController {
     return nes;
   }
 
-
-  _createBubblePath(parent) {
+  /**
+   * Creates, removes, or updates a bubble path depending on the state of the parent node.
+   */
+  _updateBubblePath(parent) {
     if(!this.bubbleSets) {
       this.bubbleSets = this.cy.bubbleSets(); // only create one instance of this plugin
     }
-    
-    const cluster = parent.children();
-    const edges = this.internalEdges(cluster);
-    const c = clusterColor(parent); // Average NES needs to be set on the parent first
-    const rgb = `rgb(${c.r}, ${c.g}, ${c.b}, 0.2)`;
 
-    const bubblePath = this.bubbleSets.addPath(cluster, edges, null, {
+    const existingPath = parent.scratch('_bubble');
+    if(existingPath) {
+      this.bubbleSets.removePath(existingPath);
+    }
+
+    if(parent.removed())
+      return;
+
+    const nodes = parent.children();
+    const edges = this.internalEdges(nodes);
+    const c     = clusterColor(parent); // Average NES needs to be set on the parent first
+    const rgb   = `rgb(${c.r}, ${c.g}, ${c.b}, 0.2)`;
+
+    const bubblePath = this.bubbleSets.addPath(nodes, edges, null, {
       virtualEdges: false,
       interactive: true,
-      throttle: 10, // makes animation much smoother
+      throttle: 10, // makes animation smoother
       style: {
         'fill': rgb,
         'stroke': rgb,
@@ -379,7 +389,11 @@ export class NetworkEditorController {
       const parent = cy.add({
         group: 'nodes',
         name: label,
-        data: { label: label, id: clusterId }
+        data: { 
+          label: label, 
+          id: clusterId,
+          _isParent: true, // Important, used to identify parent nodes when the undoHelper restores them.
+        }
       });
       cluster.forEach(node => {
         node.move({ parent: clusterId });
@@ -399,7 +413,7 @@ export class NetworkEditorController {
       }
 
       this._setAverageNES(parent);
-      const bubblePath = this._createBubblePath(parent);
+      const bubblePath = this._updateBubblePath(parent);
 
       parent.on('position', () => {
         // When the children are ungrabified the 'position' event is not fired for them, must update the bubble path manually.
@@ -451,8 +465,8 @@ export class NetworkEditorController {
         this.cy.remove(parent);
       } else {
         this._setAverageNES(parent);
-        this._createBubblePath(parent);
       }
+      this._updateBubblePath(parent);
     });
 
     this.bus.emit('deletedSelectedNodes', deletedNodes);
