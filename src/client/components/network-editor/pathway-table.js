@@ -12,9 +12,10 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { Checkbox, Paper, Typography, Link, Tooltip } from '@material-ui/core';
+import { IconButton, Checkbox, Paper, Typography, Link, Tooltip } from '@material-ui/core';
 import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 
+import UnselectAllIcon from '@material-ui/icons/IndeterminateCheckBox';
 import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
 
@@ -101,6 +102,13 @@ const useStyles = makeStyles((theme) => ({
   selectedCell: {
     backgroundColor: theme.palette.action.selected,
   },
+  unselectAllButton: {
+    maxWidth: 32,
+    maxHeight: 32,
+  },
+  unselectAllIcon: {
+    fontSize: '1.25rem',
+  },
   checkbox: {
     minWidth: 32,
     padding: theme.spacing(0.5),
@@ -183,6 +191,7 @@ const gotoNode = (id, cy) => {
     duration: 500
   });
 };
+
 
 const ContentRow = ({ row, index, selected, current, controller, handleClick }) => {
   const classes = useStyles();
@@ -276,7 +285,8 @@ const PathwayTable = (
   const cy = controller.cy;
   
   const virtuosoRef = useRef();
-  const sortedDataRef = useRef(stableSort(data, getComparator(order, orderBy)));
+  const sortedDataRef = useRef();
+  sortedDataRef.current = stableSort(data, getComparator(order, orderBy));
   const selectedRowsRef = useRef(selectedRows); // Will be used to prevent the table from auto-scrolling to the clicked row
 
   // Sorting
@@ -333,6 +343,12 @@ const PathwayTable = (
     if (onRowSelectionChange) {
       onRowSelectionChange(row, selected);
     }
+  };
+
+  const handleUnselectAllClick = () => {
+    selectedRows.forEach(row => {
+      handleRowClick(row);
+    });
   };
 
   if (data.length === 0 && searchTerms && searchTerms.length > 0) {
@@ -404,7 +420,20 @@ const PathwayTable = (
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
-          <TableCell className={clsx(classes.checkCell, { [classes.tableCell]: true })} />
+          <TableCell className={clsx(classes.checkCell, { [classes.tableCell]: true })}>
+            <Tooltip title="Unselect All">
+              <span>
+                <IconButton
+                  disabled={selectedRows.length === 0}
+                  color="secondary"
+                  className={classes.unselectAllButton}
+                  onClick={handleUnselectAllClick}
+                >
+                  <UnselectAllIcon className={classes.unselectAllIcon} />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </TableCell>
         {CELLS.map((cell) => (
           <TableCell
             key={cell.id}

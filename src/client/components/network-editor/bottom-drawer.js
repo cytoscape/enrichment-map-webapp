@@ -57,10 +57,11 @@ function toTableData(nodes, sortFn) {
 
 export function BottomDrawer({ controller, classes, controlPanelVisible, isMobile, onShowDrawer }) {
   const [ open, setOpen ] = useState(false);
-  const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
-  const [ pathwayListIndexed, setPathwayListIndexed ] = useState(() => controller.isPathwayListIndexed());
+  const [ disabled, setDisabled ] = useState(true);
   const [ searchValue, setSearchValue ] = useState('');
   const [ selectedNES, setSelectedNES ] = useState();
+  const [ data, setData ] = useState([]);
+  const [ searchTerms, setSearchTerms ] = useState();
   const [ selectedRows, setSelectedRows ] = useState([]);
   const [ currentRow, setCurrentRow ] = useState();
   const [ scrollToId, setScrollToId ] = useState();
@@ -70,13 +71,10 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   openRef.current = open;
 
   const searchValueRef = useRef(searchValue);
-  searchValueRef.current = searchValue;
-
-  const dataRef = useRef();
   const sortFnRef = useRef(DEF_SORT_FN);
 
   const disabledRef = useRef(true);
-  disabledRef.current = !networkLoaded || !pathwayListIndexed;
+  disabledRef.current = disabled;
   
   const cy = controller.cy;
   const cyEmitter = new EventEmitterProxy(cy);
@@ -86,22 +84,24 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     // Get unique objects/rows (by id)
     const map = new Map();
     // Nodes first
-    eles.filter('node').forEach(n => {
-      if (!n.isParent()) {
-          map.set(n.data('id'), toTableRow(n));
-      }
-    });
-    // Edges -- get their source/target data, but only if they haven't been included before
-    eles.filter('edge').forEach(e => {
-      const srcId = e.source().data('id');
-      const tgtId = e.target().data('id');
-      if (!map.has(srcId)) {
-        map.set(srcId, toTableRow(e.source()));
-      }
-      if (!map.has(tgtId)) {
-        map.set(tgtId, toTableRow(e.target()));
-      }
-    });
+    if (eles) {
+      eles.filter('node').forEach(n => {
+        if (!n.isParent()) {
+            map.set(n.data('id'), toTableRow(n));
+        }
+      });
+      // Edges -- get their source/target data, but only if they haven't been included before
+      eles.filter('edge').forEach(e => {
+        const srcId = e.source().data('id');
+        const tgtId = e.target().data('id');
+        if (!map.has(srcId)) {
+          map.set(srcId, toTableRow(e.source()));
+        }
+        if (!map.has(tgtId)) {
+          map.set(tgtId, toTableRow(e.target()));
+        }
+      });
+    }
     // Convert the map values to array and sort it
     const arr = Array.from(map.values());
 
@@ -111,51 +111,91 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   const selNodesRef = useRef();
   const lastSelectedRowsRef = useRef([]); // Will be used to clear the search only when selecting a node on the network
 
-  const cancelSearch = () => {
-    setSearchValue('');
-  };
-  const search = (val) => {
-    // Unselect Cy elements first
-    const selectedEles = cy.elements().filter(':selected');
-    selectedEles.unselect();
-    // Now execute the search
-    const query = val.trim();
-    if (query.length > 0) {
-      setSearchValue(val);
-    } else {
-      cancelSearch();
-    }
-  };
-
-  const debouncedSelectionHandler = _.debounce(() => {
-    // Selected IDs
-    const selData = getSelectedRows(sortFnRef.current);
-    setSelectedRows(selData);
+  const onNetworkSelection = () => {
+    // Selected rows
+    const selRows = getSelectedRows(sortFnRef.current);
+    setSelectedRows(selRows);
     // NES (only if there's only one selected pathway)
-    if (selData.length === 1) {
-      const nes = selData[0].nes;
+    if (selRows.length === 1) {
+      const nes = selRows[0].nes;
       if (nes !== selectedNES) {
         setSelectedNES(nes);
       }
     } else {
       setSelectedNES(null);
-      if (selData.length === 0) {
+      if (selRows.length === 0) {
         setCurrentRow(null);
       }
+    }
+  };
+
+  const updateData = () => {
+    // Update table data
+    const nodes = cy.nodes(':childless'); // ignore compound nodes!
+    const data = toTableData(nodes);
+
+    // Filter out pathways that don't match the search terms
+    let filteredData;
+    const searchTerms = searchValueRef.current ? searchValueRef.current.toLowerCase().trim().split(' ') : [];
+
+    if (searchTerms.length > 0) {
+      filteredData = [];
+
+      OUTER:
+      for (const obj of data) {
+        for (const term of searchTerms) {
+          if (obj.name.toLowerCase().includes(term)) {
+            filteredData.push(obj);
+            continue OUTER;
+          }
+        }
+      }
+    }
+
+    setSearchTerms(searchTerms);
+    setData(filteredData ? filteredData : data);
+
+    // Also update selection state
+    onNetworkSelection();
+  };
+  
+  const debouncedOnNetworkSelection = _.debounce(() => onNetworkSelection(), 200);
+  const debouncedOnNetworkChange = _.debounce(() => {
+    const newDisabled = !controller.isNetworkLoaded() || !controller.isPathwayListIndexed();
+    if (newDisabled !== disabled) {
+      setDisabled(newDisabled);
+    }
+    if (!newDisabled) {
+      updateData();
     }
   }, 200);
   const debouncedBoxSelectHandler = _.debounce((target) => {
     // Scroll to the last box selected element
     setScrollToId(target.data('id'));
   }, 100);
-
-  const onCySelectionChanged = () => {
-    debouncedSelectionHandler();
+  
+  const search = (val) => {
+    // Now execute the search
+    const query = val.trim();
+    if (query.length > 0) {
+      // Unselect Cy elements first
+      const selectedEles = cy.elements().filter(':selected');
+      selectedEles.unselect();
+      searchValueRef.current = val;
+      setSearchValue(val);
+    } else {
+      searchValueRef.current = query;
+      setSearchValue(query);
+    }
+    updateData();
+  };
+  const cancelSearch = () => {
+    search('');
   };
 
   useEffect(() => {
-    const onNetworkLoaded = () => setNetworkLoaded(true);
-    const onPathwayListIndexed = () => setPathwayListIndexed(true);
+    const onNetworkLoaded = () => debouncedOnNetworkChange();
+    const onPathwayListIndexed = () => debouncedOnNetworkChange();
     controller.bus.on('networkLoaded', onNetworkLoaded);
     controller.bus.on('pathwayListIndexed', onPathwayListIndexed);
     return () => {
@@ -165,16 +205,11 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   }, []);
 
   useEffect(() => {
-    const onNetworkChanged = () => {
-      if (controller.isNetworkLoaded()) {
-        forceUpdate();
-      }
-    };
     const clearSearch = _.debounce(() => {
       cancelSearch();
     }, 128);
-    cyEmitter.on('add remove', onNetworkChanged);
-    cyEmitter.on('select unselect', onCySelectionChanged);
+    cyEmitter.on('add remove', debouncedOnNetworkChange);
+    cyEmitter.on('select unselect', debouncedOnNetworkSelection);
     cyEmitter.on('select', evt => {
       const selId = evt.target.length === 1 ? evt.target.data('id') : null;
       if (!lastSelectedRowsRef.current.includes(selId)) {
@@ -233,38 +268,14 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
 
   const onSelectionNavigatorChange = (row, idx) => {
     setCurrentRow(row);
-    // Sort selected Ids
-    if (dataRef) {
-      setScrollToId(row.id);
-    }
+    setScrollToId(row.id);
   };
-  
-  const nodes = cy.nodes(':childless'); // ignore compound nodes!
-  const disabled = disabledRef.current;
-  const totalPathways = disabled ? 0 : nodes.length;
-  const data = disabled ? [] : toTableData(nodes);
-  dataRef.current = data;
-
-  // Filter out pathways that don't match the search terms
-  let filteredData; 
-  const searchTerms = searchValue == null ? [] : searchValue.toLowerCase().trim().split(' ');
-
-  if (searchTerms.length > 0) {
-    filteredData = [];
-
-    OUTER:
-    for (const obj of data) {
-      for (const term of searchTerms) {
-        if (obj.name.toLowerCase().includes(term)) {
-          filteredData.push(obj);
-          continue OUTER;
-        }
-      }
-    }
-  }
 
   const shiftDrawer = controlPanelVisible && !isMobile; 
   const magNES = controller.style ? controller.style.magNES : undefined;
+  const totalPathways = disabled ? 0 : data.length;
+  const filteredSelectedRows = selectedRows.filter(a => data.some(b => a.id === b.id));
+  const totalSelected = filteredSelectedRows.length;
 
   return (
     <Drawer
@@ -289,7 +300,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
               Pathways&nbsp;
             {totalPathways >= 0 && (
               <Typography display="inline" variant="body2" color="textSecondary">
-                &nbsp;({!isMobile && selectedRows.length > 0 ? selectedRows.length + ' selected of ' : ''}{ totalPathways })
+                &nbsp;({!isMobile && totalSelected > 0 ? totalSelected + ' selected of ' : ''}{ totalPathways })
               </Typography>
             )}
             </Typography>
@@ -304,7 +315,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
                 onCancelSearch={cancelSearch}
               />
               <ToolbarDivider classes={classes} />
-              <SelectionNavigator selectedRows={selectedRows} onChange={onSelectionNavigatorChange} />
+              <SelectionNavigator selectedRows={filteredSelectedRows} onChange={onSelectionNavigatorChange} />
             </>
           )}
             <ToolbarDivider classes={classes} />
@@ -348,8 +359,8 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
           <Collapse in={open} timeout="auto" unmountOnExit>
             <PathwayTable
               visible={open}
-              data={filteredData ? filteredData : data}
-              selectedRows={selectedRows}
+              data={data}
+              selectedRows={filteredSelectedRows}
               currentRow={currentRow}
               scrollToId={scrollToId}
               searchTerms={searchTerms}
