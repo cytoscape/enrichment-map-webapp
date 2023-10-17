@@ -482,6 +482,13 @@ export class NetworkEditorController {
       edge.target().select();
       edge.unselect();
     });
+    // Prevent compound nodes from being selected as well
+    this.cy.nodes(':parent').on('select', evt => {
+      const node = evt.target;
+      if (node.isParent()) {
+        node.unselect();
+      }
+    });
   }
 
   async _fetchMinMaxRanks() {
