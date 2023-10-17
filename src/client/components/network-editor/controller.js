@@ -281,7 +281,7 @@ export class NetworkEditorController {
     point.x = position.x;
     point.y = position.y;
 
-    const paths = this.bubbleSets.getPaths();
+    const paths = this.bubbleSets ? this.bubbleSets.getPaths() : [];
     for(const path of paths) {
       const inside = path.node.isPointInFill(point);
       if(inside) {
