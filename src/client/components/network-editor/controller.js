@@ -55,6 +55,7 @@ export class NetworkEditorController {
     this.bus.on('networkLoaded', () => {
       this.networkLoaded = true;
       this.undoHandler.init();
+      this._changeNetworkSelectionBehavior();
       this._fetchMinMaxRanks();
     });
   }
@@ -472,6 +473,16 @@ export class NetworkEditorController {
     this.bus.emit('deletedSelectedNodes', deletedNodes);
   }
 
+  _changeNetworkSelectionBehavior() {
+    // Selecting an edge should select its nodes, but the edge itself must never be selected
+    // (this makes it easier to keep the Pathways table selection consistent)
+    this.cy.edges().on('select', evt => {
+      const edge = evt.target;
+      edge.source().select();
+      edge.target().select();
+      edge.unselect();
+    });
+  }
 
   async _fetchMinMaxRanks() {
     const res = await fetch(`/api/${this.networkIDStr}/minmaxranks`);

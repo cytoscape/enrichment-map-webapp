@@ -80,27 +80,11 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   const cyEmitter = new EventEmitterProxy(cy);
 
   const getSelectedRows = (sortFn) => {
-    const eles = disabledRef.current ? null : cy.$(":selected");
+    const nodes = disabledRef.current ? null : cy.nodes(":childless:selected");
     // Get unique objects/rows (by id)
     const map = new Map();
-    // Nodes first
-    if (eles) {
-      eles.filter('node').forEach(n => {
-        if (!n.isParent()) {
-            map.set(n.data('id'), toTableRow(n));
-        }
-      });
-      // Edges -- get their source/target data, but only if they haven't been included before
-      eles.filter('edge').forEach(e => {
-        const srcId = e.source().data('id');
-        const tgtId = e.target().data('id');
-        if (!map.has(srcId)) {
-          map.set(srcId, toTableRow(e.source()));
-        }
-        if (!map.has(tgtId)) {
-          map.set(tgtId, toTableRow(e.target()));
-        }
-      });
+    if (nodes) {
+      nodes.forEach(n => map.set(n.data('id'), toTableRow(n)));
     }
     // Convert the map values to array and sort it
     const arr = Array.from(map.values());
@@ -108,7 +92,6 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     return sortFn(arr);
   };
 
-  const selNodesRef = useRef();
   const lastSelectedRowsRef = useRef([]); // Will be used to clear the search only when selecting a node on the network
 
   const onNetworkSelection = () => {
@@ -220,15 +203,8 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
       if (openRef.current) {
         // When the table is opened, scroll to the clicked pathway
         var ele = evt.target;
-        if (ele !== cy) { // Ignore clicks on the background!
-          if (ele.group() === 'nodes') {
-            setScrollToId(ele.data('id'));
-          } else {
-            // Sort the two nodes connected by this edge and get the id of the first one
-            const tmpData = toTableData([ ele.source(), ele.target() ], sortFnRef.current);
-            const id = tmpData[0].id;
-            setScrollToId(id);
-          }
+        if (ele.group && ele.group() === 'nodes') { // Ignore clicks on edges and on the background!
+          setScrollToId(ele.data('id'));
         }
       }
     });
@@ -240,11 +216,6 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     return () => {
       cyEmitter.removeAllListeners();
     };
-  }, []);
-
-  useEffect(() => {
-    const sel = cy.nodes(":childless:selected");
-    selNodesRef.current = sel;
   }, []);
 
   const handleOpenDrawer = (b) => {
