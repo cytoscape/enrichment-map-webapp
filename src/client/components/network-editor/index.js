@@ -82,6 +82,22 @@ async function loadNetwork(cy, controller, id) {
     }
   });
 
+  // Selecting an edge should select its nodes, but the edge itself must never be selected
+  // (this makes it easier to keep the Pathways table selection consistent)
+  cy.edges().on('select', evt => {
+    const edge = evt.target;
+    edge.source().select();
+    edge.target().select();
+    edge.unselect();
+  });
+  // Prevent compound nodes from being selected as well
+  cy.nodes(':parent').on('select', evt => {
+    const node = evt.target;
+    if (node.isParent()) {
+      node.unselect();
+    }
+  });
+
   // Notify listeners that the network has been loaded
   console.log('Loaded');
   cy.data({ loaded: true });
