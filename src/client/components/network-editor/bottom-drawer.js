@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useReducer, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 import clsx from 'clsx';
@@ -19,8 +19,8 @@ import { AppBar, Toolbar, Divider, Grid} from '@material-ui/core';
 import { Drawer, Tooltip, Typography } from '@material-ui/core';
 import { IconButton } from '@material-ui/core';
 
-import NavigateBeforeIcon from '@material-ui/icons/NavigateBefore';
-import NavigateNextIcon from '@material-ui/icons/NavigateNext';
+import ArrowUpwardIcon from '@material-ui/icons/ArrowUpward';
+import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 import ExpandIcon from '@material-ui/icons/ExpandLess';
 import CollapseIcon from '@material-ui/icons/ExpandMore';
 
@@ -65,7 +65,6 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   const [ selectedRows, setSelectedRows ] = useState([]);
   const [ currentRow, setCurrentRow ] = useState();
   const [ scrollToId, setScrollToId ] = useState();
-  const [ ignored, forceUpdate ] = useReducer(x => x + 1, 0);
 
   const openRef = useRef(false);
   openRef.current = open;
@@ -75,6 +74,10 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
 
   const disabledRef = useRef(true);
   disabledRef.current = disabled;
+
+  const lastSelectedRowsRef = useRef([]); // Will be used to clear the search only when selecting a node on the network
+  const currentRowRef = useRef();
+  currentRowRef.current = currentRow;
   
   const cy = controller.cy;
   const cyEmitter = new EventEmitterProxy(cy);
@@ -92,8 +95,6 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     return sortFn(arr);
   };
 
-  const lastSelectedRowsRef = useRef([]); // Will be used to clear the search only when selecting a node on the network
-
   const onNetworkSelection = () => {
     // Selected rows
     const selRows = getSelectedRows(sortFnRef.current);
@@ -106,7 +107,9 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
       }
     } else {
       setSelectedNES(null);
-      if (selRows.length === 0) {
+    }
+    if (currentRowRef.current) {
+      if (selRows.findIndex(r => r.id === currentRowRef.current.id) === -1) {
         setCurrentRow(null);
       }
     }
@@ -115,14 +118,13 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   const updateData = () => {
     // Update table data
     const nodes = cy.nodes(':childless'); // ignore compound nodes!
-    const data = toTableData(nodes);
+    let data = toTableData(nodes);
 
     // Filter out pathways that don't match the search terms
-    let filteredData;
     const searchTerms = searchValueRef.current ? searchValueRef.current.toLowerCase().trim().split(' ') : [];
 
     if (searchTerms.length > 0) {
-      filteredData = [];
+      const filteredData = [];
 
       OUTER:
       for (const obj of data) {
@@ -133,10 +135,12 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
           }
         }
       }
+
+      data = filteredData;
     }
 
     setSearchTerms(searchTerms);
-    setData(filteredData ? filteredData : data);
+    setData(data);
 
     // Also update selection state
     onNetworkSelection();
@@ -237,9 +241,34 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     sortFnRef.current = sortFn; // Save the current sort function for later use
   };
 
-  const onSelectionNavigatorChange = (row, idx) => {
-    setCurrentRow(row);
-    setScrollToId(row.id);
+  const getSortedSelectedRows = () => {
+    let rows = selectedRows;
+    rows = rows.filter(a => data.some(b => a.id === b.id));
+    return sortFnRef.current(rows);
+  };
+  const goToNewCurrentRow = (step) => {
+    const rows = getSortedSelectedRows();
+    if (rows.length > 0) {
+      let idx = -1;
+      if (!currentRow) {
+        // Go to the first/last selected row
+        idx = step > 0 ? 0 : rows.length - 1;
+      } else {
+        // Go to the next/previous selected row
+        idx = rows.findIndex(r => r.id === currentRow.id);
+        idx += step;
+        if (idx >= rows.length) {
+          idx -= rows.length;
+        } else if (idx < 0) {
+          idx += rows.length;
+        }
+      }
+      if (idx >= 0) {
+        var newCurrentRow = rows[idx];
+        setCurrentRow(newCurrentRow);
+        setScrollToId(newCurrentRow.id);
+      }
+    }
   };
 
   const shiftDrawer = controlPanelVisible && !isMobile; 
@@ -286,7 +315,11 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
                 onCancelSearch={cancelSearch}
               />
               <ToolbarDivider classes={classes} />
-              <SelectionNavigator selectedRows={filteredSelectedRows} onChange={onSelectionNavigatorChange} />
+              <SelectionNavigator
+                disabled={totalSelected === 0}
+                onPrevious={() => goToNewCurrentRow(-1)}
+                onNext={() => goToNewCurrentRow(1)}
+              />
             </>
           )}
             <ToolbarDivider classes={classes} />
@@ -383,38 +416,30 @@ ToolbarDivider.propTypes = {
 };
 
 
-const SelectionNavigator = ({ selectedRows, initialIndex = -1, onChange }) => {
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  
-  const navigateTo = (index) => {
-    setCurrentIndex(index);
-    if (onChange) {
-      onChange(selectedRows[index], index);
-    }
-  };
-  const length = selectedRows.length;
-
+const SelectionNavigator = ({ disabled, onPrevious, onNext }) => {
   return (
     <div style={{minWidth: 100}}>
-      <IconButton
-        disabled={length < 2 || currentIndex <= 0}
-        onClick={() => navigateTo(currentIndex - 1)}
-      >
-        <NavigateBeforeIcon size="small" />
-      </IconButton>
-      <IconButton
-        disabled={length < 2 || currentIndex === length - 1}
-        onClick={() => navigateTo(currentIndex + 1)}
-      >
-        <NavigateNextIcon size="small" />
-      </IconButton>
+      <Tooltip title="Previous Selection">
+        <span>
+          <IconButton disabled={disabled} onClick={() => onPrevious && onPrevious()}>
+            <ArrowUpwardIcon size="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Tooltip title="Next Selection">
+        <span>
+          <IconButton disabled={disabled} onClick={() => onNext && onNext()}>
+            <ArrowDownwardIcon size="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
     </div>
   );
 };
 SelectionNavigator.propTypes = {
-  selectedRows: PropTypes.array.isRequired,
-  initialIndex: PropTypes.number,
-  onChange: PropTypes.func,
+  disabled: PropTypes.bool,
+  onPrevious: PropTypes.func,
+  onNext: PropTypes.func,
 };
 
 
