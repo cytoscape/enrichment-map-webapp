@@ -138,6 +138,7 @@ http.get('/:netid/:gene/nodes', async function(req, res, next) {
  */
 http.post('/:netid/genesets', async function(req, res, next) {
   try {
+    const { intersection } = req.query;
     const { netid } = req.params;
     const { geneSets } = req.body;
 
@@ -146,7 +147,7 @@ http.post('/:netid/genesets', async function(req, res, next) {
       return;
     }
 
-    const geneInfo = await Datastore.getGenesWithRanks(DB_1, netid, geneSets);
+    const geneInfo = await Datastore.getGenesWithRanks(DB_1, netid, geneSets, intersection === 'true');
     if(!geneInfo) {
       res.sendStatus(404);
     } else {

@@ -44,7 +44,7 @@ describe('Gene Set Queries', () => {
   });
 
   it('gets a geneset with ranks', async () => {
-    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_5'], { nodeLimit: 100 });
+    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_5']);
     expect(results).to.eql({
       minRank: 1,
       maxRank: 11,
@@ -58,7 +58,7 @@ describe('Gene Set Queries', () => {
   });
 
   it('gets more than one geneset with ranks', async () => {
-    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_3', 'GENESET_4'], { nodeLimit: 100 });
+    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_3', 'GENESET_4']);
     expect(results).to.eql({
       minRank: 1,
       maxRank: 11,
@@ -73,8 +73,20 @@ describe('Gene Set Queries', () => {
     });
   });
 
+  it('gets geneset with ranks intersection', async () => {
+    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, ['GENESET_3', 'GENESET_4'], true);
+    expect(results).to.eql({
+      minRank: 1,
+      maxRank: 11,
+      genes: [
+        { gene: "BBB", rank: 2 },
+        { gene: "AAA", rank: 1 }
+      ]
+    });
+  });
+
   it('gets all genesets with ranks', async () => {
-    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, [], { nodeLimit: 100 });
+    const results = await Datastore.getGenesWithRanks(GENESET_DB, networkID, []);
     expect(results).to.eql({
       minRank: 1,
       maxRank: 11,

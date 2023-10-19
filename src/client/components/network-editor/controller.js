@@ -494,7 +494,8 @@ export class NetworkEditorController {
     }
 
     // New query...
-    const res = await fetch(`/api/${this.networkIDStr}/genesets`, {
+    const queryParams = new URLSearchParams({ intersection: false });
+    const res = await fetch(`/api/${this.networkIDStr}/genesets?${queryParams}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

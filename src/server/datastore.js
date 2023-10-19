@@ -638,7 +638,7 @@ class Datastore {
    * The returned array is sorted so that the genes with ranks are first (sorted by rank),
    * then the genes without rankes are after (sorted alphabetically).
    */
-  async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames) {
+  async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames, intersection) {
     const networkID = makeID(networkIDStr);
 
     if(geneSetNames === undefined || geneSetNames.length == 0) {
@@ -652,7 +652,12 @@ class Datastore {
           { $project: { genes: { $map: { input: "$genes", as: "g", in: { gene: "$$g" } } } } },
           { $unwind: "$genes" },
           { $replaceRoot: { newRoot: "$genes" } },
-          { $group: { _id: "$gene", gene: { $first: "$gene" } } },
+          { $group: { _id: "$gene", gene: { $first: "$gene" }, count: { $count: {} } } },
+          // if intersection=true then the the gene has to be in all the given genesets
+          ...(intersection 
+            ? [{ $match: { $expr: { $eq: [ "$count", geneSetNames.length ] } } }]
+            : []
+          ),
           { $lookup: {
               from: GENE_RANKS_COLLECTION,
               let: { gene: "$gene" },
