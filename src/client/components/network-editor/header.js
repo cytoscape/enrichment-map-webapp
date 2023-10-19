@@ -11,7 +11,7 @@ import { TYPE as UNDO_TYPE } from './undo-stack';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { AppBar, Snackbar, SnackbarContent, Toolbar } from '@material-ui/core';
+import { AppBar, Button, Dialog, DialogActions, DialogContent, DialogTitle, Snackbar, SnackbarContent, Toolbar } from '@material-ui/core';
 import { Divider } from '@material-ui/core';
 import { Menu, MenuItem} from "@material-ui/core";
 import { Tooltip } from '@material-ui/core';
@@ -22,10 +22,10 @@ import MenuIcon from '@material-ui/icons/Menu';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
-import { Add, Remove,  } from '@material-ui/icons';
+import { Add, Remove, Restore,  } from '@material-ui/icons';
 import { Undo } from '@material-ui/icons';
 import { Delete } from '@material-ui/icons';
-import { RestoreFromTrash } from '@material-ui/icons';
+import { SettingsBackupRestore } from '@material-ui/icons';
 import CloseIcon from '@material-ui/icons/Close';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
@@ -100,6 +100,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
   const [ undoEnabled, setUndoEnabled ] = useState(false);
   const [ undoType, setUndoType] = useState(null);
+  const [ confirmDialogOpen, setConfirmDialogOpen ] = useState(false);
 
   const [ snackBarState, setSnackBarState ] = useState({
     open: false,
@@ -108,8 +109,6 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     closeable: true,
     spinner: false
   });
-
-  const panner = createPanner(controller);
 
   useEffect(() => {
     const onNetworkLoaded = () => setNetworkLoaded(true);
@@ -125,6 +124,8 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     controller.bus.on('undo', onUndo);
     return () => controller.bus.removeListener('undo', onUndo);
   }, []);
+
+  const panner = createPanner(controller);
 
   useEffect(() => {
     Mousetrap.bind('-', panner.zoomOut);
@@ -171,6 +172,16 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     setAnchorEl(event.currentTarget);
   };
 
+  const handleNetworkRestore = () => {
+    setConfirmDialogOpen(true);
+  };
+  const onConfirmCancel = () => {
+    setConfirmDialogOpen(false);
+  };
+  const onConfirmOk = () => {
+    controller.restoreNetwork(); // causes page reload, no need to set state
+  };
+
   const buttonsDef = [ 
     {
       title: getUndoButtonTitle(undoType),
@@ -184,9 +195,9 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
       onClick: () => controller.deleteSelectedNodes(),
       unrelated: false,
     }, {
-      title: "Restore Deleted Nodes",
-      icon: <RestoreFromTrash />,
-      onClick: () => controller.restoreNetwork(),
+      title: "Restore Network to Initial Layout",
+      icon: <SettingsBackupRestore />,
+      onClick: handleNetworkRestore,
       unrelated: true,
     }, {
       title: "Zoom In",
@@ -260,6 +271,11 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
         })()}
       />
     </Snackbar>
+    <RestoreConfirmDialog 
+      open={confirmDialogOpen} 
+      onOk={onConfirmOk} 
+      onCancel={onConfirmCancel} 
+    />
     <AppBar
       position="relative"
       color='default'
@@ -343,6 +359,25 @@ function ToolbarDivider({ classes, unrelated }) {
   return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
 }
 
+function RestoreConfirmDialog({ open, onOk, onCancel }) {
+  return (
+    <Dialog
+      maxWidth="xs"
+      open={open}
+    >
+      <DialogTitle>Confirm Restore Network Layout</DialogTitle>
+      <DialogContent dividers>
+        <p>Are you sure you want to restore the network layout to its initial state?</p>
+        <p>All nodes will be returned to their initial positions. All deleted nodes will be restored.</p>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel} autoFocus>Cancel</Button>
+        <Button onClick={onOk}>Ok</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 
 const useStyles = theme => ({
   appBar: {
@@ -415,6 +450,12 @@ Header.propTypes = {
   showControlPanel: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
   onShowControlPanel: PropTypes.func.isRequired,
+};
+
+RestoreConfirmDialog.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onOk: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired
 };
 
 export default withStyles(useStyles)(Header);
