@@ -12,15 +12,15 @@ import PathwayTable, { DEF_SORT_FN } from './pathway-table';
 import SearchBar from './search-bar';
 import { UpDownLegend, numToText } from './charts';
 
-import { withStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/core/styles';
 
 import Collapse from '@material-ui/core/Collapse';
 import { AppBar, Toolbar, Divider, Grid} from '@material-ui/core';
 import { Drawer, Tooltip, Typography } from '@material-ui/core';
-import { IconButton } from '@material-ui/core';
+import { Button, IconButton } from '@material-ui/core';
 
-import ArrowUpwardIcon from '@material-ui/icons/ArrowUpward';
-import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
+import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import ExpandIcon from '@material-ui/icons/ExpandLess';
 import CollapseIcon from '@material-ui/icons/ExpandMore';
 
@@ -54,8 +54,91 @@ function toTableData(nodes, sortFn) {
   return sortFn ? sortFn(data) : data;
 }
 
+//==[ BottomDrawer ]==================================================================================================
 
-export function BottomDrawer({ controller, classes, controlPanelVisible, isMobile, onShowDrawer }) {
+const useBottomDrawerStyles = makeStyles((theme) => ({
+  appBar: {
+    backgroundColor: theme.palette.background.default,
+    minHeight: BOTTOM_DRAWER_HEIGHT,
+    top: 'auto',
+    bottom: 0,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+  },
+  appBarShift: {
+    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
+    marginLeft: CONTROL_PANEL_WIDTH,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+  },
+  toolbar: {
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
+  },
+  toolbarOpen: {
+    paddingLeft: theme.spacing(1.115),
+  },
+  hide: {
+    display: 'none',
+  },
+  drawer: {
+    position: 'absolute',
+    top: 'auto',
+    bottom: 0,
+    background: theme.palette.background.default,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+  },
+  drawerShift: {
+    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
+    marginLeft: CONTROL_PANEL_WIDTH,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+  },
+  drawerPaper: {
+    height: 'auto',
+    background: theme.palette.background.default,
+  },
+  drawerContent: {
+    background: 'inherit',
+    width: '100%',
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+  },
+  drawerContentShift: {
+    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
+    marginLeft: CONTROL_PANEL_WIDTH,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+  },
+  list: {
+    width: 250,
+  },
+  fullList: {
+    width: 'auto',
+  },
+  grow: {
+    flexGrow: 1,
+  },
+  legendText: {
+    fontSize: '0.75em',
+    color: theme.palette.text.secondary,
+  },
+}));
+
+export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShowDrawer }) {
   const [ open, setOpen ] = useState(false);
   const [ disabled, setDisabled ] = useState(true);
   const [ searchValue, setSearchValue ] = useState('');
@@ -65,6 +148,8 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
   const [ selectedRows, setSelectedRows ] = useState([]);
   const [ currentRow, setCurrentRow ] = useState();
   const [ scrollToId, setScrollToId ] = useState();
+
+  const classes = useBottomDrawerStyles();
 
   const openRef = useRef(false);
   openRef.current = open;
@@ -294,7 +379,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     >
       <div role="presentation" className={clsx(classes.drawerContent, { [classes.drawerContentShift]: shiftDrawer })}>
         <AppBar position="fixed" color="default" className={clsx(classes.appBar, { [classes.appBarShift]: shiftDrawer })}>
-          <Toolbar variant="dense" className={classes.toolbar}>
+          <Toolbar variant="dense" className={clsx(classes.toolbar, { [classes.toolbarOpen]: open })}>
           {!open && (
             <Typography display="block" variant="subtitle2" color="textPrimary">
               Pathways&nbsp;
@@ -307,6 +392,12 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
           )}
           {open && (
             <>
+              <SelectionNavigator
+                disabled={totalSelected === 0}
+                onPrevious={() => goToNewCurrentRow(-1)}
+                onNext={() => goToNewCurrentRow(1)}
+              />
+              <ToolbarDivider />
               <SearchBar
                 style={{width: 276}}
                 placeholder="Find pathways..."
@@ -314,15 +405,10 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
                 onChange={search}
                 onCancelSearch={cancelSearch}
               />
-              <ToolbarDivider classes={classes} />
-              <SelectionNavigator
-                disabled={totalSelected === 0}
-                onPrevious={() => goToNewCurrentRow(-1)}
-                onNext={() => goToNewCurrentRow(1)}
-              />
+              
             </>
           )}
-            <ToolbarDivider classes={classes} />
+            <ToolbarDivider unrelated />
             <div className={classes.grow} />
           {!(open && isMobile) && magNES && (
             <Grid container direction="column" spacing={0} style={{minWidth: 40, maxWidth: 300, width: '100%', marginTop: 16}}>
@@ -351,7 +437,7 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
               </Grid>
             </Grid>
           )}
-            <ToolbarDivider classes={classes} />
+            <ToolbarDivider />
             <ToolbarButton
               title="Pathways"
               icon={open ? <CollapseIcon fontSize="large" /> : <ExpandIcon fontSize="large" />}
@@ -378,7 +464,14 @@ export function BottomDrawer({ controller, classes, controlPanelVisible, isMobil
     </Drawer>
   );
 }
+BottomDrawer.propTypes = {
+  controller: PropTypes.instanceOf(NetworkEditorController),
+  isMobile: PropTypes.bool.isRequired,
+  controlPanelVisible: PropTypes.bool.isRequired,
+  onShowDrawer: PropTypes.func.isRequired,
+};
 
+//==[ ToolbarButton ]=================================================================================================
 
 function ToolbarButton({ title, icon, color, className, disabled, onClick }) {
   return (
@@ -406,31 +499,61 @@ ToolbarButton.propTypes = {
   onClick: PropTypes.func.isRequired,
 };
 
+//==[ ToolbarDivider ]================================================================================================
 
-function ToolbarDivider({ classes, unrelated }) {
+const useToolbarDividerStyles = makeStyles((theme) => ({
+  divider: {
+    marginLeft: theme.spacing(0.5),
+    marginRight: theme.spacing(0.5),
+    width: 0,
+  },
+  unrelatedDivider: {
+    marginLeft: theme.spacing(2),
+    marginRight: theme.spacing(2),
+    width: 0,
+  },
+}));
+
+function ToolbarDivider({ unrelated }) {
+  const classes = useToolbarDividerStyles();
+
   return <Divider orientation="vertical" flexItem variant="middle" className={unrelated ? classes.unrelatedDivider : classes.divider} />;
 }
 ToolbarDivider.propTypes = {
-  classes: PropTypes.object.isRequired,
   unrelated: PropTypes.bool
 };
 
+//==[ SelectionNavigator ]============================================================================================
+
+const useSelectionNavigatorStyles = makeStyles(() => ({
+  root: {
+    maxWidth: 24,
+  },
+  button: {
+    minWidth: 24,
+    maxWidth: 24,
+    minHeight: 24,
+    maxHeight: 24,
+  },
+}));
 
 const SelectionNavigator = ({ disabled, onPrevious, onNext }) => {
+  const classes = useSelectionNavigatorStyles();
+
   return (
-    <div style={{minWidth: 100}}>
+    <div className={classes.root}>
       <Tooltip title="Previous Selection">
         <span>
-          <IconButton disabled={disabled} onClick={() => onPrevious && onPrevious()}>
-            <ArrowUpwardIcon size="small" />
-          </IconButton>
+          <Button disabled={disabled} variant="text" className={classes.button} onClick={() => onPrevious && onPrevious()}>
+            <KeyboardArrowUpIcon size="small" />
+          </Button>
         </span>
       </Tooltip>
       <Tooltip title="Next Selection">
         <span>
-          <IconButton disabled={disabled} onClick={() => onNext && onNext()}>
-            <ArrowDownwardIcon size="small" />
-          </IconButton>
+          <Button disabled={disabled} className={classes.button} onClick={() => onNext && onNext()}>
+            <KeyboardArrowDownIcon size="small" />
+          </Button>
         </span>
       </Tooltip>
     </div>
@@ -442,102 +565,4 @@ SelectionNavigator.propTypes = {
   onNext: PropTypes.func,
 };
 
-
-const useStyles = theme => ({
-  appBar: {
-    backgroundColor: theme.palette.background.default,
-    minHeight: BOTTOM_DRAWER_HEIGHT,
-    top: 'auto',
-    bottom: 0,
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-  },
-  appBarShift: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-  },
-  toolbar: {
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2),
-  },
-  hide: {
-    display: 'none',
-  },
-  drawer: {
-    position: 'absolute',
-    top: 'auto',
-    bottom: 0,
-    background: theme.palette.background.default,
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-  },
-  drawerShift: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-  },
-  drawerPaper: {
-    height: 'auto',
-    background: theme.palette.background.default,
-  },
-  drawerContent: {
-    background: 'inherit',
-    width: '100%',
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-  },
-  drawerContentShift: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-  },
-  list: {
-    width: 250,
-  },
-  fullList: {
-    width: 'auto',
-  },
-  grow: {
-    flexGrow: 1,
-  },
-  divider: {
-    marginLeft: theme.spacing(1),
-    marginRight: theme.spacing(1),
-    width: 0,
-  },
-  unrelatedDivider: {
-    marginLeft: theme.spacing(3),
-    marginRight: theme.spacing(3),
-    width: 0,
-  },
-  legendText: {
-    fontSize: '0.75em',
-    color: theme.palette.text.secondary,
-  },
-});
-
-BottomDrawer.propTypes = {
-  classes: PropTypes.object.isRequired,
-  controller: PropTypes.instanceOf(NetworkEditorController),
-  isMobile: PropTypes.bool.isRequired,
-  controlPanelVisible: PropTypes.bool.isRequired,
-  onShowDrawer: PropTypes.func.isRequired,
-};
-
-export default withStyles(useStyles)(BottomDrawer);
+export default BottomDrawer;
