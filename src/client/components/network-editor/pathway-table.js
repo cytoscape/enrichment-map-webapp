@@ -184,14 +184,14 @@ const roundNES = (nes) => {
 
 const gotoNode = (id, cy) => {
   const eles = cy.nodes(`[id = "${id}"]`);
-
   cy.animate({
     fit: { eles: eles, padding: DEFAULT_PADDING },
     easing: 'ease-out',
-    duration: 500
+    duration: 250
   });
 };
 
+//==[ ContentRow ]====================================================================================================
 
 const ContentRow = ({ row, index, selected, current, controller, handleClick }) => {
   const classes = useStyles();
@@ -264,6 +264,8 @@ ContentRow.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   handleClick: PropTypes.func.isRequired,
 };
+
+//==[ PathwayTable ]==================================================================================================
 
 const PathwayTable = (
   {

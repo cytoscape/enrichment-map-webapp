@@ -427,7 +427,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
               </Grid>
               <Grid item>
                 <Grid container direction="row" spacing={0} justifyContent="space-between">
-                <Tooltip title={`Downregulated (-${numToText(magNES)})`}>
+                  <Tooltip title={`Downregulated (-${numToText(magNES)})`}>
                     <Typography variant="body2" component="div" className={classes.legendText}>DOWN</Typography>
                   </Tooltip>
                   <Tooltip title={`Upregulated (+${numToText(magNES)})`}>
@@ -542,14 +542,14 @@ const SelectionNavigator = ({ disabled, onPrevious, onNext }) => {
 
   return (
     <div className={classes.root}>
-      <Tooltip title="Previous Selection">
+      <Tooltip title="Previous Selection" placement="right">
         <span>
           <Button disabled={disabled} variant="text" className={classes.button} onClick={() => onPrevious && onPrevious()}>
             <KeyboardArrowUpIcon size="small" />
           </Button>
         </span>
       </Tooltip>
-      <Tooltip title="Next Selection">
+      <Tooltip title="Next Selection" placement="right">
         <span>
           <Button disabled={disabled} className={classes.button} onClick={() => onNext && onNext()}>
             <KeyboardArrowDownIcon size="small" />
