@@ -231,9 +231,6 @@ http.post('/:netid/positions', async function(req, res, next) {
     const { netid } = req.params;
     const { positions } = req.body;
 
-    console.log("positions");
-    console.log(positions);
-
     if(!Array.isArray(positions)) {
       res.sendStatus(404);
       return;
