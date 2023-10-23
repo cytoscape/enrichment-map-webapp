@@ -482,19 +482,19 @@ export class NetworkEditorController {
   /**
    * Still needed by the gene sidebar.
    */
-  async fetchGeneList(geneSetNames) {
+  async fetchGeneList(geneSetNames, intersection = false) {
     geneSetNames = geneSetNames || [];
     const nameSet = new Set(geneSetNames);
 
-    if(this.lastGeneSet1 && _.isEqual(this.lastGeneSetNames1, nameSet)) {
-      return this.lastGeneSet1;
-    }
-    if(this.lastGeneSet2 && _.isEqual(this.lastGeneSetNames2, nameSet)) {
-      return this.lastGeneSet2;
+    // Check local cache first
+    if (this.lastGeneSet && 
+        this.lastGeneSetIntersection === intersection && 
+        _.isEqual(this.lastGeneSetNames, nameSet)) {
+      return this.lastGeneSet;
     }
 
     // New query...
-    const queryParams = new URLSearchParams({ intersection: false });
+    const queryParams = new URLSearchParams({ intersection });
     const res = await fetch(`/api/${this.networkIDStr}/genesets?${queryParams}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -508,13 +508,10 @@ export class NetworkEditorController {
       const rankedGenes = geneSet.genes.filter(g => g.rank);
       geneSet.genes = rankedGenes;
 
-      // We cache the last two queries because clicking on an 
-      // edge queries for both source/target nodes.
-      this.lastGeneSet2 = this.lastGeneSet1;
-      this.lastGeneSetNames2 = this.lastGeneSetNames1;
-
-      this.lastGeneSet1 = geneSet;
-      this.lastGeneSetNames1 = nameSet;
+      // Cache the last query
+      this.lastGeneSetIntersection = intersection;
+      this.lastGeneSet = geneSet;
+      this.lastGeneSetNames = nameSet;
 
       return geneSet;
     }

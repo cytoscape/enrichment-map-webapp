@@ -263,7 +263,7 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
   }, [genes, sort]);
 
   useEffect(() => {
-    if (resetScroll) {
+    if (resetScroll && virtuoso.current) {
       virtuoso.current.scrollToIndex({
         index: 0,
         behavior: 'auto',
@@ -415,7 +415,7 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
   };
 
   const totalGenes = genes != null ? genes.length : 30/*(for the loading Skeletons)*/;
-  
+
   return (
     <Virtuoso
       ref={virtuoso}

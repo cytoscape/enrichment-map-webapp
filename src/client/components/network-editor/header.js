@@ -22,7 +22,7 @@ import MenuIcon from '@material-ui/icons/Menu';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
 import MoreIcon from '@material-ui/icons/MoreVert';
-import { Add, Remove, Restore,  } from '@material-ui/icons';
+import { Add, Remove } from '@material-ui/icons';
 import { Undo } from '@material-ui/icons';
 import { Delete } from '@material-ui/icons';
 import { SettingsBackupRestore } from '@material-ui/icons';

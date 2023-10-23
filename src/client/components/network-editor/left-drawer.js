@@ -10,12 +10,26 @@ import GeneListPanel from './gene-list-panel';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
+import { Box, Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
+import { FormControl, Select, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from './search-bar';
 
-import { GeneSetIcon, VennIntersectionIcon } from '../svg-icons';
-import NetworkIcon from '@material-ui/icons/Share';
+import { VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
+
+
+const setOperationOptions = {
+  union: {
+    label: 'Union',
+    description: 'All genes in the pathways',
+    icon: (props) => <VennUnionIcon size="small" {...props} />,
+  },
+  intersection: {
+    label: 'Intersection',
+    description: 'Genes that are common to the pathways',
+    icon: (props) => <VennIntersectionIcon size="small" {...props} />,
+  },
+};
 
 const sortOptions = {
   up: {
@@ -60,6 +74,15 @@ const useStyles = makeStyles((theme) => ({
   title: {
     paddingLeft: theme.spacing(0.5),
   },
+  setOperationSelect: {
+    height: 40,
+  },
+  setOperationIcon: {
+    minWidth: 48,
+  },
+  sortButton: {
+    width: 64,
+  },
   geneList: {
     overflowY: "auto",
   },
@@ -71,10 +94,14 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
   const [searchValue, setSearchValue] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [genes, setGenes] = useState(null);
+  const [setOperation, setSetOperation] = useState('union');
   const [sort, setSort] = useState('down');
 
-  const searchValueRef = useRef(searchValue);
+  const searchValueRef = useRef();
   searchValueRef.current = searchValue;
+
+  const setOperationRef = useRef(setOperation);
+  setOperationRef.current = setOperation;
 
   const sortRef = useRef(sort);
   sortRef.current = sort;
@@ -89,29 +116,20 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     return _.orderBy(genes, args.iteratees, args.orders);
   };
 
-  const fetchGeneList = async (geneSetNames) => {
-    const res = await controller.fetchGeneList(geneSetNames);
+  const fetchGeneList = async (geneSetNames, intersection = false) => {
+    const res = await controller.fetchGeneList(geneSetNames, intersection);
     const genes = res ? res.genes : [];
 
     return genes;
   };
 
-  const fetchGeneListForEdge = async (geneSetNamesSource, geneSetNamesTarget) => {
-    const genesSource = await fetchGeneList(geneSetNamesSource);
-    const genesTarget = await fetchGeneList(geneSetNamesTarget);
-    const genes = _.intersectionBy(genesSource, genesTarget, 'gene');
-
-    return genes;
+  const fetchAllRankedGenes = async (intersection = false) => {
+    return await fetchGeneList([], intersection);
   };
 
-  const fetchAllRankedGenes = async () => {
-    return await fetchGeneList([]);
-  };
-
-  const fetchGeneListFromElements = async (eles) => {
+  const fetchGeneListFromElements = async (eles, intersection = false) => {
     const genes = [];
     const nodes = eles.nodes();
-    const edges = eles.edges();
 
     const getNames = n => {
       const name = n.data('name');
@@ -131,22 +149,8 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     
     if (gsNames.length > 0) {
       gsNames = _.uniq(gsNames);
-      const nodeGenes = await fetchGeneList(gsNames);
+      const nodeGenes = await fetchGeneList(gsNames, intersection);
       genes.push(...nodeGenes);
-    }
-
-    // Fetch genes from edges
-    for (const el of edges) {
-      // If both this edge's source and target nodes are selected,
-      // we don't need to get the overlapping genes from the edge,
-      // because we'll already get all the same genes from its nodes
-      if (el.source().selected() && el.source().selected()) {
-        continue;
-      }
-
-      // Edge (get overlapping genes)...
-      const edgeGenes = await fetchGeneListForEdge(getNames(el.source()),  getNames(el.target()));
-      genes.push(...edgeGenes);
     }
     
     // Remove duplicates
@@ -156,14 +160,14 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
   };
 
   const debouncedSelectionHandler = _.debounce(async () => {
-    const eles = cy.$(':selected');
+    const eles = cy.nodes(':childless:selected');
 
     if (eles.length > 0) {
       setGenes(null);
       if (eles.length === 1) {
         setSort(eles[0].data('NES') < 0 ? 'up' : 'down');
       }
-      const genes = await fetchGeneListFromElements(eles);
+      const genes = await fetchGeneListFromElements(eles, setOperationRef.current === 'intersection');
       setGenes(sortGenes(genes, sortRef.current));
     } else if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
       setGenes(null);
@@ -192,6 +196,7 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     const query = val.trim();
     
     if (query.length > 0) {
+      setSetOperation('union');
       // Unselect Cy elements first
       const selectedEles = cy.elements().filter(':selected');
       selectedEles.unselect();
@@ -235,6 +240,20 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
   }, [searchResult]);
 
   const GeneListHeader = () => {
+    const handleGeneSetOption = async (evt) => {
+      const value = evt.target.value;
+      cancelSearch();
+      setSetOperation(value);
+      const eles = cy.nodes(':childless:selected');
+      const intersection = value === 'intersection';
+      if (eles.length > 0) {
+        const genes = await fetchGeneListFromElements(eles, intersection);
+        setGenes(sortGenes(genes, sortRef.current));
+      } else {
+        const genes = await fetchAllRankedGenes(intersection);
+        setGenes(sortGenes(genes, sortRef.current));
+      }
+    };
     const handleSort = (evt, value) => {
       if (value != null) {
         setSort(value);
@@ -243,38 +262,50 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     };
 
     const totalGenes = genes != null ? genes.length : -1;
+    const setOperationsDisabled = searchValue != null && searchValue !== '';
     const sortDisabled = totalGenes <= 0;
-
-    const isNetEleSelected = cy.elements().filter(':selected').length > 0;
-    const isIntersection = cy.elements().filter('edge:selected').length > 0;
-    let iconTooltip = 'All Gene Sets';
-    let TitleIcon = NetworkIcon;
-    
-    if (isNetEleSelected) {
-      iconTooltip = isIntersection ? 'Intersection\u2014genes that are common to both gene sets' : 'Gene Set';
-      TitleIcon = isIntersection ? VennIntersectionIcon : GeneSetIcon;
-    }
     
     return (
       <Grid container direction="row" justifyContent="space-between" alignItems="center" className={classes.header}>
         <Grid item>
-          <Tooltip arrow placement="bottom" title={iconTooltip}>
-            <Grid container direction="row" alignItems="center" spacing={1}>
-              <Grid item style={{lineHeight: 0}}>
-                <TitleIcon size="small" color="secondary" />
-              </Grid>
-              <Grid>
-                <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
-                  Genes&nbsp;
-                {totalGenes >= 0 && (
-                  <Typography display="inline" variant="body2" color="textSecondary">
-                    ({ totalGenes })
-                  </Typography>
-                )}
-                </Typography>
-              </Grid>
+          <Grid container direction="row" alignItems="center" spacing={1}>
+            <Grid item style={{lineHeight: 0}}>
+            <FormControl variant="filled" size="small">
+              <Select
+                variant="outlined"
+                disabled={setOperationsDisabled}
+                value={setOperation}
+                displayEmpty
+                onChange={handleGeneSetOption}
+                className={classes.setOperationSelect}
+                renderValue={(value) => {
+                  return (
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      { setOperationOptions[value].icon({color: setOperationsDisabled ? 'disabled' : 'secondary'}) }
+                    </Box>
+                  );
+                }}
+              >
+              {Object.entries(setOperationOptions).map(([k, { label, description, icon }]) => (
+                <MenuItem key={k} value={k}>
+                  <ListItemIcon className={classes.setOperationIcon}>{ icon({color: 'secondary'}) }</ListItemIcon>
+                  <ListItemText primary={label} secondary={description} />
+                </MenuItem>
+              ))}
+              </Select>
+              </FormControl>
             </Grid>
-          </Tooltip>
+            <Grid>
+              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
+                Genes&nbsp;
+              {totalGenes >= 0 && (
+                <Typography display="inline" variant="body2" color="textSecondary">
+                  ({ totalGenes })
+                </Typography>
+              )}
+              </Typography>
+            </Grid>
+          </Grid>
         </Grid>
         <Grid item>
           <ToggleButtonGroup
@@ -283,9 +314,15 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
             onChange={handleSort}
           >
           {Object.entries(sortOptions).map(([k, { label, icon }]) => (
-            <ToggleButton key={`sort-${k}`} value={k} disabled={sortDisabled} size="small" style={{width:70}}>
+            <ToggleButton
+              key={`sort-${k}`}
+              value={k}
+              disabled={sortDisabled}
+              size="small"
+              className={classes.sortButton}
+            >
               <Tooltip arrow placement="top" title={label}>
-                {icon}
+                { icon }
               </Tooltip>
             </ToggleButton>
           ))}
