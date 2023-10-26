@@ -21,12 +21,12 @@ import { VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
 const setOperationOptions = {
   union: {
     label: 'Union',
-    description: 'All genes in the pathways',
+    description: 'All genes in selected pathways',
     icon: (props) => <VennUnionIcon size="small" {...props} />,
   },
   intersection: {
     label: 'Intersection',
-    description: 'Genes that are common to the pathways',
+    description: 'Genes common to selected pathways',
     icon: (props) => <VennIntersectionIcon size="small" {...props} />,
   },
 };
