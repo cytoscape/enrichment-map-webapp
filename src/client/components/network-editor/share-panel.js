@@ -64,14 +64,14 @@ async function handleExportImageArchive(controller) {
     createNetworkImageBlob(controller, ImageSize.SMALL),
     createNetworkImageBlob(controller, ImageSize.MEDIUM),
     createNetworkImageBlob(controller, ImageSize.LARGE),
-    createSVGLegendBlob(NODE_COLOR_SVG_ID),
+    // createSVGLegendBlob(NODE_COLOR_SVG_ID), // TODO fix the SVG legend
   ]);
 
   const zip = new JSZip();
   zip.file('enrichment_map_small.png',  blobs[0]);
   zip.file('enrichment_map_medium.png', blobs[1]);
   zip.file('enrichment_map_large.png',  blobs[2]);
-  // zip.file('node_color_legend.svg',     blobs[3]);
+  // zip.file('node_color_legend.svg',     blobs[3]); // TODO
 
   saveZip(controller, zip, 'images');
 }
