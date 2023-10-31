@@ -77,7 +77,7 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
   },
   toolbar: {
     paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2),
+    paddingRight: theme.spacing(1),
   },
   toolbarOpen: {
     paddingLeft: theme.spacing(1.115),

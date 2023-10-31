@@ -18,10 +18,11 @@ import { Tooltip } from '@material-ui/core';
 import { IconButton, Box } from '@material-ui/core';
 
 import { AppLogoIcon } from '../svg-icons';
-import MenuIcon from '@material-ui/icons/Menu';
+import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
+import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
-import MoreIcon from '@material-ui/icons/MoreVert';
+import MenuIcon from '@material-ui/icons/Menu';
 import { Add, Remove } from '@material-ui/icons';
 import { Undo } from '@material-ui/icons';
 import { Delete } from '@material-ui/icons';
@@ -281,10 +282,10 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
       color='default'
       className={clsx(classes.appBar, { [classes.appBarShift]: shiftAppBar })}
     >
-      <Toolbar variant="dense">
+      <Toolbar variant="dense" className={classes.toolbar}>
         <ToolbarButton
           title="Genes"
-          icon={<MenuIcon />}
+          icon={showControlPanel ? <KeyboardArrowLeftIcon fontSize="large" /> : <KeyboardArrowRightIcon fontSize="large" />}
           edge="start"
           onClick={() => onShowControlPanel(!showControlPanel)}
         />
@@ -317,7 +318,8 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
         <div className={classes.sectionMobile}>
           <ToolbarButton
             title="Options"
-            icon={<MoreIcon />}
+            icon={<MenuIcon />}
+            className={classes.optionsButton}
             onClick={showMobileMenu}
           />
         </div>
@@ -395,6 +397,10 @@ const useStyles = theme => ({
       duration: theme.transitions.duration.enteringScreen,
     }),
   },
+  toolbar: {
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
+  },
   hide: {
     display: 'none',
   },
@@ -427,7 +433,11 @@ const useStyles = theme => ({
   snackBarContent: {
     color: 'inherit',
     backgroundColor: 'rgb(33 33 33 / 80%)'
-  }
+  },
+  optionsButton: {
+    width: 41,
+    height: 41,
+  },
 });
 
 ToolbarButton.propTypes = {
