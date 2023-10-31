@@ -161,6 +161,10 @@ export function NetworkEditor({ id }) {
     }
   };
 
+  const onHideControlPanel = () => {
+    setShowControlPanel(false);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
@@ -178,6 +182,7 @@ export function NetworkEditor({ id }) {
             showControlPanel={showControlPanel}
             isMobile={mobile}
             onContentClick={onContentClick}
+            onHideControlPanel={onHideControlPanel}
           />
         </div>
       </ThemeProvider>

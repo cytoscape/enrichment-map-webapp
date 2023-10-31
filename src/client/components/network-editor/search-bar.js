@@ -11,8 +11,6 @@ import CloseIcon from '@material-ui/icons/Close';
 const useStyles = makeStyles((theme) => ({
   search: {
     position: 'relative',
-    marginLeft: 0,
-    marginRight: 0,
     borderWidth: '1px',
     borderStyle: 'solid',
     borderRadius: theme.spacing(4),

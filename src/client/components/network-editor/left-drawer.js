@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 
-import theme from '../../theme';
 import { CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
@@ -10,11 +9,12 @@ import GeneListPanel from './gene-list-panel';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { Box, Drawer, Grid, Typography, Tooltip } from '@material-ui/core';
-import { FormControl, Select, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import { Box, Drawer, Grid, Typography, Toolbar, Tooltip } from '@material-ui/core';
+import { FormControl, IconButton, Select, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from './search-bar';
 
+import CloseIcon from '@material-ui/icons/Close';
 import { VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
 
 
@@ -51,8 +51,6 @@ const useStyles = makeStyles((theme) => ({
     background: theme.palette.background.default,
     width: CONTROL_PANEL_WIDTH,
     flexShrink: 0,
-  },
-  drawerContent: {
     display: 'flex',
     flexFlow: 'column',
     height: '100%',
@@ -60,35 +58,58 @@ const useStyles = makeStyles((theme) => ({
   drawerPaper: {
     width: CONTROL_PANEL_WIDTH,
     background: theme.palette.background.default,
+    borderRight: `1px solid ${theme.palette.divider}`,
   },
   drawerHeader: {
     flex: '0 1 auto',
   },
-  drawerSection: {
+  drawerControls: {
+    borderTop: `1px solid ${theme.palette.divider}`,
+    marginTop: 0,
+    marginBottom: 0,
+    paddingTop: theme.spacing(1),
+    paddingLeft: theme.spacing(2.5),
+    paddingRight: theme.spacing(2.5),
+  },
+  drawerContent: {
     flex: '1 1 auto',
     overflowY: 'auto',
+    borderColor: theme.palette.divider,
+    borderWidth: '1px',
+    borderStyle: 'solid solid hidden hidden',
+    borderRadius: 4,
   },
-  header: {
-    padding: '0.5em',
+  toolbar: {
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(0.5),
+    minHeight: 50,
   },
   title: {
     paddingLeft: theme.spacing(0.5),
   },
+  grow: {
+    flexGrow: 1,
+  },
+  hideButton: {
+    width: 41,
+    height: 41,
+  },
   setOperationSelect: {
     height: 40,
+    width: 77,
   },
   setOperationIcon: {
     minWidth: 48,
   },
   sortButton: {
-    width: 64,
+    width: 77,
   },
   geneList: {
     overflowY: "auto",
   },
 }));
 
-const LeftDrawer = ({ controller, open, isMobile }) => {
+const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
   const [networkLoaded, setNetworkLoaded] = useState(false);
   const [geneListIndexed, setGeneListIndexed] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -239,148 +260,151 @@ const LeftDrawer = ({ controller, open, isMobile }) => {
     }
   }, [searchResult]);
 
-  const GeneListHeader = () => {
-    const handleGeneSetOption = async (evt) => {
-      const value = evt.target.value;
-      cancelSearch();
-      setSetOperation(value);
-      const eles = cy.nodes(':childless:selected');
-      const intersection = value === 'intersection';
-      if (eles.length > 0) {
-        const genes = await fetchGeneListFromElements(eles, intersection);
-        setGenes(sortGenes(genes, sortRef.current));
-      } else {
-        const genes = await fetchAllRankedGenes(intersection);
-        setGenes(sortGenes(genes, sortRef.current));
-      }
-    };
-    const handleSort = (evt, value) => {
-      if (value != null) {
-        setSort(value);
-        setGenes(sortGenes(genes, value));
-      }
-    };
+  const handleGeneSetOption = async (evt) => {
+    const value = evt.target.value;
+    cancelSearch();
+    setSetOperation(value);
+    const eles = cy.nodes(':childless:selected');
+    const intersection = value === 'intersection';
+    if (eles.length > 0) {
+      const genes = await fetchGeneListFromElements(eles, intersection);
+      setGenes(sortGenes(genes, sortRef.current));
+    } else {
+      const genes = await fetchAllRankedGenes(intersection);
+      setGenes(sortGenes(genes, sortRef.current));
+    }
+  };
+  const handleSort = (evt, value) => {
+    if (value != null) {
+      setSort(value);
+      setGenes(sortGenes(genes, value));
+    }
+  };
 
-    const totalGenes = genes != null ? genes.length : -1;
-    const setOperationsDisabled = searchValue != null && searchValue !== '';
-    const sortDisabled = totalGenes <= 0;
-    
-    return (
-      <Grid container direction="row" justifyContent="space-between" alignItems="center" className={classes.header}>
-        <Grid item>
-          <Grid container direction="row" alignItems="center" spacing={1}>
-            <Grid item style={{lineHeight: 0}}>
-            <FormControl variant="filled" size="small">
-              <Select
-                variant="outlined"
-                disabled={setOperationsDisabled}
-                value={setOperation}
-                displayEmpty
-                onChange={handleGeneSetOption}
-                className={classes.setOperationSelect}
-                renderValue={(value) => {
-                  return (
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                      { setOperationOptions[value].icon({color: setOperationsDisabled ? 'disabled' : 'secondary'}) }
-                    </Box>
-                  );
-                }}
-              >
-              {Object.entries(setOperationOptions).map(([k, { label, description, icon }]) => (
-                <MenuItem key={k} value={k}>
-                  <ListItemIcon className={classes.setOperationIcon}>{ icon({color: 'secondary'}) }</ListItemIcon>
-                  <ListItemText primary={label} secondary={description} />
-                </MenuItem>
-              ))}
-              </Select>
-              </FormControl>
-            </Grid>
-            <Grid>
-              <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
-                Genes&nbsp;
-              {totalGenes >= 0 && (
-                <Typography display="inline" variant="body2" color="textSecondary">
-                  ({ totalGenes })
-                </Typography>
-              )}
+  const totalGenes = genes != null ? genes.length : -1;
+  const setOperationsVisible = searchValue == null || searchValue === '';
+  const setOperationsDisabled = searchValue != null && searchValue !== '';
+  const sortDisabled = totalGenes <= 0;
+  
+  const drawerVariant = isMobile ? 'temporary' : 'persistent';
+
+  return (
+    <Drawer
+      className={classes.drawer}
+      variant={drawerVariant}
+      anchor="left"
+      open={open}
+      PaperProps={{
+        style: {
+          overflow: "hidden"
+        }
+      }}
+      classes={{
+        paper: classes.drawerPaper,
+      }}
+    >
+        <div className={classes.drawerHeader}>
+          <Toolbar variant="dense" className={classes.toolbar}>
+            <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
+              Genes&nbsp;
+            {totalGenes >= 0 && (
+              <Typography display="inline" variant="body2" color="textSecondary">
+                ({ totalGenes })
               </Typography>
+            )}
+            </Typography>
+            <div className={classes.grow} />
+          {isMobile && (
+            <IconButton className={classes.hideButton} onClick={onHide}>
+              <CloseIcon />
+            </IconButton>
+          )}
+          </Toolbar>
+          <Grid container direction="column" spacing={2} className={classes.drawerControls}>
+            <Grid item style={{padding: 0}}>
+              <SearchBar
+                disabled={!networkLoaded || !geneListIndexed}
+                style={{
+                  minWidth: 276,
+                  maxWidth: 294,
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                }}
+                placeholder="Find genes..."
+                value={searchValue}
+                onChange={search}
+                onCancelSearch={cancelSearch}
+              />
+            </Grid>
+            <Grid item>
+              <Grid container direction="row" justifyContent="space-between" alignItems="center">
+                <Grid item>
+                {/* {setOperationsVisible && ( */}
+                  <FormControl variant="filled" size="small" disabled={setOperationsDisabled}>
+                    <Select
+                      variant="outlined"
+                      disabled={setOperationsDisabled}
+                      value={setOperation}
+                      displayEmpty
+                      onChange={handleGeneSetOption}
+                      className={classes.setOperationSelect}
+                      renderValue={(value) => {
+                        return (
+                          <Box sx={{ display: "flex", gap: 1 }}>
+                            { setOperationOptions[value].icon({color: setOperationsDisabled ? 'disabled' : 'secondary'}) }
+                          </Box>
+                        );
+                      }}
+                    >
+                    {Object.entries(setOperationOptions).map(([k, { label, description, icon }]) => (
+                      <MenuItem key={k} value={k}>
+                        <ListItemIcon className={classes.setOperationIcon}>{ icon({color: 'secondary'}) }</ListItemIcon>
+                        <ListItemText primary={label} secondary={description} />
+                      </MenuItem>
+                    ))}
+                    </Select>
+                  </FormControl>
+                {/* )} */}
+                </Grid>
+                <Grid item>
+                  <ToggleButtonGroup
+                    value={sort}
+                    exclusive
+                    onChange={handleSort}
+                  >
+                  {Object.entries(sortOptions).map(([k, { label, icon }]) => (
+                    <ToggleButton
+                      key={`sort-${k}`}
+                      value={k}
+                      disabled={sortDisabled}
+                      size="small"
+                      className={classes.sortButton}
+                    >
+                      <Tooltip arrow placement="top" title={label}>
+                        { icon }
+                      </Tooltip>
+                    </ToggleButton>
+                  ))}
+                  </ToggleButtonGroup>
+                </Grid>
+              </Grid>
             </Grid>
           </Grid>
-        </Grid>
-        <Grid item>
-          <ToggleButtonGroup
-            value={sort}
-            exclusive
-            onChange={handleSort}
-          >
-          {Object.entries(sortOptions).map(([k, { label, icon }]) => (
-            <ToggleButton
-              key={`sort-${k}`}
-              value={k}
-              disabled={sortDisabled}
-              size="small"
-              className={classes.sortButton}
-            >
-              <Tooltip arrow placement="top" title={label}>
-                { icon }
-              </Tooltip>
-            </ToggleButton>
-          ))}
-          </ToggleButtonGroup>
-        </Grid>
-      </Grid>
-    );
-  };
-  
-    const drawerVariant = isMobile ? 'temporary' : 'persistent';
-
-    return (
-      <Drawer
-        className={classes.drawer}
-        variant={drawerVariant}
-        anchor="left"
-        open={open}
-        PaperProps={{
-          style: {
-            overflow: "hidden"
-          }
-        }}
-        classes={{
-          paper: classes.drawerPaper,
-        }}
-      >
-        <div className={classes.drawerContent}>
-          <div className={classes.drawerHeader}>
-            <GeneListHeader />
-            <SearchBar
-              disabled={!networkLoaded || !geneListIndexed}
-              style={{
-                maxWidth: 276,
-                marginTop: theme.spacing(1.5),
-                marginBottom: theme.spacing(2),
-                marginLeft: 'auto',
-                marginRight: 'auto',
-              }}
-              placeholder="Find genes..."
-              value={searchValue}
-              onChange={search}
-              onCancelSearch={cancelSearch}
-            />
-          </div>
-          <div className={classes.drawerSection}>
-          {networkLoaded && geneListIndexed && (
-            <GeneListPanel controller={controller} genes={genes} sort={sort} isMobile={isMobile} />
-          )}
-          </div>
         </div>
-      </Drawer>
-    );
+        <div className={classes.drawerContent}>
+        {networkLoaded && geneListIndexed && (
+          <GeneListPanel controller={controller} genes={genes} sort={sort} isMobile={isMobile} />
+        )}
+      </div>
+    </Drawer>
+  );
 };
 
 LeftDrawer.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
   open: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
+  onHide: PropTypes.func.isRequired,
 };
 
 export default LeftDrawer;

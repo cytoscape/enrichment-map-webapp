@@ -68,7 +68,7 @@ const NetworkBackground = ({ controller }) => {
   );
 };
 
-const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
+const Main = ({ controller, showControlPanel, isMobile, onContentClick, onHideControlPanel }) => {
   const [bottomDrawerOpen, setBottomDrawerOpen] = useState(false);
   const classes = useStyles();
 
@@ -84,7 +84,7 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick }) => {
       className="network-editor-content"
       onClick={onContentClick}
     >
-      <LeftDrawer open={showControlPanel} isMobile={isMobile} controller={controller} />
+      <LeftDrawer open={showControlPanel} isMobile={isMobile} controller={controller} onHide={onHideControlPanel} />
       <div className={classes.background}>
         <div className={clsx(classes.cy, { [classes.cyShiftX]: shiftXCy, [classes.cyShiftY]: shiftYCy })}>
           <div id="cy" className={classes.cy} style={{ zIndex: 1, width: '100%', height: '100%' }} />
@@ -109,6 +109,7 @@ Main.propTypes = {
   showControlPanel: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
   onContentClick: PropTypes.func.isRequired,
+  onHideControlPanel: PropTypes.func.isRequired,
 };
 
 export default Main;

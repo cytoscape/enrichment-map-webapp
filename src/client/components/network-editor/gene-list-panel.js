@@ -32,6 +32,7 @@ const useStyles = makeStyles((theme) => ({
   listItem: {
     paddingTop: 4,
     paddingBottom: 0,
+    backgroundColor: theme.palette.background.paper,
   },
   listItemText: {
     marginTop: 0,
@@ -118,25 +119,6 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-start',
-  },
-  pathwayNameUl: {
-    listStyleType: 'none',
-    margin: 0,
-    padding: 0,
-    paddingLeft: '1em',
-    borderLeft: '1px solid #3A393A'
-  },
-  pathwayNameLi: {
-    whiteSpace:'nowrap', 
-    overflow:'hidden', 
-    textOverflow:'ellipsis',
-    fontSize: '0.75rem',
-    color: 'rgba(255, 255, 255, 0.7)'
-  },
-  pathwayNameTitle: {
-    marginTop: '0.333em',
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: '0.75rem'
   },
   '@keyframes blinker': {
     from: {
