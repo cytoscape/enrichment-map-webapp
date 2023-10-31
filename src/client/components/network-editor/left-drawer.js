@@ -14,7 +14,7 @@ import { FormControl, IconButton, Select, MenuItem, ListItemIcon, ListItemText }
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from './search-bar';
 
-import CloseIcon from '@material-ui/icons/Close';
+import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
 import { VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
 
 
@@ -282,7 +282,6 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
   };
 
   const totalGenes = genes != null ? genes.length : -1;
-  const setOperationsVisible = searchValue == null || searchValue === '';
   const setOperationsDisabled = searchValue != null && searchValue !== '';
   const sortDisabled = totalGenes <= 0;
   
@@ -314,11 +313,9 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
             )}
             </Typography>
             <div className={classes.grow} />
-          {isMobile && (
             <IconButton className={classes.hideButton} onClick={onHide}>
-              <CloseIcon />
+              <KeyboardArrowLeftIcon fontSize="large" />
             </IconButton>
-          )}
           </Toolbar>
           <Grid container direction="column" spacing={2} className={classes.drawerControls}>
             <Grid item style={{padding: 0}}>
@@ -339,7 +336,6 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
             <Grid item>
               <Grid container direction="row" justifyContent="space-between" alignItems="center">
                 <Grid item>
-                {/* {setOperationsVisible && ( */}
                   <FormControl variant="filled" size="small" disabled={setOperationsDisabled}>
                     <Select
                       variant="outlined"
@@ -364,7 +360,6 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
                     ))}
                     </Select>
                   </FormControl>
-                {/* )} */}
                 </Grid>
                 <Grid item>
                   <ToggleButtonGroup

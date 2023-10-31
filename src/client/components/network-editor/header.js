@@ -18,7 +18,6 @@ import { Tooltip } from '@material-ui/core';
 import { IconButton, Box } from '@material-ui/core';
 
 import { AppLogoIcon } from '../svg-icons';
-import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import ReplyIcon from '@material-ui/icons/Reply';
@@ -283,16 +282,18 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
       className={clsx(classes.appBar, { [classes.appBarShift]: shiftAppBar })}
     >
       <Toolbar variant="dense" className={classes.toolbar}>
+      {!showControlPanel && (
         <ToolbarButton
           title="Genes"
-          icon={showControlPanel ? <KeyboardArrowLeftIcon fontSize="large" /> : <KeyboardArrowRightIcon fontSize="large" />}
+          icon={<KeyboardArrowRightIcon fontSize="large" />}
           edge="start"
           onClick={() => onShowControlPanel(!showControlPanel)}
         />
+      )}
         <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
           <Tooltip arrow placement="bottom" title="Home">
             <IconButton 
-              aria-label='close' 
+              aria-label='home' 
               onClick={() => location.href = '/'}
             >
               <AppLogoIcon style={{ fontSize: 26 }} />
