@@ -182,17 +182,18 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
 
   const debouncedSelectionHandler = _.debounce(async () => {
     const eles = cy.nodes(':childless:selected');
+    const intersection = setOperationRef.current === 'intersection';
 
     if (eles.length > 0) {
       setGenes(null);
       if (eles.length === 1) {
         setSort(eles[0].data('NES') < 0 ? 'up' : 'down');
       }
-      const genes = await fetchGeneListFromElements(eles, setOperationRef.current === 'intersection');
+      const genes = await fetchGeneListFromElements(eles, intersection);
       setGenes(sortGenes(genes, sortRef.current));
     } else if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
       setGenes(null);
-      const genes = await fetchAllRankedGenes();
+      const genes = await fetchAllRankedGenes(intersection);
       setGenes(sortGenes(genes, sortRef.current));
     }
   }, 250);
@@ -388,7 +389,14 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
         </div>
         <div className={classes.drawerContent}>
         {networkLoaded && geneListIndexed && (
-          <GeneListPanel controller={controller} genes={genes} sort={sort} isMobile={isMobile} />
+          <GeneListPanel
+            controller={controller}
+            genes={genes}
+            sort={sort}
+            isSearch={searchResult && searchResult !== ''}
+            isIntersection={setOperation === 'intersection'}
+            isMobile={isMobile}
+          />
         )}
       </div>
     </Drawer>

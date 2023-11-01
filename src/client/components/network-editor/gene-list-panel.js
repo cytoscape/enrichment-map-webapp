@@ -13,69 +13,30 @@ import { UpDownHBar } from './charts';
 import { makeStyles, withStyles } from '@material-ui/core/styles';
 
 import { Virtuoso } from 'react-virtuoso';
-import { ListItem, ListItemText, Tooltip } from '@material-ui/core';
-import { Grid, Typography, Link } from '@material-ui/core';
+import { List, ListItem, ListItemText, ListItemIcon, ListSubheader } from '@material-ui/core';
+import { Grid, Paper, Typography, Link, Tooltip } from '@material-ui/core';
 import Skeleton from '@material-ui/lab/Skeleton';
 
+import InfoIcon from '@material-ui/icons/Info';
+import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
+import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
 import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
+import { VennUnionIcon } from '../svg-icons';
+
 
 const CHART_WIDTH = 160;
 const CHART_HEIGHT = 16;
 const GENE_RANK_ROUND_DIGITS = 2;
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    width: '100%',
-  },
-  listItem: {
-    paddingTop: 4,
-    paddingBottom: 0,
-    backgroundColor: theme.palette.background.paper,
-  },
-  listItemText: {
-    marginTop: 0,
-    marginBottom: 0,
-  },
-  listItemHeader: {
-    height: 24,
-    margin: 0,
-    borderRadius: 4,
-    cursor: 'pointer',
-    '&:hover': {
-      backgroundColor: theme.palette.action.hover,
-    },
-    "&[disabled]": {
-      color: theme.palette.divider,
-      cursor: "default",
-      "&:hover": {
-        textDecoration: "none"
-      }
-    },
-  },
-  bulletIconContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    height: '100%',
-  },
-  bulletIcon: {
-    marginRight: '4px',
-    color: 'inherit',
-    opacity: 0.5
-  },
-  geneContainer: {
-    width: '40%',
-  },
+
+const useGeneMetadataPanelStyles = makeStyles((theme) => ({
   geneName: {
     color: 'inherit', 
     whiteSpace:'nowrap', 
     overflow:'hidden', 
     textOverflow:'ellipsis'
-  },
-  chartContainer: {
-    width: CHART_WIDTH,
-    padding: '0 8px',
   },
   geneMetadata: {
     fontSize: '1.0em',
@@ -85,22 +46,6 @@ const useStyles = makeStyles((theme) => ({
     borderWidth: 1,
     borderColor: theme.palette.divider,
     borderStyle: 'hidden hidden hidden solid',
-  },
-  geneRankCollapsed: {
-    fontSize: '0.75rem',
-    fontFamily: 'monospace',
-    color: theme.palette.text.disabled,
-    marginTop: '-0.25em',
-    paddingRight: '0.75em',
-  },
-  geneRankExpanded: {
-    fontSize: '0.75rem',
-    fontFamily: 'monospace',
-    textAlign: 'right',
-    color: theme.palette.text.disabled,
-    marginTop: '-0.25em',
-    marginBottom: '0.75em',
-    paddingRight: '0.05em',
   },
   linkout: {
     fontSize: '0.75rem',
@@ -131,7 +76,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
-  const classes = useStyles();
+  const classes = useGeneMetadataPanelStyles();
 
   const queryGeneData = useQuery(
     ['gene-metadata', symbol],
@@ -230,11 +175,174 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
     </Grid>
   );
 };
+GeneMetadataPanel.propTypes = {
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  symbol: PropTypes.string.isRequired,
+  showSymbol: PropTypes.func
+};
 
-const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
+
+const useNoResultsBoxStyles = makeStyles((theme) => ({
+  mainIcon: {
+    fontSize: '4em',
+    opacity: 0.4,
+  },
+  noResultsBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+    padding: theme.spacing(2),
+    textAlign: 'center',
+  },
+  noResultsInfoBox: {
+    width: '100%',
+    maxWidth: 360,
+    marginTop: theme.spacing(2),
+    padding: theme.spacing(2),
+    backgroundColor: theme.palette.background.default,
+    borderRadius: 16,
+  },
+  noResultsLine: {
+    marginTop: theme.spacing(1),
+  },
+  noResultsSubheader: {
+    lineHeight: '1.25em',
+    textAlign: 'left',
+    marginBottom: theme.spacing(2),
+    color: theme.palette.text.disabled,
+  },
+  noResultsItem: {
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  noResultsItemIcon: {
+    minWidth: 'unset',
+  },
+  noResultsItemIconIcon: {
+    transform: 'scaleX(-1)',
+    fontSize: '1em',
+    marginRight: theme.spacing(1),
+    color: theme.palette.text.disabled,
+    opacity: 0.5,
+  },
+  noResultsItemText: {
+    margin: 0,
+    color: theme.palette.text.disabled,
+  },
+}));
+
+const NoResultsBox = ({ isSearch }) => {
+  const classes = useNoResultsBoxStyles();
+
+  return (
+    <Paper className={classes.noResultsBox}>
+      <Typography component="p" color="textSecondary" className={classes.noResultsLine}>
+        { isSearch ? <SadFaceIcon className={classes.mainIcon} /> : <InfoIcon className={classes.mainIcon} /> }
+      </Typography>
+      <Typography
+        component="p"
+        variant="subtitle1"
+        color="textSecondary"
+        className={classes.noResultsLine}
+        style={{fontSize: '1.5em', opacity: 0.4}}
+      >
+        { isSearch ? 'No genes found' : 'No common genes for the selected pathways' }
+      </Typography>
+    {!isSearch && (
+      <Paper variant="outlined" className={classes.noResultsInfoBox}>
+        <List
+          dense
+          subheader={
+            <ListSubheader className={classes.noResultsSubheader}>
+              Try one of the following:
+            </ListSubheader>
+          }
+        >
+          <ListItem className={classes.noResultsItem}>
+            <ListItemIcon className={classes.noResultsItemIcon}>
+              <KeyboardReturnIcon className={classes.noResultsItemIconIcon} />
+            </ListItemIcon>
+            <ListItemText
+              className={classes.noResultsItemText}
+              primary={
+                <Grid container>
+                  <span>select the&nbsp;&nbsp;&nbsp;</span>
+                  <VennUnionIcon style={{fontSize: '1.5em', color: theme.palette.text.secondary}} />
+                  <span style={{color: theme.palette.text.secondary}}>&nbsp;Union</span>
+                  <span>&nbsp;&nbsp;&nbsp;option</span>
+                </Grid>
+              }
+            />
+          </ListItem>
+          <ListItem className={classes.noResultsItem}>
+            <ListItemIcon className={classes.noResultsItemIcon}>
+              <KeyboardReturnIcon className={classes.noResultsItemIconIcon} />
+            </ListItemIcon>
+            <ListItemText className={classes.noResultsItemText} primary="select fewer pathways" />
+          </ListItem>
+        </List>
+      </Paper>
+    )}
+    </Paper>
+  );
+};
+NoResultsBox.propTypes = {
+  isSearch: PropTypes.bool,
+};
+
+
+const useGeneListPanelStyles = makeStyles((theme) => ({
+  listItem: {
+    paddingTop: 4,
+    paddingBottom: 0,
+    backgroundColor: theme.palette.background.paper,
+  },
+  listItemText: {
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  listItemHeader: {
+    height: 24,
+    margin: 0,
+    borderRadius: 4,
+    cursor: 'pointer',
+    '&:hover': {
+      backgroundColor: theme.palette.action.hover,
+    },
+    "&[disabled]": {
+      color: theme.palette.divider,
+      cursor: "default",
+      "&:hover": {
+        textDecoration: "none"
+      }
+    },
+  },
+  bulletIconContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    height: '100%',
+  },
+  bulletIcon: {
+    marginRight: '4px',
+    color: 'inherit',
+    opacity: 0.5
+  },
+  geneContainer: {
+    width: '40%',
+  },
+  chartContainer: {
+    width: CHART_WIDTH,
+    padding: '0 8px',
+  },
+}));
+
+const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMobile }) => {
   const [selectedGene, setSelectedGene] = useState(null);
   const [resetScroll, setResetScroll] = useState(true);
-  const classes = useStyles();
+  const classes = useGeneListPanelStyles();
   const virtuoso = useRef();
 
   const cy = controller.cy;
@@ -245,13 +353,17 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
   }, [genes, sort]);
 
   useEffect(() => {
-    if (resetScroll && virtuoso.current) {
+    if (resetScroll && virtuoso && virtuoso.current) {
       virtuoso.current.scrollToIndex({
         index: 0,
         behavior: 'auto',
       });
     }
   });
+
+  if ((isSearch || isIntersection) && genes && genes.length === 0) {
+    return <NoResultsBox isSearch={isSearch} isIntersection={isIntersection} />;
+  }
 
   const toggleGeneDetails = async (symbol) => {
     setResetScroll(false);
@@ -408,16 +520,12 @@ const GeneListPanel = ({ controller, genes, sort, isMobile }) => {
     />
   );
 };
-
-GeneMetadataPanel.propTypes = {
-  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
-  symbol: PropTypes.string.isRequired,
-  showSymbol: PropTypes.func
-};
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   genes: PropTypes.array,
   sort: PropTypes.string,
+  isSearch: PropTypes.bool,
+  isIntersection: PropTypes.bool,
   isMobile: PropTypes.bool,
 };
 

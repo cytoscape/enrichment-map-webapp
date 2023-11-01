@@ -366,7 +366,7 @@ const PathwayTable = (
           className={classes.noResultsLine}
           style={{fontSize: '1.5em', opacity: 0.4}}
         >
-           No results found
+           No pathways found
         </Typography>
         <Paper variant="outlined" className={classes.noResultsInfoBox}>
           <List
