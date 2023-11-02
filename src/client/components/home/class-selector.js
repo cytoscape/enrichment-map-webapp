@@ -10,8 +10,8 @@ import { GroupAIcon, GroupBIcon } from '../svg-icons';
 import BlockIcon from '@material-ui/icons/Block';
 
 const BUTTONS_DEF = [
-  { value: 'A', label: 'Group A', mobileLabel: 'A',  icon: <GroupAIcon fontSize="small" /> },
-  { value: 'B', label: 'Group B', mobileLabel: 'B',  icon: <GroupBIcon fontSize="small" /> },
+  { value: 'A', label: 'Experiment', mobileLabel: 'E',  icon: <GroupAIcon fontSize="small" /> },
+  { value: 'B', label: 'Control', mobileLabel: 'C',  icon: <GroupBIcon fontSize="small" /> },
   { value: 'X', label: 'Ignored', mobileLabel: null, icon: <BlockIcon fontSize="small" /> },
 ];
 
@@ -65,8 +65,10 @@ export function assignGroups(columns, contents, format) {
 function ClassSelector({ columns, isMobile, rnaseqClasses, onClassesChanged }) {
 
   const handleChange = (i, newGroup) => {
-    var newGroups = rnaseqClasses.map((c, i2) => i == i2 ? newGroup : c);
-    onClassesChanged(newGroups);
+    if(newGroup) {
+      var newGroups = rnaseqClasses.map((c, i2) => i == i2 ? newGroup : c);
+      onClassesChanged(newGroups);
+    }
   };
 
   const classes = useStyles();
@@ -75,7 +77,7 @@ function ClassSelector({ columns, isMobile, rnaseqClasses, onClassesChanged }) {
     <Grid container direction="column" spacing={4}>
       <Grid item xs={12}>
         <Typography variant="body1">
-          Define two sample groups that will be compared against each other &#8212; <i>Group A</i> (experimental) vs <i>Group B</i> (control):
+          Define two sample groups that will be compared against each other &#8212; <i>Experiment</i> vs <i>Control</i>:
         </Typography>
       </Grid>
       <Grid item xs={12}>
