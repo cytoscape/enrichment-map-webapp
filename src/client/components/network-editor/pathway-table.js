@@ -36,7 +36,6 @@ const useStyles = makeStyles((theme) => ({
     maxWidth: 360,
     marginTop: theme.spacing(2),
     padding: theme.spacing(2),
-    backgroundColor: theme.palette.background.default,
     borderRadius: 16,
   },
   noResultsLine: {
