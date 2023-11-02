@@ -6,7 +6,7 @@ import { NetworkEditorController } from './controller';
 import { MenuList, MenuItem, ListItemIcon, ListItemText, Popover } from '@material-ui/core';
 import { getSVGString } from './legend-svg';
 import { NODE_COLOR_SVG_ID } from './legend-button';
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
+import InsertDriveFileOutlinedIcon from '@material-ui/icons/InsertDriveFileOutlined';
 import LinkIcon from '@material-ui/icons/Link';
 
 
@@ -170,13 +170,13 @@ export function ShareMenu({ controller, target, visible, onClose = ()=>null, set
         </MenuItem>
         <MenuItem onClick={handleExportImages} disabled={!imageExportEnabled}>
           <ListItemIcon>
-            <CloudDownloadIcon />
+            <InsertDriveFileOutlinedIcon />
           </ListItemIcon>
           <ListItemText>Save Network Images</ListItemText>
         </MenuItem>
         <MenuItem onClick={handleExportData} disabled={!dataExportEnabled}>
           <ListItemIcon>
-            <CloudDownloadIcon />
+            <InsertDriveFileOutlinedIcon />
           </ListItemIcon>
           <ListItemText>Export Enrichment Data</ListItemText>
         </MenuItem>

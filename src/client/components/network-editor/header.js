@@ -20,7 +20,7 @@ import { IconButton, Box } from '@material-ui/core';
 import { AppLogoIcon } from '../svg-icons';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
-import ReplyIcon from '@material-ui/icons/Reply';
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import MenuIcon from '@material-ui/icons/Menu';
 import { Add, Remove } from '@material-ui/icons';
 import { Undo } from '@material-ui/icons';
@@ -216,7 +216,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
       unrelated: true,
     }, {
       title: "Share",
-      icon: <ReplyIcon style={{transform: 'scaleX(-1)'}} />,
+      icon: <CloudDownloadIcon />,
       onClick: showShareMenu,
       unrelated: false,
     },
