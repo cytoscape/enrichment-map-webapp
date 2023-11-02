@@ -21,7 +21,6 @@ export const registerCytoscapeExtensions = () => {
   // Collection extensions
   Cytoscape.use(internalEdges);
   Cytoscape.use(shuffle);
-  Cytoscape.use(centroid);
 };
 
 
@@ -53,23 +52,4 @@ function shuffle(cy) {
     return eles.cy().collection(arr);
   };
   cy('collection', 'shuffle', shuffleImpl);
-}
-
-
-function centroid(cy) {
-  const centroidImpl = function() {
-    const eles = this;
-    let xs = 0, ys = 0, total = 0;
-    eles.nodes().forEach(node => {
-      const pos = node.position();
-      xs += pos.x;
-      ys += pos.y;
-      total++;
-    });
-    return {
-      x: xs/total, 
-      y: ys/total 
-    };
-  };
-  cy('collection', 'centroid', centroidImpl);
 }
