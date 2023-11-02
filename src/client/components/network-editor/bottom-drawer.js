@@ -399,7 +399,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
               />
               <ToolbarDivider />
               <SearchBar
-                style={{width: 276}}
+                style={{width: 294}}
                 placeholder="Find pathways..."
                 value={searchValue}
                 onChange={search}
