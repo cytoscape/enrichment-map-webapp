@@ -45,6 +45,7 @@ const StartDialog = ({ step, isMobile, columns, errorMessages, rnaseqClasses, on
     <div className={classes.progress}>
       <CircularProgressIcon color="primary" />
       <Typography component="p" variant="body1">Preparing your figure...</Typography>
+      <Typography component="p" variant="body1">This will take about a minute.</Typography>
     </div>;
 
   const ErrorReport = () => {
