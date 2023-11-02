@@ -349,12 +349,12 @@ export class NetworkEditorController {
 
     let edges = nodes.internalEdges();
     if(large) {
-      edges = edges.shuffle().slice(0, 400); // Take a random sample of edges
+      edges = edges.shuffle().slice(0, 300); // Take a random sample of edges
     }
 
     const c = clusterColor(parent); // Average NES needs to be set on the parent first
     const rgb = `rgb(${c.r}, ${c.g}, ${c.b}, 0.2)`;
-    const throttle = large ? 1000 : 50; // makes animation smoother
+    const throttle = large ? 250 : 50; 
 
     const bubblePath = this.bubbleSets.addPath(nodes, edges, null, {
       virtualEdges: false,
