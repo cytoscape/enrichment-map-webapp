@@ -7,8 +7,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { Typography, Tooltip } from '@material-ui/core';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
-import StarIcon from '@material-ui/icons/Star';
-import StarOutlineIcon from '@material-ui/icons/StarOutline';
+import { AsteriskIcon } from '../svg-icons';
 
 
 export function numToText(num) {
@@ -176,7 +175,7 @@ const usePValueStarRatingStyles = makeStyles(() => ({
     whiteSpace: 'nowrap',
   },
   icon: {
-    fontSize: '1.25em',
+    fontSize: '0.85em',
   },
 }));
 
@@ -201,12 +200,13 @@ export const PValueStarRating = ({ value }) => {
 
   return (
     <div className={classes.parent}>
-    {[...Array(rating)].map((v, i) => (
-      <StarIcon key={i} className={classes.icon} />
-    ))}
-    {[...Array(max - rating)].map((v, i) => (
-      <StarOutlineIcon key={i + rating} color="disabled" className={classes.icon} />
-    ))}
+    {rating > 0 ?
+      [...Array(rating)].map((v, i) => (
+        <AsteriskIcon key={i} className={classes.icon} />
+      ))
+      :
+      'ns' // not significant (P > 0.05)
+    }
     </div>
   );
 };

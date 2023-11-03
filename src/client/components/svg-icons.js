@@ -76,6 +76,14 @@ export function HierarchicalLayoutIcon(props) {
 
 /* ====[ OTHER ICONS ]======================================================================== */
 
+export function AsteriskIcon(props) {
+  return (
+    <SvgIcon viewBox="0 0 64 64" {...props}>
+      <path d="M36.333,6 L36.333,24.494 L52.35,15.247 L56.683,22.753 L40.667,32 L56.683,41.247 L52.35,48.753 L36.333,39.505 L36.333,58 L27.667,58 L27.667,39.505 L11.65,48.753 L7.317,41.247 L23.333,32 L7.317,22.753 L11.65,15.247 L27.667,24.494 L27.667,6 L36.333,6 z" />
+    </SvgIcon>
+  );
+}
+
 export function VennIntersectionIcon(props) {
   return (
     <SvgIcon viewBox="0 0 64 64" {...props}>

@@ -72,7 +72,7 @@ const useStyles = makeStyles((theme) => ({
   tableCell: {
     // --> WHATCH OUT! `padding: 0` may cause a defect where the
     //     TableVirtuoso's initialTopMostItemIndex prop doesn't work
-    padding: theme.spacing(0, 0.5, 0, 0.5),
+    padding: `${theme.spacing(0, 0.5, 0, 0.5)} !important`,
     // <------------------------------------------------------------
   },
   checkCell: {
@@ -95,8 +95,8 @@ const useStyles = makeStyles((theme) => ({
     maxWidth: 288,
   },
   pvalueCell: {
-    minWidth: 94,
-    maxWidth: 94,
+    minWidth: 82,
+    maxWidth: 86,
   },
   selectedCell: {
     backgroundColor: theme.palette.action.selected,
@@ -127,8 +127,8 @@ const useStyles = makeStyles((theme) => ({
 
 const CELLS = [
   { id: 'name',   numeric: false, label: 'Pathway' },
-  { id: 'nes',    numeric: true,  label: 'NES',    tooltip: "Normalized Enrichment Score" },
-  { id: 'pvalue', numeric: true,  label: 'P value' },
+  { id: 'nes',    numeric: true,  label: 'NES',     tooltip: "Normalized Enrichment Score" },
+  { id: 'pvalue', numeric: true,  label: 'P value', tooltip: "BH-adjusted p-value" },
 ];
 
 const CHART_HEIGHT = 16;

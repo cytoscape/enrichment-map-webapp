@@ -36,7 +36,7 @@ function toTableRow(node) {
   row.name = node.data('label');
   row.href = pathwayArr && pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
   row.nes = node.data('NES');
-  row.pvalue = node.data('pvalue');
+  row.pvalue = node.data('padj'); // NOTICE we are using the adjusted p-value!
   row.cluster = node.data('mcode_cluster_id');
   row.added = Boolean(node.data('added_by_user'));
 
