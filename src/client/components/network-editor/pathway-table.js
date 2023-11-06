@@ -1,12 +1,13 @@
 import React, { forwardRef, useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import _ from 'lodash';
 import clsx from 'clsx';
 
+import chroma from 'chroma-js';
 import theme from '../../theme';
 import { DEFAULT_PADDING, PATHWAY_TABLE_HEIGHT } from '../defaults';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar, PValueStarRating } from './charts';
+import { REG_COLOR_RANGE } from './network-style';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -16,8 +17,10 @@ import { IconButton, Checkbox, Paper, Typography, Link, Tooltip } from '@materia
 import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 
 import UnselectAllIcon from '@material-ui/icons/IndeterminateCheckBox';
+import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
+import { ClusterIcon } from '../svg-icons';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -70,24 +73,35 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.palette.background.default,
   },
   tableCell: {
-    // --> WHATCH OUT! `padding: 0` may cause a defect where the
+    // --> WHATCH OUT! `padding[Top|Bottom]: 0` may cause a defect where the
     //     TableVirtuoso's initialTopMostItemIndex prop doesn't work
-    padding: `${theme.spacing(0, 0.5, 0, 0.5)} !important`,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingLeft: `${theme.spacing(0.5)}px !important`,
+    paddingRight: theme.spacing(0.5),
     // <------------------------------------------------------------
   },
   checkCell: {
     maxWidth: 48,
+    paddingLeft: `${theme.spacing(0.5)}px !important`, // same padding as the 'currentRow' border/mark to prevent the checkbox from shifting
+    paddingRight: 0,
   },
   currentRow: {
-    padding: theme.spacing(0, 0.5, 0, 0),
+    paddingLeft: '0 !important',
     borderLeft: `${theme.spacing(0.5)}px solid ${theme.palette.primary.main}`,
+  },
+  clusterCell: {
+    paddingLeft: '1px !important',
+    paddingRight: '1px !important',
+    textAlign: 'center',
   },
   nameCell: {
     width: '75%',
     maxWidth: 0,
+    alignItems: 'center',
     overflow: 'hidden',
-    textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    paddingLeft: '0 !important',
   },
   nesCell: {
     width: '25%',
@@ -113,6 +127,21 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(0.5),
     margin: '0 auto 0 auto',
   },
+  clusterButton: {
+    maxWidth: 20,
+    maxHeight: 20,
+  },
+  clusterIcon: {
+    verticalAlign: 'middle',
+  },
+  nameCellText: {
+    alignItems: 'center',
+    maxWidth: 'calc(100% - 20px)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    marginRight: 4,
+  },
   link: {
     color: theme.palette.link.main,
     "&[disabled]": {
@@ -123,12 +152,99 @@ const useStyles = makeStyles((theme) => ({
       }
     }
   },
+  openInNewIcon: {
+    fontSize: '1rem',
+  },
 }));
 
-const CELLS = [
-  { id: 'name',   numeric: false, label: 'Pathway' },
-  { id: 'nes',    numeric: true,  label: 'NES',     tooltip: "Normalized Enrichment Score" },
-  { id: 'pvalue', numeric: true,  label: 'P value', tooltip: "BH-adjusted p-value" },
+const COLUMNS = [
+  {
+    id: 'cluster',
+    numeric: false,
+    hideOnMobile: false,
+    label: <>&nbsp;</>,
+    tooltip: "Cluster",
+    preventGotoNode: true,
+    render: (row, col, classes, controller) => {
+      const c = row.nes < 0 ? REG_COLOR_RANGE.downMax : REG_COLOR_RANGE.upMax;
+      const color1 = chroma(c).luminance(0.6).hex();
+      const color2 = chroma(c).luminance(0.2).hex();
+      const tooltip = row.cluster ? `CLUSTER: ${row.cluster}` : null;
+      const node = controller.cy.nodes(`[id = "${row.id}"]`);
+      const parentId = node.parent().data('id');
+      return (
+        row[col.id] ?
+          <Tooltip title={tooltip}>
+            <IconButton className={classes.clusterButton} onClick={() => gotoNode(parentId, controller.cy)}>
+              <ClusterIcon fontSize="small" color1={color1} color2={color2} className={classes.clusterIcon} />
+            </IconButton>
+          </Tooltip>
+          :
+          ' '
+      );
+    }
+  },
+  { 
+    id: 'name',
+    numeric: false,
+    hideOnMobile: false,
+    label: 'Pathway',
+    render: (row, col, classes) => {
+      return (
+        <div style={{display: 'flex'}}>
+          <div className={classes.nameCellText}>{ row[col.id] }</div>
+        {row.href && (
+          <Link
+            href={row.href}
+            color="textSecondary"
+            className={classes.link}
+            {...linkoutProps}
+          >
+            <OpenInNewIcon className={classes.openInNewIcon} />
+          </Link>
+        )}
+        </div>
+      );
+    }
+  },
+  {
+    id: 'nes',
+    numeric: true, 
+    hideOnMobile: false,
+    label: 'NES',
+    tooltip: "Normalized Enrichment Score",
+    render: (row, col, classes, controller) => {
+      const node = controller.cy.nodes(`[id = "${row.id}"]`);
+      const nesColor = controller.style.getNodeColor(node);
+      return (
+        <UpDownHBar
+          value={row[col.id]}
+          minValue={-controller.style.magNES}
+          maxValue={controller.style.magNES}
+          color={nesColor}
+          bgColor={theme.palette.background.focus}
+          height={CHART_HEIGHT}
+          text={roundNES(row[col.id]).toFixed(2)}
+        />
+      );
+    }
+  },
+  {
+    id: 'pvalue',
+    numeric: true,
+    hideOnMobile: false,
+    label: 'P value',
+    tooltip: "BH-adjusted p-value",
+    render: (row, col) => {
+      return (
+        <Tooltip title={row[col.id]}>
+          <span>
+            <PValueStarRating value={row[col.id]} />
+          </span>
+        </Tooltip>
+      );
+    }
+  },
 ];
 
 const CHART_HEIGHT = 16;
@@ -150,6 +266,13 @@ const DEF_ORDER = 'desc';
 const DEF_ORDER_BY = 'nes';
 
 const descendingComparator = (a, b, orderBy) => {
+  // null values come last in ascending!
+  if (a[orderBy] == null) {
+    return -1;
+  }
+  if (b[orderBy] == null) {
+    return 1;
+  }
   if (b[orderBy] < a[orderBy]) {
     return -1;
   }
@@ -192,11 +315,8 @@ const gotoNode = (id, cy) => {
 
 //==[ ContentRow ]====================================================================================================
 
-const ContentRow = ({ row, index, selected, current, controller, handleClick }) => {
+const ContentRow = ({ row, index, selected, current, controller, isMobile, handleClick }) => {
   const classes = useStyles();
-
-  const node = controller.cy.nodes(`[id = "${row.id}"]`);
-  const nesColor = controller.style.getNodeColor(node);
 
   return (
     <>
@@ -212,45 +332,18 @@ const ContentRow = ({ row, index, selected, current, controller, handleClick }) 
           onClick={() => handleClick(row)}
         />
       </TableCell>
-    {CELLS.map((cell, idx) => (
-      <TableCell
-        key={cell.id + '_' + index + '_' + idx}
-        align={cell.numeric ? 'right' : 'left'}
-        selected={selected}
-        className={clsx(classes[cell.id + 'Cell'], { [classes.tableCell]: true, [classes.selectedCell]: selected })}
-        onClick={() => handleClick(row)}
-      >
-      {cell.id === 'name' && (
-        <Link
-          href={row.href}
-          disabled={row.href == null}
-          variant="body2"
-          color="textSecondary"
-          className={classes.link}
-          {...linkoutProps}
+    {COLUMNS.map((col, idx) => (
+      (!isMobile || !col.hideOnMobile) && (
+        <TableCell
+          key={col.id + '_' + index + '_' + idx}
+          align={col.numeric ? 'right' : 'left'}
+          selected={selected}
+          className={clsx(classes[col.id + 'Cell'], { [classes.tableCell]: true, [classes.selectedCell]: selected })}
+          onClick={() => handleClick(row, col.preventGotoNode)}
         >
-          { row[cell.id] }
-        </Link>
-      )}
-      {cell.id === 'nes' && (
-        <UpDownHBar
-          value={row[cell.id]}
-          minValue={-controller.style.magNES}
-          maxValue={controller.style.magNES}
-          color={nesColor}
-          bgColor={theme.palette.background.focus}
-          height={CHART_HEIGHT}
-          text={roundNES(row[cell.id]).toFixed(2)}
-        />
-      )}
-      {cell.id === 'pvalue' && (
-        <Tooltip title={row[cell.id]}>
-          <span>
-            <PValueStarRating value={row[cell.id]} />
-          </span>
-        </Tooltip>
-      )}
-      </TableCell>
+          { col.render(row, col, classes, controller) }
+        </TableCell>
+      )
     ))}
     </>
   );
@@ -261,6 +354,7 @@ ContentRow.propTypes = {
   selected: PropTypes.bool,
   current: PropTypes.bool,
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  isMobile: PropTypes.bool,
   handleClick: PropTypes.func.isRequired,
 };
 
@@ -272,9 +366,11 @@ const PathwayTable = (
     data,
     selectedRows = [],
     currentRow,
+    gotoCurrentNode,
     scrollToId,
     searchTerms,
     controller,
+    isMobile,
     onRowSelectionChange,
     onDataSort,
   }
@@ -309,10 +405,10 @@ const PathwayTable = (
   }, [scrollToId]);
   // Current item
   useEffect(() => {
-    if (currentRow) {
+    if (currentRow && gotoCurrentNode) {
       gotoNode(currentRow.id, cy);
     }
-  }, [currentRow]);
+  }, [currentRow, gotoCurrentNode]);
 
   if (!visible) {
     // Returns an empty div with the same height as the table just so the open/close animation works properly,
@@ -326,7 +422,7 @@ const PathwayTable = (
     setOrderBy(property);
   };
 
-  const handleRowClick = (row) => {
+  const handleRowClick = (row, preventGotoNode = false) => {
     let newSelectedRows = selectedRows;
     let selected = false;
 
@@ -342,7 +438,7 @@ const PathwayTable = (
       selected = true;
     }
     if (onRowSelectionChange) {
-      onRowSelectionChange(row, selected);
+      onRowSelectionChange(row, selected, preventGotoNode);
     }
   };
 
@@ -435,30 +531,32 @@ const PathwayTable = (
               </span>
             </Tooltip>
           </TableCell>
-        {CELLS.map((cell) => (
-          <TableCell
-            key={cell.id}
-            align="left"
-            sortDirection={orderBy === cell.id ? order : false}
-            className={clsx(classes[cell.id + 'Cell'], { [classes.tableCell]: true })}
-          >
-            <TableSortLabel
-              active={orderBy === cell.id}
-              direction={orderBy === cell.id ? order : 'asc'}
-              onClick={(event) => handleRequestSort(event, cell.id)}
+        {COLUMNS.map((col) => (
+          (!isMobile || !col.hideOnMobile) && (
+            <TableCell
+              key={col.id}
+              align="left"
+              sortDirection={orderBy === col.id ? order : false}
+              className={clsx(classes[col.id + 'Cell'], { [classes.tableCell]: true })}
             >
-              <Tooltip title={cell.tooltip ? cell.tooltip : ''}>
-                <span>
-                  { cell.label }
-                {cell.id === 'name' && data && (
-                  <Typography component="span" variant="body2" color="textSecondary">
-                    &nbsp;({selectedRows.length > 0 ? selectedRows.length + ' selected of ' : ''}{ data.length })
-                  </Typography>
-                )}
-                </span>
-              </Tooltip>
-            </TableSortLabel>
-          </TableCell>
+              <TableSortLabel
+                active={orderBy === col.id}
+                direction={orderBy === col.id ? order : 'asc'}
+                onClick={(event) => handleRequestSort(event, col.id)}
+              >
+                <Tooltip title={col.tooltip ? col.tooltip : ''}>
+                  <span>
+                    { col.label }
+                  {col.id === 'name' && data && (
+                    <Typography component="span" variant="body2" color="textSecondary">
+                      &nbsp;({selectedRows.length > 0 ? selectedRows.length + ' selected of ' : ''}{ data.length })
+                    </Typography>
+                  )}
+                  </span>
+                </Tooltip>
+              </TableSortLabel>
+            </TableCell>
+          )
         ))}
         </TableRow>
       )}
@@ -481,9 +579,11 @@ PathwayTable.propTypes = {
   data: PropTypes.array.isRequired,
   selectedRows: PropTypes.array,
   currentRow: PropTypes.object,
+  gotoCurrentNode: PropTypes.bool,
   scrollToId: PropTypes.string,
   searchTerms: PropTypes.array,
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  isMobile: PropTypes.bool,
   onRowSelectionChange: PropTypes.func,
   onDataSort: PropTypes.func,
 };

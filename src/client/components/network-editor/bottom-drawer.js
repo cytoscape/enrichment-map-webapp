@@ -37,7 +37,7 @@ function toTableRow(node) {
   row.href = pathwayArr && pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
   row.nes = node.data('NES');
   row.pvalue = node.data('padj'); // NOTICE we are using the adjusted p-value!
-  row.cluster = node.data('mcode_cluster_id');
+  row.cluster = node.isChild() ? node.parent().data('label') : null;
   row.added = Boolean(node.data('added_by_user'));
 
   return row;
@@ -147,6 +147,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
   const [ searchTerms, setSearchTerms ] = useState();
   const [ selectedRows, setSelectedRows ] = useState([]);
   const [ currentRow, setCurrentRow ] = useState();
+  const [ gotoCurrentNode, setGotoCurrentNode ] = useState(true);
   const [ scrollToId, setScrollToId ] = useState();
 
   const classes = useBottomDrawerStyles();
@@ -312,10 +313,11 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
     onShowDrawer(b);
   };
 
-  const onRowSelectionChange = (row, selected) => {
+  const onRowSelectionChange = (row, selected, preventGotoNode = false) => {
     if (selected) {
       lastSelectedRowsRef.current = selectedRows;
       cy.nodes(`[id = "${row.id}"]`).select();
+      setGotoCurrentNode(!preventGotoNode);
       setCurrentRow(row);
     } else {
       cy.nodes(`[id = "${row.id}"]`).unselect();
@@ -452,9 +454,11 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
               data={data}
               selectedRows={filteredSelectedRows}
               currentRow={currentRow}
+              gotoCurrentNode={gotoCurrentNode}
               scrollToId={scrollToId}
               searchTerms={searchTerms}
               controller={controller}
+              isMobile={isMobile}
               onRowSelectionChange={onRowSelectionChange}
               onDataSort={onDataSort}
             />

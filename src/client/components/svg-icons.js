@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import SvgIcon from '@material-ui/core/SvgIcon';
 
 /* ====[ LOGOS ]============================================================================== */
@@ -83,6 +84,23 @@ export function AsteriskIcon(props) {
     </SvgIcon>
   );
 }
+
+export function ClusterIcon(props) {
+  return (
+    <SvgIcon viewBox="0 0 64 64" {...props}>
+      <path d="M32,61 C15.984,61 3,48.016 3,32 C3,15.984 15.984,3 32,3 C48.016,3 61,15.984 61,32 C61,48.016 48.016,61 32,61 z" fill={props.color1} />
+      <g id="Layer_1" fill={props.color2}>
+        <path d="M43.253,47.895 C38.311,47.895 34.305,43.889 34.305,38.947 C34.305,34.006 38.311,30 43.253,30 C48.194,30 52.2,34.006 52.2,38.947 C52.2,43.889 48.194,47.895 43.253,47.895 z" />
+        <path d="M20.853,47.895 C15.911,47.895 11.905,43.889 11.905,38.947 C11.905,34.006 15.911,30 20.853,30 C25.794,30 29.8,34.006 29.8,38.947 C29.8,43.889 25.794,47.895 20.853,47.895 z" />
+        <path d="M32,28.5 C27.059,28.5 23.053,24.494 23.053,19.553 C23.053,14.611 27.059,10.605 32,10.605 C36.941,10.605 40.947,14.611 40.947,19.553 C40.947,24.494 36.941,28.5 32,28.5 z" />
+      </g>
+  </SvgIcon>
+  );
+}
+ClusterIcon.propTypes = {
+  color1: PropTypes.string.isRequired,
+  color2: PropTypes.string.isRequired,
+};
 
 export function VennIntersectionIcon(props) {
   return (
