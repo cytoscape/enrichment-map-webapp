@@ -111,6 +111,7 @@ const useStyles = makeStyles((theme) => ({
   pvalueCell: {
     minWidth: 82,
     maxWidth: 86,
+    paddingRight: `${theme.spacing(0.5)}px !important`,
   },
   selectedCell: {
     backgroundColor: theme.palette.action.selected,
@@ -339,7 +340,7 @@ const ContentRow = ({ row, index, selected, current, controller, isMobile, handl
           align={col.numeric ? 'right' : 'left'}
           selected={selected}
           className={clsx(classes[col.id + 'Cell'], { [classes.tableCell]: true, [classes.selectedCell]: selected })}
-          onClick={() => handleClick(row, col.preventGotoNode)}
+          onClick={() => handleClick(row,  (col.preventGotoNode && row[col.id] != null) )}
         >
           { col.render(row, col, classes, controller) }
         </TableCell>
