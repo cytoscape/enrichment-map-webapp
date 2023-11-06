@@ -352,6 +352,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
       }
       if (idx >= 0) {
         var newCurrentRow = rows[idx];
+        setGotoCurrentNode(true);
         setCurrentRow(newCurrentRow);
         setScrollToId(newCurrentRow.id);
       }
