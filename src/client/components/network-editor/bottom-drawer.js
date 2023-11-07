@@ -30,15 +30,16 @@ export const NODE_COLOR_SVG_ID = 'node-color-legend-svg';
 
 function toTableRow(node) {
   const pathwayArr = node.data('name');
+  const pathwayLinkOut = pathwayArr && pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
 
   const row = {};
   row.id = node.data('id');
   row.name = node.data('label');
-  row.href = pathwayArr && pathwayArr.length === 1 ? pathwayDBLinkOut(pathwayArr[0]) : null;
+  row.db = pathwayLinkOut?.name;
+  row.href = pathwayLinkOut?.href;
   row.nes = node.data('NES');
   row.pvalue = node.data('padj'); // NOTICE we are using the adjusted p-value!
   row.cluster = node.isChild() ? node.parent().data('label') : null;
-  row.added = Boolean(node.data('added_by_user'));
 
   return row;
 }

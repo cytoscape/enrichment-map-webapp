@@ -142,6 +142,7 @@ const useStyles = makeStyles((theme) => ({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     marginRight: 4,
+    cursor: 'default',
   },
   link: {
     color: theme.palette.link.main,
@@ -195,14 +196,16 @@ const COLUMNS = [
         <div style={{display: 'flex'}}>
           <div className={classes.nameCellText}>{ row[col.id] }</div>
         {row.href && (
-          <Link
-            href={row.href}
-            color="textSecondary"
-            className={classes.link}
-            {...linkoutProps}
-          >
-            <OpenInNewIcon className={classes.openInNewIcon} />
-          </Link>
+          <Tooltip title={row.db}>
+            <Link
+              href={row.href}
+              color="textSecondary"
+              className={classes.link}
+              {...linkoutProps}
+            >
+              <OpenInNewIcon className={classes.openInNewIcon} />
+            </Link>
+          </Tooltip>
         )}
         </div>
       );
