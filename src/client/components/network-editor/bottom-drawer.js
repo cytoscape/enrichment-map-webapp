@@ -37,6 +37,7 @@ function toTableRow(node) {
   row.name = node.data('label');
   row.db = pathwayLinkOut?.name;
   row.href = pathwayLinkOut?.href;
+  row.icon = pathwayLinkOut?.icon;
   row.nes = node.data('NES');
   row.pvalue = node.data('padj'); // NOTICE we are using the adjusted p-value!
   row.cluster = node.isChild() ? node.parent().data('label') : null;

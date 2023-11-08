@@ -95,6 +95,11 @@ const useStyles = makeStyles((theme) => ({
     paddingRight: '1px !important',
     textAlign: 'center',
   },
+  dbCell: {
+    paddingLeft: '1px !important',
+    paddingRight: '1px !important',
+    textAlign: 'center',
+  },
   nameCell: {
     width: '75%',
     maxWidth: 0,
@@ -135,6 +140,10 @@ const useStyles = makeStyles((theme) => ({
   clusterIcon: {
     verticalAlign: 'middle',
   },
+  pathwayIcon: {
+    verticalAlign: 'middle',
+    fontSize: '1.25rem',
+  },
   nameCellText: {
     alignItems: 'center',
     maxWidth: 'calc(100% - 20px)',
@@ -165,7 +174,7 @@ const COLUMNS = [
     numeric: false,
     hideOnMobile: false,
     label: <>&nbsp;</>,
-    tooltip: "Cluster",
+    tooltip: 'Cluster',
     preventGotoNode: true,
     render: (row, col, classes, controller) => {
       const c = row.nes < 0 ? REG_COLOR_RANGE.downMax : REG_COLOR_RANGE.upMax;
@@ -183,6 +192,22 @@ const COLUMNS = [
           </Tooltip>
           :
           ' '
+      );
+    }
+  },
+  {
+    id: 'db',
+    numeric: false,
+    hideOnMobile: false,
+    label: <>&nbsp;</>,
+    tooltip: 'Database',
+    render: (row, col, classes) => {
+      return (
+        <Tooltip title={row.db}>
+          <span>
+            { row.icon(classes.pathwayIcon) }
+          </span>
+        </Tooltip>
       );
     }
   },
