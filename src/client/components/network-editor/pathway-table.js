@@ -16,7 +16,9 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Table
 import { IconButton, Checkbox, Paper, Typography, Link, Tooltip } from '@material-ui/core';
 import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 
-import UnselectAllIcon from '@material-ui/icons/IndeterminateCheckBox';
+import CheckBoxOutlineBlankOutlinedIcon from '@material-ui/icons/CheckBoxOutlineBlankOutlined';
+import CheckBoxOutlinedIcon from '@material-ui/icons/CheckBoxOutlined';
+import IndeterminateCheckBoxOutlinedIcon from '@material-ui/icons/IndeterminateCheckBoxOutlined';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
@@ -121,11 +123,11 @@ const useStyles = makeStyles((theme) => ({
   selectedCell: {
     backgroundColor: theme.palette.action.selected,
   },
-  unselectAllButton: {
+  selectAllButton: {
     maxWidth: 32,
     maxHeight: 32,
   },
-  unselectAllIcon: {
+  selectAllIcon: {
     fontSize: '1.25rem',
   },
   checkbox: {
@@ -451,11 +453,15 @@ const PathwayTable = (
     setOrderBy(property);
   };
 
+  const isRowSelected = (row) => {
+    return selectedRows.findIndex(r => r.id === row.id) >= 0;
+  };
+
   const handleRowClick = (row, preventGotoNode = false) => {
     let newSelectedRows = selectedRows;
     let selected = false;
 
-    if (selectedRows.findIndex(r => r.id === row.id) >= 0) {
+    if (isRowSelected(row)) {
       // Toggle: unselect this row/id
       newSelectedRows = newSelectedRows.filter(r => r.id !== row.id);
       selectedRowsRef.current = [...newSelectedRows];
@@ -471,10 +477,15 @@ const PathwayTable = (
     }
   };
 
-  const handleUnselectAllClick = () => {
-    selectedRows.forEach(row => {
-      handleRowClick(row);
-    });
+  const handleSelectAllClick = (selectAll) => {
+    if (sortedDataRef.current) {
+      sortedDataRef.current.forEach(row => {
+        const selected = isRowSelected(row);
+        if ((selectAll && !selected) || (!selectAll && selected)) {
+          handleRowClick(row, true);
+        }
+      });
+    }
   };
 
   if (data.length === 0 && searchTerms && searchTerms.length > 0) {
@@ -519,13 +530,19 @@ const PathwayTable = (
     );
   }
 
+  const totalRows = sortedDataRef.current.length;
+  const totalSelectedRows = selectedRows.length;
+  const allSelected = totalSelectedRows > 0 && totalSelectedRows === totalRows;
+  const noneSelected = totalSelectedRows === 0;
+  const someSelected = !noneSelected > 0 && !allSelected;
+
   // Find the "current" id
   let currentId = currentRow ? currentRow.id : null;
   // Find the "initial" index, which is where the table must auto-scroll to
   let initialIndex = 0;
   let initialId = scrollToId || currentId;
   const initialTopMostItemIndex = { index: 0, align: 'start' };
-  if (!initialId && selectedRows.length > 0) {
+  if (!initialId && totalSelectedRows > 0) {
     initialId = selectedRows[0].id;
   }
   if (initialId && sortedDataRef.current) {
@@ -547,15 +564,17 @@ const PathwayTable = (
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
           <TableCell className={clsx(classes.checkCell, { [classes.tableCell]: true })}>
-            <Tooltip title="Unselect All">
+            <Tooltip title={noneSelected ? 'Select All' : 'Select None'}>
               <span>
                 <IconButton
-                  disabled={selectedRows.length === 0}
                   color="secondary"
-                  className={classes.unselectAllButton}
-                  onClick={handleUnselectAllClick}
+                  disabled={totalRows === 0}
+                  className={classes.selectAllButton}
+                  onClick={() => handleSelectAllClick(noneSelected)}
                 >
-                  <UnselectAllIcon className={classes.unselectAllIcon} />
+                  { allSelected && <CheckBoxOutlinedIcon className={classes.selectAllIcon} /> }
+                  { noneSelected && <CheckBoxOutlineBlankOutlinedIcon className={classes.selectAllIcon} /> }
+                  { someSelected && <IndeterminateCheckBoxOutlinedIcon className={classes.selectAllIcon} /> }
                 </IconButton>
               </span>
             </Tooltip>
@@ -578,7 +597,10 @@ const PathwayTable = (
                     { col.label }
                   {col.id === 'name' && data && (
                     <Typography component="span" variant="body2" color="textSecondary">
-                      &nbsp;({selectedRows.length > 0 ? selectedRows.length + ' selected of ' : ''}{ data.length })
+                      &nbsp;({totalSelectedRows > 0 ? 
+                        (allSelected ? 'all' : totalSelectedRows) + ' selected of '
+                        :
+                      ''}{ data.length })
                     </Typography>
                   )}
                   </span>
