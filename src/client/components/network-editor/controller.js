@@ -8,6 +8,10 @@ import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 import { SearchController } from './search-contoller';
 import { UndoHandler } from './undo-stack';
 
+// Clusters that have this many nodes get optimized.
+// Note we are using number of nodes as a proxy for number of edges, assuming large clusters are mostly complete.
+const LARGE_CLUSTER_SIZE = 33; // approx 500 edges in a complete graph
+
 export const CoSELayoutOptions = {
   name: 'cose',
   idealEdgeLength: edge => 30 - 25 * (edge.data('similarity_coefficient')),
@@ -239,13 +243,13 @@ export class NetworkEditorController {
     const spacingFactor = collapsed ? (1.0 / shrinkFactor) : shrinkFactor;
 
     const nodes = parent.children();
-    const edges = this.internalEdges(nodes);
+    const edges = nodes.internalEdges();
 
-    const layout = parent.children().layout({
+    const layout = nodes.layout({
       name: 'preset',
       positions: n => n.position(),
       fit: false,
-      animate,
+      animate: animate && nodes.size() < LARGE_CLUSTER_SIZE,
       spacingFactor
     });
     
@@ -295,11 +299,6 @@ export class NetworkEditorController {
     }
   }
 
-
-  internalEdges(cluster) {
-    return cluster.connectedEdges().filter(e => cluster.contains(e.source()) && cluster.contains(e.target()));
-  }
-
   /**
    * positions is an array of objects of the form...
    * [ { id: "node-id", x:1.2, y:3.4 }, ...]
@@ -346,19 +345,22 @@ export class NetworkEditorController {
       return;
 
     const nodes = parent.children();
-    const edges = this.internalEdges(nodes);
-    const c     = clusterColor(parent); // Average NES needs to be set on the parent first
-    const rgb   = `rgb(${c.r}, ${c.g}, ${c.b}, 0.2)`;
+    const large = nodes.size() >= LARGE_CLUSTER_SIZE;
+
+    let edges = nodes.internalEdges();
+    if(large) {
+      edges = edges.shuffle().slice(0, 300); // Take a random sample of edges
+    }
+
+    const c = clusterColor(parent); // Average NES needs to be set on the parent first
+    const rgb = `rgb(${c.r}, ${c.g}, ${c.b}, 0.2)`;
+    const throttle = large ? 250 : 50; 
 
     const bubblePath = this.bubbleSets.addPath(nodes, edges, null, {
       virtualEdges: false,
-      interactive: true,
-      throttle: 10, // makes animation smoother
-      style: {
-        'fill': rgb,
-        'stroke': rgb,
-        'stroke-width': 1,
-      }
+      interactive: false,
+      throttle,
+      style: { 'fill': rgb, 'stroke': rgb, 'stroke-width': 1 }
     });
 
     // Save the bubblePath object in the parent node
