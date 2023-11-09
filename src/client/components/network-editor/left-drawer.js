@@ -325,7 +325,7 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
                 </Typography> &nbsp;&nbsp;
                 <Tooltip title="Export Current Gene List">
                   <IconButton size="small" onClick={handleGeneListExport}>
-                    <CloudDownloadIcon fontSize="small"/>
+                    <CloudDownloadIcon />
                   </IconButton>
                 </Tooltip>
               </>
