@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
+import { saveGeneList } from './share-panel';
 
 import { CONTROL_PANEL_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
@@ -15,6 +16,7 @@ import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from './search-bar';
 
 import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import { VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
 
 
@@ -198,6 +200,10 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
     }
   }, 250);
 
+  const handleGeneListExport = () => {
+    saveGeneList(genes);
+  };
+
   const onNetworkLoaded = () => {
     setNetworkLoaded(true);
   };
@@ -308,9 +314,16 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
             <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
               Genes&nbsp;
             {totalGenes >= 0 && (
-              <Typography display="inline" variant="body2" color="textSecondary">
-                ({ totalGenes })
-              </Typography>
+              <>
+                <Typography display="inline" variant="body2" color="textSecondary">
+                  ({ totalGenes })
+                </Typography> &nbsp;&nbsp;
+                <Tooltip title="Export Current Gene List">
+                  <IconButton size="small" onClick={handleGeneListExport}>
+                    <CloudDownloadIcon fontSize="small"/>
+                  </IconButton>
+                </Tooltip>
+              </>
             )}
             </Typography>
             <div className={classes.grow} />
