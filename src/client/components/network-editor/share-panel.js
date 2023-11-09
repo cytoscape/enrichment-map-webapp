@@ -21,10 +21,33 @@ const ImageArea = {
   VIEW: 'view',
 };
 
+function stringToBlob(str) {
+  return new Blob([str], { type: 'text/plain;charset=utf-8' });
+}
 
 function wait(millis, value="") {
   return new Promise(resolve => setTimeout(resolve, millis, value));
 }
+
+
+export async function saveGeneList(genesJSON, pathways) { // used by the gene list panel (actually left-drawer.js)
+  const lines = ['gene\trank'];
+  for(const { gene, rank } of genesJSON) {
+    lines.push(`${gene}\t${rank}`);
+  }
+  const fullText = lines.join('\n');
+  const blob = stringToBlob(fullText);
+
+  let fileName = 'gene_ranks.txt';
+  if(pathways && pathways.length == 1) {
+    fileName = `gene_ranks_(${pathways[0]}).txt`;
+  } else if(pathways && pathways.length > 1) {
+    fileName = `gene_ranks_${pathways.length}_pathways.txt`;
+  }
+
+  saveAs(blob, fileName);
+}
+
 
 async function createNetworkImageBlob(controller, imageSize, imageArea=ImageArea.FULL) {
   return await controller.cy.png({
@@ -35,10 +58,12 @@ async function createNetworkImageBlob(controller, imageSize, imageArea=ImageArea
   });
 }
 
+
 async function createSVGLegendBlob(svgID) {
-  const svg = getSVGString(svgID);
-  return new Blob([svg], { type: 'text/plain;charset=utf-8' });
+  const svgStr = getSVGString(svgID);
+  return stringToBlob(svgStr);
 }
+
 
 function getZipFileName(controller, suffix) {
   const networkName = controller.cy.data('name');
@@ -51,6 +76,7 @@ function getZipFileName(controller, suffix) {
   }
   return `enrichment_map_${suffix}.zip`;
 }
+
 
 async function saveZip(controller, zip, type) {
   const archiveBlob = await zip.generateAsync({ type: 'blob' });
