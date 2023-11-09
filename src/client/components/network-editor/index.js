@@ -90,13 +90,6 @@ async function loadNetwork(cy, controller, id) {
     edge.target().select();
     edge.unselect();
   });
-  // Prevent compound nodes from being selected as well
-  cy.nodes(':parent').on('select', evt => {
-    const node = evt.target;
-    if (node.isParent()) {
-      node.unselect();
-    }
-  });
 
   // Notify listeners that the network has been loaded
   console.log('Loaded');
