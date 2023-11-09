@@ -150,8 +150,7 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
     return await fetchGeneList([], intersection);
   };
 
-  const fetchGeneListFromElements = async (eles, intersection = false) => {
-    const genes = [];
+  const getGeneSetNames = (eles) => {
     const nodes = eles.nodes();
 
     const getNames = n => {
@@ -169,16 +168,20 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
       }
       gsNames = gsNames.concat(getNames(el));
     }
+
+    return _.uniq(gsNames);
+  };
+
+  const fetchGeneListFromElements = async (eles, intersection = false) => {
+    const genes = [];
+    const gsNames = getGeneSetNames(eles);
     
     if (gsNames.length > 0) {
-      gsNames = _.uniq(gsNames);
       const nodeGenes = await fetchGeneList(gsNames, intersection);
       genes.push(...nodeGenes);
     }
     
-    // Remove duplicates
-    const unique = _.uniqBy(genes, 'gene');
-
+    const unique = _.uniqBy(genes, 'gene'); // Remove duplicates
     return unique;
   };
 
@@ -201,7 +204,9 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
   }, 250);
 
   const handleGeneListExport = () => {
-    saveGeneList(genes);
+    const eles = cy.nodes(':childless:selected');
+    const gsNames = getGeneSetNames(eles);
+    saveGeneList(genes, gsNames);
   };
 
   const onNetworkLoaded = () => {

@@ -30,14 +30,22 @@ function wait(millis, value="") {
 }
 
 
-export async function saveGeneList(genesJSON) { // used by the gene list panel (actually left-drawer.js)
+export async function saveGeneList(genesJSON, pathways) { // used by the gene list panel (actually left-drawer.js)
   const lines = ['gene\trank'];
   for(const { gene, rank } of genesJSON) {
     lines.push(`${gene}\t${rank}`);
   }
   const fullText = lines.join('\n');
   const blob = stringToBlob(fullText);
-  saveAs(blob, 'gene_ranks.txt');
+
+  let fileName = 'gene_ranks.txt';
+  if(pathways && pathways.length == 1) {
+    fileName = `gene_ranks_(${pathways[0]}).txt`;
+  } else if(pathways && pathways.length > 1) {
+    fileName = `gene_ranks_${pathways.length}_pathways.txt`;
+  }
+
+  saveAs(blob, fileName);
 }
 
 
