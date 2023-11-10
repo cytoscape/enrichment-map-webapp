@@ -51,6 +51,7 @@
     "@tippyjs/react": "^4.2.6",
     "body-parser": "^1.19.0",
     "btoa": "^1.2.1",
+    "canvg": "4.0.1",
     "chroma-js": "^2.4.2",
     "classnames": "^2.2.6",
     "color": "^3.1.2",
