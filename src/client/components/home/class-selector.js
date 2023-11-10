@@ -6,12 +6,12 @@ import { makeStyles } from '@material-ui/core/styles';
 import { Grid, Typography } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 
-import { GroupAIcon, GroupBIcon } from '../svg-icons';
+import { ExperimentGroupIcon, ControlGroupIcon } from '../svg-icons';
 import BlockIcon from '@material-ui/icons/Block';
 
 const BUTTONS_DEF = [
-  { value: 'A', label: 'Experiment', mobileLabel: 'E',  icon: <GroupAIcon fontSize="small" /> },
-  { value: 'B', label: 'Control', mobileLabel: 'C',  icon: <GroupBIcon fontSize="small" /> },
+  { value: 'A', label: 'Experiment', mobileLabel: 'E',  icon: <ExperimentGroupIcon fontSize="small" /> },
+  { value: 'B', label: 'Control', mobileLabel: 'C',  icon: <ControlGroupIcon fontSize="small" /> },
   { value: 'X', label: 'Ignored', mobileLabel: null, icon: <BlockIcon fontSize="small" /> },
 ];
 
