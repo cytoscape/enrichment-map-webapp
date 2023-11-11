@@ -12,48 +12,49 @@ import { Canvg, presets } from 'canvg';
 
 
 const ImageSize = {
-  SMALL:  { value:'SMALL',  scale: 0.3, svgTransform: 'translate(12,12)scale(0.6)' },
-  MEDIUM: { value:'MEDIUM', scale: 1.0, svgTransform: 'translate(55,28)scale(2)' },
-  LARGE:  { value:'LARGE',  scale: 2.0, svgTransform: 'translate(110,56)scale(6)' },
+  SMALL:  { value:'SMALL',  scale: 0.3 },
+  MEDIUM: { value:'MEDIUM', scale: 1.0 },
+  LARGE:  { value:'LARGE',  scale: 2.0 },
 };
 
 
-// async function createNetworkImageBlob(controller, imageSize, imageArea=ImageArea.FULL) {
-//   return await controller.cy.png({
-//     output: 'blob-promise',
-//     bg: 'white',
-//     full: imageArea === ImageArea.FULL,
-//     scale: imageSize.scale,
-//   });
-// }
-
 async function createNetworkImageBlob(controller, imageSize) {
+  const { cy, bubbleSets } = controller;
+  const renderer = cy.renderer();
+
+  // render the network to a buffer canvas
   const cyoptions = {
     output: 'blob',
     bg: 'white',
-    full: true, 
+    full: true, // full must be true for the calculations below to work
     scale: imageSize.scale,
   };
-
-  // render the network
-  const renderer = controller.cy.renderer();
   const cyCanvas = renderer.bufferCanvasImage(cyoptions);
   const { width, height } = cyCanvas;
 
-  // render the bubbleSet svg layer
-  const svgElem = controller.bubbleSets.layer.node.parentNode.cloneNode(true);
-  // Setting the 'transform' attribute to a hardcoded value is a hack. There must be some way to compute it.
-  svgElem.firstChild.setAttribute('transform', imageSize.svgTransform); // firstChild is a <g> tag
+  // compute the transform to be applied to the bubbleSet svg layer
+  // this code was adapted from the code in renderer.bufferCanvasImage()
+  var bb = cy.elements().boundingBox();
+  const pxRatio = renderer.getPixelRatio();
+  const scale = imageSize.scale * pxRatio;
+  const dx = -bb.x1 * scale;
+  const dy = -bb.y1 * scale;
+  const transform = `translate(${dx},${dy})scale(${scale})`;
 
+  // get the bubbleSet svg element
+  const svgElem = bubbleSets.layer.node.parentNode.cloneNode(true);
+  svgElem.firstChild.setAttribute('transform', transform); // firstChild is a <g> tag
+
+  // render the bubbleSet svg layer using Canvg library
   const svgCanvas = new OffscreenCanvas(width, height);
   const ctx = svgCanvas.getContext('2d');
-  let v = await Canvg.from(ctx, svgElem.innerHTML, presets.offscreen());
-  await v.render();
+  const svgRenderer = await Canvg.from(ctx, svgElem.innerHTML, presets.offscreen());
+  await svgRenderer.render();
 
   // combine the layers
   const combinedCanvas = new OffscreenCanvas(width, height);
   const combinedCtx = combinedCanvas.getContext('2d');
-  combinedCtx.drawImage(cyCanvas, 0, 0);
+  combinedCtx.drawImage(cyCanvas,  0, 0);
   combinedCtx.drawImage(svgCanvas, 0, 0);
 
   const blob = await combinedCanvas.convertToBlob();
@@ -86,24 +87,20 @@ async function saveZip(controller, zip, type) {
 
 
 async function handleExportImageArchive(controller) {
-  // const blobs = await Promise.all([
-  //   createNetworkImageBlob(controller, ImageSize.SMALL),
-  //   createNetworkImageBlob(controller, ImageSize.MEDIUM),
-  //   createNetworkImageBlob(controller, ImageSize.LARGE),
-  //   // createSVGLegendBlob(NODE_COLOR_SVG_ID), // TODO fix the SVG legend
-  // ]);
+  const blobs = await Promise.all([
+    createNetworkImageBlob(controller, ImageSize.SMALL),
+    createNetworkImageBlob(controller, ImageSize.MEDIUM),
+    createNetworkImageBlob(controller, ImageSize.LARGE),
+    // createSVGLegendBlob(NODE_COLOR_SVG_ID), // TODO fix the SVG legend
+  ]);
 
-  // const zip = new JSZip();
-  // zip.file('enrichment_map_small.png',  blobs[0]);
-  // zip.file('enrichment_map_medium.png', blobs[1]);
-  // zip.file('enrichment_map_large.png',  blobs[2]);
-  // // zip.file('node_color_legend.svg',     blobs[3]); // TODO
+  const zip = new JSZip();
+  zip.file('enrichment_map_small.png',  blobs[0]);
+  zip.file('enrichment_map_medium.png', blobs[1]);
+  zip.file('enrichment_map_large.png',  blobs[2]);
+  // zip.file('node_color_legend.svg',     blobs[3]); // TODO
 
-  // saveZip(controller, zip, 'images');
-
-  const size = ImageSize.MEDIUM;
-  const blob = await createNetworkImageBlob(controller, size);
-  saveAs(blob, `network_image_${size.value}.png`);
+  saveZip(controller, zip, 'images');
 }
 
 
