@@ -4,15 +4,14 @@ import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 import { NetworkEditorController } from './controller';
 import { MenuList, MenuItem, ListItemIcon, ListItemText, Popover } from '@material-ui/core';
-import { getSVGString } from './legend-svg';
-import { NODE_COLOR_SVG_ID } from './legend-button';
+import { getLegendSVG } from './legend-svg';
 import InsertDriveFileOutlinedIcon from '@material-ui/icons/InsertDriveFileOutlined';
 import LinkIcon from '@material-ui/icons/Link';
 import { Canvg, presets } from 'canvg';
 
 
 const ImageSize = {
-  SMALL:  { value:'SMALL',  scale: 0.3 },
+  SMALL:  { value:'SMALL',  scale: 0.5 },
   MEDIUM: { value:'MEDIUM', scale: 1.0 },
   LARGE:  { value:'LARGE',  scale: 2.0 },
 };
@@ -61,9 +60,8 @@ async function createNetworkImageBlob(controller, imageSize) {
   return blob;
 }
 
-
-async function createSVGLegendBlob(svgID) {
-  const svg = getSVGString(svgID);
+async function createSVGLegendBlob(controller) {
+  const svg = getLegendSVG(controller);
   return new Blob([svg], { type: 'text/plain;charset=utf-8' });
 }
 
@@ -79,6 +77,7 @@ function getZipFileName(controller, suffix) {
   return `enrichment_map_${suffix}.zip`;
 }
 
+
 async function saveZip(controller, zip, type) {
   const archiveBlob = await zip.generateAsync({ type: 'blob' });
   const fileName = getZipFileName(controller, type);
@@ -91,14 +90,14 @@ async function handleExportImageArchive(controller) {
     createNetworkImageBlob(controller, ImageSize.SMALL),
     createNetworkImageBlob(controller, ImageSize.MEDIUM),
     createNetworkImageBlob(controller, ImageSize.LARGE),
-    // createSVGLegendBlob(NODE_COLOR_SVG_ID), // TODO fix the SVG legend
+    createSVGLegendBlob(controller)
   ]);
 
   const zip = new JSZip();
   zip.file('enrichment_map_small.png',  blobs[0]);
   zip.file('enrichment_map_medium.png', blobs[1]);
   zip.file('enrichment_map_large.png',  blobs[2]);
-  // zip.file('node_color_legend.svg',     blobs[3]); // TODO
+  zip.file('node_color_legend_NES.svg', blobs[3]);
 
   saveZip(controller, zip, 'images');
 }

@@ -11,8 +11,6 @@ import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import { Chip, Tooltip } from '@material-ui/core';
 
-export const NODE_COLOR_SVG_ID = 'node-color-legend-svg';
-
 const LEGEND_HEIGHT = 260;
 const LEGEND_WIDTH  = 100;
 const BACKGROUND_COLOR  = '#F6F6F6';
@@ -144,12 +142,13 @@ export function LegendActionButton({ controller }) {
         <Tooltip title="Normalized Enrichment Score (NES)" placement='left' arrow>
           <h4 className={classes.menuTitle}>Enrichment</h4>
         </Tooltip>
-        <NodeColorLegend 
-          svgID={NODE_COLOR_SVG_ID}
-          height={LEGEND_HEIGHT * 0.8}
-          magNES={controller.style.magNES}
-          nesVal={nes}
-        />
+        <div>
+          <NodeColorLegend 
+            height={LEGEND_HEIGHT * 0.8}
+            magNES={controller.style.magNES}
+            nesVal={nes}
+          />
+        </div>
       </div>
     </div>
   );
