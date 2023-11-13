@@ -16,6 +16,29 @@ const ImageSize = {
   LARGE:  { value:'LARGE',  scale: 2.0 },
 };
 
+function stringToBlob(str) {
+  return new Blob([str], { type: 'text/plain;charset=utf-8' });
+}
+
+
+export async function saveGeneList(genesJSON, pathways) { // used by the gene list panel (actually left-drawer.js)
+  const lines = ['gene\trank'];
+  for(const { gene, rank } of genesJSON) {
+    lines.push(`${gene}\t${rank}`);
+  }
+  const fullText = lines.join('\n');
+  const blob = stringToBlob(fullText);
+
+  let fileName = 'gene_ranks.txt';
+  if(pathways && pathways.length == 1) {
+    fileName = `gene_ranks_(${pathways[0]}).txt`;
+  } else if(pathways && pathways.length > 1) {
+    fileName = `gene_ranks_${pathways.length}_pathways.txt`;
+  }
+
+  saveAs(blob, fileName);
+}
+
 
 async function createNetworkImageBlob(controller, imageSize) {
   const { cy, bubbleSets } = controller;
@@ -64,6 +87,7 @@ async function createSVGLegendBlob(controller) {
   const svg = getLegendSVG(controller);
   return new Blob([svg], { type: 'text/plain;charset=utf-8' });
 }
+
 
 function getZipFileName(controller, suffix) {
   const networkName = controller.cy.data('name');

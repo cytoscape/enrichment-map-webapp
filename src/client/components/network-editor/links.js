@@ -8,11 +8,11 @@ import {
   MSigDBIcon,
   NCIIcon,
   PantherIcon,
+  PathwayCommonsIcon,
   PathWhizIcon,
   ReactomeIcon,
   SMPDBIcon,
   WikiPathwaysIcon,
-  MissingDBIcon
 } from '../svg-icons';
 
 
@@ -56,7 +56,7 @@ const pathwayDBs = [
     db: 'IOB',
     name: 'IOB (Netpath)',
     icon: (className) => <IOBIcon className={className} />, // eslint-disable-line react/prop-types
-    href: (id) => `https://www.google.com/search?q=${id}`,
+    href: (id) => `https://apps.pathwaycommons.org/search?datasource=netpath&q=${id}&type=Pathway`,
     // e.g. ALPHA6BETA4INTEGRIN%IOB%ALPHA6BETA4INTEGRIN
   },
   {
@@ -77,7 +77,7 @@ const pathwayDBs = [
     db: 'PATHWAY INTERACTION DATABASE NCI-NATURE CURATED DATA',
     name: 'NCI-Nature Curated',
     icon: (className) => <NCIIcon className={className} />, // eslint-disable-line react/prop-types
-    href: (id) => `https://www.ncbi.nlm.nih.gov/search/all/?term=${id}`,
+    href: (id) => `https://apps.pathwaycommons.org/search?datasource=pid&q=${id}&type=Pathway`,
     // e.g. S1P3 PATHWAY%PATHWAY INTERACTION DATABASE NCI-NATURE CURATED DATA%S1P3 PATHWAY
   },
   {
@@ -128,15 +128,17 @@ export function pathwayDBLinkOut(pathway) {
     }
   }
 
+  // If missing in our database
+  let db = pathway;
   let name = pathway;
   if (pathway.indexOf('%') >= 0) {
     const tokens = pathway.split('%');
     if (tokens.length === 3) {
-      name = tokens[1];
+      db = name = tokens[1];
     }
   }
-  const missingIcon = (className) => <MissingDBIcon className={className} />;
-  const searchHref = `https://www.google.com/search?q=${pathway}`;
+  const icon = (className) => <PathwayCommonsIcon className={className} />;
+  const href = `https://apps.pathwaycommons.org/search?q=${pathway}&type=Pathway`;
 
-  return { name: name, href: searchHref, icon: missingIcon };
+  return { db, name, href, icon };
 }
