@@ -101,12 +101,70 @@ UpDownHBar.propTypes = {
 
 // ==[ Up-Down Gradient LEGEND ]=============================================================================================================
 
-export const UpDownLegend = ({ value, minValue, maxValue, downColor, zeroColor, upColor, height, tooltip, style }) => {
-  let left = 0;
-  if (value) {
-    left = (value - minValue) / (maxValue - minValue);
-    left *= 100;
+const _mainValue = (values) => {
+  if (values && values.length > 0) {
+    if (values.length === 1) {
+      return values[0];
+    } else {
+      let val = 0;
+      values.forEach(v => val += v);
+      val /= values.length;
+
+      return val;
+    }
   }
+
+  return undefined;
+};
+
+export const UpDownLegend = ({ values = [], minValue, maxValue, downColor, zeroColor, upColor, height, tooltip, style }) => {
+  const mainVal = _mainValue(values);
+  const total  = values.length;
+
+  const Mark = ({ val, isMain, isAvg }) => {
+    let left = 0;
+    if (val) {
+      left = (val - minValue) / (maxValue - minValue);
+      left *= 100;
+    }
+
+    return (
+      <>
+      {isMain && (
+        <Tooltip title={tooltip ? tooltip : ''}>
+          <Typography
+            color="textPrimary"
+            style={{
+              position: 'absolute',
+              left: `${left}%`,
+              transform: 'translate(-50%, -100%)',
+              fontSize: '0.85em',
+            }}
+          >
+            { numToText(val) + (isAvg ? ' (avg.)' : '') }
+          </Typography>
+        </Tooltip>
+      )}
+        <div
+          style={{
+            position: 'absolute',
+            top: isMain ? height / 2 - 2 : '50%',
+            left: `${left}%`,
+            width: isMain ? 3 : 1,
+            height: isMain ? height + 4 : height,
+            marginTop: -height / 2,
+            backgroundColor: isMain ? theme.palette.text.primary : 'rgba(0,0,0,0.25)',
+            border: isMain ? `1px solid ${theme.palette.background.default}` : 'none',
+          }}
+        />
+      </>
+    );
+  };
+  Mark.propTypes = {
+    val: PropTypes.number.isRequired,
+    isMain: PropTypes.bool,
+    isAvg: PropTypes.bool,
+  };
 
   return (
     <div style={style}>
@@ -116,44 +174,20 @@ export const UpDownLegend = ({ value, minValue, maxValue, downColor, zeroColor, 
           width: '100%',
           height: height,
           background: `linear-gradient(to right, ${downColor} 0%, ${zeroColor} 50%, ${upColor} 100%)`,
-          border: `2px solid ${theme.palette.divider}`,
         }}
       >
-      {value && (
-        <>
-          <Tooltip title={tooltip ? tooltip : ''}>
-            <Typography
-              color="textPrimary"
-              style={{
-                position: 'absolute',
-                left: `${left}%`,
-                transform: 'translate(-50%, -100%)',
-                fontSize: '0.85em',
-              }}
-            >
-              { numToText(value) }
-            </Typography>
-          </Tooltip>
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: `${left}%`,
-              width: 3,
-              height: height,
-              marginTop: -height / 2,
-              backgroundColor: theme.palette.text.primary,
-              border: `1px solid ${theme.palette.background.default}`,
-            }}
-          />
-        </>
+      {total > 1 && values.map((val, idx) => (
+        <Mark key={idx} val={val} />
+      ))}
+      {mainVal && (
+        <Mark val={mainVal} isMain={true} isAvg={total > 1} />
       )}
       </div>
     </div>
   );
 };
 UpDownLegend.propTypes = {
-  value: PropTypes.number,
+  values: PropTypes.arrayOf(PropTypes.number),
   minValue: PropTypes.number.isRequired,
   maxValue: PropTypes.number.isRequired,
   downColor: PropTypes.string.isRequired,
