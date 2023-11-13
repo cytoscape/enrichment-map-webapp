@@ -20,6 +20,9 @@ function stringToBlob(str) {
   return new Blob([str], { type: 'text/plain;charset=utf-8' });
 }
 
+function delay(millis) {
+  return new Promise(r => setTimeout(r, millis, 'delay'));
+}
 
 export async function saveGeneList(genesJSON, pathways) { // used by the gene list panel (actually left-drawer.js)
   const lines = ['gene\trank'];
@@ -171,16 +174,8 @@ export function ShareMenu({ controller, target, visible, onClose = ()=>null, set
 
   const snack = snackBarOps(setSnackBarState);
 
-  const handleCopyLink = async () => {
-    onClose();
-    await handleCopyToClipboard(); 
-    snack.showMessage("Link copied to clipboard");
-  };
-
   const spinnerUntilDone = async (promise, message) => {
-    const delay = (millis) => new Promise(r => setTimeout(r, millis, 'delay'));
-
-    // Only show spinner if it takes longer than the inital delay
+    // Only show spinner if it takes longer than the delay
     const value = await Promise.race([ promise, delay(500) ]);
     if(value === 'delay') // if the delay promise finished first
       snack.showSpinner(message);
@@ -189,11 +184,19 @@ export function ShareMenu({ controller, target, visible, onClose = ()=>null, set
     snack.close();
   };
 
+  const handleCopyLink = async () => {
+    onClose();
+    await handleCopyToClipboard(); 
+    snack.showMessage("Link copied to clipboard");
+  };
+
   const handleExportImages = async () => {
     onClose();
     setImageExportEnabled(false);
-    const promise = handleExportImageArchive(controller);
-    await spinnerUntilDone(promise, "Exporting network images...");
+    snack.showSpinner("Exporting network images...");
+    await delay(50); // allows the menu to close immediately, otherwise it hangs for a couple seconds
+    await handleExportImageArchive(controller);
+    snack.close();
     setImageExportEnabled(true); 
   };
 
