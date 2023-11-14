@@ -144,7 +144,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
   const [ open, setOpen ] = useState(false);
   const [ disabled, setDisabled ] = useState(true);
   const [ searchValue, setSearchValue ] = useState('');
-  const [ selectedNES, setSelectedNES ] = useState();
+  const [ selectedNESValues, setSelectedNESValues ] = useState([]);
   const [ data, setData ] = useState([]);
   const [ searchTerms, setSearchTerms ] = useState();
   const [ selectedRows, setSelectedRows ] = useState([]);
@@ -187,14 +187,12 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
     // Selected rows
     const selRows = getSelectedRows(sortFnRef.current);
     setSelectedRows(selRows);
-    // NES (only if there's only one selected pathway)
-    if (selRows.length === 1) {
-      const nes = selRows[0].nes;
-      if (nes !== selectedNES) {
-        setSelectedNES(nes);
-      }
+    // NES values
+    if (selRows.length > 0) {
+      const nesValues = selRows.map(r => r.nes);
+      setSelectedNESValues(nesValues);
     } else {
-      setSelectedNES(null);
+      setSelectedNESValues([]);
     }
     if (currentRowRef.current) {
       if (selRows.findIndex(r => r.id === currentRowRef.current.id) === -1) {
@@ -419,7 +417,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
             <Grid container direction="column" spacing={0} style={{minWidth: 40, maxWidth: 300, width: '100%', marginTop: 16}}>
               <Grid item>
                 <UpDownLegend
-                  value={selectedNES}
+                  values={selectedNESValues}
                   minValue={-magNES}
                   maxValue={magNES}
                   downColor={REG_COLOR_RANGE.downMax}
