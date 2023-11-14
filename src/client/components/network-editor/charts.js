@@ -133,12 +133,15 @@ export const UpDownLegend = ({ values = [], minValue, maxValue, downColor, zeroC
       {isMain && (
         <Tooltip title={tooltip ? tooltip : ''}>
           <Typography
+            component="span"
             color="textPrimary"
             style={{
               position: 'absolute',
               left: `${left}%`,
               transform: 'translate(-50%, -100%)',
               fontSize: '0.85em',
+              width: 100,
+              textAlign: 'center',
             }}
           >
             { numToText(val) + (isAvg ? ' (avg.)' : '') }
