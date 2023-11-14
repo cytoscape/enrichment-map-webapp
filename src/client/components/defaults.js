@@ -1,6 +1,22 @@
 export const DEFAULT_PADDING = 10;
-export const CONTROL_PANEL_WIDTH = 320;
+export const HEADER_HEIGHT = 50;
+export const LEFT_DRAWER_WIDTH = 320;
+/** The height of the bottom drawer when collapsed */
 export const BOTTOM_DRAWER_HEIGHT = 48;
-export const PATHWAY_TABLE_HEIGHT = 400;
 
 export const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "hover" };
+
+
+export function bottomDrawerHeight() {
+  // The preferred height is 1/3 of the height of the content area (excludes the header)
+  const h = Math.round((window.innerHeight - HEADER_HEIGHT) * 0.33);
+  const min = 4 * BOTTOM_DRAWER_HEIGHT; // ...but set a minimum height
+
+  return Math.max(min, h);
+}
+
+export function pathwayTableHeight() {
+  const dh = bottomDrawerHeight();
+  
+  return dh - BOTTOM_DRAWER_HEIGHT;
+}

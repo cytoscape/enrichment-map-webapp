@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import Mousetrap from 'mousetrap';
 
-import { DEFAULT_PADDING, CONTROL_PANEL_WIDTH } from '../defaults';
+import { DEFAULT_PADDING, HEADER_HEIGHT, LEFT_DRAWER_WIDTH } from '../defaults';
 import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
 import { ShareMenu } from './share-panel';
@@ -371,6 +371,7 @@ function RestoreConfirmDialog({ open, onOk, onCancel }) {
 
 const useStyles = theme => ({
   appBar: {
+    minHeight: HEADER_HEIGHT,
     backgroundColor: theme.palette.background.default,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
@@ -378,8 +379,8 @@ const useStyles = theme => ({
     }),
   },
   appBarShift: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
+    width: `calc(100% - ${LEFT_DRAWER_WIDTH}px)`,
+    marginLeft: LEFT_DRAWER_WIDTH,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,

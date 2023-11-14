@@ -4,7 +4,7 @@ import clsx from 'clsx';
 
 import chroma from 'chroma-js';
 import theme from '../../theme';
-import { DEFAULT_PADDING, PATHWAY_TABLE_HEIGHT } from '../defaults';
+import { DEFAULT_PADDING, pathwayTableHeight } from '../defaults';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar, PValueStarRating } from './charts';
 import { REG_COLOR_RANGE } from './network-style';
@@ -32,7 +32,7 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
-    height: PATHWAY_TABLE_HEIGHT,
+    height: pathwayTableHeight(),
     padding: theme.spacing(2),
     textAlign: 'center',
   },
@@ -444,7 +444,7 @@ const PathwayTable = (
   if (!visible) {
     // Returns an empty div with the same height as the table just so the open/close animation works properly,
     // but we don't want to spend resources to build an invisible table
-    return <div style={{height: PATHWAY_TABLE_HEIGHT}} />;
+    return <div style={{height: pathwayTableHeight()}} />;
   }
 
   const handleRequestSort = (event, property) => {
@@ -559,7 +559,7 @@ const PathwayTable = (
       ref={virtuosoRef}
       data={sortedDataRef.current}
       initialTopMostItemIndex={initialTopMostItemIndex}
-      style={{height: PATHWAY_TABLE_HEIGHT, border: `1px solid ${theme.palette.divider}`}}
+      style={{height: pathwayTableHeight(), border: `1px solid ${theme.palette.divider}`}}
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>

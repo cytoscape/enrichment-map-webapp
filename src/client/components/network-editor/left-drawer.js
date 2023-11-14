@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 import { saveGeneList } from './share-panel';
 
-import { CONTROL_PANEL_WIDTH } from '../defaults';
+import { HEADER_HEIGHT, LEFT_DRAWER_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import GeneListPanel from './gene-list-panel';
@@ -51,14 +51,14 @@ const sortOptions = {
 const useStyles = makeStyles((theme) => ({
   drawer: {
     background: theme.palette.background.default,
-    width: CONTROL_PANEL_WIDTH,
+    width: LEFT_DRAWER_WIDTH,
     flexShrink: 0,
     display: 'flex',
     flexFlow: 'column',
     height: '100%',
   },
   drawerPaper: {
-    width: CONTROL_PANEL_WIDTH,
+    width: LEFT_DRAWER_WIDTH,
     background: theme.palette.background.default,
     borderRight: `1px solid ${theme.palette.divider}`,
   },
@@ -84,7 +84,7 @@ const useStyles = makeStyles((theme) => ({
   toolbar: {
     paddingLeft: theme.spacing(1),
     paddingRight: theme.spacing(0.5),
-    minHeight: 50,
+    minHeight: HEADER_HEIGHT,
   },
   title: {
     paddingLeft: theme.spacing(0.5),

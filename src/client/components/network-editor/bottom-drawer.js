@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 import clsx from 'clsx';
 
-import { CONTROL_PANEL_WIDTH, BOTTOM_DRAWER_HEIGHT } from '../defaults';
+import { LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { pathwayDBLinkOut } from './links';
@@ -15,7 +15,7 @@ import { UpDownLegend, numToText } from './charts';
 import { makeStyles } from '@material-ui/core/styles';
 
 import Collapse from '@material-ui/core/Collapse';
-import { AppBar, Toolbar, Divider, Grid} from '@material-ui/core';
+import { AppBar, Toolbar, Divider, Grid } from '@material-ui/core';
 import { Drawer, Tooltip, Typography } from '@material-ui/core';
 import { Button, IconButton } from '@material-ui/core';
 
@@ -70,8 +70,8 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
     }),
   },
   appBarShift: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
+    width: `calc(100% - ${LEFT_DRAWER_WIDTH}px)`,
+    marginLeft: LEFT_DRAWER_WIDTH,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
@@ -98,8 +98,8 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
     }),
   },
   drawerShift: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
+    width: `calc(100% - ${LEFT_DRAWER_WIDTH}px)`,
+    marginLeft: LEFT_DRAWER_WIDTH,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
@@ -118,8 +118,8 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
     }),
   },
   drawerContentShift: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
+    width: `calc(100% - ${LEFT_DRAWER_WIDTH}px)`,
+    marginLeft: LEFT_DRAWER_WIDTH,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,

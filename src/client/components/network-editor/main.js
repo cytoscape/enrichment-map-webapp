@@ -4,7 +4,7 @@ import clsx from 'clsx';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { CONTROL_PANEL_WIDTH, BOTTOM_DRAWER_HEIGHT, PATHWAY_TABLE_HEIGHT } from '../defaults';
+import { HEADER_HEIGHT, LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT, bottomDrawerHeight } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import LeftDrawer from './left-drawer';
@@ -34,16 +34,9 @@ const useStyles = makeStyles((theme) => ({
     }),
   },
   cyShiftX: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
+    width: `calc(100% - ${LEFT_DRAWER_WIDTH}px)`,
+    marginLeft: LEFT_DRAWER_WIDTH,
     transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-  },
-  cyShiftY: {
-    height: `calc(100% - ${BOTTOM_DRAWER_HEIGHT + PATHWAY_TABLE_HEIGHT}px)`,
-    transition: theme.transitions.create(['margin', 'height'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
@@ -86,7 +79,10 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick, onHideCo
     >
       <LeftDrawer open={showControlPanel} isMobile={isMobile} controller={controller} onHide={onHideControlPanel} />
       <div className={classes.background}>
-        <div className={clsx(classes.cy, { [classes.cyShiftX]: shiftXCy, [classes.cyShiftY]: shiftYCy })}>
+        <div
+          className={clsx(classes.cy, { [classes.cyShiftX]: shiftXCy })}
+          style={shiftYCy ? {height: `calc(100% - ${bottomDrawerHeight()}px)`,} : {}}
+        >
           <div id="cy" className={classes.cy} style={{ zIndex: 1, width: '100%', height: '100%' }} />
           <NetworkBackground controller={controller} />
         </div>
