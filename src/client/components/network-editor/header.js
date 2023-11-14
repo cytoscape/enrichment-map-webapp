@@ -101,6 +101,7 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
   const [ undoEnabled, setUndoEnabled ] = useState(false);
   const [ undoType, setUndoType] = useState(null);
   const [ confirmDialogOpen, setConfirmDialogOpen ] = useState(false);
+  const [ panner ] = useState(() => createPanner(controller));
 
   const [ snackBarState, setSnackBarState ] = useState({
     open: false,
@@ -125,33 +126,19 @@ export function Header({ controller, classes, showControlPanel, isMobile, onShow
     return () => controller.bus.removeListener('undo', onUndo);
   }, []);
 
-  const panner = createPanner(controller);
-
   useEffect(() => {
-    Mousetrap.bind('-', panner.zoomOut);
-    Mousetrap.bind('_', panner.zoomOut);
-    Mousetrap.bind('=', panner.zoomIn);
-    Mousetrap.bind('+', panner.zoomIn);
-    Mousetrap.bind('up', panner.panUp);
-    Mousetrap.bind('down', panner.panDown);
-    Mousetrap.bind('left', panner.panLeft);
-    Mousetrap.bind('right', panner.panRight);
-    Mousetrap.bind('f', panner.fit);
-    Mousetrap.bind('space', panner.fit);
+    Mousetrap
+      .bind(['-','_'], panner.zoomOut)
+      .bind(['=','+'], panner.zoomIn)
+      .bind('up', panner.panUp)
+      .bind('down', panner.panDown)
+      .bind('left', panner.panLeft)
+      .bind('right', panner.panRight)
+      .bind(['f', 'space'], panner.fit) 
+      .bind(['backspace','del'], () => controller.deleteSelectedNodes());
   
-    return () => {
-      Mousetrap.unbind('-');
-      Mousetrap.unbind('_');
-      Mousetrap.unbind('=');
-      Mousetrap.unbind('+');
-      Mousetrap.unbind('up');
-      Mousetrap.unbind('down');
-      Mousetrap.unbind('left');
-      Mousetrap.unbind('right');
-      Mousetrap.unbind('f');
-      Mousetrap.unbind('space');
-    };
-  }, []);
+    return () => Mousetrap.unbind(['-','_','=','+','up','down','left','right','f','space','backspace','del']);
+  }, [panner]);
   
   const handleMenuClose = () => {
     setMenuName(null);
