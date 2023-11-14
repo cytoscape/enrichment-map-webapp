@@ -21,8 +21,28 @@ export const registerCytoscapeExtensions = () => {
   // Collection extensions
   Cytoscape.use(internalEdges);
   Cytoscape.use(shuffle);
+
+  // Core extensions
+  Cytoscape.use(clusterNodes);
+  Cytoscape.use(pathwayNodes);
 };
 
+
+function clusterNodes(cy) {
+  const clusterNodesImpl = function(selected) {
+    const eles = this;
+    return eles.filter(ele => ele.isParent() && (!selected || ele.selected()));
+  };
+  cy('core', 'clusterNodes', clusterNodesImpl);
+}
+
+function pathwayNodes(cy) {
+  const pathwayNodesImpl = function(selected) {
+    const eles = this;
+    return eles.filter(ele => ele.isChildless() && (!selected || ele.selected()));
+  };
+  cy('core', 'pathwayNodes', pathwayNodesImpl);
+}
 
 
 function internalEdges(cy) {

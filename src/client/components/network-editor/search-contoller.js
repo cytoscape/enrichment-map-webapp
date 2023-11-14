@@ -62,7 +62,7 @@ export class SearchController {
       });
 
       const documents = await res.json();
-      const nodes = this.cy.nodes(':childless');
+      const nodes = this.cy.pathwayNodes();
       
       documents.forEach(doc => {
         const name = doc.name;

@@ -186,7 +186,7 @@ export class NetworkEditorController {
 
 
   highlightElements(nodes, highlightNeighbors) {
-    let toHl = this.cy.nodes(':childless').add(this.cy.edges());
+    let toHl = this.cy.pathwayNodes().add(this.cy.edges());
     let toUnhl = this.cy.collection();
 
     const highlight = (eles) => {

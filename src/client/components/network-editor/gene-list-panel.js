@@ -372,7 +372,7 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
   const debouncedUpdateCyHighlights = _.debounce((symbol) => {
     let nodes;
     if (symbol) {
-      nodes = cy.nodes(':childless').filter(n => {
+      nodes = cy.pathwayNodes().filter(n => {
         for (const gene of n.data('genes')) {
           if (symbol === gene)
             return true;

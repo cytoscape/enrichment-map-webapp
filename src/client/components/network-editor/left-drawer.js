@@ -186,7 +186,7 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
   };
 
   const debouncedSelectionHandler = _.debounce(async () => {
-    const eles = cy.nodes(':childless:selected');
+    const eles = cy.pathwayNodes(true);
     const intersection = setOperationRef.current === 'intersection';
 
     if (eles.length > 0) {
@@ -204,7 +204,7 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
   }, 250);
 
   const handleGeneListExport = () => {
-    const eles = cy.nodes(':childless:selected');
+    const eles = cy.pathwayNodes(true);
     const gsNames = getGeneSetNames(eles);
     saveGeneList(genes, gsNames);
   };
@@ -276,7 +276,7 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
     const value = evt.target.value;
     cancelSearch();
     setSetOperation(value);
-    const eles = cy.nodes(':childless:selected');
+    const eles = cy.pathwayNodes(true);
     const intersection = value === 'intersection';
     if (eles.length > 0) {
       const genes = await fetchGeneListFromElements(eles, intersection);

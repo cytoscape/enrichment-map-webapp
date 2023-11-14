@@ -171,7 +171,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
   const cyEmitter = new EventEmitterProxy(cy);
 
   const getSelectedRows = (sortFn) => {
-    const nodes = disabledRef.current ? null : cy.nodes(":childless:selected");
+    const nodes = disabledRef.current ? null : cy.pathwayNodes(true);
     // Get unique objects/rows (by id)
     const map = new Map();
     if (nodes) {
@@ -203,7 +203,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
 
   const updateData = () => {
     // Update table data
-    const nodes = cy.nodes(':childless'); // ignore compound nodes!
+    const nodes = cy.pathwayNodes(); // ignore compound nodes!
     let data = toTableData(nodes);
 
     // Filter out pathways that don't match the search terms
