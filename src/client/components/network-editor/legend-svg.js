@@ -1,28 +1,24 @@
 import React from 'react';
+import ReactDOMServer from 'react-dom/server';
 import PropTypes from 'prop-types';
 import { REG_COLOR_RANGE } from './network-style';
 import chroma from 'chroma-js';
 
 
-export function getSVGString(svgID) {
-  var element = document.getElementById(svgID);
-  var svg = element.cloneNode(true);
+export function getLegendSVG(controller) {
+  // call the legend component directly
+  const { magNES } = controller.style;
+  const svgJsx = NodeColorLegend({ magNES });
 
-  // Don't export the NES marker on the node color legend
-  svg.getElementById(svgID+'-marker')?.remove();
-  svg.removeAttribute('height');
-
-  const serializer = new XMLSerializer();
-  let xmlString = serializer.serializeToString(svg);
-
+  // convert the jsx to a string
+  let str = ReactDOMServer.renderToStaticMarkup(svgJsx);
   // add namespaces
-  if(!xmlString.match(/^<svg[^>]+"http:\/\/www\.w3\.org\/1999\/xlink"/)) {
-    xmlString = xmlString.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"'); 
+  if(!str.match(/^<svg[^>]+"http:\/\/www\.w3\.org\/1999\/xlink"/)) {
+    str = str.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"'); 
   }
-  
   // add xml tag
-  xmlString = '<?xml version="1.0" standalone="no"?>\r\n' + xmlString;
-  return xmlString;
+  str = '<?xml version="1.0" standalone="no"?>\r\n' + str;
+  return str;
 }
 
 
@@ -39,7 +35,7 @@ function getNESColor(nesVal, magNES) {
 }
 
 
-export function NodeColorLegend({ height, svgID, magNES, nesVal }) {
+export function NodeColorLegend({ height, magNES, nesVal }) {
   const textStyle = {whiteSpace: 'pre', fill: '#464448', fontFamily: '"Open Sans", "Helvetica Neue", Helvetica, sans-serif', fontSize: '15.2px'};
   const markerTextStyle = {...textStyle, fill: 'rgb(255, 255, 255)', stroke: 'rgba(0, 0, 0, 0.8)', strokeWidth: '3px', paintOrder: 'stroke'};
 
@@ -53,7 +49,7 @@ export function NodeColorLegend({ height, svgID, magNES, nesVal }) {
     const nesValColor = getNESColor(nesVal, magNES);
       
     return (
-      <svg x="0" y={yPos} id={svgID+'-marker'}>
+      <svg x="0" y={yPos}>
         <line x1="10" y1="10" x2="90" y2="10" stroke="black" />
         <polygon points="20,10 10,15 10,5" style={{ fill: nesValColor, stroke: 'black', strokeWidth: 1 }} />
         <polygon points="80,10 90,15 90,5" style={{ fill: nesValColor, stroke: 'black', strokeWidth: 1 }} />
@@ -63,27 +59,24 @@ export function NodeColorLegend({ height, svgID, magNES, nesVal }) {
   };
 
   return (
-    <div>
-      <svg height={height} id={svgID} viewBox="0 0 100 260" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="nes-gradient" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%"   style={{stopColor: REG_COLOR_RANGE.upMax}} />
-            <stop offset="50%"  style={{stopColor: REG_COLOR_RANGE.zero}} />
-            <stop offset="100%" style={{stopColor: REG_COLOR_RANGE.downMax}} />
-          </linearGradient>
-        </defs>
-        <rect x="20" y="40" width="60" height="180" style={{stroke: 'black', fill: 'url(#nes-gradient)'}}/>
-        <Marker yTop={40} yBottom={180+40} />
-        <text x="30" y="22"  style={textStyle}> {numToText(magNES)}</text>
-        <text x="32" y="248" style={textStyle}>-{numToText(magNES)}</text>
-      </svg>
-    </div>
+    <svg height={height} viewBox="0 0 100 260" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="nes-gradient" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%"   style={{stopColor: REG_COLOR_RANGE.upMax}} />
+          <stop offset="50%"  style={{stopColor: REG_COLOR_RANGE.zero}} />
+          <stop offset="100%" style={{stopColor: REG_COLOR_RANGE.downMax}} />
+        </linearGradient>
+      </defs>
+      <rect x="20" y="40" width="60" height="180" style={{stroke: 'black', fill: 'url(#nes-gradient)'}}/>
+      <Marker yTop={40} yBottom={180+40} />
+      <text x="30" y="22"  style={textStyle}> {numToText(magNES)}</text>
+      <text x="32" y="248" style={textStyle}>-{numToText(magNES)}</text>
+    </svg>
   );
 }
 
 NodeColorLegend.propTypes = {
   magNES: PropTypes.number.isRequired, 
   height: PropTypes.number,
-  svgID: PropTypes.string,
   nesVal: PropTypes.number, 
 };
