@@ -1,12 +1,14 @@
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
+import ReactDOMServer from 'react-dom/server';
 
 import { DEFAULT_PADDING } from '../defaults';
 import { clusterColor } from './network-style';
 import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 import { SearchController } from './search-contoller';
 import { UndoHandler } from './undo-stack';
+import { ExpandIcon, CollapseIcon } from './share-panel';
 
 // Clusters that have this many nodes get optimized.
 // Note we are using number of nodes as a proxy for number of edges, assuming large clusters are mostly complete.
@@ -60,6 +62,7 @@ export class NetworkEditorController {
       this.networkLoaded = true;
       this.undoHandler.init();
       this._fetchMinMaxRanks();
+      this._createExpandCollapseButtons();
     });
   }
 
@@ -233,7 +236,7 @@ export class NetworkEditorController {
     });
   }
 
-  toggleExpandCollapse(parent, animate=false) {
+  toggleExpandCollapse(parent, requestAnimate = false) {
     if(parent.scratch('_layoutRunning'))
       return;
     parent.scratch('_layoutRunning', true);
@@ -249,7 +252,7 @@ export class NetworkEditorController {
       name: 'preset',
       positions: n => n.position(),
       fit: false,
-      animate: animate && nodes.size() < LARGE_CLUSTER_SIZE,
+      animate: requestAnimate && nodes.size() < LARGE_CLUSTER_SIZE,
       spacingFactor
     });
     
@@ -276,6 +279,8 @@ export class NetworkEditorController {
     });
 
     layout.run();
+
+    return onStop;
   }
 
 
@@ -292,7 +297,7 @@ export class NetworkEditorController {
         const parentNodes = this.cy.nodes(':parent');
         const parent = parentNodes.filter(parent => path === parent.scratch('_bubble'));
         if(!parent.empty()) {
-          this.toggleExpandCollapse(parent, true);
+          // this.toggleExpandCollapse(parent, true);
         }
         break;
       }
@@ -369,6 +374,48 @@ export class NetworkEditorController {
   }
 
 
+  _createExpandCollapseButtons() {
+    const { cy } = this;
+    const layers = cy.layers();
+
+    const buttonLayer = layers.append('html', { /* stopClicks: true, */ });
+    // const buttonLayer = layers.nodeLayer.insertAfter('html');
+
+    const createButton = (elem, node) => {
+      const collapsed = node.data('collapsed');
+      const jsx = collapsed ? ExpandIcon() : CollapseIcon();
+      const html = ReactDOMServer.renderToStaticMarkup(jsx);
+      elem.innerHTML = html;
+    };
+
+    // eslint-disable-next-line no-unused-vars
+    layers.renderPerNode(buttonLayer, (elem, node, bb) => {}, {
+      init: (elem, node) => {
+        if(node.isParent()) {
+          elem.classList.add('clusterToggleButton');
+
+          createButton(elem, node);
+
+          elem.addEventListener('click', async evt => {
+            console.log("CLICK!");
+            evt.stopPropagation();
+            await this.toggleExpandCollapse(node, true);
+            createButton(elem, node);
+          });
+
+          elem.style.visibility = 'hidden';
+          node.on('mouseover', () => elem.style.visibility = 'visible');
+          node.on('mouseout',  () => elem.style.visibility = 'hidden');
+        }
+      },
+      transform: 'translate(-50%,-50%)',
+      position: 'center',
+      uniqueElements: true,
+      checkBounds: true,
+    });
+  }
+
+
   /**
    * clusterDefs: array of objects of the form { clusterId: 'Cluster 1', label: 'neuclotide synthesis' }
    * positions: a Map object returned by applyPositions(), or undefined
@@ -411,7 +458,7 @@ export class NetworkEditorController {
         }
       } else {
         // If collapsed status was not saved on the server then collapse all clusters initially
-        this.toggleExpandCollapse(parent, false);
+        // this.toggleExpandCollapse(parent, false);
       }
 
       this._setAverageNES(parent);
@@ -435,7 +482,7 @@ export class NetworkEditorController {
         // Click a compound node to toggle its collapsed state
         // or click any collapsed child node to expand the cluster
         if (ele.isParent() || collapsed) {
-          this.toggleExpandCollapse(parent, true);
+          // this.toggleExpandCollapse(parent, true);
         }
       });
     });

@@ -7,3 +7,20 @@
 
   /* add custom icons here: */
 }
+
+.clusterToggleButton {
+  display: flex;
+  background-color: black;
+  filter: drop-shadow(0 0 0.75rem black);
+  opacity: 50%;
+  border-radius: 50%;
+  padding: 5px;
+}
+
+.clusterToggleButton .hidden-child {
+  visibility: hidden;
+}
+
+.clusterToggleButton:hover .hidden-child {
+  visibility: visible;
+}

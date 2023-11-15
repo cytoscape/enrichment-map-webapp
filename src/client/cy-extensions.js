@@ -6,6 +6,7 @@ import cola from 'cytoscape-cola';
 import popper from 'cytoscape-popper';
 import coseBilkent from 'cytoscape-cose-bilkent';
 import BubbleSets from 'cytoscape-bubblesets';
+import Layers from 'cytoscape-layers';
 
 export const registerCytoscapeExtensions = () => {
   Cytoscape.use(edgehandles);
@@ -15,6 +16,7 @@ export const registerCytoscapeExtensions = () => {
   Cytoscape.use(fcose);
   Cytoscape.use(cola);
   Cytoscape.use(coseBilkent);
+  Cytoscape.use(Layers);
   Cytoscape.use(BubbleSets);
   Cytoscape.use(popper);
 
