@@ -12,6 +12,13 @@ import BottomDrawer from './bottom-drawer';
 
 
 const useStyles = makeStyles((theme) => ({
+  root: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: HEADER_HEIGHT,
+  },
   background: {
     position: 'absolute',
     left: 0,
@@ -61,23 +68,21 @@ const NetworkBackground = ({ controller }) => {
   );
 };
 
-const Main = ({ controller, showControlPanel, isMobile, onContentClick, onHideControlPanel }) => {
+const Main = ({ controller, openLeftDrawer, isMobile, onContentClick, onCloseLeftDrawer, onToggleBottomDrawer }) => {
   const [bottomDrawerOpen, setBottomDrawerOpen] = useState(false);
   const classes = useStyles();
 
-  const shiftXCy = showControlPanel && !isMobile;
+  const shiftXCy = openLeftDrawer && !isMobile;
   const shiftYCy = bottomDrawerOpen;
 
-  const onShowBottomDrawer = (open) => {
+  const handleToggleBottomDrawer = (open) => {
     setBottomDrawerOpen(open);
+    onToggleBottomDrawer?.(open);
   };
 
   return (
-    <div
-      className="network-editor-content"
-      onClick={onContentClick}
-    >
-      <LeftDrawer open={showControlPanel} isMobile={isMobile} controller={controller} onHide={onHideControlPanel} />
+    <div className={classes.root} onClick={onContentClick}>
+      <LeftDrawer open={openLeftDrawer} isMobile={isMobile} controller={controller} onClose={onCloseLeftDrawer} />
       <div className={classes.background}>
         <div
           className={clsx(classes.cy, { [classes.cyShiftX]: shiftXCy })}
@@ -89,8 +94,8 @@ const Main = ({ controller, showControlPanel, isMobile, onContentClick, onHideCo
       </div>
       <BottomDrawer
         isMobile={isMobile}
-        controlPanelVisible={showControlPanel}
-        onShowDrawer={onShowBottomDrawer}
+        leftDrawerOpen={openLeftDrawer}
+        onToggle={handleToggleBottomDrawer}
         controller={controller}
       />
     </div>
@@ -102,10 +107,11 @@ NetworkBackground.propTypes = {
 };
 Main.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
-  showControlPanel: PropTypes.bool.isRequired,
+  openLeftDrawer: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
   onContentClick: PropTypes.func.isRequired,
-  onHideControlPanel: PropTypes.func.isRequired,
+  onCloseLeftDrawer: PropTypes.func.isRequired,
+  onToggleBottomDrawer: PropTypes.func,
 };
 
 export default Main;

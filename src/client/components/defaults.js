@@ -3,6 +3,8 @@ export const HEADER_HEIGHT = 50;
 export const LEFT_DRAWER_WIDTH = 320;
 /** The height of the bottom drawer when collapsed */
 export const BOTTOM_DRAWER_HEIGHT = 48;
+/** Whether the bottom drawer must be open (expanded) by default */
+export const BOTTOM_DRAWER_OPEN = false; 
 
 export const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "hover" };
 
@@ -16,7 +18,7 @@ export function bottomDrawerHeight() {
 }
 
 export function pathwayTableHeight() {
-  const dh = bottomDrawerHeight();
+  const dh = bottomDrawerHeight() - BOTTOM_DRAWER_HEIGHT;
   
-  return dh - BOTTOM_DRAWER_HEIGHT;
+  return dh;
 }

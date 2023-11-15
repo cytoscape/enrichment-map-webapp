@@ -92,7 +92,7 @@ const useStyles = makeStyles((theme) => ({
   grow: {
     flexGrow: 1,
   },
-  hideButton: {
+  closeButton: {
     width: 41,
     height: 41,
   },
@@ -111,7 +111,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
+const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
   const [networkLoaded, setNetworkLoaded] = useState(false);
   const [geneListIndexed, setGeneListIndexed] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -332,7 +332,7 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
             )}
             </Typography>
             <div className={classes.grow} />
-            <IconButton className={classes.hideButton} onClick={onHide}>
+            <IconButton className={classes.closeButton} onClick={onClose}>
               <KeyboardArrowLeftIcon fontSize="large" />
             </IconButton>
           </Toolbar>
@@ -425,7 +425,7 @@ LeftDrawer.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
   open: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
-  onHide: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default LeftDrawer;

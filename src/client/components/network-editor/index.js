@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer, useRef } from 'react';
 import PropTypes from 'prop-types';
+import _ from 'lodash';
 
 import Cytoscape from 'cytoscape';
 import { QueryClient, QueryClientProvider } from "react-query";
 
+import { makeStyles } from '@material-ui/core/styles';
+
+import { BOTTOM_DRAWER_OPEN } from '../defaults';
 import { NetworkEditorController } from './controller';
 import theme from '../../theme';
 import Header from './header';
@@ -12,7 +16,16 @@ import Main from './main';
 import createNetworkStyle from './network-style';
 import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
-import _ from 'lodash';
+
+
+const useStyles = makeStyles(() => ({
+  root: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+}));
+
 
 const queryClient = new QueryClient();
 
@@ -114,7 +127,20 @@ export function NetworkEditor({ id }) {
   const [ controller ] = useState(() => new NetworkEditorController(cy));
 
   const [ mobile, setMobile ] = useState(() => isMobile());
-  const [ showControlPanel, setShowControlPanel ] = useState(() => !isMobile());
+  const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile());
+  const [, forceUpdate] = useReducer(x => x + 1, 0);
+
+  const classes = useStyles();
+
+  const bottomDrawerOpen = useRef(BOTTOM_DRAWER_OPEN);
+
+  const handleResize = () => {
+    setMobile(isMobile());
+    if (bottomDrawerOpen.current) { // Prevents unnecessary re-rendering!
+      forceUpdate(); // Because of the bottom drawer height, which can vary depending on the screen size
+    }
+  };
+  const debouncedHandleResize = _.debounce(() => handleResize(), 100);
 
   useEffect(() => {
     loadNetwork(cy, controller, id);
@@ -122,9 +148,11 @@ export function NetworkEditor({ id }) {
   }, []);
 
   useEffect(() => {
-    const handleResize = () => setMobile(isMobile());
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('resize', debouncedHandleResize);
+    return () => {
+      debouncedHandleResize.cancel();
+      window.removeEventListener('resize', debouncedHandleResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -137,45 +165,48 @@ export function NetworkEditor({ id }) {
   }, []);
 
   useEffect(() => {
-    const onSelect = () => setShowControlPanel(!isMobile());
+    const onSelect = () => setOpenLeftDrawer(!isMobile());
     cy.on('select', onSelect);
     return () => cy.removeListener('select', onSelect);
   }, []);
 
   const maybeHideDrawer = () => {
     if (mobile) {
-      setShowControlPanel(false);
+      setOpenLeftDrawer(false);
     }
   };
 
   const onContentClick = event => {
-    if (showControlPanel && mobile && event.target.className === 'MuiBackdrop-root') {
+    if (openLeftDrawer && mobile && event.target.className === 'MuiBackdrop-root') {
       maybeHideDrawer();
     }
   };
-
-  const onHideControlPanel = () => {
-    setShowControlPanel(false);
+  const onCloseLeftDrawer = () => {
+    setOpenLeftDrawer(false);
+  };
+  const onToggleBottomDrawer = (open) => {
+    bottomDrawerOpen.current = open;
   };
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <div className="network-editor">
+        <div className={classes.root}>
           <svg id="svg_point_factory" style={{ position:'absolute', pointerEvents:'none'}}/>
           <Header
             controller={controller}
-            showControlPanel={showControlPanel}
+            openLeftDrawer={openLeftDrawer}
             isMobile={mobile}
-            onShowControlPanel={setShowControlPanel}
+            onOpenLeftDrawer={setOpenLeftDrawer}
           />
           <Main
             controller={controller}
-            showControlPanel={showControlPanel}
+            openLeftDrawer={openLeftDrawer}
             isMobile={mobile}
             onContentClick={onContentClick}
-            onHideControlPanel={onHideControlPanel}
+            onCloseLeftDrawer={onCloseLeftDrawer}
+            onToggleBottomDrawer={onToggleBottomDrawer}
           />
         </div>
       </ThemeProvider>
