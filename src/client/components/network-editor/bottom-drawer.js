@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 import clsx from 'clsx';
 
-import { CONTROL_PANEL_WIDTH, BOTTOM_DRAWER_HEIGHT } from '../defaults';
+import { LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT, BOTTOM_DRAWER_OPEN } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { pathwayDBLinkOut } from './links';
@@ -15,7 +15,7 @@ import { UpDownLegend, numToText } from './charts';
 import { makeStyles } from '@material-ui/core/styles';
 
 import Collapse from '@material-ui/core/Collapse';
-import { AppBar, Toolbar, Divider, Grid} from '@material-ui/core';
+import { AppBar, Toolbar, Divider, Grid } from '@material-ui/core';
 import { Drawer, Tooltip, Typography } from '@material-ui/core';
 import { Button, IconButton } from '@material-ui/core';
 
@@ -70,8 +70,8 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
     }),
   },
   appBarShift: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
+    width: `calc(100% - ${LEFT_DRAWER_WIDTH}px)`,
+    marginLeft: LEFT_DRAWER_WIDTH,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
@@ -98,8 +98,8 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
     }),
   },
   drawerShift: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
+    width: `calc(100% - ${LEFT_DRAWER_WIDTH}px)`,
+    marginLeft: LEFT_DRAWER_WIDTH,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
@@ -118,8 +118,8 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
     }),
   },
   drawerContentShift: {
-    width: `calc(100% - ${CONTROL_PANEL_WIDTH}px)`,
-    marginLeft: CONTROL_PANEL_WIDTH,
+    width: `calc(100% - ${LEFT_DRAWER_WIDTH}px)`,
+    marginLeft: LEFT_DRAWER_WIDTH,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
@@ -140,8 +140,8 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
   },
 }));
 
-export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShowDrawer }) {
-  const [ open, setOpen ] = useState(false);
+export function BottomDrawer({ controller, leftDrawerOpen, isMobile, onToggle }) {
+  const [ open, setOpen ] = useState(BOTTOM_DRAWER_OPEN);
   const [ disabled, setDisabled ] = useState(true);
   const [ searchValue, setSearchValue ] = useState('');
   const [ selectedNESValues, setSelectedNESValues ] = useState([]);
@@ -308,9 +308,9 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
     };
   }, []);
 
-  const handleOpenDrawer = (b) => {
+  const handleToggle = (b) => {
     setOpen(b);
-    onShowDrawer(b);
+    onToggle?.(b);
   };
 
   const onRowSelectionChange = (row, selected, preventGotoNode = false) => {
@@ -359,7 +359,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
     }
   };
 
-  const shiftDrawer = controlPanelVisible && !isMobile; 
+  const shiftDrawer = leftDrawerOpen && !isMobile; 
   const magNES = controller.style ? controller.style.magNES : undefined;
   const totalPathways = disabled ? 0 : data.length;
   const filteredSelectedRows = selectedRows.filter(a => data.some(b => a.id === b.id));
@@ -370,7 +370,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
       className={clsx(classes.drawer, { [classes.drawerShift]: shiftDrawer })}
       variant="permanent"
       anchor="bottom"
-      open={true}
+      open={true} // It's always open here, but not expanded--don't confuse it with the 'open' state
       PaperProps={{
         style: {
           overflow: "hidden"
@@ -446,7 +446,7 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
               icon={open ? <CollapseIcon fontSize="large" /> : <ExpandIcon fontSize="large" />}
               edge="start"
               disabled={disabled}
-              onClick={() => handleOpenDrawer(!open)}
+              onClick={() => handleToggle(!open)}
             />
           </Toolbar>
           <Collapse in={open} timeout="auto" unmountOnExit>
@@ -472,8 +472,8 @@ export function BottomDrawer({ controller, controlPanelVisible, isMobile, onShow
 BottomDrawer.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
   isMobile: PropTypes.bool.isRequired,
-  controlPanelVisible: PropTypes.bool.isRequired,
-  onShowDrawer: PropTypes.func.isRequired,
+  leftDrawerOpen: PropTypes.bool.isRequired,
+  onToggle: PropTypes.func,
 };
 
 //==[ ToolbarButton ]=================================================================================================

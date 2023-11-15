@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 import { saveGeneList } from './share-panel';
 
-import { CONTROL_PANEL_WIDTH } from '../defaults';
+import { HEADER_HEIGHT, LEFT_DRAWER_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import GeneListPanel from './gene-list-panel';
@@ -51,14 +51,14 @@ const sortOptions = {
 const useStyles = makeStyles((theme) => ({
   drawer: {
     background: theme.palette.background.default,
-    width: CONTROL_PANEL_WIDTH,
+    width: LEFT_DRAWER_WIDTH,
     flexShrink: 0,
     display: 'flex',
     flexFlow: 'column',
     height: '100%',
   },
   drawerPaper: {
-    width: CONTROL_PANEL_WIDTH,
+    width: LEFT_DRAWER_WIDTH,
     background: theme.palette.background.default,
     borderRight: `1px solid ${theme.palette.divider}`,
   },
@@ -84,7 +84,7 @@ const useStyles = makeStyles((theme) => ({
   toolbar: {
     paddingLeft: theme.spacing(1),
     paddingRight: theme.spacing(0.5),
-    minHeight: 50,
+    minHeight: HEADER_HEIGHT,
   },
   title: {
     paddingLeft: theme.spacing(0.5),
@@ -92,7 +92,7 @@ const useStyles = makeStyles((theme) => ({
   grow: {
     flexGrow: 1,
   },
-  hideButton: {
+  closeButton: {
     width: 41,
     height: 41,
   },
@@ -111,7 +111,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
+const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
   const [networkLoaded, setNetworkLoaded] = useState(false);
   const [geneListIndexed, setGeneListIndexed] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -332,7 +332,7 @@ const LeftDrawer = ({ controller, open, isMobile, onHide }) => {
             )}
             </Typography>
             <div className={classes.grow} />
-            <IconButton className={classes.hideButton} onClick={onHide}>
+            <IconButton className={classes.closeButton} onClick={onClose}>
               <KeyboardArrowLeftIcon fontSize="large" />
             </IconButton>
           </Toolbar>
@@ -425,7 +425,7 @@ LeftDrawer.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
   open: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
-  onHide: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default LeftDrawer;
