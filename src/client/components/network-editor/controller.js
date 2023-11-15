@@ -284,25 +284,26 @@ export class NetworkEditorController {
   }
 
 
-  // TODO only tested in Chrome so far, may not work in other browsers
-  detectBubbleSetClick(svgPointFactory, position) {
-    const point = svgPointFactory.createSVGPoint();
-    point.x = position.x;
-    point.y = position.y;
+  // // TODO only tested in Chrome so far, may not work in other browsers
+  // _detectBubbleSetClick(svgPointFactory, position) {
+  //   // TODO is this function needed anymore??
+  //   const point = svgPointFactory.createSVGPoint();
+  //   point.x = position.x;
+  //   point.y = position.y;
 
-    const paths = this.bubbleSets ? this.bubbleSets.getPaths() : [];
-    for(const path of paths) {
-      const inside = path.node.isPointInFill(point);
-      if(inside) {
-        const parentNodes = this.cy.nodes(':parent');
-        const parent = parentNodes.filter(parent => path === parent.scratch('_bubble'));
-        if(!parent.empty()) {
-          // this.toggleExpandCollapse(parent, true);
-        }
-        break;
-      }
-    }
-  }
+  //   const paths = this.bubbleSets ? this.bubbleSets.getPaths() : [];
+  //   for(const path of paths) {
+  //     const inside = path.node.isPointInFill(point);
+  //     if(inside) {
+  //       const parentNodes = this.cy.nodes(':parent');
+  //       const parent = parentNodes.filter(parent => path === parent.scratch('_bubble'));
+  //       if(!parent.empty()) {
+  //         // this.toggleExpandCollapse(parent, true);
+  //       }
+  //       break;
+  //     }
+  //   }
+  // }
 
   /**
    * positions is an array of objects of the form...
@@ -378,34 +379,52 @@ export class NetworkEditorController {
     const { cy } = this;
     const layers = cy.layers();
 
-    const buttonLayer = layers.append('html', { /* stopClicks: true, */ });
-    // const buttonLayer = layers.nodeLayer.insertAfter('html');
+    const buttonLayer = layers.append('html', { stopClicks: true });
 
-    const createButton = (elem, node) => {
+    const setButtonHTML = (elem, node) => {
       const collapsed = node.data('collapsed');
       const jsx = collapsed ? ExpandIcon() : CollapseIcon();
       const html = ReactDOMServer.renderToStaticMarkup(jsx);
       elem.innerHTML = html;
     };
 
+    const createClusterToggleButton = (elem, parent) => {
+      elem.classList.add('clusterToggleButton');
+      elem.style.visibility = 'hidden';
+      setButtonHTML(elem, parent);
+
+      elem.addEventListener('click', async e => {
+        await this.toggleExpandCollapse(parent, true);
+        setButtonHTML(elem, parent);
+      });
+
+      let c = 0;
+      const updateVisible = e => {
+        let visible = true;
+        if(e.type === 'mousedown') {
+          visible = false;
+        } else if(e.type === 'mouseup') {
+          visible = c > 0;
+        } else {
+          c += e.type === 'mouseover' ? 1 : -1;
+          visible = c > 0;
+        }
+        elem.style.visibility = visible ? 'visible' : 'hidden';
+      };
+
+      const children = parent.children();
+      const edges = children.internalEdges();
+      parent.on('mouseover mouseout', updateVisible);
+      children.on('mouseover mouseout', updateVisible);
+      edges.on('mouseover mouseout', updateVisible);
+      children.on('mousedown mouseup', updateVisible);
+    };
+
     // eslint-disable-next-line no-unused-vars
     layers.renderPerNode(buttonLayer, (elem, node, bb) => {}, {
       init: (elem, node) => {
         if(node.isParent()) {
-          elem.classList.add('clusterToggleButton');
-
-          createButton(elem, node);
-
-          elem.addEventListener('click', async evt => {
-            console.log("CLICK!");
-            evt.stopPropagation();
-            await this.toggleExpandCollapse(node, true);
-            createButton(elem, node);
-          });
-
-          elem.style.visibility = 'hidden';
-          node.on('mouseover', () => elem.style.visibility = 'visible');
-          node.on('mouseout',  () => elem.style.visibility = 'hidden');
+          createClusterToggleButton(elem, node);
         }
       },
       transform: 'translate(-50%,-50%)',
