@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
-import { NetworkEditorController } from './controller';
+import { Canvg, presets } from 'canvg';
 import { MenuList, MenuItem, ListItemIcon, ListItemText, Popover } from '@material-ui/core';
 import { getLegendSVG } from './legend-svg';
+
 import InsertDriveFileOutlinedIcon from '@material-ui/icons/InsertDriveFileOutlined';
 import LinkIcon from '@material-ui/icons/Link';
-import { Canvg, presets } from 'canvg';
+import ZoomOutMapIcon from '@material-ui/icons/ZoomOutMap';
+import { ZoomInIcon } from '../svg-icons';
 
 
 const ImageSize = {
@@ -243,11 +246,21 @@ export function ShareMenu({ controller, target, visible, onClose = ()=>null, set
   );
 }
 ShareMenu.propTypes = {
-  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  // controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
+  controller: PropTypes.any,
   onClose: PropTypes.func,
   setSnackBarState: PropTypes.func,
   target: PropTypes.any,
   visible: PropTypes.bool,
 };
+
+
+export function ExpandIcon() {
+  return <ZoomOutMapIcon />;
+}
+
+export function CollapseIcon() {
+  return <ZoomInIcon />;
+}
 
 export default ShareMenu;
