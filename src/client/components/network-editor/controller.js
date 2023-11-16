@@ -284,26 +284,25 @@ export class NetworkEditorController {
   }
 
 
-  // // TODO only tested in Chrome so far, may not work in other browsers
-  // _detectBubbleSetClick(svgPointFactory, position) {
-  //   // TODO is this function needed anymore??
-  //   const point = svgPointFactory.createSVGPoint();
-  //   point.x = position.x;
-  //   point.y = position.y;
+  // TODO only tested in Chrome so far, may not work in other browsers
+  detectBubbleSetClick(svgPointFactory, position) {
+    const point = svgPointFactory.createSVGPoint();
+    point.x = position.x;
+    point.y = position.y;
 
-  //   const paths = this.bubbleSets ? this.bubbleSets.getPaths() : [];
-  //   for(const path of paths) {
-  //     const inside = path.node.isPointInFill(point);
-  //     if(inside) {
-  //       const parentNodes = this.cy.nodes(':parent');
-  //       const parent = parentNodes.filter(parent => path === parent.scratch('_bubble'));
-  //       if(!parent.empty()) {
-  //         // this.toggleExpandCollapse(parent, true);
-  //       }
-  //       break;
-  //     }
-  //   }
-  // }
+    const paths = this.bubbleSets ? this.bubbleSets.getPaths() : [];
+    for(const path of paths) {
+      const inside = path.node.isPointInFill(point);
+      if(inside) {
+        const parentNodes = this.cy.nodes(':parent');
+        const parent = parentNodes.filter(parent => path === parent.scratch('_bubble'));
+        if(!parent.empty()) {
+          this.toggleExpandCollapse(parent, true);
+        }
+        break;
+      }
+    }
+  }
 
   /**
    * positions is an array of objects of the form...
@@ -477,7 +476,7 @@ export class NetworkEditorController {
         }
       } else {
         // If collapsed status was not saved on the server then collapse all clusters initially
-        // this.toggleExpandCollapse(parent, false);
+        this.toggleExpandCollapse(parent, false);
       }
 
       this._setAverageNES(parent);
@@ -501,7 +500,7 @@ export class NetworkEditorController {
         // Click a compound node to toggle its collapsed state
         // or click any collapsed child node to expand the cluster
         if (ele.isParent() || collapsed) {
-          // this.toggleExpandCollapse(parent, true);
+          this.toggleExpandCollapse(parent, true);
         }
       });
     });

@@ -75,12 +75,12 @@ async function loadNetwork(cy, controller, id) {
     controller.savePositions();
   }, 4000));
 
-  // cy.on('click', e => {
-  //   if(e.target === cy) {
-  //     const pointFactory = document.getElementById('svg_point_factory');
-  //     controller.detectBubbleSetClick(pointFactory, e.position);
-  //   }
-  // });
+  cy.on('click', e => {
+    if(e.target === cy) {
+      const pointFactory = document.getElementById('svg_point_factory');
+      controller.detectBubbleSetClick(pointFactory, e.position);
+    }
+  });
 
   // Selecting an edge should select its nodes, but the edge itself must never be selected
   // (this makes it easier to keep the Pathways table selection consistent)
@@ -163,7 +163,7 @@ export function NetworkEditor({ id }) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <div className="network-editor">
-          {/* <svg id="svg_point_factory" style={{ position:'absolute', pointerEvents:'none'}}/> */}
+          <svg id="svg_point_factory" style={{ position:'absolute', pointerEvents:'none'}}/>
           <Header
             controller={controller}
             showControlPanel={showControlPanel}
