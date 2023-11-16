@@ -202,7 +202,7 @@ export function Header({ controller, classes, openLeftDrawer, isMobile, onOpenLe
       onClick: panner.fit,
       unrelated: true,
     }, {
-      title: "Share",
+      title: "Share/Download",
       icon: <CloudDownloadIcon />,
       onClick: showShareMenu,
       unrelated: false,

@@ -128,15 +128,17 @@ export function NetworkEditor({ id }) {
 
   const [ mobile, setMobile ] = useState(() => isMobile());
   const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile());
+  const [ openBottomDrawer, setOpenBottomDrawer ] = useState(BOTTOM_DRAWER_OPEN);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
 
   const classes = useStyles();
 
-  const bottomDrawerOpen = useRef(BOTTOM_DRAWER_OPEN);
+  const bottomDrawerOpenRef = useRef(BOTTOM_DRAWER_OPEN);
+  bottomDrawerOpenRef.current = openBottomDrawer;
 
   const handleResize = () => {
     setMobile(isMobile());
-    if (bottomDrawerOpen.current) { // Prevents unnecessary re-rendering!
+    if (bottomDrawerOpenRef.current) { // Prevents unnecessary re-rendering!
       forceUpdate(); // Because of the bottom drawer height, which can vary depending on the screen size
     }
   };
@@ -185,7 +187,7 @@ export function NetworkEditor({ id }) {
     setOpenLeftDrawer(false);
   };
   const onToggleBottomDrawer = (open) => {
-    bottomDrawerOpen.current = open;
+    setOpenBottomDrawer(open);
   };
 
   return (
@@ -203,6 +205,7 @@ export function NetworkEditor({ id }) {
           <Main
             controller={controller}
             openLeftDrawer={openLeftDrawer}
+            openBottomDrawer={openBottomDrawer}
             isMobile={mobile}
             onContentClick={onContentClick}
             onCloseLeftDrawer={onCloseLeftDrawer}
