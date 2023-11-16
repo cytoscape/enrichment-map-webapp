@@ -1,5 +1,6 @@
 import { createTheme }  from '@material-ui/core/styles';
 
+
 const theme = createTheme({
   palette: {
     type: 'dark',
@@ -7,7 +8,7 @@ const theme = createTheme({
       main: '#1E68D8',
     },
     secondary: {
-      main: '#B4B4B4',
+      main: 'rgba(255, 255, 255, 0.7)',
     },
     background: {
       default: '#121212',
@@ -49,10 +50,21 @@ const theme = createTheme({
   },
   overrides: {
     MuiTooltip: {
-        tooltip: {
-            fontSize: "0.85em",
-            maxWidth: 340,
-        },
+      tooltip: {
+        fontSize: "0.85em",
+        maxWidth: 340,
+      },
+    },
+    MuiSvgIcon: {
+      colorPrimary: {
+        color: '#E9E9E9 !important',
+      },
+      colorSecondary: {
+        color: 'rgba(255, 255, 255, 0.7) !important',
+      },
+      colorDisabled: {
+        color: 'rgba(255, 255, 255, 0.3) !important',
+      },
     },
   },
 });
