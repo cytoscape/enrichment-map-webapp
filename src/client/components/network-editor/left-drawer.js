@@ -366,14 +366,14 @@ const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
                       renderValue={(value) => {
                         return (
                           <Box sx={{ display: "flex", gap: 1 }}>
-                            { setOperationOptions[value].icon({color: setOperationsDisabled ? 'disabled' : 'secondary'}) }
+                            { setOperationOptions[value].icon({color: setOperationsDisabled ? 'disabled' : 'primary'}) }
                           </Box>
                         );
                       }}
                     >
                     {Object.entries(setOperationOptions).map(([k, { label, description, icon }]) => (
                       <MenuItem key={k} value={k}>
-                        <ListItemIcon className={classes.setOperationIcon}>{ icon({color: 'secondary'}) }</ListItemIcon>
+                        <ListItemIcon className={classes.setOperationIcon}>{ icon({color: 'primary'}) }</ListItemIcon>
                         <ListItemText primary={label} secondary={description} />
                       </MenuItem>
                     ))}
