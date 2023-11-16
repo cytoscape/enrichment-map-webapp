@@ -1,12 +1,14 @@
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
+import ReactDOMServer from 'react-dom/server';
 
 import { DEFAULT_PADDING } from '../defaults';
 import { clusterColor } from './network-style';
 import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 import { SearchController } from './search-contoller';
 import { UndoHandler } from './undo-stack';
+import { ExpandIcon, CollapseIcon } from './share-panel';
 
 // Clusters that have this many nodes get optimized.
 // Note we are using number of nodes as a proxy for number of edges, assuming large clusters are mostly complete.
@@ -60,6 +62,7 @@ export class NetworkEditorController {
       this.networkLoaded = true;
       this.undoHandler.init();
       this._fetchMinMaxRanks();
+      this._createExpandCollapseButtons();
     });
   }
 
@@ -233,7 +236,7 @@ export class NetworkEditorController {
     });
   }
 
-  toggleExpandCollapse(parent, animate=false) {
+  toggleExpandCollapse(parent, requestAnimate = false) {
     if(parent.scratch('_layoutRunning'))
       return;
     parent.scratch('_layoutRunning', true);
@@ -249,7 +252,7 @@ export class NetworkEditorController {
       name: 'preset',
       positions: n => n.position(),
       fit: false,
-      animate: animate && nodes.size() < LARGE_CLUSTER_SIZE,
+      animate: requestAnimate && nodes.size() < LARGE_CLUSTER_SIZE,
       spacingFactor
     });
     
@@ -276,6 +279,8 @@ export class NetworkEditorController {
     });
 
     layout.run();
+
+    return onStop;
   }
 
 
@@ -366,6 +371,66 @@ export class NetworkEditorController {
     // Save the bubblePath object in the parent node
     parent.scratch('_bubble', bubblePath);
     return bubblePath;
+  }
+
+
+  _createExpandCollapseButtons() {
+    const { cy } = this;
+    const layers = cy.layers();
+
+    const buttonLayer = layers.append('html', { stopClicks: true });
+
+    const setButtonHTML = (elem, node) => {
+      const collapsed = node.data('collapsed');
+      const jsx = collapsed ? ExpandIcon() : CollapseIcon();
+      const html = ReactDOMServer.renderToStaticMarkup(jsx);
+      elem.innerHTML = html;
+    };
+
+    const createClusterToggleButton = (elem, parent) => {
+      elem.classList.add('cluster-toggle-button');
+      elem.style.visibility = 'hidden';
+      setButtonHTML(elem, parent);
+
+      elem.addEventListener('click', async e => {
+        await this.toggleExpandCollapse(parent, true);
+        setButtonHTML(elem, parent);
+      });
+
+      let c = 0;
+      const updateVisible = e => {
+        let visible = true;
+        if(e.type === 'mousedown') {
+          visible = false;
+        } else if(e.type === 'mouseup') {
+          visible = c > 0;
+        } else {
+          c += e.type === 'mouseover' ? 1 : -1;
+          visible = c > 0;
+        }
+        elem.style.visibility = visible ? 'visible' : 'hidden';
+      };
+
+      const children = parent.children();
+      const edges = children.internalEdges();
+      parent.on('mouseover mouseout', updateVisible);
+      children.on('mouseover mouseout', updateVisible);
+      edges.on('mouseover mouseout', updateVisible);
+      children.on('mousedown mouseup', updateVisible);
+    };
+
+    // eslint-disable-next-line no-unused-vars
+    layers.renderPerNode(buttonLayer, (elem, node, bb) => {}, {
+      init: (elem, node) => {
+        if(node.isParent()) {
+          createClusterToggleButton(elem, node);
+        }
+      },
+      transform: 'translate(-50%,-50%)',
+      position: 'center',
+      uniqueElements: true,
+      checkBounds: true,
+    });
   }
 
 
