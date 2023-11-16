@@ -388,7 +388,7 @@ export class NetworkEditorController {
     };
 
     const createClusterToggleButton = (elem, parent) => {
-      elem.classList.add('clusterToggleButton');
+      elem.classList.add('cluster-toggle-button');
       elem.style.visibility = 'hidden';
       setButtonHTML(elem, parent);
 
