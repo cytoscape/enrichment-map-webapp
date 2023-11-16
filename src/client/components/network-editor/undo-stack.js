@@ -29,8 +29,7 @@ export class UndoHandler {
 
     const getPositionsMap = () => {
       const map = new Map();
-      cy.nodes()
-        .filter(n => n.children().empty())
+      cy.pathwayNodes()
         .forEach(n => {
           const id = n.data('id');
           const pos = n.position();

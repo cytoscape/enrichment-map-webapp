@@ -264,11 +264,9 @@ export class NetworkEditorController {
       edges.style('visibility', 'visible');
       onStop.then(() => { 
         nodes.data('collapsed', !collapsed);
-        nodes.grabify();
       });
     } else {
       nodes.data('collapsed', !collapsed);
-      nodes.ungrabify();
       onStop.then(() => {
         edges.style('visibility', 'hidden');
       });
@@ -446,6 +444,15 @@ export class NetworkEditorController {
       console.log("there are " + deletedNodes.size() + " deleted nodes");
       cy.remove(deletedNodes);
     }
+    
+    cy.on('boxstart', () => {
+      console.log('boxstart');
+      cy.pathwayNodes().addClass('box-select-enabled');
+    });
+    cy.on('boxend', () => {
+      console.log('boxend');
+      cy.pathwayNodes().removeClass('box-select-enabled');
+    });
 
     clusterDefs.forEach(({ clusterId, label }) => {
       const cluster = cy.elements(`node[${clusterAttr}="${clusterId}"]`);
@@ -459,7 +466,7 @@ export class NetworkEditorController {
         data: { 
           label: label, 
           id: clusterId,
-          _isParent: true, // Important, used to identify parent nodes when the undoHelper restores them.
+          _isParent: true, // TODO (remove this).. Important, used to identify parent nodes when the undoHelper restores them.
         }
       });
       cluster.forEach(node => {
@@ -472,7 +479,6 @@ export class NetworkEditorController {
         if(obj && obj.collapsed) {
           cluster.data('collapsed', true);
           parent.data('collapsed', true);
-          cluster.ungrabify();
         }
       } else {
         // If collapsed status was not saved on the server then collapse all clusters initially
@@ -492,11 +498,6 @@ export class NetworkEditorController {
       parent.on('tap', evt => {
         const ele = evt.target;
         const collapsed = parent.data('collapsed');
-        
-        // Clicking a child node must not select it if it's collapsed
-        if (ele.isChild() && collapsed) {
-          ele.once('select', () => ele.unselect());
-        }
         // Click a compound node to toggle its collapsed state
         // or click any collapsed child node to expand the cluster
         if (ele.isParent() || collapsed) {

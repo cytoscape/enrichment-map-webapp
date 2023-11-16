@@ -147,6 +147,13 @@ export const createNetworkStyle = (cy) => {
         selector: 'node[parent][?collapsed]',
         style: {
           'label': n => '',
+          'events': 'no'
+        }
+      },
+      {
+        selector: 'node.box-select-enabled',
+        style: {
+          'events': 'yes'
         }
       },
       {
