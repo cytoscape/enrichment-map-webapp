@@ -196,7 +196,7 @@ export function ShareMenu({ controller, target, visible, onClose = ()=>null, set
   const handleExportImages = async () => {
     onClose();
     setImageExportEnabled(false);
-    snack.showSpinner("Exporting network images...");
+    snack.showSpinner("Preparing network images...");
     await delay(50); // allows the menu to close immediately, otherwise it hangs for a couple seconds
     await handleExportImageArchive(controller);
     snack.close();
@@ -207,7 +207,7 @@ export function ShareMenu({ controller, target, visible, onClose = ()=>null, set
     onClose();
     setDataExportEnabled(false);
     const promise = handleExportDataArchive(controller);
-    await spinnerUntilDone(promise, "Exporting enrichment data...");
+    await spinnerUntilDone(promise, "Preparing enrichment data...");
     setDataExportEnabled(true);
   };
 
@@ -233,13 +233,13 @@ export function ShareMenu({ controller, target, visible, onClose = ()=>null, set
           <ListItemIcon>
             <InsertDriveFileOutlinedIcon />
           </ListItemIcon>
-          <ListItemText>Save Network Images</ListItemText>
+          <ListItemText>Download Network Images</ListItemText>
         </MenuItem>
         <MenuItem onClick={handleExportData} disabled={!dataExportEnabled}>
           <ListItemIcon>
             <InsertDriveFileOutlinedIcon />
           </ListItemIcon>
-          <ListItemText>Export Enrichment Data</ListItemText>
+          <ListItemText>Download Enrichment Data</ListItemText>
         </MenuItem>
       </MenuList>
     </Popover>
