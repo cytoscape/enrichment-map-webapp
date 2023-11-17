@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import chroma from 'chroma-js';
+import { parsePathwayName } from './search-contoller';
 
 export const NODE_OPACITY = 1;
 export const TEXT_OPACITY = 1;
@@ -54,27 +55,16 @@ function getMinMaxValues(cy, attr) {
   };
 }
 
-// function truncateString(str, num) {
-//   if (str.length > num) {
-//     return str.slice(0, num) + "...";
-//   } else {
-//     return str;
-//   }
-// }
 
-// export const nodeLabel = _.memoize(node => {
-//   const label = (() => {
-//     const label = node.data('label');
-//     if(label)
-//       return label;
-//     const name = node.data('name');
-//     return Array.isArray(name) ? name[0] : name;
-//   })();
-//   const text = label.replace(/_/g, ' ');
-//   const percent = text.indexOf('%');
-//   const sublabel = (percent > 0 ? text.substring(0, percent) : text).toLowerCase();
-//   return truncateString(sublabel, 35);
-// }, node => node.id());
+export const nodeLabel = _.memoize(node => {
+  const label = node.data('label');
+  if(label)
+    return label;
+  const name = node.data('name');
+  const pathway = Array.isArray(name) ? name[0] : name;
+  return parsePathwayName(pathway);
+}, node => node.id());
+
 
 export const createNetworkStyle = (cy) => {
   const { min:minNES, max:maxNES } = getMinMaxValues(cy, 'NES');
@@ -114,6 +104,7 @@ export const createNetworkStyle = (cy) => {
           'text-outline-opacity': TEXT_OPACITY,
           'color': '#fff',
           'z-index': 1,
+          'label': nodeLabel,
         }
       },
       {
@@ -128,12 +119,6 @@ export const createNetworkStyle = (cy) => {
           'text-opacity': 0.6,
           'color': clusterTextColor,
           'text-events': 'yes',
-        }
-      },
-      {
-        selector: 'node[?label]',
-        style: {
-          'label': 'data(label)',
         }
       },
       {
@@ -187,7 +172,7 @@ export const createNetworkStyle = (cy) => {
         selector: 'node.unhighlighted',
         style: {
           'opacity': 0.1,
-          'label': n => '',
+          'label': () => '',
           'z-index': 1,
         }
       },

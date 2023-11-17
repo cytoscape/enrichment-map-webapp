@@ -2,6 +2,18 @@ import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape'; // eslint-disable-line
 import MiniSearch from 'minisearch';
 
+
+
+export function parsePathwayName(pathway) {
+  let name = pathway;
+  const i = name.indexOf('%');
+  if (i > 0) {
+    name = name.substring(0, i);
+  }
+  return name.toLowerCase().replace(/_/g, ' ');
+}
+
+
 export class SearchController {
 
   constructor(cy, bus) {
@@ -65,21 +77,15 @@ export class SearchController {
       const nodes = this.cy.pathwayNodes();
       
       documents.forEach(doc => {
-        const name = doc.name;
-        const i = name.indexOf('%');
-        if (i > 0) {
-          doc.name = name.substring(0, i);
-        }
-        doc.name = doc.name.toLowerCase().replace(/_/g, ' ');
-
+        const pathway = doc.name;
+        doc.name = parsePathwayName(pathway);
         // Add other required data fields to Cytoscape nodes
         OUTER:
         for (const n of nodes) {
           const pathways = n.data('name');
           if (pathways) {
             for (const p of pathways) {
-              if (name === p) {
-                n.data('label', doc.name);
+              if (pathway === p) {
                 n.data('genes', doc.genes.sort());
                 break OUTER;
               }

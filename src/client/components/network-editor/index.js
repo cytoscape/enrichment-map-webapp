@@ -71,7 +71,7 @@ async function loadNetwork(cy, controller, id) {
     console.log('running layout');
     await controller.applyLayout();
   } else {
-    console.log('got positions from mongo');
+    console.log('got positions from server');
     const positionsJson = await positionsResult.json();
     positionsMap = controller.applyPositions(positionsJson.positions);
   }
@@ -83,6 +83,11 @@ async function loadNetwork(cy, controller, id) {
   const style = createNetworkStyle(cy);
   cy.style().fromJson(style.cyJSON);
   controller.style = style; // Make available to components
+
+  // Make sure to call cy.fit() after the network is ready
+  cy.ready(() => {
+    controller.fitAndSetZoomMinMax();
+  });
 
   cy.on('position remove', 'node', _.debounce(() => {
     controller.savePositions();
