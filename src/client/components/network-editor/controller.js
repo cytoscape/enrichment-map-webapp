@@ -58,11 +58,15 @@ export class NetworkEditorController {
 
     this.networkLoaded = false;
 
-    this.bus.on('networkLoaded', () => {
+    this.bus.on('networkLoaded', (flags) => {
       this.networkLoaded = true;
       this.undoHandler.init();
       this._fetchMinMaxRanks();
       this._createExpandCollapseButtons();
+      
+      if(flags.layoutWasRun) {
+        this.savePositions();
+      }
     });
   }
 
@@ -434,7 +438,7 @@ export class NetworkEditorController {
 
   /**
    * clusterDefs: array of objects of the form { clusterId: 'Cluster 1', label: 'neuclotide synthesis' }
-   * positions: a Map object returned by applyPositions(), or undefined
+   * positions: a Map object returned by applyPositions(), or undefined, contains info on which clusters are collapsed
    */
   createClusters(clusterDefs, clusterAttr, positionsMap) {
     const { cy } = this;
