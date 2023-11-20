@@ -144,13 +144,10 @@ export class NetworkEditorController {
       nodeDimensionsIncludeLabels: true,
       fit: false
     }).run();
-
-    this._setZoomMinMax();
   }
 
 
-  // TODO, not sure if this is needed
-  _setZoomMinMax() {
+  fitAndSetZoomMinMax() {
     this.cy.fit(DEFAULT_PADDING);
     // now that we know the zoom level when the graph fits to screen, we can use restrictions
     this.cy.minZoom(this.cy.zoom() * 0.25);
@@ -313,12 +310,8 @@ export class NetworkEditorController {
    * Returns a Map object of nodeID -> position object
    */
   applyPositions(positions) {
-    // TODO: apply deleted status
-    // TODO: apply expand/collapsed status
     const positionsMap = new Map(positions.map((obj) => [obj.id, obj]));
     this.cy.nodes().positions(node => positionsMap.get(node.data('id')));
-    this._setZoomMinMax();
-
     return positionsMap;
   }
 

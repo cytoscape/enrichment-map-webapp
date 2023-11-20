@@ -51,7 +51,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const NetworkBackground = ({ controller }) => {
-  const [bgColor, setBgColor] = useState('white');
+  const [ bgColor, setBgColor ] = useState('white');
 
   const busProxy = new EventEmitterProxy(controller.bus);
 
@@ -68,21 +68,28 @@ const NetworkBackground = ({ controller }) => {
   );
 };
 
-const Main = ({ controller, openLeftDrawer, isMobile, onContentClick, onCloseLeftDrawer, onToggleBottomDrawer }) => {
-  const [bottomDrawerOpen, setBottomDrawerOpen] = useState(false);
+const Main = ({
+  controller,
+  openLeftDrawer,
+  openBottomDrawer,
+  isMobile,
+  onContentClick,
+  onCloseLeftDrawer,
+  onToggleBottomDrawer
+}) => {
   const classes = useStyles();
 
   const shiftXCy = openLeftDrawer && !isMobile;
-  const shiftYCy = bottomDrawerOpen;
-
-  const handleToggleBottomDrawer = (open) => {
-    setBottomDrawerOpen(open);
-    onToggleBottomDrawer?.(open);
-  };
+  const shiftYCy = openBottomDrawer;
 
   return (
     <div className={classes.root} onClick={onContentClick}>
-      <LeftDrawer open={openLeftDrawer} isMobile={isMobile} controller={controller} onClose={onCloseLeftDrawer} />
+      <LeftDrawer
+        open={openLeftDrawer}
+        isMobile={isMobile}
+        controller={controller}
+        onClose={onCloseLeftDrawer}
+      />
       <div className={classes.background}>
         <div
           className={clsx(classes.cy, { [classes.cyShiftX]: shiftXCy })}
@@ -93,9 +100,10 @@ const Main = ({ controller, openLeftDrawer, isMobile, onContentClick, onCloseLef
         </div>
       </div>
       <BottomDrawer
+        open={openBottomDrawer}
         isMobile={isMobile}
         leftDrawerOpen={openLeftDrawer}
-        onToggle={handleToggleBottomDrawer}
+        onToggle={onToggleBottomDrawer}
         controller={controller}
       />
     </div>
@@ -108,6 +116,7 @@ NetworkBackground.propTypes = {
 Main.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
   openLeftDrawer: PropTypes.bool.isRequired,
+  openBottomDrawer: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
   onContentClick: PropTypes.func.isRequired,
   onCloseLeftDrawer: PropTypes.func.isRequired,

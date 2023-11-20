@@ -74,7 +74,7 @@ async function loadNetwork(cy, controller, id) {
     await controller.applyLayout();
     layoutWasRun = true;
   } else {
-    console.log('got positions from mongo');
+    console.log('got positions from server');
     const positionsJson = await positionsResult.json();
     positionsMap = controller.applyPositions(positionsJson.positions);
   }
@@ -86,6 +86,11 @@ async function loadNetwork(cy, controller, id) {
   const style = createNetworkStyle(cy);
   cy.style().fromJson(style.cyJSON);
   controller.style = style; // Make available to components
+
+  // Make sure to call cy.fit() after the network is ready
+  cy.ready(() => {
+    controller.fitAndSetZoomMinMax();
+  });
 
   cy.on('position remove', 'node', _.debounce(() => {
     controller.savePositions();
@@ -131,15 +136,17 @@ export function NetworkEditor({ id }) {
 
   const [ mobile, setMobile ] = useState(() => isMobile());
   const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile());
+  const [ openBottomDrawer, setOpenBottomDrawer ] = useState(BOTTOM_DRAWER_OPEN);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
 
   const classes = useStyles();
 
-  const bottomDrawerOpen = useRef(BOTTOM_DRAWER_OPEN);
+  const bottomDrawerOpenRef = useRef(BOTTOM_DRAWER_OPEN);
+  bottomDrawerOpenRef.current = openBottomDrawer;
 
   const handleResize = () => {
     setMobile(isMobile());
-    if (bottomDrawerOpen.current) { // Prevents unnecessary re-rendering!
+    if (bottomDrawerOpenRef.current) { // Prevents unnecessary re-rendering!
       forceUpdate(); // Because of the bottom drawer height, which can vary depending on the screen size
     }
   };
@@ -188,7 +195,7 @@ export function NetworkEditor({ id }) {
     setOpenLeftDrawer(false);
   };
   const onToggleBottomDrawer = (open) => {
-    bottomDrawerOpen.current = open;
+    setOpenBottomDrawer(open);
   };
 
   return (
@@ -206,6 +213,7 @@ export function NetworkEditor({ id }) {
           <Main
             controller={controller}
             openLeftDrawer={openLeftDrawer}
+            openBottomDrawer={openBottomDrawer}
             isMobile={mobile}
             onContentClick={onContentClick}
             onCloseLeftDrawer={onCloseLeftDrawer}

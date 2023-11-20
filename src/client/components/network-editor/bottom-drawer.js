@@ -3,11 +3,11 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 import clsx from 'clsx';
 
-import { LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT, BOTTOM_DRAWER_OPEN } from '../defaults';
+import { LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { pathwayDBLinkOut } from './links';
-import { REG_COLOR_RANGE } from './network-style';
+import { REG_COLOR_RANGE, nodeLabel } from './network-style';
 import PathwayTable, { DEF_SORT_FN } from './pathway-table';
 import SearchBar from './search-bar';
 import { UpDownLegend, numToText } from './charts';
@@ -34,13 +34,13 @@ function toTableRow(node) {
 
   const row = {};
   row.id = node.data('id');
-  row.name = node.data('label');
+  row.name = nodeLabel(node);
   row.db = pathwayLinkOut?.name;
   row.href = pathwayLinkOut?.href;
   row.icon = pathwayLinkOut?.icon;
   row.nes = node.data('NES');
   row.pvalue = node.data('padj'); // NOTICE we are using the adjusted p-value!
-  row.cluster = node.isChild() ? node.parent().data('label') : null;
+  row.cluster = node.isChild() ? nodeLabel(node.parent()) : null;
 
   return row;
 }
@@ -140,8 +140,7 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
   },
 }));
 
-export function BottomDrawer({ controller, leftDrawerOpen, isMobile, onToggle }) {
-  const [ open, setOpen ] = useState(BOTTOM_DRAWER_OPEN);
+export function BottomDrawer({ controller, open, leftDrawerOpen, isMobile, onToggle }) {
   const [ disabled, setDisabled ] = useState(true);
   const [ searchValue, setSearchValue ] = useState('');
   const [ selectedNESValues, setSelectedNESValues ] = useState([]);
@@ -308,11 +307,6 @@ export function BottomDrawer({ controller, leftDrawerOpen, isMobile, onToggle })
     };
   }, []);
 
-  const handleToggle = (b) => {
-    setOpen(b);
-    onToggle?.(b);
-  };
-
   const onRowSelectionChange = (row, selected, preventGotoNode = false) => {
     if (selected) {
       lastSelectedRowsRef.current = selectedRows;
@@ -446,7 +440,7 @@ export function BottomDrawer({ controller, leftDrawerOpen, isMobile, onToggle })
               icon={open ? <CollapseIcon fontSize="large" /> : <ExpandIcon fontSize="large" />}
               edge="start"
               disabled={disabled}
-              onClick={() => handleToggle(!open)}
+              onClick={() => onToggle(!open)}
             />
           </Toolbar>
           <Collapse in={open} timeout="auto" unmountOnExit>
@@ -471,9 +465,10 @@ export function BottomDrawer({ controller, leftDrawerOpen, isMobile, onToggle })
 }
 BottomDrawer.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
+  open: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
   leftDrawerOpen: PropTypes.bool.isRequired,
-  onToggle: PropTypes.func,
+  onToggle: PropTypes.func.isRequired,
 };
 
 //==[ ToolbarButton ]=================================================================================================
