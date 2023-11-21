@@ -74,6 +74,11 @@ const useStyles = makeStyles((theme) => ({
     height: 40,
     backgroundColor: theme.palette.background.default,
   },
+  tableHeaderCell: {
+    borderLeft: `1px solid transparent`,
+    borderImage: `linear-gradient(to bottom, transparent 25%,${theme.palette.divider} 25%,${theme.palette.divider} 75%,transparent 75%)`,
+    borderImageSlice: 5,
+  },
   tableCell: {
     // --> WHATCH OUT! `padding[Top|Bottom]: 0` may cause a defect where the
     //     TableVirtuoso's initialTopMostItemIndex prop doesn't work
@@ -108,7 +113,6 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     overflow: 'hidden',
     whiteSpace: 'nowrap',
-    paddingLeft: '0 !important',
   },
   nesCell: {
     width: '25%',
@@ -116,7 +120,7 @@ const useStyles = makeStyles((theme) => ({
     maxWidth: 288,
   },
   pvalueCell: {
-    minWidth: 82,
+    minWidth: 84,
     maxWidth: 86,
     paddingRight: `${theme.spacing(0.5)}px !important`,
   },
@@ -182,7 +186,7 @@ const COLUMNS = [
       const c = row.nes < 0 ? REG_COLOR_RANGE.downMax : REG_COLOR_RANGE.upMax;
       const color1 = chroma(c).luminance(0.6).hex();
       const color2 = chroma(c).luminance(0.2).hex();
-      const tooltip = row.cluster ? `CLUSTER: ${row.cluster}` : null;
+      const tooltip = row.cluster;
       const node = controller.cy.nodes(`[id = "${row.id}"]`);
       const parentId = node.parent().data('id');
       return (
@@ -422,9 +426,7 @@ const PathwayTable = (
     const comparator = getComparator(order, orderBy);
     const sortedData = stableSort(data, comparator);
     sortedDataRef.current = sortedData;
-    if (onDataSort) {
-      onDataSort(anyData => stableSort(anyData, comparator));
-    }
+    onDataSort?.(anyData => stableSort(anyData, comparator));
   }, [order, orderBy]);
   // Scroll to
   useEffect(() => {
@@ -472,9 +474,8 @@ const PathwayTable = (
       selectedRowsRef.current = [...newSelectedRows];
       selected = true;
     }
-    if (onRowSelectionChange) {
-      onRowSelectionChange(row, selected, preventGotoNode);
-    }
+
+    onRowSelectionChange?.(row, selected, preventGotoNode);
   };
 
   const handleSelectAllClick = (selectAll) => {
@@ -581,32 +582,29 @@ const PathwayTable = (
           </TableCell>
         {COLUMNS.map((col) => (
           (!isMobile || !col.hideOnMobile) && (
-            <TableCell
-              key={col.id}
-              align="left"
-              sortDirection={orderBy === col.id ? order : false}
-              className={clsx(classes[col.id + 'Cell'], { [classes.tableCell]: true })}
-            >
-              <TableSortLabel
-                active={orderBy === col.id}
-                direction={orderBy === col.id ? order : 'asc'}
-                onClick={(event) => handleRequestSort(event, col.id)}
+            <Tooltip key={col.id} title={col.tooltip || ''}>
+              <TableCell
+                align="left"
+                sortDirection={orderBy === col.id ? order : false}
+                className={clsx(classes[col.id + 'Cell'], { [classes.tableCell]: true, [classes.tableHeaderCell]: true })}
               >
-                <Tooltip title={col.tooltip ? col.tooltip : ''}>
-                  <span>
-                    { col.label }
-                  {col.id === 'name' && data && (
-                    <Typography component="span" variant="body2" color="textSecondary">
-                      &nbsp;({totalSelectedRows > 0 ? 
-                        (allSelected ? 'all' : totalSelectedRows) + ' selected of '
-                        :
-                      ''}{ data.length })
-                    </Typography>
-                  )}
-                  </span>
-                </Tooltip>
-              </TableSortLabel>
-            </TableCell>
+                <TableSortLabel 
+                  active={orderBy === col.id}
+                  direction={orderBy === col.id ? order : 'asc'}
+                  onClick={(event) => handleRequestSort(event, col.id)}
+                >
+                      { col.label }
+                    {col.id === 'name' && data && (
+                      <Typography component="span" variant="body2" color="textSecondary">
+                        &nbsp;({totalSelectedRows > 0 ? 
+                          (allSelected ? 'all' : totalSelectedRows) + ' selected of '
+                          :
+                        ''}{ data.length })
+                      </Typography>
+                    )}
+                </TableSortLabel>
+              </TableCell>
+            </Tooltip>
           )
         ))}
         </TableRow>
