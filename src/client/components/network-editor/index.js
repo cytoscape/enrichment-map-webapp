@@ -66,10 +66,13 @@ async function loadNetwork(cy, controller, id) {
   // await controller.applyLayout();
 
   let positionsMap;
+  let layoutWasRun = false;
+
   const positionsResult = await positionsPromise;
   if(positionsResult.status == 404) {
     console.log('running layout');
     await controller.applyLayout();
+    layoutWasRun = true;
   } else {
     console.log('got positions from server');
     const positionsJson = await positionsResult.json();
@@ -112,7 +115,7 @@ async function loadNetwork(cy, controller, id) {
   // Notify listeners that the network has been loaded
   console.log('Loaded');
   cy.data({ loaded: true });
-  controller.bus.emit('networkLoaded', true); 
+  controller.bus.emit('networkLoaded', { layoutWasRun }); 
 
   console.log('Successful Network Load');
 
