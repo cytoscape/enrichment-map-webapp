@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
-import { saveGeneList } from './share-panel';
 
 import { HEADER_HEIGHT, LEFT_DRAWER_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
@@ -16,6 +15,7 @@ import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from './search-bar';
 
 import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
+import CloseIcon from '@material-ui/icons/Close';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import { VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
 
@@ -49,7 +49,7 @@ const sortOptions = {
 };
 
 const useStyles = makeStyles((theme) => ({
-  drawer: {
+  root: {
     background: theme.palette.background.default,
     width: LEFT_DRAWER_WIDTH,
     flexShrink: 0,
@@ -57,15 +57,15 @@ const useStyles = makeStyles((theme) => ({
     flexFlow: 'column',
     height: '100%',
   },
-  drawerPaper: {
+  paper: {
     width: LEFT_DRAWER_WIDTH,
     background: theme.palette.background.default,
     borderRight: `1px solid ${theme.palette.divider}`,
   },
-  drawerHeader: {
+  header: {
     flex: '0 1 auto',
   },
-  drawerControls: {
+  controls: {
     borderTop: `1px solid ${theme.palette.divider}`,
     marginTop: 0,
     marginBottom: 0,
@@ -73,7 +73,7 @@ const useStyles = makeStyles((theme) => ({
     paddingLeft: theme.spacing(2.5),
     paddingRight: theme.spacing(2.5),
   },
-  drawerContent: {
+  content: {
     flex: '1 1 auto',
     overflowY: 'auto',
     borderColor: theme.palette.divider,
@@ -206,7 +206,7 @@ const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
   const handleGeneListExport = () => {
     const eles = cy.pathwayNodes(true);
     const gsNames = getGeneSetNames(eles);
-    saveGeneList(genes, gsNames);
+    controller.saveGeneList(genes, gsNames);
   };
 
   const onNetworkLoaded = () => {
@@ -301,7 +301,7 @@ const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
 
   return (
     <Drawer
-      className={classes.drawer}
+      className={classes.root}
       variant={drawerVariant}
       anchor="left"
       open={open}
@@ -311,10 +311,10 @@ const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
         }
       }}
       classes={{
-        paper: classes.drawerPaper,
+        paper: classes.paper,
       }}
     >
-        <div className={classes.drawerHeader}>
+        <div className={classes.header}>
           <Toolbar variant="dense" className={classes.toolbar}>
             <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
               Genes&nbsp;
@@ -333,10 +333,10 @@ const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
             </Typography>
             <div className={classes.grow} />
             <IconButton className={classes.closeButton} onClick={onClose}>
-              <KeyboardArrowLeftIcon fontSize="large" />
+              { isMobile ? <CloseIcon /> : <KeyboardArrowLeftIcon fontSize="large" /> }
             </IconButton>
           </Toolbar>
-          <Grid container direction="column" spacing={2} className={classes.drawerControls}>
+          <Grid container direction="column" spacing={2} className={classes.controls}>
             <Grid item style={{padding: 0}}>
               <SearchBar
                 disabled={!networkLoaded || !geneListIndexed}
@@ -405,7 +405,7 @@ const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
             </Grid>
           </Grid>
         </div>
-        <div className={classes.drawerContent}>
+        <div className={classes.content}>
         {networkLoaded && geneListIndexed && (
           <GeneListPanel
             controller={controller}
@@ -422,7 +422,7 @@ const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
 };
 
 LeftDrawer.propTypes = {
-  controller: PropTypes.instanceOf(NetworkEditorController),
+  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   open: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,

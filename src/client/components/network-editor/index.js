@@ -10,7 +10,6 @@ import { makeStyles } from '@material-ui/core/styles';
 import { BOTTOM_DRAWER_OPEN } from '../defaults';
 import { NetworkEditorController } from './controller';
 import theme from '../../theme';
-import Header from './header';
 import Main from './main';
 
 import createNetworkStyle from './network-style';
@@ -133,9 +132,9 @@ function isMobile() {
 export function NetworkEditor({ id }) {
   const [ cy ] = useState(() => createCy(id));
   const [ controller ] = useState(() => new NetworkEditorController(cy));
-
   const [ mobile, setMobile ] = useState(() => isMobile());
   const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile());
+  const [ openRightDrawer, setOpenRightDrawer ] = useState(false);
   const [ openBottomDrawer, setOpenBottomDrawer ] = useState(BOTTOM_DRAWER_OPEN);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
 
@@ -146,6 +145,9 @@ export function NetworkEditor({ id }) {
 
   const handleResize = () => {
     setMobile(isMobile());
+    if (!isMobile()) { // Close the mobile menu
+      setOpenRightDrawer(false);
+    }
     if (bottomDrawerOpenRef.current) { // Prevents unnecessary re-rendering!
       forceUpdate(); // Because of the bottom drawer height, which can vary depending on the screen size
     }
@@ -167,8 +169,9 @@ export function NetworkEditor({ id }) {
 
   useEffect(() => {
     const onKeyDown = event => {
-      if (event.key === 'Escape')
-        maybeHideDrawer();
+      if (event.key === 'Escape') {
+        maybeCloseDrawers();
+      }
     };
     document.addEventListener('keydown', onKeyDown, false);
     return () => document.removeEventListener('keydown', onKeyDown, false);
@@ -180,19 +183,29 @@ export function NetworkEditor({ id }) {
     return () => cy.removeListener('select', onSelect);
   }, []);
 
-  const maybeHideDrawer = () => {
+  const maybeCloseDrawers = () => {
     if (mobile) {
       setOpenLeftDrawer(false);
+      setOpenRightDrawer(false);
     }
   };
 
   const onContentClick = event => {
-    if (openLeftDrawer && mobile && event.target.className === 'MuiBackdrop-root') {
-      maybeHideDrawer();
+    if ((openLeftDrawer || openRightDrawer) && mobile && event.target.className === 'MuiBackdrop-root') {
+      maybeCloseDrawers();
     }
   };
   const onCloseLeftDrawer = () => {
     setOpenLeftDrawer(false);
+  };
+  const onCloseRightDrawer = () => {
+    setOpenRightDrawer(false);
+  };
+  const onOpenLeftDrawer = () => {
+    setOpenLeftDrawer(true);
+  };
+  const onOpenRightDrawer = () => {
+    setOpenRightDrawer(true);
   };
   const onToggleBottomDrawer = (open) => {
     setOpenBottomDrawer(open);
@@ -204,19 +217,17 @@ export function NetworkEditor({ id }) {
         <CssBaseline />
         <div className={classes.root}>
           <svg id="svg_point_factory" style={{ position:'absolute', pointerEvents:'none'}}/>
-          <Header
-            controller={controller}
-            openLeftDrawer={openLeftDrawer}
-            isMobile={mobile}
-            onOpenLeftDrawer={setOpenLeftDrawer}
-          />
           <Main
             controller={controller}
             openLeftDrawer={openLeftDrawer}
+            openRightDrawer={openRightDrawer}
             openBottomDrawer={openBottomDrawer}
             isMobile={mobile}
             onContentClick={onContentClick}
             onCloseLeftDrawer={onCloseLeftDrawer}
+            onCloseRightDrawer={onCloseRightDrawer}
+            onOpenLeftDrawer={onOpenLeftDrawer}
+            onOpenRightDrawer={onOpenRightDrawer}
             onToggleBottomDrawer={onToggleBottomDrawer}
           />
         </div>
