@@ -112,12 +112,11 @@ NetworkBackground.propTypes = {
 const useRestoreConfirmDialogStyles = makeStyles((theme) => ({
   infoBox: {
     width: '100%',
-    marginTop: theme.spacing(2),
-    paddingTop: theme.spacing(1),
-    paddingBottom: theme.spacing(1),
+    paddingTop: theme.spacing(0.5),
+    paddingBottom: theme.spacing(0.5),
     paddingLeft: 0,
     paddingRight: 0,
-    borderRadius: 16,
+    border: 'unset',
   },
   item: {
     paddingTop: 0,
