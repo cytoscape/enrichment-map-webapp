@@ -18,9 +18,11 @@ import { TYPE as UNDO_TYPE } from './undo-stack';
 import { delay } from './util';
 
 import { Button, IconButton, Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
+import { Paper, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 import { Snackbar, SnackbarContent } from '@material-ui/core';
 
 import CloseIcon from '@material-ui/icons/Close';
+import DoneIcon from '@material-ui/icons/Done';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
@@ -31,6 +33,7 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import RestoreIcon from '@material-ui/icons/SettingsBackupRestore';
 import LinkIcon from '@material-ui/icons/Link';
 import InsertDriveFileOutlinedIcon from '@material-ui/icons/InsertDriveFileOutlined';
+import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
 
 
 const SHARE_MENU_ID  = "menu-share";
@@ -79,7 +82,7 @@ const useStyles = makeStyles((theme) => ({
   },
   snackBarContent: {
     color: 'inherit',
-    background: chroma(theme.palette.background.default).alpha(0.8).hex(),
+    background: chroma(theme.palette.background.default).alpha(0.75).hex(),
     backdropFilter: 'blur(6px)',
   },
 }));
@@ -106,17 +109,66 @@ NetworkBackground.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
 };
 
+const useRestoreConfirmDialogStyles = makeStyles((theme) => ({
+  infoBox: {
+    width: '100%',
+    marginTop: theme.spacing(2),
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+    paddingLeft: 0,
+    paddingRight: 0,
+    borderRadius: 16,
+  },
+  item: {
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  itemIcon: {
+    minWidth: 'unset',
+    alignSelf: 'self-start',
+    paddingTop: '0.25em',
+  },
+  itemIconIcon: {
+    transform: 'scaleX(-1)',
+    fontSize: '1em',
+    marginRight: theme.spacing(1),
+    color: theme.palette.text.secondary,
+    opacity: 0.5,
+  },
+  itemText: {
+    margin: 0,
+    color: theme.palette.text.secondary,
+  },
+}));
+
 function RestoreConfirmDialog({ open, onOk, onCancel }) {
+  const classes = useRestoreConfirmDialogStyles();
+
   return (
     <Dialog maxWidth="xs" open={open}>
       <DialogTitle>Confirm Restore Network Layout</DialogTitle>
       <DialogContent dividers>
         <p>Are you sure you want to restore the network layout to its initial state?</p>
-        <p>All nodes will be returned to their initial positions. All deleted nodes will be restored.</p>
+        <Paper variant="outlined" className={classes.infoBox}>
+        <List dense >
+          <ListItem className={classes.item}>
+            <ListItemIcon className={classes.itemIcon}>
+              <KeyboardReturnIcon className={classes.itemIconIcon} />
+            </ListItemIcon>
+            <ListItemText className={classes.itemText} primary="All nodes will be returned to their initial positions." />
+          </ListItem>
+          <ListItem className={classes.item}>
+            <ListItemIcon className={classes.itemIcon}>
+              <KeyboardReturnIcon className={classes.itemIconIcon} />
+            </ListItemIcon>
+            <ListItemText className={classes.itemText} primary="All deleted nodes will be restored." />
+          </ListItem>
+        </List>
+      </Paper>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel} autoFocus>Cancel</Button>
-        <Button onClick={onOk}>Ok</Button>
+        <Button variant="outlined" color="primary" startIcon={<CloseIcon />} autoFocus onClick={onCancel}>Cancel</Button>
+        <Button variant="contained" color="primary" startIcon={<DoneIcon />} onClick={onOk}>Ok</Button>
       </DialogActions>
     </Dialog>
   );
