@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import Mousetrap from 'mousetrap';
@@ -20,6 +20,7 @@ import { delay } from './util';
 import { Button, IconButton, Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
 import { Paper, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 import { Snackbar, SnackbarContent } from '@material-ui/core';
+import Slide from '@material-ui/core/Slide';
 
 import CloseIcon from '@material-ui/icons/Close';
 import DoneIcon from '@material-ui/icons/Done';
@@ -140,11 +141,20 @@ const useRestoreConfirmDialogStyles = makeStyles((theme) => ({
   },
 }));
 
-function RestoreConfirmDialog({ open, onOk, onCancel }) {
+const DownSlideTransition = forwardRef(function Transition(props, ref) {
+  return <Slide direction="down" ref={ref} {...props} />;
+});
+
+function RestoreConfirmDialog({ open, isMobile, onOk, onCancel }) {
   const classes = useRestoreConfirmDialogStyles();
 
   return (
-    <Dialog maxWidth="xs" open={open}>
+    <Dialog
+      maxWidth="xs"
+      open={open}
+      fullScreen={isMobile}
+      TransitionComponent={isMobile ? DownSlideTransition : undefined}
+    >
       <DialogTitle>Confirm Restore Network Layout</DialogTitle>
       <DialogContent dividers>
         <p>Are you sure you want to restore the network layout to its initial state?</p>
@@ -174,6 +184,7 @@ function RestoreConfirmDialog({ open, onOk, onCancel }) {
 }
 RestoreConfirmDialog.propTypes = {
   open: PropTypes.bool.isRequired,
+  isMobile: PropTypes.bool,
   onOk: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired
 };
@@ -469,6 +480,7 @@ const Main = ({
     )}
       <RestoreConfirmDialog 
         open={confirmDialogOpen} 
+        isMobile={isMobile}
         onOk={onConfirmOk} 
         onCancel={onConfirmCancel} 
       />
