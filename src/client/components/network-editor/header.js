@@ -37,6 +37,10 @@ const useHeaderStyles = makeStyles((theme) => ({
   toolbar: {
     paddingLeft: theme.spacing(1),
     paddingRight: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: theme.spacing(0.5),
+      paddingRight: theme.spacing(0.5),
+    },
   },
   hide: {
     display: 'none',
