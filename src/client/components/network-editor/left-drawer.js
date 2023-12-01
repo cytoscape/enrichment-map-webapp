@@ -111,7 +111,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
+const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   const [networkLoaded, setNetworkLoaded] = useState(false);
   const [geneListIndexed, setGeneListIndexed] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -297,7 +297,7 @@ const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
   const setOperationsDisabled = searchValue != null && searchValue !== '';
   const sortDisabled = totalGenes <= 0;
   
-  const drawerVariant = isMobile ? 'temporary' : 'persistent';
+  const drawerVariant = isMobile || isTablet ? 'temporary' : 'persistent';
 
   return (
     <Drawer
@@ -333,7 +333,7 @@ const LeftDrawer = ({ controller, open, isMobile, onClose }) => {
             </Typography>
             <div className={classes.grow} />
             <IconButton className={classes.closeButton} onClick={onClose}>
-              { isMobile ? <CloseIcon /> : <KeyboardArrowLeftIcon fontSize="large" /> }
+              { drawerVariant === 'temporary' ? <CloseIcon /> : <KeyboardArrowLeftIcon fontSize="large" /> }
             </IconButton>
           </Toolbar>
           <Grid container direction="column" spacing={2} className={classes.controls}>
@@ -425,6 +425,7 @@ LeftDrawer.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   open: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
+  isTablet: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
 };
 

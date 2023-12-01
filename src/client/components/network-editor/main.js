@@ -266,6 +266,7 @@ const Main = ({
   openRightDrawer,
   openBottomDrawer,
   isMobile,
+  isTablet,
   onContentClick,
   onCloseLeftDrawer,
   onCloseRightDrawer,
@@ -293,7 +294,7 @@ const Main = ({
 
   const snack = snackBarOps(setSnackBarState);
 
-  const shiftXCy = openLeftDrawer && !isMobile;
+  const shiftXCy = openLeftDrawer && !isMobile && !isTablet;
   const shiftYCy = openBottomDrawer;
 
   const showShareMenu = (event) => {
@@ -438,6 +439,7 @@ const Main = ({
         controller={controller}
         leftDrawerOpen={openLeftDrawer}
         isMobile={isMobile}
+        isTablet={isTablet}
         onOpenLeftDrawer={onOpenLeftDrawer}
         onOpenRightDrawer={onOpenRightDrawer}
       />
@@ -445,6 +447,7 @@ const Main = ({
         <LeftDrawer
           open={openLeftDrawer}
           isMobile={isMobile}
+          isTablet={isTablet}
           controller={controller}
           onClose={onCloseLeftDrawer}
         />
@@ -465,6 +468,7 @@ const Main = ({
         <BottomDrawer
           open={openBottomDrawer}
           isMobile={isMobile}
+          isTablet={isTablet}
           leftDrawerOpen={openLeftDrawer}
           onToggle={onToggleBottomDrawer}
           controller={controller}
@@ -516,6 +520,7 @@ Main.propTypes = {
   openRightDrawer: PropTypes.bool.isRequired,
   openBottomDrawer: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
+  isTablet: PropTypes.bool.isRequired,
   onContentClick: PropTypes.func.isRequired,
   onCloseLeftDrawer: PropTypes.func.isRequired,
   onCloseRightDrawer: PropTypes.func.isRequired,

@@ -5,7 +5,6 @@ import { NetworkEditorController } from './controller';
 import { Tooltip, InputBase } from '@material-ui/core';
 
 
-
 function renameNetwork(controller, newName) {
   const networkName = newName != null ? newName.trim() : null;
   controller.cy.data({ name: networkName });
@@ -24,7 +23,6 @@ function renameNetwork(controller, newName) {
  * - **ESCAPE** key: Cancels the changes and shows the previous network name again.
  */
 export function TitleEditor({ controller, disabled }) {
-
   const [ networkName, setNetworkName ] = useState(() => controller.cy.data('name'));
 
   useEffect(() => {
@@ -66,6 +64,7 @@ export function TitleEditor({ controller, disabled }) {
       border: '1px solid transparent',
       borderRadius: 5,
       width: '100%',
+      minWidth: 240,
       maxWidth: 640,
       padding: 2,
       fontWeight: 'bold',
