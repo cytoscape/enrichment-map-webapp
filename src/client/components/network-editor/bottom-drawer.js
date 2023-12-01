@@ -80,6 +80,9 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
   toolbar: {
     paddingLeft: theme.spacing(2),
     paddingRight: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: {
+      paddingRight: theme.spacing(0.5),
+    },
   },
   toolbarOpen: {
     paddingLeft: theme.spacing(1.115),

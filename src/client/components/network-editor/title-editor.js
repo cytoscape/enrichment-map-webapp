@@ -70,6 +70,7 @@ export function TitleEditor({ controller, disabled }) {
       fontWeight: 'bold',
       [theme.breakpoints.down('sm')]: {
         textAlign: 'center',
+        minWidth: 140,
       },
       [theme.breakpoints.up('sm')]: {
         textAlign: 'left',
