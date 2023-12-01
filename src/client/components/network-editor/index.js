@@ -129,7 +129,7 @@ export function NetworkEditor({ id }) {
   const [ controller ] = useState(() => new NetworkEditorController(cy));
   const [ mobile, setMobile ] = useState(() => isMobile());
   const [ tablet, setTablet ] = useState(() => isTablet());
-  const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile() && !isTablet);
+  const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile() && !isTablet());
   const [ openRightDrawer, setOpenRightDrawer ] = useState(false);
   const [ openBottomDrawer, setOpenBottomDrawer ] = useState(BOTTOM_DRAWER_OPEN);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
@@ -175,7 +175,7 @@ export function NetworkEditor({ id }) {
   }, []);
 
   useEffect(() => {
-    const onSelect = () => setOpenLeftDrawer(!isMobile() && !isTablet);
+    const onSelect = () => setOpenLeftDrawer(!isMobile() && !isTablet());
     cy.on('select', onSelect);
     return () => cy.removeListener('select', onSelect);
   }, []);
