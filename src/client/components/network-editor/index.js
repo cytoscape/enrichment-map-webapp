@@ -8,8 +8,9 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import { makeStyles } from '@material-ui/core/styles';
 
 import { BOTTOM_DRAWER_OPEN } from '../defaults';
-import { NetworkEditorController } from './controller';
 import theme from '../../theme';
+import { isMobile, isTablet } from './util';
+import { NetworkEditorController } from './controller';
 import Main from './main';
 
 import createNetworkStyle from './network-style';
@@ -123,17 +124,12 @@ async function loadNetwork(cy, controller, id) {
 }
 
 
-function isMobile() {
-  const sm = theme.breakpoints.values.sm;
-  return window.innerWidth < sm;
-}
-
-
 export function NetworkEditor({ id }) {
   const [ cy ] = useState(() => createCy(id));
   const [ controller ] = useState(() => new NetworkEditorController(cy));
   const [ mobile, setMobile ] = useState(() => isMobile());
-  const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile());
+  const [ tablet, setTablet ] = useState(() => isTablet());
+  const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile() && !isTablet);
   const [ openRightDrawer, setOpenRightDrawer ] = useState(false);
   const [ openBottomDrawer, setOpenBottomDrawer ] = useState(BOTTOM_DRAWER_OPEN);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
@@ -145,6 +141,7 @@ export function NetworkEditor({ id }) {
 
   const handleResize = () => {
     setMobile(isMobile());
+    setTablet(isTablet());
     if (!isMobile()) { // Close the mobile menu
       setOpenRightDrawer(false);
     }
@@ -178,20 +175,20 @@ export function NetworkEditor({ id }) {
   }, []);
 
   useEffect(() => {
-    const onSelect = () => setOpenLeftDrawer(!isMobile());
+    const onSelect = () => setOpenLeftDrawer(!isMobile() && !isTablet);
     cy.on('select', onSelect);
     return () => cy.removeListener('select', onSelect);
   }, []);
 
   const maybeCloseDrawers = () => {
-    if (mobile) {
+    if (mobile || tablet) {
       setOpenLeftDrawer(false);
       setOpenRightDrawer(false);
     }
   };
 
   const onContentClick = event => {
-    if ((openLeftDrawer || openRightDrawer) && mobile && event.target.className === 'MuiBackdrop-root') {
+    if ((openLeftDrawer || openRightDrawer) && event.target.className === 'MuiBackdrop-root') {
       maybeCloseDrawers();
     }
   };
@@ -223,6 +220,7 @@ export function NetworkEditor({ id }) {
             openRightDrawer={openRightDrawer}
             openBottomDrawer={openBottomDrawer}
             isMobile={mobile}
+            isTablet={tablet}
             onContentClick={onContentClick}
             onCloseLeftDrawer={onCloseLeftDrawer}
             onCloseRightDrawer={onCloseRightDrawer}

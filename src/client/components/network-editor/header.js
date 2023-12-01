@@ -2,7 +2,8 @@ import React, { useState, useEffect, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
-import { HEADER_HEIGHT, LEFT_DRAWER_WIDTH } from '../defaults';
+import { HEADER_HEIGHT, LEFT_DRAWER_WIDTH, MIN_DESKTOP_TOOLBAR_WIDTH } from '../defaults';
+import useElementSize from '../../use-element-size';
 import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
 
@@ -14,6 +15,7 @@ import { AppLogoIcon } from '../svg-icons';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import MenuIcon from '@material-ui/icons/Menu';
 
+//==[ Header ]========================================================================================================
 
 const useHeaderStyles = makeStyles((theme) => ({
   appBar: {
@@ -39,18 +41,6 @@ const useHeaderStyles = makeStyles((theme) => ({
   hide: {
     display: 'none',
   },
-  sectionDesktop: {
-    display: 'none',
-    [theme.breakpoints.up('sm')]: {
-      display: 'flex',
-    },
-  },
-  sectionMobile: {
-    display: 'flex',
-    [theme.breakpoints.up('sm')]: {
-      display: 'none',
-    },
-  },
   optionsButton: {
     width: 41,
     height: 41,
@@ -62,10 +52,12 @@ export function Header({
   controller,
   leftDrawerOpen,
   isMobile,
+  isTablet,
   onOpenLeftDrawer,
   onOpenRightDrawer,
 }) {
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
+  const [ toolbarRef, { width: toolbarWidth }] = useElementSize();
 
   const classes = useHeaderStyles();
 
@@ -75,7 +67,14 @@ export function Header({
     return () => controller.bus.removeListener('networkLoaded', onNetworkLoaded);
   }, []);
 
-  const shiftAppBar = leftDrawerOpen && !isMobile;
+  useEffect(() => {
+    const onNetworkLoaded = () => setNetworkLoaded(true);
+    controller.bus.on('networkLoaded', onNetworkLoaded);
+    return () => controller.bus.removeListener('networkLoaded', onNetworkLoaded);
+  }, [toolbarWidth]);
+
+  const shiftAppBar = leftDrawerOpen && !isMobile && !isTablet;
+  const showMobileMenu = toolbarWidth < MIN_DESKTOP_TOOLBAR_WIDTH;
 
   return (
     <AppBar
@@ -83,7 +82,7 @@ export function Header({
       color='default'
       className={clsx(classes.appBar, { [classes.appBarShift]: shiftAppBar })}
     >
-      <Toolbar variant="dense" className={classes.toolbar}>
+      <Toolbar ref={toolbarRef} variant="dense" className={classes.toolbar}>
       {!leftDrawerOpen && (
         <ToolbarButton
           title="Genes"
@@ -105,27 +104,25 @@ export function Header({
         <ToolbarDivider classes={classes} unrelated />
         <TitleEditor controller={controller} disabled={!networkLoaded} />
         <ToolbarDivider classes={classes} unrelated />
-        <div className={classes.sectionDesktop}>
-          { menuDef.map(({title, icon, onClick, unrelated, isEnabled }, idx) =>
-            <Fragment key={idx}>
-              <ToolbarButton
-                title={title}
-                icon={icon}
-                disabled={!networkLoaded || (isEnabled && !isEnabled())}
-                onClick={onClick}
-              />
-              <ToolbarDivider classes={classes} unrelated={unrelated} />
-            </Fragment>
-          )}
-        </div>
-        <div className={classes.sectionMobile}>
+      {!showMobileMenu && menuDef.map(({title, icon, onClick, unrelated, isEnabled }, idx) =>
+        <Fragment key={idx}>
           <ToolbarButton
-            title="Options"
-            icon={<MenuIcon />}
-            className={classes.optionsButton}
-            onClick={onOpenRightDrawer}
+            title={title}
+            icon={icon}
+            disabled={!networkLoaded || (isEnabled && !isEnabled())}
+            onClick={onClick}
           />
-        </div>
+          <ToolbarDivider classes={classes} unrelated={unrelated} />
+        </Fragment>
+      )}
+      {showMobileMenu && (
+        <ToolbarButton
+          title="Options"
+          icon={<MenuIcon />}
+          className={classes.optionsButton}
+          onClick={onOpenRightDrawer}
+        />
+      )}
       </Toolbar>
     </AppBar>
   );
@@ -135,17 +132,19 @@ Header.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   leftDrawerOpen: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
+  isTablet: PropTypes.bool.isRequired,
   onOpenLeftDrawer: PropTypes.func.isRequired,
   onOpenRightDrawer: PropTypes.func.isRequired,
 };
 
+//==[ ToolbarButton ]=================================================================================================
 
 function ToolbarButton({ title, icon, color, className, disabled, onClick, subMenu }) {
   const handleClick = (evt) => {
     if (onClick) {
       onClick(evt);
     } else if (subMenu) {
-      // TODO
+      // TODO show the sub-menu here instead of using the onClick function?
     }
   };
 
@@ -179,13 +178,13 @@ ToolbarButton.propTypes = {
 
 const useToolbarDividerStyles = makeStyles((theme) => ({
   divider: {
-    marginLeft: theme.spacing(1),
-    marginRight: theme.spacing(1),
+    marginLeft: theme.spacing(0.5),
+    marginRight: theme.spacing(0.5),
     width: 0,
   },
   unrelatedDivider: {
-    marginLeft: theme.spacing(3),
-    marginRight: theme.spacing(3),
+    marginLeft: theme.spacing(2),
+    marginRight: theme.spacing(2),
     width: 0,
   },
 }));

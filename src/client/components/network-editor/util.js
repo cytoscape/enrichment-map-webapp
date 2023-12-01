@@ -1,3 +1,13 @@
+import theme from '../../theme';
+
+
+export function isMobile() {
+  return window.innerWidth < theme.breakpoints.values.sm;
+}
+
+export function isTablet() {
+  return window.innerWidth < theme.breakpoints.values.md;
+}
 
 export function delay(millis) {
   return new Promise(r => setTimeout(r, millis, 'delay'));
