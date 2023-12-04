@@ -18,7 +18,7 @@ const theme = createTheme({
     error: {
       main: '#db4f4f',
     },
-    divider: '#3A393A',
+    divider: 'rgba(116, 116, 116, 0.3)',
     success: {
       main: '#2FBD52',
     },
@@ -49,10 +49,27 @@ const theme = createTheme({
     },
   },
   overrides: {
+    MuiTouchRipple:{
+      root: {
+        display: 'none !important',
+      },
+    },
     MuiTooltip: {
       tooltip: {
         fontSize: "0.85em",
         maxWidth: 340,
+      },
+    },
+    MuiPopover: {
+      paper: {
+        background: 'rgba(30, 30, 30, 0.8)',
+        backdropFilter: 'blur(8px)',
+        border: '1px solid rgba(255, 255, 255, 0.5)',
+      },
+    },
+    MuiSlider: {
+      valueLabel: {
+        color: 'rgba(102, 102, 102, 0.9)',
       },
     },
     MuiSvgIcon: {

@@ -80,6 +80,9 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
   toolbar: {
     paddingLeft: theme.spacing(2),
     paddingRight: theme.spacing(1),
+    [theme.breakpoints.down('sm')]: {
+      paddingRight: theme.spacing(0.5),
+    },
   },
   toolbarOpen: {
     paddingLeft: theme.spacing(1.115),
@@ -140,7 +143,7 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
   },
 }));
 
-export function BottomDrawer({ controller, open, leftDrawerOpen, isMobile, onToggle }) {
+export function BottomDrawer({ controller, open, leftDrawerOpen, isMobile, isTablet, onToggle }) {
   const [ disabled, setDisabled ] = useState(true);
   const [ searchValue, setSearchValue ] = useState('');
   const [ selectedNESValues, setSelectedNESValues ] = useState([]);
@@ -353,7 +356,7 @@ export function BottomDrawer({ controller, open, leftDrawerOpen, isMobile, onTog
     }
   };
 
-  const shiftDrawer = leftDrawerOpen && !isMobile; 
+  const shiftDrawer = leftDrawerOpen && !isMobile && !isTablet; 
   const magNES = controller.style ? controller.style.magNES : undefined;
   const totalPathways = disabled ? 0 : data.length;
   const filteredSelectedRows = selectedRows.filter(a => data.some(b => a.id === b.id));
@@ -467,6 +470,7 @@ BottomDrawer.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController),
   open: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
+  isTablet: PropTypes.bool.isRequired,
   leftDrawerOpen: PropTypes.bool.isRequired,
   onToggle: PropTypes.func.isRequired,
 };

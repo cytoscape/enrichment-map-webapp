@@ -45,6 +45,7 @@
     "@material-ui/icons": "^4.9.1",
     "@material-ui/lab": "^4.0.0-alpha.56",
     "@popperjs/core": "^2.10.2",
+    "@react-hook/resize-observer": "^1.2.6",
     "@sentry/browser": "^7.33.0",
     "@sentry/node": "^7.33.0",
     "@sentry/tracing": "^7.33.0",

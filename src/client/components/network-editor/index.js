@@ -8,9 +8,9 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import { makeStyles } from '@material-ui/core/styles';
 
 import { BOTTOM_DRAWER_OPEN } from '../defaults';
-import { NetworkEditorController } from './controller';
 import theme from '../../theme';
-import Header from './header';
+import { isMobile, isTablet } from './util';
+import { NetworkEditorController } from './controller';
 import Main from './main';
 
 import createNetworkStyle from './network-style';
@@ -124,18 +124,13 @@ async function loadNetwork(cy, controller, id) {
 }
 
 
-function isMobile() {
-  const sm = theme.breakpoints.values.sm;
-  return window.innerWidth < sm;
-}
-
-
 export function NetworkEditor({ id }) {
   const [ cy ] = useState(() => createCy(id));
   const [ controller ] = useState(() => new NetworkEditorController(cy));
-
   const [ mobile, setMobile ] = useState(() => isMobile());
-  const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile());
+  const [ tablet, setTablet ] = useState(() => isTablet());
+  const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile() && !isTablet());
+  const [ openRightDrawer, setOpenRightDrawer ] = useState(false);
   const [ openBottomDrawer, setOpenBottomDrawer ] = useState(BOTTOM_DRAWER_OPEN);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
 
@@ -146,6 +141,10 @@ export function NetworkEditor({ id }) {
 
   const handleResize = () => {
     setMobile(isMobile());
+    setTablet(isTablet());
+    if (!isMobile()) { // Close the mobile menu
+      setOpenRightDrawer(false);
+    }
     if (bottomDrawerOpenRef.current) { // Prevents unnecessary re-rendering!
       forceUpdate(); // Because of the bottom drawer height, which can vary depending on the screen size
     }
@@ -167,32 +166,43 @@ export function NetworkEditor({ id }) {
 
   useEffect(() => {
     const onKeyDown = event => {
-      if (event.key === 'Escape')
-        maybeHideDrawer();
+      if (event.key === 'Escape') {
+        maybeCloseDrawers();
+      }
     };
     document.addEventListener('keydown', onKeyDown, false);
     return () => document.removeEventListener('keydown', onKeyDown, false);
   }, []);
 
   useEffect(() => {
-    const onSelect = () => setOpenLeftDrawer(!isMobile());
+    const onSelect = () => setOpenLeftDrawer(!isMobile() && !isTablet());
     cy.on('select', onSelect);
     return () => cy.removeListener('select', onSelect);
   }, []);
 
-  const maybeHideDrawer = () => {
-    if (mobile) {
+  const maybeCloseDrawers = () => {
+    if (mobile || tablet) {
       setOpenLeftDrawer(false);
+      setOpenRightDrawer(false);
     }
   };
 
   const onContentClick = event => {
-    if (openLeftDrawer && mobile && event.target.className === 'MuiBackdrop-root') {
-      maybeHideDrawer();
+    if ((openLeftDrawer || openRightDrawer) && event.target.className === 'MuiBackdrop-root') {
+      maybeCloseDrawers();
     }
   };
   const onCloseLeftDrawer = () => {
     setOpenLeftDrawer(false);
+  };
+  const onCloseRightDrawer = () => {
+    setOpenRightDrawer(false);
+  };
+  const onOpenLeftDrawer = () => {
+    setOpenLeftDrawer(true);
+  };
+  const onOpenRightDrawer = () => {
+    setOpenRightDrawer(true);
   };
   const onToggleBottomDrawer = (open) => {
     setOpenBottomDrawer(open);
@@ -204,19 +214,18 @@ export function NetworkEditor({ id }) {
         <CssBaseline />
         <div className={classes.root}>
           <svg id="svg_point_factory" style={{ position:'absolute', pointerEvents:'none'}}/>
-          <Header
-            controller={controller}
-            openLeftDrawer={openLeftDrawer}
-            isMobile={mobile}
-            onOpenLeftDrawer={setOpenLeftDrawer}
-          />
           <Main
             controller={controller}
             openLeftDrawer={openLeftDrawer}
+            openRightDrawer={openRightDrawer}
             openBottomDrawer={openBottomDrawer}
             isMobile={mobile}
+            isTablet={tablet}
             onContentClick={onContentClick}
             onCloseLeftDrawer={onCloseLeftDrawer}
+            onCloseRightDrawer={onCloseRightDrawer}
+            onOpenLeftDrawer={onOpenLeftDrawer}
+            onOpenRightDrawer={onOpenRightDrawer}
             onToggleBottomDrawer={onToggleBottomDrawer}
           />
         </div>
