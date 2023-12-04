@@ -564,7 +564,7 @@ const PathwayTable = (
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
-          <TableCell className={clsx(classes.checkCell, { [classes.tableCell]: true })}>
+          <TableCell className={clsx(classes.checkCell, { [classes.tableCell]: true })} style={{borderBottom: 'none'}}>
             <Tooltip title={noneSelected ? 'Select All' : 'Select None'}>
               <span>
                 <IconButton
