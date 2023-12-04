@@ -13,7 +13,6 @@ import { Header } from './header';
 import LeftDrawer from './left-drawer';
 import RightDrawer from './right-drawer';
 import BottomDrawer from './bottom-drawer';
-import PopoverMenu from './popover-menu';
 import { TYPE as UNDO_TYPE } from './undo-stack';
 import { delay } from './util';
 
@@ -35,9 +34,6 @@ import RestoreIcon from '@material-ui/icons/SettingsBackupRestore';
 import LinkIcon from '@material-ui/icons/Link';
 import InsertDriveFileOutlinedIcon from '@material-ui/icons/InsertDriveFileOutlined';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
-
-
-const SHARE_MENU_ID  = "menu-share";
 
 
 const useStyles = makeStyles((theme) => ({
@@ -274,8 +270,6 @@ const Main = ({
   onOpenRightDrawer,
   onToggleBottomDrawer
 }) => {
-  const [ menuName, setMenuName ] = useState(null);
-  const [ anchorEl, setAnchorEl ] = useState(null);
   const [ confirmDialogOpen, setConfirmDialogOpen ] = useState(false);
   const [ undoEnabled, setUndoEnabled ] = useState(false);
   const [ undoType, setUndoType] = useState(null);
@@ -297,16 +291,6 @@ const Main = ({
   const shiftXCy = openLeftDrawer && !isMobile && !isTablet;
   const shiftYCy = openBottomDrawer;
 
-  const showShareMenu = (event) => {
-    setMenuName(SHARE_MENU_ID);
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setMenuName(null);
-    setAnchorEl(null);
-  };
-
   const handleNetworkRestore = () => {
     setConfirmDialogOpen(true);
   };
@@ -319,13 +303,11 @@ const Main = ({
 
   // Share/Download functions
   const handleCopyLink = async () => {
-    handleMenuClose();
-    await handleCopyToClipboard(); 
+    await handleCopyToClipboard();
     snack.showMessage("Link copied to clipboard");
   };
 
   const handleExportImages = async () => {
-    handleMenuClose();
     setImageExportEnabled(false);
     snack.showSpinner("Preparing network images...");
     await delay(50); // allows the menu to close immediately, otherwise it hangs for a couple seconds
@@ -335,7 +317,6 @@ const Main = ({
   };
 
   const handleExportData = async () => {
-    handleMenuClose();
     setDataExportEnabled(false);
     const promise = controller.exportDataArchive(controller);
     await spinnerUntilDone(promise, "Preparing enrichment data...");
@@ -404,7 +385,6 @@ const Main = ({
     }, {
       title: "Share/Download",
       icon: <CloudDownloadIcon />,
-      onClick: showShareMenu,
       subMenu: shareMenuDef,
     },
   ];
@@ -474,14 +454,6 @@ const Main = ({
           controller={controller}
         />
       </div>
-    {!isMobile && anchorEl && (
-      <PopoverMenu
-        open={menuName === SHARE_MENU_ID}
-        target={anchorEl}
-        menu={shareMenuDef}
-        onClose={handleMenuClose}
-      />
-    )}
       <RestoreConfirmDialog 
         open={confirmDialogOpen} 
         isMobile={isMobile}
