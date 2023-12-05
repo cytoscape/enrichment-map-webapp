@@ -14,20 +14,6 @@ const PERFORMANCE_COLLECTION = 'performance';
 const POSITIONS_COLLECTION = 'positions';
 const POSITIONS_RESTORE_COLLECTION = "positionsRestore";
 
-/**
- * When called with no args will returns a new unique mongo ID.
- * When called with a UUID string arg will convert it to a mongo compatible ID.
- * Throws an exception if called with an invalid string arg.
- */
-function makeID(strOrObj) {
-  if(_.has(strOrObj, 'bson')) {
-    return strOrObj;
-  }
-  const string = _.isString(strOrObj) ? strOrObj : uuid.v4();
-  const bson = MUUID.from(string);
-  return { string, bson };
-}
-
 
 class Datastore {
   // mongo; // mongo connection obj
@@ -47,12 +33,13 @@ class Datastore {
   }
 
   async initializeGeneSetDB(dbFilePath, dbFileName) {
-    console.info('Loading gene set databases into MongoDB');
+    console.info('Initializing MongoDB...');
     // await this.loadGenesetDB('./public/geneset-db/', DB_1);
     await this.loadGenesetDB(dbFilePath, dbFileName);
-    console.info('Loading done');
+    console.info('Pathway Database Loaded: ' + dbFileName);
     await this.createIndexes();
-    console.info('Mongo initialized');
+    console.info('Indexes Created');
+    console.info('MongoDB Intialization Done');
   }
 
   async dropCollectionIfExists(name) {
@@ -129,15 +116,36 @@ class Datastore {
 
 
   /**
+   * When called with no args will returns a new unique mongo ID.
+   * When called with a UUID string arg will convert it to a mongo compatible ID.
+   * Throws an exception if called with an invalid string arg.
+   */
+  makeID(strOrObj) {
+    if(_.has(strOrObj, 'bson')) {
+      return strOrObj;
+    }
+    if(strOrObj === 'demo') {
+      strOrObj = this.demoNetworkID;
+    }
+    const string = _.isString(strOrObj) ? strOrObj : uuid.v4();
+    const bson = MUUID.from(string);
+    return { string, bson };
+  }
+
+  setDemoNetworkID(idStr) {
+    this.demoNetworkID = idStr;
+  }
+
+  /**
    * Inserts a network document into the 'networks' collection.
    * @returns The id of the created document.
    */
-  async createNetwork(networkJson, networkName, type, geneSetCollection) {
+  async createNetwork(networkJson, networkName, type, geneSetCollection, demo) {
     if (typeof (networkJson) == 'string') {
       networkJson = JSON.parse(networkJson);
     }
 
-    const networkID = makeID();
+    const networkID = this.makeID();
 
     networkJson['_id'] = networkID.bson;
     networkJson['networkIDStr'] = networkID.string;
@@ -149,6 +157,8 @@ class Datastore {
       networkJson['inputType'] = type;
     if(geneSetCollection)
       networkJson['geneSetCollection'] = geneSetCollection;
+    if(demo)
+      networkJson['demo'] = true;
 
     await this.db
       .collection(NETWORKS_COLLECTION)
@@ -162,7 +172,7 @@ class Datastore {
    * @returns true if the network has been found and updated, false otherwise.
    */
   async updateNetwork(networkIDString, { networkName }) {
-    const networkID = makeID(networkIDString);
+    const networkID = this.makeID(networkIDString);
     
     const res = await this.db
       .collection(NETWORKS_COLLECTION)
@@ -180,7 +190,7 @@ class Datastore {
   async createPerfDocument(networkIDString, document) {
     if(networkIDString) {
       document = { 
-        networkID: makeID(networkIDString).bson, 
+        networkID: this.makeID(networkIDString).bson, 
         ...document
       };
     }
@@ -241,8 +251,8 @@ class Datastore {
    * @returns The id of the created document in the geneLists collection.
    */
   async initializeGeneRanks(geneSetCollection, networkIDString, rankedGeneListDocument) {
-    const networkID  = makeID(networkIDString);
-    const geneListID = makeID();
+    const networkID  = this.makeID(networkIDString);
+    const geneListID = this.makeID();
 
     const { min, max, genes } = rankedGeneListDocument;
 
@@ -380,13 +390,25 @@ class Datastore {
       ]).toArray();
   }
 
+
+  async getDemoNetworkID() {
+    const result = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .findOne({ demo: true }, { projection: { _id: 0, networkIDStr: 1 } } );
+    
+    if(result) {
+      return result.networkIDStr;
+    }
+  }
+
+
   /**
    * Returns the network document. 
    */
   async getNetwork(networkIDString) {
     let networkID;
     try {
-      networkID = makeID(networkIDString);
+      networkID = this.makeID(networkIDString);
     } catch {
       console.log(`Invalid network ID: '${networkIDString}'`);
       return null;
@@ -426,7 +448,7 @@ class Datastore {
    * Note: Deleted nodes are not part of the positions document.
    */
   async setPositions(networkIDString, positions) {
-    const networkID = makeID(networkIDString);
+    const networkID = this.makeID(networkIDString);
     const document = {
       networkID: networkID.bson,
       positions
@@ -443,7 +465,7 @@ class Datastore {
   }
 
   async getPositions(networkIDString) {
-    const networkID = makeID(networkIDString);
+    const networkID = this.makeID(networkIDString);
 
     let result = await this.db
       .collection(POSITIONS_COLLECTION)
@@ -460,7 +482,7 @@ class Datastore {
   }
 
   async deletePositions(networkIDString) {
-    const networkID = makeID(networkIDString);
+    const networkID = this.makeID(networkIDString);
     // Only delete from POSITIONS_COLLECTION, not from POSITIONS_RESTORE_COLLECTION
     await this.db
       .collection(POSITIONS_COLLECTION)
@@ -504,7 +526,7 @@ class Datastore {
    * Returns an cursor of renrichment results objects.
    */
   async getEnrichmentResultsCursor(networkIDString) {
-    const networkID = makeID(networkIDString);
+    const networkID = this.makeID(networkIDString);
 
     const cursor = await this.db
       .collection(NETWORKS_COLLECTION)
@@ -518,7 +540,7 @@ class Datastore {
    * [ { "gene": "ABCD", "rank": 0.0322 }, ... ]
    */
   async getRankedGeneListCursor(networkIDString) {
-    const networkID = makeID(networkIDString);
+    const networkID = this.makeID(networkIDString);
 
     const cursor = await this.db
       .collection(GENE_LISTS_COLLECTION)
@@ -537,7 +559,7 @@ class Datastore {
    * [ { "name": "My Gene Set", "description": "blah blah", "genes": ["ABC", "DEF"] }, ... ]
    */
   async getGMTCursor(geneSetCollection, networkIDString) {
-    const networkID = makeID(networkIDString);
+    const networkID = this.makeID(networkIDString);
 
     const cursor = await this.db
       .collection(NETWORKS_COLLECTION)
@@ -565,7 +587,7 @@ class Datastore {
    * Returns names 
    */
   async getNodeDataSetNames(networkIDString) {
-    const networkID = makeID(networkIDString);
+    const networkID = this.makeID(networkIDString);
 
     const names = await this.db
       .collection(NETWORKS_COLLECTION)
@@ -590,7 +612,7 @@ class Datastore {
    * Returns the entire gene/ranks document. 
    */
    async getRankedGeneList(networkIDString) {
-    const networkID = makeID(networkIDString);
+    const networkID = this.makeID(networkIDString);
     const network = await this.db
       .collection(GENE_LISTS_COLLECTION)
       .findOne(
@@ -619,7 +641,7 @@ class Datastore {
    * Returns the IDs of nodes that contain the given gene.
    */
   async getNodesContainingGene(networkIDString, geneName) {
-    const networkID = makeID(networkIDString);
+    const networkID = this.makeID(networkIDString);
     return await this.db
       .collection(GENE_RANKS_COLLECTION)
       .findOne(
@@ -632,7 +654,7 @@ class Datastore {
    * Returns the values of the min and max ranks in the network.
    */
   async getMinMaxRanks(networkIDStr) {
-    const networkID = makeID(networkIDStr);
+    const networkID = this.makeID(networkIDStr);
 
     const minMax = await this.db
       .collection(GENE_LISTS_COLLECTION)
@@ -653,7 +675,8 @@ class Datastore {
    * then the genes without rankes are after (sorted alphabetically).
    */
   async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames, intersection) {
-    const networkID = makeID(networkIDStr);
+    const networkID = this.makeID(networkIDStr);
+    console.log(`networkIDStr:${networkIDStr}  networkID:${JSON.stringify(networkID)}`);
 
     if(geneSetNames === undefined || geneSetNames.length == 0) {
       geneSetNames = await this.getNodeDataSetNames(networkID);
@@ -705,7 +728,7 @@ class Datastore {
 
 
   async getGenesForSearchCursor(networkIDStr) {
-    const networkID = makeID(networkIDStr);
+    const networkID = this.makeID(networkIDStr);
 
     const cursor = await this.db
       .collection(GENE_RANKS_COLLECTION)
@@ -719,7 +742,7 @@ class Datastore {
 
 
   async getPathwaysForSearchCursor(geneSetCollection, networkIDStr) {
-    const networkID = makeID(networkIDStr);
+    const networkID = this.makeID(networkIDStr);
 
     const cursor = await this.db
       .collection(NETWORKS_COLLECTION)
