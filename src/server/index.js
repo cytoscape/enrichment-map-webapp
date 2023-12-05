@@ -175,6 +175,6 @@ function onListening() {
 
 console.info('Express started');
 
-loadDemoNetwork();
+// loadDemoNetwork();ß
 
 export { app, server };

@@ -53,37 +53,50 @@ class Datastore {
 
 
   async loadGenesetDB(path, dbFileName) {
-    const collections = await this.db.listCollections().toArray();
-    if(collections.some(c => c.name === dbFileName)) {
+    const isLoaded = async () => {
+      const collections = await this.db.listCollections().toArray();
+      return collections.some(c => c.name === dbFileName);
+    };
+
+    if(await isLoaded()) {
       console.info("Collection " + dbFileName + " already loaded");
       return;
     } else {
       console.info("Loading collection " + dbFileName);
     }
 
+    // Create indexes on dbFileName collection first
+    await this.db
+      .collection(dbFileName)
+      .createIndex({ name: 1 }, { unique: true });
+
+    await this.db
+      .collection(dbFileName)
+      .createIndex({ genes: 1 });
+
+
     const filepath = path + dbFileName;
-    const geneSets = [];
+    const writeOps = [];
 
     await fileForEachLine(filepath, line => {
       const [name, description, ...genes] = line.split("\t");
       if(genes[genes.length - 1] === "") {
         genes.pop();
       }
-      geneSets.push({ name, description, genes });
+
+      writeOps.push({
+        updateOne: {
+          filter: { name }, // index on name already created
+          update: { $set: { name, description, genes } },
+          upsert: true
+        }
+      });
+      
     });
 
     await this.db
       .collection(dbFileName)
-      .insertMany(geneSets);
-
-    // Create indexes on dbFileName collection
-    await this.db
-      .collection(dbFileName)
-      .createIndex({ name: 1 });
-
-    await this.db
-      .collection(dbFileName)
-      .createIndex({ genes: 1 });
+      .bulkWrite(writeOps);
   }
 
 
