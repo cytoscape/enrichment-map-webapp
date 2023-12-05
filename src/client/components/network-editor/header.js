@@ -6,6 +6,7 @@ import { HEADER_HEIGHT, LEFT_DRAWER_WIDTH, MIN_DESKTOP_TOOLBAR_WIDTH } from '../
 import useElementSize from '../../use-element-size';
 import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
+import PopoverMenu from './popover-menu';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -61,6 +62,9 @@ export function Header({
   onOpenRightDrawer,
 }) {
   const [ networkLoaded, setNetworkLoaded ] = useState(() => controller.isNetworkLoaded());
+  const [ anchorEl, setAnchorEl ] = useState(null);
+  const [ subMenu, setSubMenu ] = useState(null);
+  const [ showMobileMenu, setShowMobileMenu ] = useState(false);
   const [ toolbarRef, { width: toolbarWidth }] = useElementSize();
 
   const classes = useHeaderStyles();
@@ -72,63 +76,82 @@ export function Header({
   }, []);
 
   useEffect(() => {
-    const onNetworkLoaded = () => setNetworkLoaded(true);
-    controller.bus.on('networkLoaded', onNetworkLoaded);
-    return () => controller.bus.removeListener('networkLoaded', onNetworkLoaded);
+    handleCloseSubMenu(); // close sub menu whenever the toolbar width changes
+    setShowMobileMenu(toolbarWidth < MIN_DESKTOP_TOOLBAR_WIDTH);
   }, [toolbarWidth]);
 
+  const handleOpenSubMenu = (event, subMenu) => {
+    setAnchorEl(event.currentTarget);
+    setSubMenu(subMenu);
+  };
+  const handleCloseSubMenu = () => {
+    setAnchorEl(null);
+    setSubMenu(null);
+  };
+
   const shiftAppBar = leftDrawerOpen && !isMobile && !isTablet;
-  const showMobileMenu = toolbarWidth < MIN_DESKTOP_TOOLBAR_WIDTH;
 
   return (
-    <AppBar
-      position="relative"
-      color='default'
-      className={clsx(classes.appBar, { [classes.appBarShift]: shiftAppBar })}
-    >
-      <Toolbar ref={toolbarRef} variant="dense" className={classes.toolbar}>
-      {!leftDrawerOpen && (
-        <ToolbarButton
-          title="Genes"
-          icon={<KeyboardArrowRightIcon fontSize="large" />}
-          edge="start"
-          onClick={() => onOpenLeftDrawer(!leftDrawerOpen)}
-        />
-      )}
-        <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
-          <Tooltip arrow placement="bottom" title="Home">
-            <IconButton 
-              aria-label='home' 
-              onClick={() => location.href = '/'}
-            >
-              <AppLogoIcon style={{ fontSize: 26 }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        <ToolbarDivider classes={classes} unrelated />
-        <TitleEditor controller={controller} disabled={!networkLoaded} />
-        <ToolbarDivider classes={classes} unrelated />
-      {!showMobileMenu && menuDef.map(({title, icon, onClick, unrelated, isEnabled }, idx) =>
-        <Fragment key={idx}>
+    <>
+      <AppBar
+        position="relative"
+        color='default'
+        className={clsx(classes.appBar, { [classes.appBarShift]: shiftAppBar })}
+      >
+        <Toolbar ref={toolbarRef} variant="dense" className={classes.toolbar}>
+        {!leftDrawerOpen && (
           <ToolbarButton
-            title={title}
-            icon={icon}
-            disabled={!networkLoaded || (isEnabled && !isEnabled())}
-            onClick={onClick}
+            title="Genes"
+            icon={<KeyboardArrowRightIcon fontSize="large" />}
+            edge="start"
+            onClick={() => onOpenLeftDrawer(!leftDrawerOpen)}
           />
-          <ToolbarDivider classes={classes} unrelated={unrelated} />
-        </Fragment>
-      )}
-      {showMobileMenu && (
-        <ToolbarButton
-          title="Options"
-          icon={<MenuIcon />}
-          className={classes.optionsButton}
-          onClick={onOpenRightDrawer}
-        />
-      )}
-      </Toolbar>
-    </AppBar>
+        )}
+          <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
+            <Tooltip arrow placement="bottom" title="Home">
+              <IconButton 
+                aria-label='home' 
+                onClick={() => location.href = '/'}
+              >
+                <AppLogoIcon style={{ fontSize: 26 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          <ToolbarDivider classes={classes} unrelated />
+          <TitleEditor controller={controller} disabled={!networkLoaded} />
+          <ToolbarDivider classes={classes} unrelated />
+        {!showMobileMenu && menuDef.map(({title, icon, onClick, unrelated, isEnabled, subMenu }, idx) =>
+          <Fragment key={idx}>
+            <ToolbarButton
+              title={title}
+              icon={icon}
+              disabled={!networkLoaded || (isEnabled && !isEnabled())}
+              subMenu={subMenu}
+              onClick={onClick}
+              onOpenSubMenu={handleOpenSubMenu}
+            />
+            <ToolbarDivider classes={classes} unrelated={unrelated} />
+          </Fragment>
+        )}
+        {showMobileMenu && (
+          <ToolbarButton
+            title="Options"
+            icon={<MenuIcon />}
+            className={classes.optionsButton}
+            onClick={onOpenRightDrawer}
+          />
+        )}
+        </Toolbar>
+      </AppBar>
+    {!showMobileMenu && anchorEl && subMenu && (
+      <PopoverMenu
+        open
+        target={anchorEl}
+        menu={subMenu}
+        onClose={handleCloseSubMenu}
+      />
+    )}
+    </>
   );
 }
 Header.propTypes = {
@@ -143,12 +166,12 @@ Header.propTypes = {
 
 //==[ ToolbarButton ]=================================================================================================
 
-function ToolbarButton({ title, icon, color, className, disabled, onClick, subMenu }) {
+function ToolbarButton({ title, icon, color, className, disabled, subMenu, onClick, onOpenSubMenu }) {
   const handleClick = (evt) => {
-    if (onClick) {
-      onClick(evt);
-    } else if (subMenu) {
-      // TODO show the sub-menu here instead of using the onClick function?
+    if (subMenu) {
+      onOpenSubMenu?.(evt, subMenu);
+    } else {
+      onClick?.(evt);
     }
   };
 
@@ -175,8 +198,9 @@ ToolbarButton.propTypes = {
   color: PropTypes.string,
   className: PropTypes.string,
   disabled: PropTypes.bool,
+  subMenu: PropTypes.array,
   onClick: PropTypes.func,
-  subMenu: PropTypes.object,
+  onOpenSubMenu: PropTypes.func,
 };
 
 

@@ -31,10 +31,11 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: 'column',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    width: '100%',
-    height: pathwayTableHeight(),
-    padding: theme.spacing(2),
     textAlign: 'center',
+    width: '100%',
+    overflowY: 'scroll',
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
   },
   noResultsInfoBox: {
     width: '100%',
@@ -491,7 +492,7 @@ const PathwayTable = (
 
   if (data.length === 0 && searchTerms && searchTerms.length > 0) {
     return (
-      <Paper className={classes.noResultsBox}>
+      <Paper className={classes.noResultsBox} style={{height: pathwayTableHeight()}}>
         <Typography component="p" color="textSecondary" className={classes.noResultsLine}>
           <SadFaceIcon style={{fontSize: '4em', opacity: 0.4}} />
         </Typography>
@@ -564,7 +565,7 @@ const PathwayTable = (
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
-          <TableCell className={clsx(classes.checkCell, { [classes.tableCell]: true })}>
+          <TableCell className={clsx(classes.checkCell, { [classes.tableCell]: true })} style={{borderBottom: 'none'}}>
             <Tooltip title={noneSelected ? 'Select All' : 'Select None'}>
               <span>
                 <IconButton

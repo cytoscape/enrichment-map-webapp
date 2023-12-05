@@ -64,7 +64,15 @@ const theme = createTheme({
       paper: {
         background: 'rgba(30, 30, 30, 0.8)',
         backdropFilter: 'blur(8px)',
-        border: '1px solid rgba(255, 255, 255, 0.5)',
+        border: '1px solid rgba(116, 116, 116, 0.3)',
+      },
+    },
+    MuiDialog: {
+      root: {
+        backdropFilter: 'blur(0.5px)',
+      },
+      paper: {
+        border: '1px solid rgba(116, 116, 116, 0.1)',
       },
     },
     MuiSlider: {

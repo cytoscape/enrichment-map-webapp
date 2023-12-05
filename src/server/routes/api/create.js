@@ -28,7 +28,7 @@ const dataParser = bodyParser.text({
  */
 http.post('/preranked', dataParser, async function(req, res, next) {
   try {
-    await runDataPipeline(req, res, 'preranked');
+    await runDataPipelineHttp(req, res, 'preranked');
   } catch (err) {
     next(err);
   }
@@ -40,7 +40,7 @@ http.post('/preranked', dataParser, async function(req, res, next) {
  */
 http.post('/rnaseq', dataParser, async function(req, res, next) {
   try {
-    await runDataPipeline(req, res, 'rnaseq');
+    await runDataPipelineHttp(req, res, 'rnaseq');
   } catch (err) {
     next(err);
   }
@@ -68,11 +68,18 @@ function createPeformanceHook() {
 }
 
 
-async function runDataPipeline(req, res, type) {
+async function runDataPipelineHttp(req, res, type) {
   const { networkName } = req.query;
   const contentType = req.get('Content-Type'); // use same content type with FGSEA service
-  const preranked = type === 'preranked';
   let body = req.body;
+  const { classes } = req.query;
+
+  await runDataPipeline({ networkName, contentType, type, classes, body }, res);
+}
+
+
+export async function runDataPipeline({ networkName, contentType, type, classes, body, demo }, res) {
+  const preranked = type === 'preranked';
 
   console.log('/api/create/');
   const perf = createPeformanceHook();
@@ -95,7 +102,6 @@ async function runDataPipeline(req, res, type) {
     rankedGeneList = Datastore.rankedGeneListToDocument(body, delim);
     pathwaysForEM = pathways;
   } else {
-    const { classes } = req.query;
     const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
     sendMessagesToSentry('fgsea', messages);
     rankedGeneList = Datastore.fgseaServiceGeneRanksToDocument(ranks);
@@ -109,11 +115,11 @@ async function runDataPipeline(req, res, type) {
   let networkID;
   if(isEmptyNetwork(networkJson)) {
     console.log('sending empty network');
-    res.status(422).send("Empty Network");
+    res?.status(422)?.send("Empty Network");
   } else {
-    networkID = await Datastore.createNetwork(networkJson, networkName, type, DB_1);
+    networkID = await Datastore.createNetwork(networkJson, networkName, type, DB_1, demo);
     await Datastore.initializeGeneRanks(DB_1, networkID, rankedGeneList);
-    res.send(networkID);
+    res?.send(networkID);
   }
 
   perf.mark('end');

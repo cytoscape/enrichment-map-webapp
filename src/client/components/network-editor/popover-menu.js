@@ -5,6 +5,11 @@ import { MenuList, MenuItem, ListItemIcon, ListItemText, Popover } from '@materi
 
 
 export function PopoverMenu({ open, target, menu, onClose=() => null }) {
+  const handleClick = (fn) => {
+    onClose();
+    fn?.();
+  };
+
   return (
     <Popover
       id="menu-popover"
@@ -18,7 +23,7 @@ export function PopoverMenu({ open, target, menu, onClose=() => null }) {
     >
       <MenuList>
       { menu.map(({ title, icon, disabled, onClick }, idx) =>
-        <MenuItem key={idx} onClick={onClick} disabled={disabled}>
+        <MenuItem key={idx} onClick={() => handleClick(onClick)} disabled={disabled}>
           <ListItemIcon>{ icon }</ListItemIcon>
           <ListItemText>{ title }</ListItemText>
         </MenuItem>
