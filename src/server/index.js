@@ -22,7 +22,6 @@ import createRouter from './routes/api/create.js';
 import exportRouter from './routes/api/export.js';
 
 import Datastore, { DB_1 } from './datastore.js';
-import { loadDemoNetwork } from './demo-network.js';
 
 console.info('Starting Express');
 
@@ -174,7 +173,5 @@ function onListening() {
 }
 
 console.info('Express started');
-
-// loadDemoNetwork();ß
 
 export { app, server };
