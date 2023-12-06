@@ -40,6 +40,18 @@ http.get('/sample-data', async function(req, res, next) {
   }
 });
 
+/*
+ * Returns the IDs of demo networks.
+ */
+http.get('/demos', async function(req, res, next) {
+  try {
+    const networkIDs = await Datastore.getDemoNetworkIDs();
+    res.send(JSON.stringify(networkIDs));
+  } catch (err) {
+    next(err);
+  }
+});
+
 /* 
  * Returns a network given its ID.
  */

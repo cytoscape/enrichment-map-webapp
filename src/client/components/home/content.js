@@ -173,6 +173,10 @@ export function Content() {
     }
   };
 
+  const onClickCreateDemo = async () => {
+    await uploadController.createDemoNetwork();
+  };
+
   const onClassesChanged = (rnaseqClasses) => {
     updateUploadState({ rnaseqClasses });
   };
@@ -225,7 +229,7 @@ export function Content() {
   };
 
   const onFinished = ({ networkID, requestID }) => {
-    if(cancelledRequests.includes(requestID)) {
+    if(requestID && cancelledRequests.includes(requestID)) {
       console.log(`Ignoring cancelled request: { networkID:${networkID}, requestID:${requestID} }`);
       return;
     }
@@ -271,12 +275,12 @@ export function Content() {
                     <Grid item className={classes.section}>
                       {mobile 
                         ? <Figure /> 
-                        : <GetStartedSection mobile={mobile} tablet={tablet} onClickGetStarted={onClickGetStarted} />
+                        : <GetStartedSection mobile={mobile} tablet={tablet} onClickGetStarted={onClickGetStarted} onClickCreateDemo={onClickCreateDemo} />
                       }
                     </Grid>
                   {mobile && (
                     <Grid item className={classes.section}>
-                      <GetStartedSection mobile={mobile} tablet={tablet} onClickGetStarted={onClickGetStarted} />
+                      <GetStartedSection mobile={mobile} tablet={tablet} onClickGetStarted={onClickGetStarted} onClickCreateDemo={onClickCreateDemo} />
                     </Grid>
                   )}
                   </Grid>
@@ -310,7 +314,10 @@ export function Content() {
           </Grid>
         </div>
         {/* <MobileMenu /> */}
-        <Debug sampleFiles={sampleFiles} onLoadSampleNetwork={loadSampleNetwork} />
+        <Debug 
+          sampleFiles={sampleFiles} 
+          onLoadSampleNetwork={loadSampleNetwork} 
+        />
         <Footer />
       </Container>
     </div>
@@ -468,7 +475,7 @@ Debug.propTypes = {
 };
 
 
-function GetStartedSection({ mobile, tablet, onClickGetStarted }) {
+function GetStartedSection({ mobile, tablet, onClickGetStarted, onClickCreateDemo }) {
   const classes = useStyles();
   return (
     <Grid
@@ -488,6 +495,9 @@ function GetStartedSection({ mobile, tablet, onClickGetStarted }) {
           Get Started
         </Button>
       </Grid>
+      <Grid item>
+        <Link component="a" style={{ cursor: 'pointer' }} onClick={onClickCreateDemo}>View Demo Network</Link>
+      </Grid>
       {/* <Grid item>
         <Button
           className={classes.demoButton}
@@ -505,6 +515,7 @@ GetStartedSection.propTypes = {
   mobile: PropTypes.bool,
   tablet: PropTypes.bool,
   onClickGetStarted: PropTypes.func,
+  onClickCreateDemo: PropTypes.any
 };
 
 
