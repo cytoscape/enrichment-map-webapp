@@ -1,4 +1,5 @@
 import Datastore from '../src/server/datastore.js';
+import { rankedGeneListToDocument } from '../src/server/datastore.js';
 import fs from 'fs';
 import { expect } from 'chai';
 
@@ -18,7 +19,7 @@ describe('Gene Set Queries', () => {
     await Datastore.initializeGeneSetDB('./test/resources/', GENESET_DB);
 
     networkID = await Datastore.createNetwork(network);
-    const ranksDoc = await Datastore.rankedGeneListToDocument(ranks);
+    const ranksDoc = await rankedGeneListToDocument(ranks);
     await Datastore.initializeGeneRanks(GENESET_DB, networkID, ranksDoc);
   });
 
