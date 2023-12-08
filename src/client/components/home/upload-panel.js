@@ -7,7 +7,7 @@ import theme from '../../theme';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { Grid, Paper, Typography, Link } from '@material-ui/core';
+import { Grid, Paper, Typography, Link, Tooltip } from '@material-ui/core';
 import { Accordion, AccordionDetails, AccordionSummary } from '@material-ui/core';
 import { Table, TableHead, TableRow, TableCell, TableBody } from '@material-ui/core';
 
@@ -21,14 +21,10 @@ const useStyles = makeStyles((theme) => ({
   tableHead: {
     textTransform: 'capitalize',
   },
-  tableRow: {
-    borderColor: theme.palette.text.secondary,
-  },
   tableCell: {
     fontSize: '0.85em',
     fontFamily: 'Monaco,Courier New,Monospace',
-    color: theme.palette.text.secondary,
-    borderColor: theme.palette.divider,
+    color: theme.palette.text.disabled,
   },
   accordionHead: {
     fontSize: theme.typography.pxToRem(15),
@@ -62,6 +58,16 @@ const createRnaSeqRow = (gene, exp1, exp2) => {
   return { gene, exp1, exp2 };
 };
 
+const RANKED_HEADER = [
+  {
+    id: 'gene',
+    tooltip: 'The gene ID (Ensembl or HGNC)',
+  },
+  {
+    id: 'rank',
+    tooltip: 'The gene rank value',
+  },
+];
 const RANKED_ROWS = [
   createRankedRow('ANKRD9',  50.62464011),
   createRankedRow('LYL1',    41.57521227),
@@ -70,6 +76,20 @@ const RANKED_ROWS = [
   createRankedRow('FOXO3',   11.93840251),
 ];
 
+const RNASEQ_HEADER = [
+  {
+    id: 'gene',
+    tooltip: 'The gene ID (Ensembl or HGNC)',
+  },
+  {
+    id: 'exp1',
+    tooltip: 'The EXPERIMENT expression value',
+  },
+  {
+    id: 'exp2',
+    tooltip: 'The CONTROL expression value',
+  }
+];
 const RNASEQ_ROWS = [
   createRnaSeqRow('MUC1',   950, 550),
   createRnaSeqRow('MUC6',   890, 640),
@@ -78,29 +98,31 @@ const RNASEQ_ROWS = [
   createRnaSeqRow('GALNT9', 730, 800),
 ];
 
-const SampleTable = ({ data, spotlight }) => {
+const SampleTable = ({ tableHead, tableRows, spotlight }) => {
   const classes = useStyles();
-  const keys = Object.keys(data[0]);
+  const keys = Object.keys(tableRows[0]);
   const spotlightTokens = spotlight ? spotlight.split(',') : [];
 
   return (
     <Paper className={classes.tableContainer} variant="outlined">
       <Table size="small">
         <TableHead className={clsx(classes.tableHead, { [classes.spotlight]: (spotlightTokens.includes('header')) })}>
-          <TableRow className={classes.tableRow}>
-          {keys.map((k, idx) => (
+          <TableRow>
+          {tableHead.map(({ id, tooltip }, idx) => (
             <TableCell
-              key={k}
+              key={id}
               align={idx === 0 ? 'left' : 'center'}
-              className={clsx(classes.tableCell, { [classes.spotlight]: (spotlightTokens.includes(k)) })}
+              className={clsx(classes.tableCell, { [classes.spotlight]: (spotlightTokens.includes(id)) })}
             >
-              <i>{k}</i>
+              <Tooltip title={tooltip}>
+                <i>{id}</i>
+              </Tooltip>
             </TableCell>
           ))}
           </TableRow>
         </TableHead>
         <TableBody className={clsx({ [classes.spotlight]: (spotlightTokens.includes('data')) })}>
-        {data.map((row) => (
+        {tableRows.map((row) => (
           <TableRow key={row.gene}>
           {keys.map((k, idx) => (
             <TableCell
@@ -118,12 +140,13 @@ const SampleTable = ({ data, spotlight }) => {
   );
 };
 SampleTable.propTypes = {
-  data: PropTypes.array.isRequired,
+  tableHead: PropTypes.array.isRequired,
+  tableRows: PropTypes.array.isRequired,
   spotlight: PropTypes.string,
 };
 
 
-const FormatAccordion = ({ isMobile, id, title, summary, data, children, spotlight, expanded, onChange }) => {
+const FormatAccordion = ({ isMobile, id, title, summary, tableHead, tableRows, children, spotlight, expanded, onChange }) => {
   const classes = useStyles();
 
   return (
@@ -147,7 +170,7 @@ const FormatAccordion = ({ isMobile, id, title, summary, data, children, spotlig
               spacing={isMobile ? 2 : 0}
             >
               <Grid item sm={6}>
-                <SampleTable data={data} spotlight={spotlight} />
+                <SampleTable tableHead={tableHead} tableRows={tableRows} spotlight={spotlight} />
               </Grid>
               <Grid item sm={6}>
                 <Typography component="div" variant="body2" color="secondary">
@@ -166,7 +189,8 @@ FormatAccordion.propTypes = {
   title: PropTypes.string.isRequired,
   summary: PropTypes.func.isRequired,
   isMobile: PropTypes.bool.isRequired,
-  data: PropTypes.array.isRequired,
+  tableHead: PropTypes.array.isRequired,
+  tableRows: PropTypes.array.isRequired,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
@@ -241,7 +265,8 @@ const UploadPanel = ({ isMobile }) => {
         title="RNA-Seq Expression Data"
         summary={summary}
         isMobile={isMobile}
-        data={RNASEQ_ROWS}
+        tableHead={RNASEQ_HEADER}
+        tableRows={RNASEQ_ROWS}
         spotlight={spotlight}
         expanded={expanded === "f1"}
         onChange={handleChange}
@@ -258,7 +283,8 @@ const UploadPanel = ({ isMobile }) => {
         title="Pre-Ranked Gene List"
         summary={summary}
         isMobile={isMobile}
-        data={RANKED_ROWS}
+        tableHead={RANKED_HEADER}
+        tableRows={RANKED_ROWS}
         spotlight={spotlight}
         expanded={expanded === "f2"}
         onChange={handleChange}
