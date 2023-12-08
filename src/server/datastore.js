@@ -690,7 +690,6 @@ class Datastore {
    */
   async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames, intersection) {
     const networkID = makeID(networkIDStr);
-    console.log(`networkIDStr:${networkIDStr}  networkID:${JSON.stringify(networkID)}`);
 
     if(geneSetNames === undefined || geneSetNames.length == 0) {
       geneSetNames = await this.getNodeDataSetNames(networkID);
