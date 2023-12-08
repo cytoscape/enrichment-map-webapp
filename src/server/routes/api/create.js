@@ -1,9 +1,12 @@
 import Express from 'express';
+import fs from 'fs/promises';
 import * as Sentry from "@sentry/node";
 import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
 import Datastore, { DB_1 } from '../../datastore.js';
+import { rankedGeneListToDocument, fgseaServiceGeneRanksToDocument } from '../../datastore.js';
 import { performance } from 'perf_hooks';
+import { saveUserUploadFileToS3 } from './s3.js';
 import { 
   EM_SERVICE_URL, 
   FGSEA_PRERANKED_SERVICE_URL, 
@@ -11,7 +14,6 @@ import {
   BRIDGEDB_URL,
   MONGO_URL,
 } from '../../env.js';
-import { saveUserUploadFileToS3 } from './s3.js';
 
 const http = Express.Router();
 
@@ -28,7 +30,7 @@ const dataParser = bodyParser.text({
  */
 http.post('/preranked', dataParser, async function(req, res, next) {
   try {
-    await runDataPipeline(req, res, 'preranked');
+    await runDataPipelineHttp(req, res, 'preranked');
   } catch (err) {
     next(err);
   }
@@ -40,11 +42,35 @@ http.post('/preranked', dataParser, async function(req, res, next) {
  */
 http.post('/rnaseq', dataParser, async function(req, res, next) {
   try {
-    await runDataPipeline(req, res, 'rnaseq');
+    await runDataPipelineHttp(req, res, 'rnaseq');
   } catch (err) {
     next(err);
   }
 });
+
+/*
+ * Runs the FGSEA/EnrichmentMap algorithms, saves the 
+ * created network, then returns its ID.
+ */
+http.post('/demo', async function(req, res, next) {
+  try {
+    const rankFile = './public/geneset-db/brca_hd_tep_ranks.rnk';
+    let data = await fs.readFile(rankFile, 'utf8');
+
+    const networkID = await runDataPipeline({
+      demo: true,
+      networkName: 'Demo Network',
+      contentType: 'text/tab-separated-values',
+      type: 'preranked',
+      body: data
+    });
+
+    res.send(networkID);
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 function createPeformanceHook() {
   const tag = Date.now();
@@ -68,13 +94,20 @@ function createPeformanceHook() {
 }
 
 
-async function runDataPipeline(req, res, type) {
+async function runDataPipelineHttp(req, res, type) {
   const { networkName } = req.query;
   const contentType = req.get('Content-Type'); // use same content type with FGSEA service
-  const preranked = type === 'preranked';
   let body = req.body;
+  const { classes } = req.query;
 
+  await runDataPipeline({ networkName, contentType, type, classes, body }, res);
+}
+
+
+async function runDataPipeline({ networkName, contentType, type, classes, body, demo }, res) {
   console.log('/api/create/');
+
+  const preranked = type === 'preranked';
   const perf = createPeformanceHook();
 
   // n.b. no await so as to not block
@@ -92,28 +125,27 @@ async function runDataPipeline(req, res, type) {
   if(preranked) {
     const { pathways } = await runFGSEApreranked(body, contentType);
     const delim = contentType === 'text/csv' ? ',' : '\t';
-    rankedGeneList = Datastore.rankedGeneListToDocument(body, delim);
+    rankedGeneList = rankedGeneListToDocument(body, delim);
     pathwaysForEM = pathways;
   } else {
-    const { classes } = req.query;
     const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
     sendMessagesToSentry('fgsea', messages);
-    rankedGeneList = Datastore.fgseaServiceGeneRanksToDocument(ranks);
+    rankedGeneList = fgseaServiceGeneRanksToDocument(ranks);
     pathwaysForEM = pathways;
   }
 
   perf.mark('em');
-  const networkJson = await runEM(pathwaysForEM);
+  const networkJson = await runEM(pathwaysForEM, demo);
 
   perf.mark('mongo');
   let networkID;
   if(isEmptyNetwork(networkJson)) {
     console.log('sending empty network');
-    res.status(422).send("Empty Network");
+    res?.status(422)?.send("Empty Network");
   } else {
-    networkID = await Datastore.createNetwork(networkJson, networkName, type, DB_1);
+    networkID = await Datastore.createNetwork(networkJson, networkName, type, DB_1, demo);
     await Datastore.initializeGeneRanks(DB_1, networkID, rankedGeneList);
-    res.send(networkID);
+    res?.send(networkID);
   }
 
   perf.mark('end');
@@ -144,6 +176,7 @@ async function runDataPipeline(req, res, type) {
   });
   
   perf.dispose();
+  return networkID;
 }
 
 
@@ -180,7 +213,7 @@ async function runFGSEArnaseq(countsData, classes, contentType) {
 }
 
 
-async function runEM(fgseaResults) {
+async function runEM(fgseaResults, demo) {
   const body = {
     // We only support one dataSet
     dataSets: [{
@@ -192,6 +225,11 @@ async function runEM(fgseaResults) {
       // These parameters correspond to the fields in EMCreationParametersDTO
       // similarityMetric: "JACCARD", 
       // similarityCutoff: 0.25,
+      ...(demo && { 
+        qvalue: 0.0001,
+        similarityMetric: "JACCARD", 
+        similarityCutoff: 0.5,
+      })
     }
   };
 

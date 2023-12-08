@@ -44,6 +44,21 @@ export class UploadController {
     return file;
   }
 
+  async createDemoNetwork() {
+    this.bus.emit('loading', true);
+
+    const res = await fetch('/api/create/demo', {
+      method: 'POST',
+    });
+
+    if(res.ok) {
+      const networkID = await res.text();
+      this.bus.emit('finished', { networkID });
+      return networkID;
+    } else {
+      this.bus.emit('error', { errors: ['cound not create demo network']  });
+    }
+  }
 
   async upload(files) {
     // This is just for ranks TSV for now

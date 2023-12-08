@@ -14,6 +14,7 @@ const PERFORMANCE_COLLECTION = 'performance';
 const POSITIONS_COLLECTION = 'positions';
 const POSITIONS_RESTORE_COLLECTION = "positionsRestore";
 
+
 /**
  * When called with no args will returns a new unique mongo ID.
  * When called with a UUID string arg will convert it to a mongo compatible ID.
@@ -27,6 +28,53 @@ function makeID(strOrObj) {
   const bson = MUUID.from(string);
   return { string, bson };
 }
+
+
+/**
+ * Converts a ranked gene list in TSV format into the document
+ * format we want for mongo.
+ */
+export function rankedGeneListToDocument(rankedGeneList, delimiter = '\t') {
+  const genes = [];
+  var [min, max] = [Infinity, -Infinity];
+
+  rankedGeneList.split("\n").slice(1).forEach(line => {
+    const [gene, rankStr] = line.split(delimiter);
+
+    const rank = Number(rankStr);
+
+    if (gene) {
+      if (isNaN(rank)) {
+        genes.push({ gene });
+      } else {
+        min = Math.min(min, rank);
+        max = Math.max(max, rank);
+        genes.push({ gene, rank });
+      }
+    }
+  });
+
+  return { genes, min, max };
+}
+
+
+/**
+ * Converts a JSON object in the format { "GENENAME1": rank1, "GENENAME2": rank2, ... }
+ * into the document format we want for mongo.
+ */
+export function fgseaServiceGeneRanksToDocument(rankedGeneListObject) {
+  const genes = [];
+  var [min, max] = [Infinity, -Infinity];
+
+  for(const [gene, rank] of Object.entries(rankedGeneListObject)) {
+    min = Math.min(min, rank);
+    max = Math.max(max, rank);
+    genes.push({ gene, rank });
+  }
+
+  return { genes, min, max };
+}
+
 
 
 class Datastore {
@@ -47,12 +95,13 @@ class Datastore {
   }
 
   async initializeGeneSetDB(dbFilePath, dbFileName) {
-    console.info('Loading gene set databases into MongoDB');
+    console.info('Initializing MongoDB...');
     // await this.loadGenesetDB('./public/geneset-db/', DB_1);
     await this.loadGenesetDB(dbFilePath, dbFileName);
-    console.info('Loading done');
+    console.info('Pathway Database Loaded: ' + dbFileName);
     await this.createIndexes();
-    console.info('Mongo initialized');
+    console.info('Indexes Created');
+    console.info('MongoDB Intialization Done');
   }
 
   async dropCollectionIfExists(name) {
@@ -66,37 +115,50 @@ class Datastore {
 
 
   async loadGenesetDB(path, dbFileName) {
-    const collections = await this.db.listCollections().toArray();
-    if(collections.some(c => c.name === dbFileName)) {
+    const isLoaded = async () => {
+      const collections = await this.db.listCollections().toArray();
+      return collections.some(c => c.name === dbFileName);
+    };
+
+    if(await isLoaded()) {
       console.info("Collection " + dbFileName + " already loaded");
       return;
     } else {
       console.info("Loading collection " + dbFileName);
     }
 
+    // Create indexes on dbFileName collection first
+    await this.db
+      .collection(dbFileName)
+      .createIndex({ name: 1 }, { unique: true });
+
+    await this.db
+      .collection(dbFileName)
+      .createIndex({ genes: 1 });
+
+
     const filepath = path + dbFileName;
-    const geneSets = [];
+    const writeOps = [];
 
     await fileForEachLine(filepath, line => {
       const [name, description, ...genes] = line.split("\t");
       if(genes[genes.length - 1] === "") {
         genes.pop();
       }
-      geneSets.push({ name, description, genes });
+
+      writeOps.push({
+        updateOne: {
+          filter: { name }, // index on name already created
+          update: { $set: { name, description, genes } },
+          upsert: true
+        }
+      });
+      
     });
 
     await this.db
       .collection(dbFileName)
-      .insertMany(geneSets);
-
-    // Create indexes on dbFileName collection
-    await this.db
-      .collection(dbFileName)
-      .createIndex({ name: 1 });
-
-    await this.db
-      .collection(dbFileName)
-      .createIndex({ genes: 1 });
+      .bulkWrite(writeOps);
   }
 
 
@@ -125,6 +187,10 @@ class Datastore {
     await this.db
       .collection(GENE_RANKS_COLLECTION)
       .createIndex({ networkID: 1, gene: 1 }, { unique: true });
+
+    await this.db
+      .collection(NETWORKS_COLLECTION)
+      .createIndex({ demo: 1 });
   }
 
 
@@ -132,7 +198,7 @@ class Datastore {
    * Inserts a network document into the 'networks' collection.
    * @returns The id of the created document.
    */
-  async createNetwork(networkJson, networkName, type, geneSetCollection) {
+  async createNetwork(networkJson, networkName, type, geneSetCollection, demo) {
     if (typeof (networkJson) == 'string') {
       networkJson = JSON.parse(networkJson);
     }
@@ -149,6 +215,8 @@ class Datastore {
       networkJson['inputType'] = type;
     if(geneSetCollection)
       networkJson['geneSetCollection'] = geneSetCollection;
+    if(demo)
+      networkJson['demo'] = true;
 
     await this.db
       .collection(NETWORKS_COLLECTION)
@@ -187,51 +255,6 @@ class Datastore {
     await this.db
       .collection(PERFORMANCE_COLLECTION)
       .insertOne(document);
-  }
-
-  /**
-   * Converts a ranked gene list in TSV format into the document
-   * format we want for mongo.
-   */
-  rankedGeneListToDocument(rankedGeneList, delimiter = '\t') {
-    const genes = [];
-    var [min, max] = [Infinity, -Infinity];
-
-    rankedGeneList.split("\n").slice(1).forEach(line => {
-      const [gene, rankStr] = line.split(delimiter);
-
-      const rank = Number(rankStr);
-
-      if (gene) {
-        if (isNaN(rank)) {
-          genes.push({ gene });
-        } else {
-          min = Math.min(min, rank);
-          max = Math.max(max, rank);
-          genes.push({ gene, rank });
-        }
-      }
-    });
-
-    return { genes, min, max };
-  }
-
-
-  /**
-   * Converts a JSON object in the format { "GENENAME1": rank1, "GENENAME2": rank2, ... }
-   * into the document format we want for mongo.
-   */
-  fgseaServiceGeneRanksToDocument(rankedGeneListObject) {
-    const genes = [];
-    var [min, max] = [Infinity, -Infinity];
-
-    for(const [gene, rank] of Object.entries(rankedGeneListObject)) {
-      min = Math.min(min, rank);
-      max = Math.max(max, rank);
-      genes.push({ gene, rank });
-    }
-
-    return { genes, min, max };
   }
 
 
@@ -379,6 +402,19 @@ class Datastore {
         }
       ]).toArray();
   }
+
+
+  async getDemoNetworkIDs() {
+    const ids = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .find({ demo: true }, { projection: { _id: 0, networkIDStr: 1 } } )
+      .sort({ creationTime: 1 })
+      .map(obj => obj.networkIDStr)
+      .toArray();
+
+    return ids;
+  }
+
 
   /**
    * Returns the network document. 
@@ -654,6 +690,7 @@ class Datastore {
    */
   async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames, intersection) {
     const networkID = makeID(networkIDStr);
+    console.log(`networkIDStr:${networkIDStr}  networkID:${JSON.stringify(networkID)}`);
 
     if(geneSetNames === undefined || geneSetNames.length == 0) {
       geneSetNames = await this.getNodeDataSetNames(networkID);
