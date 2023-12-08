@@ -42,7 +42,6 @@ const useStyles = makeStyles((theme) => ({
   },
   spotlightLink: {
     color: theme.palette.text.secondary,
-    textDecoration: 'none',
     borderBottom: `1px dotted ${theme.palette.text.disabled}`,
     cursor: 'default',
     "&:hover": {
@@ -181,14 +180,13 @@ const Spotlight = ({ children, target, onMouseOver, onMouseOut }) => {
   const classes = useStyles();
 
   return (
-    <Link
+    <span
+      className={classes.spotlightLink}
       onMouseOver={() => onMouseOver(target)}
       onMouseOut={onMouseOut}
-      className={classes.spotlightLink}
-      underline="always"
     >
       { children }
-    </Link>
+    </span>
   );
 };
 Spotlight.propTypes = {
@@ -249,11 +247,11 @@ const UploadPanel = ({ isMobile }) => {
         onChange={handleChange}
       >
         Must have 3 or more columns:
-        <ul>
+        <ol>
           <li><GeneNameInfo /></li>
           <li><Spotlight target="exp1,exp2" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}><code>Expression</code> columns</Spotlight>: must be numeric.</li>
           <li>Other columns: must be marked as &ldquo;ignored&rdquo; in the next step.</li>
-        </ul>
+        </ol>
       </FormatAccordion>
       <FormatAccordion
         id="f2"
@@ -266,10 +264,10 @@ const UploadPanel = ({ isMobile }) => {
         onChange={handleChange}
       >
         Must have exactly 2 columns:
-        <ul>
+        <ol>
           <li><GeneNameInfo /></li>
           <li><Spotlight target="rank" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Second column</Spotlight>: the numeric <code>rank</code>.</li>
-        </ul>
+        </ol>
       </FormatAccordion>
     </>
   );
