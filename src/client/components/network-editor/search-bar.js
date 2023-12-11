@@ -1,7 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import clsx from 'clsx';
 
-import { alpha, makeStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/core/styles';
 import { InputBase, InputAdornment, IconButton } from '@material-ui/core';
 
 import SearchIcon from '@material-ui/icons/Search';
@@ -15,17 +16,17 @@ const useStyles = makeStyles((theme) => ({
     borderStyle: 'solid',
     borderRadius: theme.spacing(4),
     borderColor: theme.palette.divider,
-    backgroundColor: theme.palette.background.paper,
-    '&:hover': {
-      backgroundColor: alpha(theme.palette.secondary.main, 0.1),
-    },
+    backgroundColor: theme.palette.background.mixed,
+  },
+  searchFocus: {
+    outline: `2px solid ${theme.palette.primary.main} !important`,
   },
   inputRoot: {
     width: '100%',
     color: 'inherit',
     '&:disabled': {
       color: theme.palette.text.disabled,
-    }
+    },
   },
   inputInput: {
     width: '100%',
@@ -40,18 +41,23 @@ const useStyles = makeStyles((theme) => ({
 
 
 const SearchBar = ({ value, placeholder, disabled, onChange, onCancelSearch, style }) => {
-  // const [searchValue, setSearchValue] = useState(value || '');
+  const [ focused, setFocused ] = useState(false);
+  
   const classes = useStyles();
   const inputRef = useRef();
 
   const handleChange = (event) => {
     const val = event.currentTarget.value;
-    // setSearchValue(val);
     onChange && onChange(val);
   };
-
   const handleCancel = () => {
     onCancelSearch && onCancelSearch();
+  };
+  const handleFocus = () => {
+    setFocused(true);
+  };
+  const handleBlur = () => {
+    setFocused(false);
   };
 
   const focus = () => {
@@ -59,7 +65,7 @@ const SearchBar = ({ value, placeholder, disabled, onChange, onCancelSearch, sty
   };
 
   return (
-    <div className={classes.search} style={style}>
+    <div className={clsx(classes.search, { [classes.searchFocus]: focused })} style={style}>
       <InputBase
         inputRef={inputRef}
         classes={{root: classes.inputRoot, input: classes.inputInput}}
@@ -68,6 +74,8 @@ const SearchBar = ({ value, placeholder, disabled, onChange, onCancelSearch, sty
         placeholder={placeholder || "Search…"}
         value={value}
         onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         endAdornment={
           <InputAdornment position="end">
             <IconButton

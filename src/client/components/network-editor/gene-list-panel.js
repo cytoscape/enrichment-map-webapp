@@ -49,7 +49,6 @@ const useGeneMetadataPanelStyles = makeStyles((theme) => ({
   },
   linkout: {
     fontSize: '0.75rem',
-    color: theme.palette.link.main,
   },
   loadingMsg: {
     color: theme.palette.text.disabled,
@@ -488,7 +487,7 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
                           minValue={minRank}
                           maxValue={maxRank}
                           color={rankColor}
-                          bgColor={theme.palette.background.focus}
+                          bgColor={theme.palette.background.default}
                           height={CHART_HEIGHT}
                           text={roundedRank.toFixed(GENE_RANK_ROUND_DIGITS)}
                         />

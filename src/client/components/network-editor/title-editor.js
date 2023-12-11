@@ -76,14 +76,15 @@ export function TitleEditor({ controller, disabled }) {
         textAlign: 'left',
       },
       '&:hover': {
-        border: `1px solid ${theme.palette.secondary.main}`,
+        border: `1px solid ${theme.palette.divider}`,
+        backgroundColor: theme.palette.background.hover,
         '&[disabled]': {
           border: '1px solid transparent !important',
         },
       },
       '&:focus': {
-        border: `1px solid ${theme.palette.primary.main}`,
-        backgroundColor: theme.palette.background.focus,
+        outline: `2px solid ${theme.palette.primary.main} !important`,
+        backgroundColor: theme.palette.background.mixed,
         fontWeight: 'normal',
       },
     },
