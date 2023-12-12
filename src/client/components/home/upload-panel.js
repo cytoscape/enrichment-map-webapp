@@ -157,11 +157,6 @@ const FormatAccordion = ({ isMobile, id, title, summary, tableHead, tableRows, c
       <AccordionDetails>
         <Grid container direction="column" alignItems="flex-start">
           <Grid item>
-            <Typography variant="body2" color="secondary" className={classes.accordionSummary}>
-              { summary() }
-            </Typography>
-          </Grid>
-          <Grid item>
             <Grid
               container
               direction={isMobile ? 'column' : 'row'}
@@ -175,6 +170,7 @@ const FormatAccordion = ({ isMobile, id, title, summary, tableHead, tableRows, c
               <Grid item sm={6}>
                 <Typography component="div" variant="body2" color="secondary">
                   { children }
+                  { summary() }
                 </Typography>
               </Grid>
             </Grid>
@@ -242,17 +238,16 @@ const UploadPanel = ({ isMobile }) => {
 
   const GeneNameInfo = () =>
     <>
-      <Spotlight target="gene" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>First column</Spotlight>: the gene <code>name</code>&nbsp;
+      <Spotlight target="gene" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Gene column</Spotlight>: gene <code>names</code>&nbsp;
       &#40;<Link href="http://www.ensembl.org/Homo_sapiens/Info/Index" className={classes.linkout} {...linkoutProps}>Ensembl</Link> or&nbsp;
-      <Link href="https://www.genenames.org/" className={classes.linkout} {...linkoutProps}>HGNC</Link> IDs, for Human species only&#41;.
+      <Link href="https://www.genenames.org/" className={classes.linkout} {...linkoutProps}>HGNC</Link> IDs&#41;.
     </>;
 
   const summary = () =>
     <>
-       Must have a&nbsp;
+       Your spreadsheet must have a&nbsp;
        <Spotlight target="header" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>header</Spotlight> row and&nbsp;
-       <Spotlight target="data" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>data</Spotlight> rows.<br />
-       Column order is important, names are not.
+       <Spotlight target="data" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>data</Spotlight> rows in that order, with whatever row titles you prefer.
     </>;
 
   return (
@@ -271,10 +266,10 @@ const UploadPanel = ({ isMobile }) => {
         expanded={expanded === "f1"}
         onChange={handleChange}
       >
-        Must have 3 or more columns:
+       <p style={{ marginTop: 0 }}>Your spreadsheet must have 3 or more columns, as follows:</p>
         <ol>
           <li><GeneNameInfo /></li>
-          <li><Spotlight target="exp1,exp2" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}><code>Expression</code> columns</Spotlight>: must be numeric.</li>
+          <li><Spotlight target="exp1,exp2" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}><code>Expression</code> columns</Spotlight>: numeric expression values.</li>
           <li>Other columns: must be marked as &ldquo;ignored&rdquo; in the next step.</li>
         </ol>
       </FormatAccordion>
@@ -289,10 +284,10 @@ const UploadPanel = ({ isMobile }) => {
         expanded={expanded === "f2"}
         onChange={handleChange}
       >
-        Must have exactly 2 columns:
+        <p style={{ marginTop: 0 }}>Your spreadsheet must have exactly 2 columns, as follows:</p>
         <ol>
           <li><GeneNameInfo /></li>
-          <li><Spotlight target="rank" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Second column</Spotlight>: the numeric <code>rank</code>.</li>
+          <li><Spotlight target="rank" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Second column</Spotlight>: the numeric <code>ranks</code>.</li>
         </ol>
       </FormatAccordion>
     </>
