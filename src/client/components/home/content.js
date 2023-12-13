@@ -378,9 +378,9 @@ function MobileMenu() {
 function Header() {
   const classes = useStyles();
   return (
-    <AppBar position="static" color="transparent">
+    <AppBar position="static" color="transparent" className={classes.appBar}>
       <Container maxWidth="lg" disableGutters>
-        <Toolbar variant="regular">
+        <Toolbar variant="regular" className={classes.toolbar}>
           <Grid container alignItems="center" justifyContent="space-between">
             <Grid item>
               <Grid container alignItems="center" spacing={2}>
@@ -451,7 +451,7 @@ function Debug({ sampleFiles, onLoadSampleNetwork }) {
       {
         sampleRankFiles.length > 0 ?
         sampleRankFiles.map(file => (
-          <li key={file}><Link component="a" style={{ cursor: 'pointer' }} onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
+          <li key={file}><Link style={{ cursor: 'pointer' }} onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
         )) :
         <li>Loading...</li>
       }
@@ -461,7 +461,7 @@ function Debug({ sampleFiles, onLoadSampleNetwork }) {
       {
         sampleExprFiles.length > 0 ?
         sampleExprFiles.map(file => (
-          <li key={file}><Link component="a" style={{ cursor: 'pointer' }} onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
+          <li key={file}><Link style={{ cursor: 'pointer' }} onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
         )) :
         <li>Loading...</li>
       }
@@ -496,7 +496,7 @@ function GetStartedSection({ mobile, tablet, onClickGetStarted, onClickCreateDem
         </Button>
       </Grid>
       <Grid item>
-        <Link component="a" style={{ cursor: 'pointer' }} onClick={onClickCreateDemo}>View Demo Network</Link>
+        <Link onClick={onClickCreateDemo}>View Demo Network</Link>
       </Grid>
       {/* <Grid item>
         <Button
@@ -550,6 +550,12 @@ const useStyles = makeStyles(theme => ({
   },
   grow: {
     flexGrow: 1,
+  },
+  appBar: {
+    boxShadow: 'none',
+  },
+  toolbar: {
+    borderBottom: `1px solid ${theme.palette.divider}`,
   },
   menu: {
     marginLeft: theme.spacing(5),

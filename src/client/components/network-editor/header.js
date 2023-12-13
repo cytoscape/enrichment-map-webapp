@@ -26,6 +26,7 @@ const useHeaderStyles = makeStyles((theme) => ({
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
+    boxShadow: 'none',
   },
   appBarShift: {
     width: `calc(100% - ${LEFT_DRAWER_WIDTH}px)`,

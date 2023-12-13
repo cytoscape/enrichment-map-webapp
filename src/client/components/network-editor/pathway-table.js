@@ -88,6 +88,7 @@ const useStyles = makeStyles((theme) => ({
     paddingLeft: `${theme.spacing(0.5)}px !important`,
     paddingRight: theme.spacing(0.5),
     // <------------------------------------------------------------
+    borderBottom: `1px solid ${theme.palette.background.default}`,
   },
   checkCell: {
     maxWidth: 48,
@@ -161,7 +162,6 @@ const useStyles = makeStyles((theme) => ({
     cursor: 'default',
   },
   link: {
-    color: theme.palette.link.main,
     "&[disabled]": {
       color: theme.palette.text.secondary,
       cursor: "default",
@@ -258,7 +258,7 @@ const COLUMNS = [
           minValue={-controller.style.magNES}
           maxValue={controller.style.magNES}
           color={nesColor}
-          bgColor={theme.palette.background.focus}
+          bgColor={theme.palette.background.default}
           height={CHART_HEIGHT}
           text={roundNES(row[col.id]).toFixed(2)}
         />

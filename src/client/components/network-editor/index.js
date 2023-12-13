@@ -181,9 +181,9 @@ export function NetworkEditor({ id }) {
   }, []);
 
   const maybeCloseDrawers = () => {
+    setOpenRightDrawer(false);
     if (mobile || tablet) {
       setOpenLeftDrawer(false);
-      setOpenRightDrawer(false);
     }
   };
 
