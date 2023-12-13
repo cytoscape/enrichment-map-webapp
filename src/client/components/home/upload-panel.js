@@ -2,18 +2,30 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
-import { linkoutProps } from '../defaults';
-import theme from '../../theme';
-
 import { makeStyles } from '@material-ui/core/styles';
 
-import { Grid, Paper, Typography, Link, Tooltip } from '@material-ui/core';
+import { Grid, Paper, Typography, Tooltip } from '@material-ui/core';
 import { Accordion, AccordionDetails, AccordionSummary } from '@material-ui/core';
 import { Table, TableHead, TableRow, TableCell, TableBody } from '@material-ui/core';
 
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 const useStyles = makeStyles((theme) => ({
+  description: {
+    marginBottom: theme.spacing(2.5),
+    [theme.breakpoints.down('xs')]: {
+      marginBottom: theme.spacing(1),
+      fontSize: '0.85rem',
+    },
+  },
+  details: {
+    marginTop: 0,
+    [theme.breakpoints.down('xs')]: {
+      marginBlockStart: 0,
+      marginBlockEnd: theme.spacing(1),
+      fontSize: '0.85rem',
+    },
+  },
   tableContainer: {
     maxWidth: 240,
     background: theme.palette.background.default,
@@ -25,16 +37,28 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '0.85em',
     fontFamily: 'Monaco,Courier New,Monospace',
     color: theme.palette.text.disabled,
+    [theme.breakpoints.down('xs')]: {
+      paddingTop: theme.spacing(0.25),
+      paddingBottom: theme.spacing(0.25),
+    },
+  },
+  tableHeadCell: {
+    paddingTop: theme.spacing(1.25),
+    paddingBottom: theme.spacing(1.25),
+    borderBottom: `3px double ${theme.palette.divider}`,
+    [theme.breakpoints.down('xs')]: {
+      paddingTop: 'inherit',
+      paddingBottom: 'inherit',
+    },
   },
   accordionHead: {
-    fontSize: theme.typography.pxToRem(15),
+    fontSize: 'theme.typography.pxToRem(15)',
     fontWeight: theme.typography.fontWeightRegular,
   },
-  accordionSummary: {
-    marginBottom: theme.spacing(2),
-  },
-  linkout: {
-    color: theme.palette.text.primary,
+  accordionDetails: {
+    [theme.breakpoints.down('xs')]: {
+      paddingTop: 0,
+    },
   },
   spotlightLink: {
     color: theme.palette.text.secondary,
@@ -96,9 +120,12 @@ const RNASEQ_ROWS = [
   createRnaSeqRow('GCNT1',  670, 860),
   createRnaSeqRow('B3GNT9', 700, 910),
   createRnaSeqRow('GALNT9', 730, 800),
+  createRnaSeqRow('MUCL1',  800, 780),
 ];
 
-const SampleTable = ({ tableHead, tableRows, spotlight }) => {
+//==[ SampleTable ]===================================================================================================
+
+const SampleTable = ({ tableHead, tableRows, spotlight, isMobile }) => {
   const classes = useStyles();
   const keys = Object.keys(tableRows[0]);
   const spotlightTokens = spotlight ? spotlight.split(',') : [];
@@ -112,7 +139,7 @@ const SampleTable = ({ tableHead, tableRows, spotlight }) => {
             <TableCell
               key={id}
               align={idx === 0 ? 'left' : 'center'}
-              className={clsx(classes.tableCell, { [classes.spotlight]: (spotlightTokens.includes(id)) })}
+              className={clsx(classes.tableCell, { [classes.tableHeadCell]: true, [classes.spotlight]: (spotlightTokens.includes(id)) })}
             >
               <Tooltip title={tooltip}>
                 <i>{id}</i>
@@ -122,7 +149,8 @@ const SampleTable = ({ tableHead, tableRows, spotlight }) => {
           </TableRow>
         </TableHead>
         <TableBody className={clsx({ [classes.spotlight]: (spotlightTokens.includes('data')) })}>
-        {tableRows.map((row) => (
+        {tableRows.map((row, ridx) => (
+          (!isMobile || ridx < 3) && (
           <TableRow key={row.gene}>
           {keys.map((k, idx) => (
             <TableCell
@@ -133,7 +161,7 @@ const SampleTable = ({ tableHead, tableRows, spotlight }) => {
               </TableCell>
           ))}
           </TableRow>
-        ))}
+        )))}
         </TableBody>
       </Table>
     </Paper>
@@ -143,8 +171,10 @@ SampleTable.propTypes = {
   tableHead: PropTypes.array.isRequired,
   tableRows: PropTypes.array.isRequired,
   spotlight: PropTypes.string,
+  isMobile: PropTypes.bool.isRequired,
 };
 
+//==[ FormatAccordion ]===============================================================================================
 
 const FormatAccordion = ({ isMobile, id, title, summary, tableHead, tableRows, children, spotlight, expanded, onChange }) => {
   const classes = useStyles();
@@ -154,13 +184,8 @@ const FormatAccordion = ({ isMobile, id, title, summary, tableHead, tableRows, c
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Typography className={classes.accordionHead}>{ title }</Typography>
       </AccordionSummary>
-      <AccordionDetails>
+      <AccordionDetails className={classes.accordionDetails}>
         <Grid container direction="column" alignItems="flex-start">
-          <Grid item>
-            <Typography variant="body2" color="secondary" className={classes.accordionSummary}>
-              { summary() }
-            </Typography>
-          </Grid>
           <Grid item>
             <Grid
               container
@@ -170,11 +195,12 @@ const FormatAccordion = ({ isMobile, id, title, summary, tableHead, tableRows, c
               spacing={isMobile ? 2 : 0}
             >
               <Grid item sm={6}>
-                <SampleTable tableHead={tableHead} tableRows={tableRows} spotlight={spotlight} />
+                <SampleTable tableHead={tableHead} tableRows={tableRows} spotlight={spotlight} isMobile={isMobile} />
               </Grid>
               <Grid item sm={6}>
                 <Typography component="div" variant="body2" color="secondary">
                   { children }
+                  { summary() }
                 </Typography>
               </Grid>
             </Grid>
@@ -200,6 +226,8 @@ FormatAccordion.propTypes = {
   onChange: PropTypes.func.isRequired,
 };
 
+//==[ Spotlight ]=====================================================================================================
+
 const Spotlight = ({ children, target, onMouseOver, onMouseOut }) => {
   const classes = useStyles();
 
@@ -223,12 +251,14 @@ Spotlight.propTypes = {
   onMouseOut: PropTypes.func.isRequired,
 };
 
+//==[ UploadPanel ]===================================================================================================
+
 const UploadPanel = ({ isMobile }) => {
   const [ expanded, setExpanded ] = useState('f1');
   const [ spotlight, setSpotlight ] = useState();
-  
-  const classes = useStyles();
 
+  const classes = useStyles();
+  
   const handleChange = (panel) => (event, expand) => {
     if (expand) // clicking an expanded accordion should not collapse it
       setExpanded(panel);
@@ -242,22 +272,19 @@ const UploadPanel = ({ isMobile }) => {
 
   const GeneNameInfo = () =>
     <>
-      <Spotlight target="gene" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>First column</Spotlight>: the gene <code>name</code>&nbsp;
-      &#40;<Link href="http://www.ensembl.org/Homo_sapiens/Info/Index" className={classes.linkout} {...linkoutProps}>Ensembl</Link> or&nbsp;
-      <Link href="https://www.genenames.org/" className={classes.linkout} {...linkoutProps}>HGNC</Link> IDs, for Human species only&#41;.
+      <Spotlight target="gene" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Gene column</Spotlight>: gene <code>names</code>.
     </>;
 
   const summary = () =>
     <>
-       Must have a&nbsp;
+       Your spreadsheet must have a&nbsp;
        <Spotlight target="header" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>header</Spotlight> row and&nbsp;
-       <Spotlight target="data" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>data</Spotlight> rows.<br />
-       Column order is important, names are not.
+       <Spotlight target="data" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>data</Spotlight> rows in that order, with whatever row titles you prefer.
     </>;
 
   return (
     <>
-      <Typography component="p" variant="body1" style={{marginBottom: theme.spacing(2.5)}}>
+      <Typography component="p" variant="body1" className={classes.description}>
         Upload your file (<code>CSV</code>, <code>TSV</code> or <code>Excel</code>) in one of the formats below:
       </Typography>
       <FormatAccordion
@@ -271,10 +298,10 @@ const UploadPanel = ({ isMobile }) => {
         expanded={expanded === "f1"}
         onChange={handleChange}
       >
-        Must have 3 or more columns:
-        <ol>
+        <p className={classes.details}>Your spreadsheet must have 3 or more columns, as follows:</p>
+        <ol className={classes.details}>
           <li><GeneNameInfo /></li>
-          <li><Spotlight target="exp1,exp2" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}><code>Expression</code> columns</Spotlight>: must be numeric.</li>
+          <li><Spotlight target="exp1,exp2" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}><code>Expression</code> columns</Spotlight>: numeric expression values.</li>
           <li>Other columns: must be marked as &ldquo;ignored&rdquo; in the next step.</li>
         </ol>
       </FormatAccordion>
@@ -289,10 +316,10 @@ const UploadPanel = ({ isMobile }) => {
         expanded={expanded === "f2"}
         onChange={handleChange}
       >
-        Must have exactly 2 columns:
-        <ol>
+        <p className={classes.details}>Your spreadsheet must have exactly 2 columns, as follows:</p>
+        <ol className={classes.details} >
           <li><GeneNameInfo /></li>
-          <li><Spotlight target="rank" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Second column</Spotlight>: the numeric <code>rank</code>.</li>
+          <li><Spotlight target="rank" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>Second column</Spotlight>: the numeric <code>ranks</code>.</li>
         </ol>
       </FormatAccordion>
     </>
