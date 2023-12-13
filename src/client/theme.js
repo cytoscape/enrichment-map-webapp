@@ -82,7 +82,7 @@ const theme = createTheme({
     },
     MuiLink: {
       root: {
-        color: '#91b2d5',
+        color: '#6194C5',
       },
     },
     MuiSlider: {
