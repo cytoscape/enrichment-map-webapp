@@ -16,7 +16,7 @@ const useStyles = makeStyles((theme) => ({
     borderStyle: 'solid',
     borderRadius: theme.spacing(4),
     borderColor: theme.palette.divider,
-    backgroundColor: theme.palette.background.mixed,
+    backgroundColor: theme.palette.background.field,
   },
   searchFocus: {
     outline: `2px solid ${theme.palette.primary.main} !important`,

@@ -14,7 +14,7 @@ const theme = createTheme({
     background: {
       default: '#121212',
       paper: '#202020',
-      mixed: '#2c3035',
+      field: '#2E2E2E',
       accent: 'rgba(45, 52, 43, 0.25)',
       hover: '#43464b',
     },
