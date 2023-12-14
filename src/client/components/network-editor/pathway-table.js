@@ -562,7 +562,7 @@ const PathwayTable = (
       ref={virtuosoRef}
       data={sortedDataRef.current}
       initialTopMostItemIndex={initialTopMostItemIndex}
-      style={{height: pathwayTableHeight(), border: `1px solid ${theme.palette.divider}`}}
+      style={{height: pathwayTableHeight(), border: `1px solid ${theme.palette.divider}`, background: theme.palette.background.paper}}
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
