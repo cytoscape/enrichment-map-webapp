@@ -1,6 +1,12 @@
 import { createTheme }  from '@material-ui/core/styles';
 
-
+/*
+ * See https://v4.mui.com/customization/palette/#dark-mode
+ *
+ * You can use these tools to customize the app's theme:
+ *   https://colorffy.com/dark-theme-generator
+ *   https://v4.mui.com/customization/color/#picking-colors
+ */
 const theme = createTheme({
   palette: {
     type: 'dark',
@@ -13,8 +19,8 @@ const theme = createTheme({
     },
     background: {
       default: '#121212',
-      paper: '#202020',
-      field: '#2E2E2E',
+      paper: '#242424',
+      field: '#363636',
       accent: 'rgba(45, 52, 43, 0.25)',
       hover: '#43464b',
     },
@@ -24,16 +30,21 @@ const theme = createTheme({
     },
     divider: 'rgba(116, 116, 116, 0.3)',
     error: {
-      main: '#db4f4f',
+      main: '#ef5350',
+    },
+    info: {
+      main: '#42a5f5',
     },
     success: {
-      main: '#2FBD52',
+      main: '#66bb6a',
     },
     warning: {
-      main: '#FFC400',
+      main: '#ffb74d',
     },
     text: {
       primary: '#E3E3E3',
+      secondary: 'rgba(255, 255, 255, 0.7)',
+      disabled: 'rgba(255, 255, 255, 0.5)',
       accent: '#ACD5A1',
     },
   },
@@ -99,7 +110,7 @@ const theme = createTheme({
     },
     MuiSvgIcon: {
       colorPrimary: {
-        color: '#E9E9E9 !important',
+        color: '#E3E3E3 !important',
       },
       colorSecondary: {
         color: 'rgba(255, 255, 255, 0.7) !important',

@@ -132,6 +132,7 @@ const useStyles = makeStyles((theme) => ({
   selectAllButton: {
     maxWidth: 32,
     maxHeight: 32,
+    color: theme.palette.text.secondary,
   },
   selectAllIcon: {
     fontSize: '1.25rem',
@@ -569,7 +570,6 @@ const PathwayTable = (
             <Tooltip title={noneSelected ? 'Select All' : 'Select None'}>
               <span>
                 <IconButton
-                  color="secondary"
                   disabled={totalRows === 0}
                   className={classes.selectAllButton}
                   onClick={() => handleSelectAllClick(noneSelected)}

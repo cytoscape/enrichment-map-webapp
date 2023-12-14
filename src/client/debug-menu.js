@@ -19,11 +19,11 @@ export function DebugMenu({ children }) {
       onClose={() => {}}
     >
       <DialogTitle>Debug Menu</DialogTitle>
-      <DialogContent>
+      <DialogContent dividers>
         {children}
       </DialogContent>
       <DialogActions>
-        <Button onClick={toggle} color="primary">
+        <Button onClick={toggle} color="primary" variant="outlined">
           Close
         </Button>
       </DialogActions>
