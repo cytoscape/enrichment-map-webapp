@@ -78,8 +78,91 @@ async function showFileDialog() {
 let requestID = null;
 let cancelledRequests = [];
 
+
+//==[ Content ]=======================================================================================================
+
+const useContentStyles = makeStyles(theme => ({
+  root: {
+    alignContent: 'center',
+    width: '100%',
+    position: 'absolute',
+    display: 'flex',
+    flexDirection: 'column',
+    border: '4px solid transparent',
+    backgroundColor: theme.palette.background.default,
+  },
+  rootDropping: {
+    borderColor: 'rgb(54, 102, 209)'
+  },
+  main: {
+    padding: theme.spacing(1),
+    flexGrow: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  grow: {
+    flexGrow: 1,
+  },
+  menu: {
+    marginLeft: theme.spacing(5),
+    textTransform: 'unset',
+  },
+  content: {
+    maxHeight: 700,
+    marginTop: 0,
+    marginBottom: 0,
+    padding: theme.spacing(4),
+    paddingTop: 0,
+    paddingBottom: 0,
+    textAlign: 'left',
+    [theme.breakpoints.down('sm')]: {
+      marginTop: 0,
+      marginBottom: 0,
+      paddingTop: theme.spacing(1),
+      paddingBottom: theme.spacing(1),
+    },
+    [theme.breakpoints.down('xs')]: {
+      padding: theme.spacing(2),
+    },
+  },
+  tagline: {
+    fontWeight: 800,
+    fontSize: 'clamp(1.5rem, 0.75rem + 2.5vw, 3.5rem)',
+    marginTop: theme.spacing(2),
+    [theme.breakpoints.down('sm')]: {
+      marginTop: theme.spacing(1),
+    },
+    [theme.breakpoints.down('xs')]: {
+      marginTop: theme.spacing(0.5),
+      textAlign: 'center',
+    },
+  },
+  description : {
+    fontSize: '1rem',
+    color: theme.palette.secondary.main,
+    marginTop: theme.spacing(2.5),
+    marginBottom: theme.spacing(5),
+    [theme.breakpoints.down('xs')]: {
+      fontSize: 'unset',
+      textAlign: 'center',
+      marginBottom: theme.spacing(2.5),
+    },
+  },
+  section: {
+    width: '100%',
+    [theme.breakpoints.down('xs')]: {
+      textAlign: 'center',
+      alignItems: 'center',
+      marginTop: theme.spacing(1),
+    },
+  },
+}));
+
 export function Content() {
-  const classes = useStyles();
+  const classes = useContentStyles();
 
   /** State */
 
@@ -106,7 +189,6 @@ export function Content() {
     errorMessages: null,
   });
   const updateUploadState = (update) => setUploadState(prev => ({ ...prev, ...update }));
-
 
   /** Effects */
 
@@ -236,7 +318,6 @@ export function Content() {
     showNetwork(networkID);
   };
 
-
   /** Render Componenets */
   const { contents, ...stateToLog } = uploadState;
   console.log("Content render. uploadState: " + JSON.stringify(stateToLog));
@@ -318,23 +399,45 @@ export function Content() {
           sampleFiles={sampleFiles} 
           onLoadSampleNetwork={loadSampleNetwork} 
         />
-        <Footer />
+        <Footer mobile={mobile} tablet={tablet} />
       </Container>
     </div>
   );
 }
-Content.propTypes = {
-};
 
+//==[ Figure ]========================================================================================================
+
+const useFigureStyles = makeStyles(theme => ({
+  figure: {
+    maxWidth: '100%',
+    maxHeight: 520,
+    objectFit: 'contain',
+    [theme.breakpoints.down('xs')]: {
+      maxWidth: '80%',
+      maxHeight: 300,
+      marginBottom: theme.spacing(4),
+    },
+  },
+}));
 
 function Figure() {
-  const classes = useStyles();
+  const classes = useFigureStyles();
+
   return <img src="/images/home-figure.png" alt="figure" className={classes.figure} />;
 }
 
+//==[ Logo ]==========================================================================================================
+
+const useLogoStyles = makeStyles(() => ({
+  footerLogo: {
+    maxHeight: 48,
+    filter: 'grayscale(1) opacity(50%)',
+  },
+}));
 
 function Logo({ src, alt, href }) {
-  const classes = useStyles();
+  const classes = useLogoStyles();
+  
   return (
     <Link href={href} target="_blank" rel="noreferrer" underline="none">
       <img src={src} alt={alt} className={classes.footerLogo} />  
@@ -347,12 +450,14 @@ Logo.propTypes = {
   href: PropTypes.string,
 };
 
+//==[ MobileMenu ]====================================================================================================
 
 function MobileMenu() {
-  const classes = useStyles();
   const [ mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState(null);
+  
   const openMobileMenu = (event) => setMobileMoreAnchorEl(event.currentTarget);
   const closeMobileMenu = () => setMobileMoreAnchorEl(null);
+
   return (
     <Menu
       anchorEl={mobileMoreAnchorEl}
@@ -374,9 +479,30 @@ function MobileMenu() {
   );
 }
 
+//==[ Header ]========================================================================================================
+
+const useHeaderStyles = makeStyles(theme => ({
+  appBar: {
+    boxShadow: 'none',
+  },
+  toolbar: {
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
+  logo: {
+    fontSize: 48,
+  },
+  logoText: {
+    fontSize: '1.5em',
+    fontWeight: 'bold',
+  },
+  grow: {
+    flexGrow: 1,
+  },
+}));
 
 function Header() {
-  const classes = useStyles();
+  const classes = useHeaderStyles();
+
   return (
     <AppBar position="static" color="transparent" className={classes.appBar}>
       <Container maxWidth="lg" disableGutters>
@@ -400,32 +526,58 @@ function Header() {
   );
 }
 
+//==[ Footer ]========================================================================================================
+
+const useFooterStyles = makeStyles(theme => ({
+  footer: {
+    marginTop: theme.spacing(4),
+  },
+  toolbar: {
+    marginTop: theme.spacing(2),
+    color: theme.palette.secondary.main,
+  },
+  copyright: {
+    [theme.breakpoints.down('sm')]: {
+      textAlign: 'center',
+      marginBottom: theme.spacing(8),
+    },
+  },
+  logoBar: {
+    justifyContent: 'space-between',
+    paddingLeft: theme.spacing(15),
+    [theme.breakpoints.down('sm')]: {
+      justifyContent: 'center',
+      paddingLeft: 0,
+    },
+  },
+}));
 
 function Footer({ mobile, tablet }) {
-  const classes = useStyles();
+  const classes = useFooterStyles();
+
   return (
     <Container maxWidth="lg" disableGutters className={classes.footer}>
       <Divider />
-      <Toolbar variant="regular" className={classes.logoBar}>
+      <Toolbar variant="regular" className={classes.toolbar}>
         <Grid
           container
           direction={mobile || tablet ? 'column' : 'row'}
           alignItems={mobile || tablet ? 'center' : 'flex-start'}
-          justifyContent={mobile ? 'space-around' : 'space-between'}
+          justifyContent={mobile || tablet ? 'space-around' : 'center'}
         >
-          <Grid item className={classes.copyright} md={4} sm={12}>
+          <Grid item md={3} sm={12} className={classes.copyright}>
             &copy; {new Date().getFullYear()} University of Toronto
           </Grid>
-          <Grid item md={8} sm={12}>
+          <Grid item md={9} sm={12}>
             <Grid
               container
               direction={mobile ? 'column' : 'row'}
               alignItems={mobile ? 'center' : 'flex-start'}
-              justifyContent={mobile ? 'space-around' : 'space-between'}
-              spacing={5}
+              spacing={mobile ? 2 : 5}
+              className={classes.logoBar}
             >
           {logosDef.map((logo, idx) =>
-            <Grid key={idx} item>
+            <Grid item key={idx}>
               <Logo src={logo.src} alt={logo.alt} href={logo.href} />
             </Grid>
           )}
@@ -441,6 +593,7 @@ Footer.propTypes = {
   tablet: PropTypes.bool,
 };
 
+//==[ Debug ]=========================================================================================================
 
 function Debug({ sampleFiles, onLoadSampleNetwork }) {
   const { sampleRankFiles, sampleExprFiles } = sampleFiles;
@@ -474,9 +627,9 @@ Debug.propTypes = {
   onLoadSampleNetwork: PropTypes.func,
 };
 
+//==[ GetStartedSection ]=============================================================================================
 
 function GetStartedSection({ mobile, tablet, onClickGetStarted, onClickCreateDemo }) {
-  const classes = useStyles();
   return (
     <Grid
       container
@@ -486,7 +639,6 @@ function GetStartedSection({ mobile, tablet, onClickGetStarted, onClickCreateDem
     >
       <Grid item>
         <Button
-          className={classes.startButton}
           variant="contained"
           color="primary"
           endIcon={<NavigateNextIcon />}
@@ -500,7 +652,6 @@ function GetStartedSection({ mobile, tablet, onClickGetStarted, onClickCreateDem
       </Grid>
       {/* <Grid item>
         <Button
-          className={classes.demoButton}
           variant="text"
           color="primary"
           startIcon={<PlayCircleFilledIcon />}
@@ -517,134 +668,5 @@ GetStartedSection.propTypes = {
   onClickGetStarted: PropTypes.func,
   onClickCreateDemo: PropTypes.any
 };
-
-
-const useStyles = makeStyles(theme => ({
-  root: {
-    alignContent: 'center',
-    height: '100%',
-    width: '100%',
-    position: 'absolute',
-    display: 'flex',
-    flexDirection: 'column',
-    border: '4px solid transparent'
-  },
-  rootDropping: {
-    borderColor: 'rgb(54, 102, 209)'
-  },
-  main: {
-    padding: theme.spacing(1),
-    flexGrow: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logo: {
-    fontSize: 48,
-  },
-  logoText: {
-    fontSize: '1.5em',
-    fontWeight: 'bold',
-  },
-  grow: {
-    flexGrow: 1,
-  },
-  appBar: {
-    boxShadow: 'none',
-  },
-  toolbar: {
-    borderBottom: `1px solid ${theme.palette.divider}`,
-  },
-  menu: {
-    marginLeft: theme.spacing(5),
-    textTransform: 'unset',
-  },
-  content: {
-    maxHeight: 700,
-    marginTop: 0,
-    marginBottom: 0,
-    padding: theme.spacing(4),
-    paddingTop: 0,
-    paddingBottom: 0,
-    textAlign: 'left',
-    [theme.breakpoints.down('sm')]: {
-      marginTop: 0,
-      marginBottom: 0,
-      paddingTop: theme.spacing(1),
-      paddingBottom: theme.spacing(1),
-    },
-    [theme.breakpoints.down('xs')]: {
-      padding: theme.spacing(2),
-    },
-  },
-  tagline: {
-    fontWeight: 800,
-    fontSize: 'clamp(1.5rem, 0.75rem + 2.5vw, 3.5rem)',
-    marginTop: theme.spacing(2),
-    [theme.breakpoints.down('sm')]: {
-      marginTop: theme.spacing(1),
-    },
-    [theme.breakpoints.down('xs')]: {
-      marginTop: theme.spacing(0.5),
-      textAlign: 'center',
-    },
-  },
-  description : {
-    fontSize: '1rem',
-    color: theme.palette.secondary.main,
-    marginTop: theme.spacing(2.5),
-    marginBottom: theme.spacing(5),
-    [theme.breakpoints.down('xs')]: {
-      fontSize: 'unset',
-      textAlign: 'center',
-      marginBottom: theme.spacing(2.5),
-    },
-  },
-  section: {
-    width: '100%',
-    [theme.breakpoints.down('xs')]: {
-      textAlign: 'center',
-      alignItems: 'center',
-      marginTop: theme.spacing(1),
-    },
-  },
-  startButton: {
-    // fontSize: '1.25em',
-    // textTransform: 'unset',
-  },
-  demoButton: {
-    textTransform: 'unset',
-  },
-  figure: {
-    maxWidth: '100%',
-    maxHeight: 520,
-    objectFit: 'contain',
-    [theme.breakpoints.down('xs')]: {
-      maxWidth: '80%',
-      maxHeight: 300,
-      marginBottom: theme.spacing(4),
-    },
-  },
-  footer: {
-    marginTop: theme.spacing(4),
-  },
-  copyright: {
-    [theme.breakpoints.down('sm')]: {
-      marginBottom: theme.spacing(8),
-    },
-  },
-  logoBar: {
-    marginTop: theme.spacing(2),
-    color: theme.palette.secondary.main,
-  },
-  footerLogo: {
-    maxHeight: 48,
-    filter: 'grayscale(1) opacity(50%)',
-  },
-}));
-
-
 
 export default Content;

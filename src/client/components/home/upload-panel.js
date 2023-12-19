@@ -198,7 +198,7 @@ const FormatAccordion = ({ isMobile, id, title, summary, tableHead, tableRows, c
                 <SampleTable tableHead={tableHead} tableRows={tableRows} spotlight={spotlight} isMobile={isMobile} />
               </Grid>
               <Grid item sm={6}>
-                <Typography component="div" variant="body2" color="secondary">
+                <Typography component="div" variant="body2" color="textSecondary">
                   { children }
                   { summary() }
                 </Typography>
