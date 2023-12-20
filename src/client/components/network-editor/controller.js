@@ -289,6 +289,7 @@ export class NetworkEditorController {
 
     onStop.then(() => {
       parent.scratch('_layoutRunning', false);
+      this.bus.emit('toggleExpandCollapse', parent, collapsed);
     });
 
     layout.run();
@@ -389,21 +390,27 @@ export class NetworkEditorController {
 
     const buttonLayer = layers.append('html', { stopClicks: true });
 
-    const setButtonHTML = (elem, node) => {
-      const collapsed = node.data('collapsed');
+    const setButtonHTML = (elem, parent) => {
+      const collapsed = parent.data('collapsed');
       const jsx = collapsed ? <ZoomOutMapIcon /> : <ZoomInIcon />;
       const html = ReactDOMServer.renderToStaticMarkup(jsx);
       elem.innerHTML = html;
     };
 
+    this.bus.on('toggleExpandCollapse', (parent, collapsed) => {
+      const elem = parent.scratch('buttonElem');
+      setButtonHTML(elem, parent);
+    });
+
     const createClusterToggleButton = (elem, parent) => {
       elem.classList.add('cluster-toggle-button');
       elem.style.visibility = 'hidden';
+      
+      parent.scratch('buttonElem', elem);
       setButtonHTML(elem, parent);
 
-      elem.addEventListener('click', async e => {
+      elem.addEventListener('click', async () => {
         await this.toggleExpandCollapse(parent, true);
-        setButtonHTML(elem, parent);
       });
 
       let c = 0;
