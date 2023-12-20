@@ -289,6 +289,7 @@ export class NetworkEditorController {
 
     onStop.then(() => {
       parent.scratch('_layoutRunning', false);
+      this.bus.emit('toggleExpandCollapse', parent, collapsed);
     });
 
     layout.run();
@@ -296,26 +297,6 @@ export class NetworkEditorController {
     return onStop;
   }
 
-
-  // TODO only tested in Chrome so far, may not work in other browsers
-  detectBubbleSetClick(svgPointFactory, position) {
-    const point = svgPointFactory.createSVGPoint();
-    point.x = position.x;
-    point.y = position.y;
-
-    const paths = this.bubbleSets ? this.bubbleSets.getPaths() : [];
-    for(const path of paths) {
-      const inside = path.node.isPointInFill(point);
-      if(inside) {
-        const parentNodes = this.cy.nodes(':parent');
-        const parent = parentNodes.filter(parent => path === parent.scratch('_bubble'));
-        if(!parent.empty()) {
-          this.toggleExpandCollapse(parent, true);
-        }
-        break;
-      }
-    }
-  }
 
   /**
    * positions is an array of objects of the form...
@@ -387,45 +368,60 @@ export class NetworkEditorController {
     const { cy } = this;
     const layers = cy.layers();
 
+    // Create a layer to hold the button elements
     const buttonLayer = layers.append('html', { stopClicks: true });
 
-    const setButtonHTML = (elem, node) => {
-      const collapsed = node.data('collapsed');
+    const setButtonHTML = (elem, parent) => {
+      const collapsed = parent.data('collapsed');
       const jsx = collapsed ? <ZoomOutMapIcon /> : <ZoomInIcon />;
       const html = ReactDOMServer.renderToStaticMarkup(jsx);
       elem.innerHTML = html;
     };
 
+    // Switch the button icon when the cluster is expanded or collapsed.
+    this.bus.on('toggleExpandCollapse', parent => {
+      const elem = parent.scratch('buttonElem');
+      setButtonHTML(elem, parent);
+    });
+
+    // Toggle expand/collapse if user clicks direclty on the bubble.
+    cy.on('click', e => {
+      if(e.target === cy) {
+        const parent = this.getBubbleSetParent(e.position);
+        if(parent) {
+          this.toggleExpandCollapse(parent, true);
+        }
+      }
+    });
+  
+    // Detect when the user hovers over the bubble and show/hide the button.
+    let prevParent = null;
+    cy.on('mousemove', _.throttle(e => {
+      const parent = this.getBubbleSetParent(e.position);
+      if(prevParent && prevParent !== parent) {
+        const elem = prevParent.scratch('buttonElem');
+        elem.style.visibility = 'hidden';
+        prevParent = null;
+      }
+      if(parent) {
+        const elem = parent.scratch('buttonElem');
+        elem.style.visibility = 'visible';
+        prevParent = parent;
+      }
+    }, 100));
+
+    // Create a button for each cluster
     const createClusterToggleButton = (elem, parent) => {
       elem.classList.add('cluster-toggle-button');
       elem.style.visibility = 'hidden';
+      parent.scratch('buttonElem', elem);
+
       setButtonHTML(elem, parent);
 
-      elem.addEventListener('click', async e => {
+      // Toggle expand/collapse when user clicks on the button
+      elem.addEventListener('click', async () => {
         await this.toggleExpandCollapse(parent, true);
-        setButtonHTML(elem, parent);
       });
-
-      let c = 0;
-      const updateVisible = e => {
-        let visible = true;
-        if(e.type === 'mousedown') {
-          visible = false;
-        } else if(e.type === 'mouseup') {
-          visible = c > 0;
-        } else {
-          c += e.type === 'mouseover' ? 1 : -1;
-          visible = c > 0;
-        }
-        elem.style.visibility = visible ? 'visible' : 'hidden';
-      };
-
-      const children = parent.children();
-      const edges = children.internalEdges();
-      parent.on('mouseover mouseout', updateVisible);
-      children.on('mouseover mouseout', updateVisible);
-      edges.on('mouseover mouseout', updateVisible);
-      children.on('mousedown mouseup', updateVisible);
     };
 
     // eslint-disable-next-line no-unused-vars
@@ -457,11 +453,9 @@ export class NetworkEditorController {
     }
     
     cy.on('boxstart', () => {
-      console.log('boxstart');
       cy.pathwayNodes().addClass('box-select-enabled');
     });
     cy.on('boxend', () => {
-      console.log('boxend');
       cy.pathwayNodes().removeClass('box-select-enabled');
     });
 
@@ -517,6 +511,37 @@ export class NetworkEditorController {
       });
     });
   }
+
+
+  /**
+   * Returns the cluster parent node for the bubble path that contains the given position. 
+   * If there is more than one bubble overlapping at the given position then one of the 
+   * cluster parents is returned arbitrarily.
+   * 
+   * Note: Requires the 'svg_point_factory' that is added to the DOM by the NetworkEditor component.
+   */
+  getBubbleSetParent(position) {
+    const svgPointFactory = document.getElementById('svg_point_factory');
+    const point = svgPointFactory.createSVGPoint();
+    point.x = position.x;
+    point.y = position.y;
+
+    const paths = this.bubbleSets ? this.bubbleSets.getPaths() : [];
+    for(const path of paths) {
+      // Could check if the point is inside the bubble's bounding box first
+      // before calling isPointInFill(), it might be faster.
+      const inside = path.node.isPointInFill(point);
+      if(inside) {
+        const parentNodes = this.cy.nodes(':parent');
+        const parent = parentNodes.filter(parent => path === parent.scratch('_bubble'));
+        if(!parent.empty()) {
+          return parent;
+        }
+        break;
+      }
+    }
+  }
+
 
   /**
    * Delete the selected (i.e. :selected) elements in the graph
