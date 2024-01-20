@@ -141,8 +141,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
 
   const fetchGeneList = async (geneSetNames, intersection = false) => {
     const res = await controller.fetchGeneList(geneSetNames, intersection);
-    const genes = res ? res.genes : [];
-
+    const genes = res || [];
     return genes;
   };
 

@@ -588,37 +588,42 @@ export class NetworkEditorController {
    */
   async fetchGeneList(geneSetNames, intersection = false) {
     geneSetNames = geneSetNames || [];
-    const nameSet = new Set(geneSetNames);
+    const result = this.searchController.queryPathwayGenes(geneSetNames, intersection);
+    console.log(result);
+    return result;
 
-    // Check local cache first
-    if (this.lastGeneSet && 
-        this.lastGeneSetIntersection === intersection && 
-        _.isEqual(this.lastGeneSetNames, nameSet)) {
-      return this.lastGeneSet;
-    }
 
-    // New query...
-    const queryParams = new URLSearchParams({ intersection });
-    const res = await fetch(`/api/${this.networkIDStr}/genesets?${queryParams}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        geneSets: geneSetNames
-      })
-    });
+    // const nameSet = new Set(geneSetNames);
 
-    if (res.ok) {
-      const geneSet = await res.json();
-      const rankedGenes = geneSet.genes.filter(g => g.rank);
-      geneSet.genes = rankedGenes;
+    // // Check local cache first
+    // if (this.lastGeneSet && 
+    //     this.lastGeneSetIntersection === intersection && 
+    //     _.isEqual(this.lastGeneSetNames, nameSet)) {
+    //   return this.lastGeneSet;
+    // }
 
-      // Cache the last query
-      this.lastGeneSetIntersection = intersection;
-      this.lastGeneSet = geneSet;
-      this.lastGeneSetNames = nameSet;
+    // // New query...
+    // const queryParams = new URLSearchParams({ intersection });
+    // const res = await fetch(`/api/${this.networkIDStr}/genesets?${queryParams}`, {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({
+    //     geneSets: geneSetNames
+    //   })
+    // });
 
-      return geneSet;
-    }
+    // if (res.ok) {
+    //   const geneSet = await res.json();
+    //   const rankedGenes = geneSet.genes.filter(g => g.rank);
+    //   geneSet.genes = rankedGenes;
+
+    //   // Cache the last query
+    //   this.lastGeneSetIntersection = intersection;
+    //   this.lastGeneSet = geneSet;
+    //   this.lastGeneSetNames = nameSet;
+
+    //   return geneSet;
+    // }
   }
   
 
