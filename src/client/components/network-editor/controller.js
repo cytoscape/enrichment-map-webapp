@@ -615,7 +615,7 @@ export class NetworkEditorController {
 
     if (res.ok) {
       const geneSet = await res.json();
-      const rankedGenes = geneSet.genes.filter(g => g.rank);
+      const rankedGenes = geneSet.genes.filter(g => _.has(g, 'rank'));
       geneSet.genes = rankedGenes;
 
       // Cache the last query
