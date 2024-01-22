@@ -266,9 +266,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   useEffect(() => {
     if (searchResult != null) {
       setGenes(sortGenes(searchResult, sortRef.current));
-    } else {
-      debouncedSelectionHandler();
-    }
+    } 
   }, [searchResult]);
 
   const handleGeneSetOption = async (evt) => {

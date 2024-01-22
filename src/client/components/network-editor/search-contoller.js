@@ -25,8 +25,13 @@ export class SearchController {
     this.pathwaysReady = false;
 
     this.bus.on('networkLoaded', () => {
-      this.fetchAllGenesInNetwork();
-      this.fetchAllPathwaysInNetwork();
+      Promise.all([
+        this.fetchAllGenesInNetwork(),
+        this.fetchAllPathwaysInNetwork(),
+      ]).then(() => {
+        this.genesReady = true;
+        this.bus.emit('geneListIndexed');
+      });
     });
   }
 
@@ -56,13 +61,7 @@ export class SearchController {
       const documents = await res.json();
       this.geneMiniSearch.addAll(documents);
 
-      const maps = this._createMaps(documents);
-      
-      this.pathwayGenes = maps.pathwayGenes;
-      this.geneRanks = maps.geneRanks;
-
-      this.genesReady = true;
-      this.bus.emit('geneListIndexed');
+      ({pathwayGenes : this.pathwayGenes, geneRanks: this.geneRanks} = this._createMaps(documents));
     }
   }
 
@@ -110,7 +109,7 @@ export class SearchController {
     }
 
     const genesWithRanks = [...result].map(gene => ({ gene, rank: geneRanks.get(gene) }));
-    return _.sortBy(genesWithRanks, 'rank');
+    return _.orderBy(genesWithRanks, 'rank', 'desc');
   }
 
 
