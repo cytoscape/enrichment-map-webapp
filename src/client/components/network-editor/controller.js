@@ -584,46 +584,47 @@ export class NetworkEditorController {
   }
 
   /**
-   * Still needed by the gene sidebar.
+   * Needed by the gene sidebar.
    */
   async fetchGeneList(geneSetNames, intersection = false) {
     geneSetNames = geneSetNames || [];
-    const result = this.searchController.queryPathwayGenes(geneSetNames, intersection);
-    console.log(result);
-    return result;
+    return this.searchController.queryPathwayGenes(geneSetNames, intersection);
+  }
 
 
-    // const nameSet = new Set(geneSetNames);
+  async fetchGeneListFromServer(geneSetNames, intersection = false) {
+    // Note, this method is slow, use searchController.queryPathwayGenes(...) instead
+    const nameSet = new Set(geneSetNames);
 
-    // // Check local cache first
-    // if (this.lastGeneSet && 
-    //     this.lastGeneSetIntersection === intersection && 
-    //     _.isEqual(this.lastGeneSetNames, nameSet)) {
-    //   return this.lastGeneSet;
-    // }
+    // Check local cache first
+    if (this.lastGeneSet && 
+        this.lastGeneSetIntersection === intersection && 
+        _.isEqual(this.lastGeneSetNames, nameSet)) {
+      return this.lastGeneSet.genes;
+    }
 
-    // // New query...
-    // const queryParams = new URLSearchParams({ intersection });
-    // const res = await fetch(`/api/${this.networkIDStr}/genesets?${queryParams}`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     geneSets: geneSetNames
-    //   })
-    // });
+    // New query...
+    const queryParams = new URLSearchParams({ intersection });
+    const res = await fetch(`/api/${this.networkIDStr}/genesets?${queryParams}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        geneSets: geneSetNames
+      })
+    });
 
-    // if (res.ok) {
-    //   const geneSet = await res.json();
-    //   const rankedGenes = geneSet.genes.filter(g => g.rank);
-    //   geneSet.genes = rankedGenes;
+    if (res.ok) {
+      const geneSet = await res.json();
+      const rankedGenes = geneSet.genes.filter(g => g.rank);
+      geneSet.genes = rankedGenes;
 
-    //   // Cache the last query
-    //   this.lastGeneSetIntersection = intersection;
-    //   this.lastGeneSet = geneSet;
-    //   this.lastGeneSetNames = nameSet;
+      // Cache the last query
+      this.lastGeneSetIntersection = intersection;
+      this.lastGeneSet = geneSet;
+      this.lastGeneSetNames = nameSet;
 
-    //   return geneSet;
-    // }
+      return geneSet.genes;
+    }
   }
   
 
@@ -667,6 +668,9 @@ export class NetworkEditorController {
   }
 
   async saveGeneList(genesJSON, pathways) { // used by the gene list panel (actually left-drawer.js)
+    console.log('saveGeneList');
+    console.log(genesJSON);
+    console.log(pathways);
     const lines = ['gene\trank'];
     for(const { gene, rank } of genesJSON) {
       lines.push(`${gene}\t${rank}`);
