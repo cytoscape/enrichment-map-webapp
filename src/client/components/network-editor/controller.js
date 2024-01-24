@@ -642,7 +642,8 @@ export class NetworkEditorController {
     zip.file('enrichment_map_large.png',  blobs[2]);
     zip.file('node_color_legend_NES.svg', blobs[3]);
   
-    this.saveZip(zip, 'images');
+    const fileName = this.getZipFileName('images');
+    this.saveZip(zip, fileName);
   }
 
   async exportDataArchive() {
@@ -664,28 +665,34 @@ export class NetworkEditorController {
     zip.file('ranks.txt', files[1]);
     zip.file('gene_sets.gmt', files[2]);
   
-    this.saveZip(zip, 'enrichment');
+    const fileName = this.getZipFileName('enrichment');
+    this.saveZip(zip, fileName);
   }
 
   async saveGeneList(genesJSON, pathways) { // used by the gene list panel (actually left-drawer.js)
-    console.log('saveGeneList');
-    console.log(genesJSON);
-    console.log(pathways);
-    const lines = ['gene\trank'];
+    if(pathways.length == 0)
+      return;
+
+    let fileName = 'gene_ranks.zip';
+    if(pathways.length == 1)
+      fileName = `gene_ranks_(${pathways[0]}).zip`;
+    else if(pathways.length <= 3)
+      fileName = `gene_ranks_(${pathways.slice(0,3).join(',')}).zip`;
+    else
+      fileName = `gene_ranks_${pathways.length}_pathways.zip`;
+
+    const geneLines = ['gene\trank'];
     for(const { gene, rank } of genesJSON) {
-      lines.push(`${gene}\t${rank}`);
+      geneLines.push(`${gene}\t${rank}`);
     }
-    const fullText = lines.join('\n');
-    const blob = stringToBlob(fullText);
+    const genesText = geneLines.join('\n');
+    const pathwayText = pathways.join('\n');
   
-    let fileName = 'gene_ranks.txt';
-    if(pathways && pathways.length == 1) {
-      fileName = `gene_ranks_(${pathways[0]}).txt`;
-    } else if(pathways && pathways.length > 1) {
-      fileName = `gene_ranks_${pathways.length}_pathways.txt`;
-    }
-  
-    saveAs(blob, fileName);
+    const zip = new JSZip();
+    zip.file('gene_ranks.txt', genesText);
+    zip.file('pathways.txt', pathwayText);
+
+    this.saveZip(zip, fileName);
   }
 
   async createNetworkImageBlob(imageSize) {
@@ -748,9 +755,8 @@ export class NetworkEditorController {
     return `enrichment_map_${suffix}.zip`;
   }
 
-  async saveZip(zip, type) {
+  async saveZip(zip, fileName) {
     const archiveBlob = await zip.generateAsync({ type: 'blob' });
-    const fileName = this.getZipFileName(type);
     await saveAs(archiveBlob, fileName);
   }
 }
