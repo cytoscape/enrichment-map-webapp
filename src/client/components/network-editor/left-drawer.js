@@ -141,8 +141,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
 
   const fetchGeneList = async (geneSetNames, intersection = false) => {
     const res = await controller.fetchGeneList(geneSetNames, intersection);
-    const genes = res ? res.genes : [];
-
+    const genes = res || [];
     return genes;
   };
 
@@ -267,9 +266,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   useEffect(() => {
     if (searchResult != null) {
       setGenes(sortGenes(searchResult, sortRef.current));
-    } else {
-      debouncedSelectionHandler();
-    }
+    } 
   }, [searchResult]);
 
   const handleGeneSetOption = async (evt) => {

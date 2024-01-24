@@ -584,17 +584,23 @@ export class NetworkEditorController {
   }
 
   /**
-   * Still needed by the gene sidebar.
+   * Needed by the gene sidebar.
    */
   async fetchGeneList(geneSetNames, intersection = false) {
     geneSetNames = geneSetNames || [];
+    return this.searchController.queryPathwayGenes(geneSetNames, intersection);
+  }
+
+
+  async fetchGeneListFromServer(geneSetNames, intersection = false) {
+    // Note, this method is slow, use searchController.queryPathwayGenes(...) instead
     const nameSet = new Set(geneSetNames);
 
     // Check local cache first
     if (this.lastGeneSet && 
         this.lastGeneSetIntersection === intersection && 
         _.isEqual(this.lastGeneSetNames, nameSet)) {
-      return this.lastGeneSet;
+      return this.lastGeneSet.genes;
     }
 
     // New query...
@@ -609,7 +615,7 @@ export class NetworkEditorController {
 
     if (res.ok) {
       const geneSet = await res.json();
-      const rankedGenes = geneSet.genes.filter(g => g.rank);
+      const rankedGenes = geneSet.genes.filter(g => _.has(g, 'rank'));
       geneSet.genes = rankedGenes;
 
       // Cache the last query
@@ -617,7 +623,7 @@ export class NetworkEditorController {
       this.lastGeneSet = geneSet;
       this.lastGeneSetNames = nameSet;
 
-      return geneSet;
+      return geneSet.genes;
     }
   }
   
