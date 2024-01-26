@@ -13,7 +13,6 @@ import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 import { SearchController } from './search-contoller';
 import { UndoHandler } from './undo-stack';
 import { getLegendSVG } from './legend-svg';
-import { stringToBlob } from './util';
 
 import ZoomOutMapIcon from '@material-ui/icons/ZoomOutMap';
 import { ZoomInIcon } from '../svg-icons';
@@ -32,6 +31,18 @@ export const CoSELayoutOptions = {
   animate: false,
   padding: DEFAULT_PADDING,
 };
+
+/**
+ * https://github.com/iVis-at-Bilkent/cytoscape.js-cise
+ * @param clusters 2D array contaning node id's or a function that returns cluster ids.
+ */
+export function CiSELayoutOptions(clusters) {
+  return {
+    name: 'cise',
+    clusters,
+    animate: false,
+  };
+}
 
 export const ImageSize = {
   SMALL:  { value:'SMALL',  scale: 0.5 },
@@ -104,6 +115,7 @@ export class NetworkEditorController {
     return this.searchController.searchPathways(query);
   }
 
+
   /**
    * Stops the currently running layout, if there is one, and apply the new layout options.
    * @param {*} options
@@ -117,23 +129,23 @@ export class NetworkEditorController {
     this.cy.minZoom(-1e50);
     this.cy.maxZoom(1e50);
 
+    const allNodes = this.cy.nodes();
+    const disconnectedNodes = allNodes.filter(n => n.degree() === 0);
+    const networkWithoutDisconnectedNodes = this.cy.elements().not(disconnectedNodes);
+    const connectedNodes = allNodes.not(disconnectedNodes);
+
     monkeyPatchMathRandom(); // just before the FD layout starts
 
-    this.layout = this.cy.layout(options ? options : CoSELayoutOptions);
-
+    this.layout = networkWithoutDisconnectedNodes.layout(options);
     const onStop = this.layout.promiseOn('layoutstop');
-
     this.layout.run();
-
     await onStop;
+
+    await this._packComponents(networkWithoutDisconnectedNodes);
 
     restoreMathRandom(); // after the FD layout is done
 
-    // move the disconnected nodes to the bottom
-    const allNodes = this.cy.nodes();
-    const disconnectedNodes = allNodes.filter(n => n.degree() === 0);
-    const connectedNodes = allNodes.not(disconnectedNodes);
-
+    // Move the disconnected nodes to the bottom
     const connectedBB = connectedNodes.boundingBox();
 
     const nodeWidth = disconnectedNodes.max(n => n.boundingBox({ nodeDimensionsIncludeLabels: true }).w).value;
@@ -158,6 +170,50 @@ export class NetworkEditorController {
       nodeDimensionsIncludeLabels: true,
       fit: false
     }).run();
+  }
+
+
+  async _packComponents(eles) {
+    console.log('packing components');
+    eles = eles || this.cy.elements();
+    var components = eles.components();
+
+    var subgraphs = [];
+    components.forEach(component => {
+      var subgraph = { nodes:[], edges:[] };
+
+      component.edges().forEach(edge => {
+        const [ s, t ] = [ edge.sourceEndpoint(), edge.targetEndpoint() ];
+        subgraph.edges.push({ startX: s.x, startY: s.y, endX: t.x, endY: t.y });
+      });
+      component.nodes().forEach(node => {
+        var bb = node.boundingBox();
+        subgraph.nodes.push({ x: bb.x1, y: bb.y1, width: bb.w, height: bb.h });
+      });
+
+      subgraphs.push(subgraph);
+    });
+
+    const layoutUtils = this.cy.layoutUtilities(); // cytoscape-layout-utilities extension
+    const result = layoutUtils.packComponents(subgraphs);
+
+    const layouts = components.map((component, i) => {
+      return component.nodes().layout({
+        name: 'preset',
+        animate: false,
+        fit: false,
+        transform: node => {
+          return {
+            x: node.position('x') + result.shifts[i].dx,
+            y: node.position('y') + result.shifts[i].dy
+          };
+        }
+      });
+    });
+
+    const promise = Promise.all(layouts.map(layout => layout.promiseOn('layoutstop')));
+    layouts.forEach(layout => layout.run());
+    await promise;
   }
 
 

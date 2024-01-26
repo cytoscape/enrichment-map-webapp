@@ -225,14 +225,17 @@ http.get('/:netid/pathwaysforsearch', async function(req, res, next) {
 
 http.get('/:netid/positions', async function(req, res, next) {
   try {
-    const { netid } = req.params;
+    // const { netid } = req.params;
 
-    const positions = await Datastore.getPositions(netid);
-    if(!positions) {
-      res.sendStatus(404);
-    } else {
-      res.send(JSON.stringify(positions));
-    }
+    // const positions = await Datastore.getPositions(netid);
+    // if(!positions) {
+    //   res.sendStatus(404);
+    // } else {
+    //   res.send(JSON.stringify(positions));
+    // }
+
+    res.sendStatus(404);
+    
   } catch (err) {
     next(err);
   }
