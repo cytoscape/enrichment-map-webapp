@@ -352,28 +352,56 @@ const useGeneListPanelStyles = makeStyles((theme) => ({
 
 const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMobile }) => {
   const [selectedGene, setSelectedGene] = useState(null);
-  const [resetScroll, setResetScroll] = useState(true);
+  const [initialIndex, setInitialIndex] = useState(-1); // -1 means "do NOT change the scroll position"
   const classes = useGeneListPanelStyles();
-  const virtuoso = useRef();
+  const virtuosoRef = useRef();
 
   const cy = controller.cy;
   const cyEmitter = new EventEmitterProxy(cy);
   
-  // Collapses and deselect a gene if it's not contained in the new 'genes' list.
+  const updateCyHighlights = _.debounce((symbol) => {
+    let nodes;
+    if (symbol != null) {
+      nodes = cy.pathwayNodes().filter(n => {
+        for (const gene of n.data('genes')) {
+          if (symbol === gene)
+            return true;
+        }
+        return false;
+      });
+    }
+    controller.highlightElements(nodes);
+  }, 200);
+
+  const toggleGeneDetails = async (symbol) => {
+    const newSymbol = selectedGene !== symbol ? symbol : null;
+    updateCyHighlights(newSymbol);
+    setSelectedGene(newSymbol);
+    if (newSymbol != null)
+      setInitialIndex(-1); // Make sure the scroll position doesn't change!
+  };
+
   useEffect(() => {
+    // Check whether the previously selected gene is in the new 'genes' list
     if (genes != null && selectedGene != null) {
-      if (!_.some(genes, ['gene', selectedGene])) {
+      let idx = _.findIndex(genes, g => g.gene === selectedGene);
+      if (idx >= 0) {
+        // Scroll to the previously selected gene
+        if (idx > 1) idx--; // if this gene is not the first in the list, make sure it doesn't look like it is
+        setInitialIndex(idx);
+      } else {
+        // Collapses and deselect a gene if it's not contained in the new 'genes' list.
         toggleGeneDetails(selectedGene);
+        // And reset the scroll
+        setInitialIndex(0);
       }
     }
   }, [genes]);
 
-  // Resets the scroll position when either the gene list or the sort has changed
   useEffect(() => {
-    if (genes != null) {
-      setResetScroll(true);
-    }
-  }, [genes, sort]);
+    if (genes != null)
+      setInitialIndex(0); // Always reset the scroll when sorting has changed
+  }, [sort]);
 
   useEffect(() => {
     cyEmitter.on('tap', evt => {
@@ -388,38 +416,17 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
   });
 
   useEffect(() => {
-    if (genes != null && resetScroll && virtuoso && virtuoso.current) {
-      virtuoso.current.scrollToIndex({
-        index: 0,
-        behavior: 'auto',
-      });
+    // Check whether we need to change scroll the list to the required index
+    if (genes != null && initialIndex >= 0 &&
+        genes.length > initialIndex &&
+        virtuosoRef && virtuosoRef.current) {
+      virtuosoRef.current.scrollToIndex({ index: initialIndex, behavior: 'auto' });
     }
   });
 
   if ((isSearch || isIntersection) && genes && genes.length === 0) {
     return <NoResultsBox isSearch={isSearch} isIntersection={isIntersection} />;
   }
-
-  const toggleGeneDetails = async (symbol) => {
-    const newSymbol = selectedGene !== symbol ? symbol : null;
-    setResetScroll(false);
-    setSelectedGene(newSymbol);
-    updateCyHighlights(newSymbol);
-  };
-
-  const updateCyHighlights = _.debounce((symbol) => {
-    let nodes;
-    if (symbol != null) {
-      nodes = cy.pathwayNodes().filter(n => {
-        for (const gene of n.data('genes')) {
-          if (symbol === gene)
-            return true;
-        }
-        return false;
-      });
-    }
-    controller.highlightElements(nodes);
-  }, 200);
 
   const { minRank, maxRank } = controller;
 
@@ -543,7 +550,7 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
 
   return (
     <Virtuoso
-      ref={virtuoso}
+      ref={virtuosoRef}
       totalCount={totalGenes}
       itemContent={idx => renderGeneRow(idx)}
       overscan={200}

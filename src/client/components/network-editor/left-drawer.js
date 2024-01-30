@@ -295,6 +295,12 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   const sortDisabled = totalGenes <= 0;
   
   const drawerVariant = isMobile || isTablet ? 'temporary' : 'persistent';
+  
+  // The 'keepMounted' property is only available when variant="temporary"
+  // (keep it mounted so the GeneListPanel component can keep its state when closed)
+  const drawerProps = {
+    ...(drawerVariant === 'temporary' && { keepMounted: true })
+  };
 
   return (
     <Drawer
@@ -302,6 +308,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
       variant={drawerVariant}
       anchor="left"
       open={open}
+      {...drawerProps}
       PaperProps={{
         style: {
           overflow: "hidden"
