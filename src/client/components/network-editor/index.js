@@ -44,6 +44,9 @@ function createCy(id) {
 }
 
 
+/**
+ * @param { NetworkEditorController } controller
+ */
 async function loadNetwork(cy, controller, id) {
   console.log('Loading...');
 
@@ -63,26 +66,26 @@ async function loadNetwork(cy, controller, id) {
     parameters: networkJson.parameters
   });
 
-  let positionsMap;
-  let layoutWasRun = false;
+  // TODO, make clusterAttr a property of clusterLabels, so it doesn't have to be passed around separately.
+  const clusterLabels = networkJson.clusterLabels[0].labels;
   const clusterAttr = 'mcode_cluster_id';
+
+  let layoutWasRun = false;
 
   const positionsResult = await positionsPromise;
   if(positionsResult.status == 404) {
     console.log('running layout');
-    const getClusterID = (node) => node.data(clusterAttr);
-    const options = CiSELayoutOptions(getClusterID);
-    await controller.applyLayout(options);
-    layoutWasRun = true;
+    controller.createCompoundNodes(clusterLabels, clusterAttr);
+    await controller.applyLayout(clusterLabels, clusterAttr);
+    controller.createBubbleClusters();
+    layoutWasRun = true;  
   } else {
     console.log('got positions from server');
     const positionsJson = await positionsResult.json();
-    positionsMap = controller.applyPositions(positionsJson.positions);
+    controller.createCompoundNodes(clusterLabels, clusterAttr);
+    const positionsMap = controller.applyPositions(positionsJson.positions);
+    controller.createBubbleClusters(positionsMap);
   }
-
-  // Find clusters first because the layout might require them
-  const clusterDefs = networkJson.clusterLabels[0].labels;
-  await controller.createClusters(clusterDefs, clusterAttr, positionsMap);
 
   // Set network style
   const style = createNetworkStyle(cy);
