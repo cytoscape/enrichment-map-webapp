@@ -7,6 +7,7 @@ import { useQuery } from "react-query";
 import chroma from 'chroma-js';
 import { linkoutProps } from '../defaults';
 import theme from '../../theme';
+import EventEmitterProxy from '../../../model/event-emitter-proxy';
 import { REG_COLOR_RANGE } from './network-style';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar } from './charts';
@@ -356,6 +357,7 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
   const virtuoso = useRef();
 
   const cy = controller.cy;
+  const cyEmitter = new EventEmitterProxy(cy);
   
   // Collapses and deselect a gene if it's not contained in the new 'genes' list.
   useEffect(() => {
@@ -372,6 +374,18 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
       setResetScroll(true);
     }
   }, [genes, sort]);
+
+  useEffect(() => {
+    cyEmitter.on('tap', evt => {
+      if (evt.target === cy && selectedGene != null) {
+        // Tapping the network background should collapse the selected gene and clear the highlight
+        toggleGeneDetails(selectedGene);
+      }
+    });
+    return () => {
+      cyEmitter.removeAllListeners();
+    };
+  });
 
   useEffect(() => {
     if (genes != null && resetScroll && virtuoso && virtuoso.current) {
