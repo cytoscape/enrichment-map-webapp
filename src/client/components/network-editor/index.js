@@ -82,8 +82,8 @@ async function loadNetwork(cy, controller, id) {
   } else {
     console.log('got positions from server');
     const positionsJson = await positionsResult.json();
-    controller.createCompoundNodes(clusterLabels, clusterAttr);
     const positionsMap = controller.applyPositions(positionsJson.positions);
+    controller.createCompoundNodes(clusterLabels, clusterAttr);
     controller.createBubbleClusters(positionsMap);
   }
 
