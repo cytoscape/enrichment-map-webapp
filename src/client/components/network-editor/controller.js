@@ -118,27 +118,26 @@ export class NetworkEditorController {
 
 
   _computeFCOSEidealEdgeLengthMap(clusterLabels, clusterAttr) {
+    const idealLength = size => {
+      switch(true) {
+        case size < 10: return 40;
+        case size < 20: return 75;
+        case size < 30: return 120;
+        case size < 40: return 180;
+        default:        return 250;
+      }
+    };
+
     const edgeLengthMap = new Map();
+
     clusterLabels.forEach(({ clusterId }) => {
       const cluster = this.cy.elements(`node[${clusterAttr}="${clusterId}"]`);
-      if(cluster.empty())
-          return;
-
-      const size = cluster.size();
-
-      let idealEdgeLength;
-      if(size < 10)
-        idealEdgeLength = 40;
-      else if(size < 20)
-        idealEdgeLength = 75;
-      else if(size < 30)
-        idealEdgeLength = 120;
-      else
-        idealEdgeLength = 200;
-
-      cluster.internalEdges().forEach(edge => {
-        edgeLengthMap.set(edge.data('id'), idealEdgeLength);
-      });
+      if(!cluster.empty()) {
+        const ideal = idealLength(cluster.size());
+        cluster.internalEdges().forEach(edge => {
+          edgeLengthMap.set(edge.data('id'), ideal);
+        });
+      }
     });
 
     return edgeLengthMap;
@@ -179,7 +178,7 @@ export class NetworkEditorController {
 
     const idealLengths = this._computeFCOSEidealEdgeLengthMap(clusterLabels, clusterAttr);
 
-    const options =  {
+    const options = {
       name: 'fcose',
       animate: false,
       idealEdgeLength: edge => idealLengths.get(edge.data('id')) || 50,
@@ -187,9 +186,9 @@ export class NetworkEditorController {
     };
 
     const allNodes = cy.nodes();
-    const disconnectedNodes = allNodes.filter(n => n.degree() === 0);
-    const networkWithoutDisconnectedNodes = cy.elements().not(disconnectedNodes);
+    const disconnectedNodes = allNodes.filter(n => n.degree() === 0); // careful, our compound nodes have degree 0
     const connectedNodes = allNodes.not(disconnectedNodes);
+    const networkWithoutDisconnectedNodes = cy.elements().not(disconnectedNodes);
     let networkToLayout = networkWithoutDisconnectedNodes;
 
     if(options.sampleEdges) {
@@ -199,9 +198,6 @@ export class NetworkEditorController {
 
     monkeyPatchMathRandom(); // just before the FD layout starts
     
-    console.log(`laying out: nodes: ${networkToLayout.nodes().size()}, edges: ${networkToLayout.edges().size()}`);
-    console.log(options);
-
     const start = performance.now();
 
     this.layout = networkToLayout.layout(options);
@@ -210,23 +206,20 @@ export class NetworkEditorController {
     await onStop;
 
     const layoutDone = performance.now();
+    console.log(`layout time: ${Math.round(layoutDone - start)}ms`);
 
     await this._packComponents(networkToLayout);
 
     const packDone = performance.now();
-
-    console.log('layout took:  ' + (layoutDone - start));
-    console.log('packing took: ' + (packDone - layoutDone));
+    console.log(`packing time: ${Math.round(packDone - layoutDone)}ms`);
 
     restoreMathRandom(); // after the FD layout is done
 
-    // Move the disconnected nodes to the bottom
     const connectedBB = connectedNodes.boundingBox();
-
-    const nodeWidth = disconnectedNodes.max(n => n.boundingBox({ nodeDimensionsIncludeLabels: true }).w).value;
-    const layoutWidth = connectedBB.w;
-    const avoidOverlapPadding = 10;
-    const cols = Math.floor(layoutWidth / (nodeWidth + avoidOverlapPadding));
+    // Style hasn't been applied yet, there are no labels. Filter out compound nodes.
+    const nodeWidth = disconnectedNodes.filter(n => !n.isParent()).max(n => n.boundingBox().w).value; 
+    const avoidOverlapPadding = 45;
+    const cols = Math.floor(connectedBB.w / (nodeWidth + avoidOverlapPadding));
 
     const cmpByNES = (a, b) => b.data('NES') - a.data('NES'); // up then down
 
@@ -235,7 +228,7 @@ export class NetworkEditorController {
       boundingBox: {
         x1: connectedBB.x1,
         x2: connectedBB.x2,
-        y1: connectedBB.y2 + DEFAULT_PADDING,
+        y1: connectedBB.y2 + DEFAULT_PADDING * 3,
         y2: connectedBB.y2 + DEFAULT_PADDING + 10000
       },
       avoidOverlapPadding,
@@ -268,7 +261,8 @@ export class NetworkEditorController {
       subgraphs.push(subgraph);
     });
 
-    const layoutUtils = this.cy.layoutUtilities(); // cytoscape-layout-utilities extension
+    // cytoscape-layout-utilities extension
+    const layoutUtils = this.cy.layoutUtilities({ desiredAspectRatio: 16/9 }); 
     const result = layoutUtils.packComponents(subgraphs);
 
     const layouts = components.map((component, i) => {
