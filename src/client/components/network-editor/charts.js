@@ -52,7 +52,8 @@ export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, 
       let offset = Math.abs(maxValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
       textStyle = { right: `${offset + 2}%` };
     } else { // ZERO value should be centered
-      textStyle = { width: '100%', textAlign: 'center' };
+      let offset = Math.abs(minValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
+      textStyle = { left: `${offset}%`, transform: 'translateX(-50%)' };
     }
   }
 
