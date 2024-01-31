@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import _ from 'lodash';
@@ -7,7 +7,6 @@ import { useQuery } from "react-query";
 import chroma from 'chroma-js';
 import { linkoutProps } from '../defaults';
 import theme from '../../theme';
-import EventEmitterProxy from '../../../model/event-emitter-proxy';
 import { REG_COLOR_RANGE } from './network-style';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar } from './charts';
@@ -350,70 +349,18 @@ const useGeneListPanelStyles = makeStyles((theme) => ({
   },
 }));
 
-const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMobile }) => {
-  const [selectedGene, setSelectedGene] = useState(null);
-  const [initialIndex, setInitialIndex] = useState(-1); // -1 means "do NOT change the scroll position"
+const GeneListPanel = ({ 
+  controller,
+  genes,
+  selectedGene,
+  initialIndex = -1,
+  isSearch,
+  isIntersection,
+  isMobile,
+  onGeneClick,
+}) => {
   const classes = useGeneListPanelStyles();
   const virtuosoRef = useRef();
-
-  const cy = controller.cy;
-  const cyEmitter = new EventEmitterProxy(cy);
-  
-  const updateCyHighlights = _.debounce((symbol) => {
-    let nodes;
-    if (symbol != null) {
-      nodes = cy.pathwayNodes().filter(n => {
-        for (const gene of n.data('genes')) {
-          if (symbol === gene)
-            return true;
-        }
-        return false;
-      });
-    }
-    controller.highlightElements(nodes);
-  }, 200);
-
-  const toggleGeneDetails = async (symbol) => {
-    const newSymbol = selectedGene !== symbol ? symbol : null;
-    updateCyHighlights(newSymbol);
-    setSelectedGene(newSymbol);
-    if (newSymbol != null)
-      setInitialIndex(-1); // Make sure the scroll position doesn't change!
-  };
-
-  useEffect(() => {
-    // Check whether the previously selected gene is in the new 'genes' list
-    if (genes != null && selectedGene != null) {
-      let idx = _.findIndex(genes, g => g.gene === selectedGene);
-      if (idx >= 0) {
-        // Scroll to the previously selected gene
-        if (idx > 1) idx--; // if this gene is not the first in the list, make sure it doesn't look like it is
-        setInitialIndex(idx);
-      } else {
-        // Collapses and deselect a gene if it's not contained in the new 'genes' list.
-        toggleGeneDetails(selectedGene);
-        // And reset the scroll
-        setInitialIndex(0);
-      }
-    }
-  }, [genes]);
-
-  useEffect(() => {
-    if (genes != null)
-      setInitialIndex(0); // Always reset the scroll when sorting has changed
-  }, [sort]);
-
-  useEffect(() => {
-    cyEmitter.on('tap', evt => {
-      if (evt.target === cy && selectedGene != null) {
-        // Tapping the network background should collapse the selected gene and clear the highlight
-        toggleGeneDetails(selectedGene);
-      }
-    });
-    return () => {
-      cyEmitter.removeAllListeners();
-    };
-  });
 
   useEffect(() => {
     // Check whether we need to change scroll the list to the required index
@@ -429,7 +376,6 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
   }
 
   const { minRank, maxRank } = controller;
-
   const rankColorScale = chroma.scale(REG_COLOR_RANGE.range3).domain([minRank, 0, maxRank]);
 
   const getRankColor = rank => {
@@ -485,6 +431,11 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
 
     const geneTextElemId = `gene_${idx}`;
 
+    const handleGeneClick = (symbol) => {
+      if (!loading)
+        onGeneClick(symbol);
+    };
+
     return (
       <ListItem key={idx} alignItems="flex-start" className={classes.listItem}>
         <ListItemText
@@ -498,7 +449,7 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
                 alignItems='center'
                 disabled={loading}
                 className={clsx(classes.listItemHeader, { [classes.listItemHeaderSelected]: isSelected })}
-                onClick={() => { if (!loading) toggleGeneDetails(symbol); }}
+                onClick={() => handleGeneClick(symbol)}
               >
                 <Grid item className={classes.geneContainer}>
                   <Grid container direction="row" justifyContent="flex-start" alignItems="center">
@@ -561,10 +512,12 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   genes: PropTypes.array,
-  sort: PropTypes.string,
+  selectedGene: PropTypes.string,
+  initialIndex: PropTypes.number,
   isSearch: PropTypes.bool,
   isIntersection: PropTypes.bool,
   isMobile: PropTypes.bool,
+  onGeneClick: PropTypes.func.isRequired,
 };
 
 export default GeneListPanel;

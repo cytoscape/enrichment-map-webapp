@@ -119,6 +119,8 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   const [genes, setGenes] = useState(null);
   const [setOperation, setSetOperation] = useState('union');
   const [sort, setSort] = useState('down');
+  const [selectedGene, setSelectedGene] = useState(null);
+  const [initialIndex, setInitialIndex] = useState(-1); // -1 means "do NOT change the scroll position"
 
   const searchValueRef = useRef();
   searchValueRef.current = searchValue;
@@ -128,6 +130,9 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
 
   const sortRef = useRef(sort);
   sortRef.current = sort;
+
+  const selectedGeneRef = useRef(selectedGene);
+  selectedGeneRef.current = selectedGene;
 
   const cy = controller.cy;
   const cyEmitter = new EventEmitterProxy(cy);
@@ -241,6 +246,28 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     }
   };
 
+  const updateCyHighlights = _.debounce((symbol) => {
+    let nodes;
+    if (symbol != null) {
+      nodes = cy.pathwayNodes().filter(n => {
+        for (const gene of n.data('genes')) {
+          if (symbol === gene)
+            return true;
+        }
+        return false;
+      });
+    }
+    controller.highlightElements(nodes);
+  }, 200);
+
+  const toggleGeneDetails = async (symbol) => {
+    const newSymbol = selectedGeneRef.current !== symbol ? symbol : null;
+    updateCyHighlights(newSymbol);
+    setSelectedGene(newSymbol);
+    if (newSymbol != null)
+      setInitialIndex(-1); // Make sure the scroll position doesn't change!
+  };
+
   useEffect(() => {
     controller.bus.on('networkLoaded', onNetworkLoaded);
     controller.bus.on('geneListIndexed', onGeneListIndexed);
@@ -255,6 +282,12 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     
     cyEmitter.on('select unselect', onCySelectionChanged);
     cyEmitter.on('select', () => clearSearch());
+    cyEmitter.on('tap', evt => {
+      if (evt.target === cy && selectedGeneRef.current != null) {
+        // Tapping the network background should collapse the selected gene and clear the highlight
+        toggleGeneDetails(selectedGeneRef.current);
+      }
+    });
 
     return function cleanup() {
       cyEmitter.removeAllListeners();
@@ -268,6 +301,28 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
       setGenes(sortGenes(searchResult, sortRef.current));
     } 
   }, [searchResult]);
+
+  useEffect(() => {
+    // Check whether the previously selected gene is in the new 'genes' list
+    if (genes != null && selectedGeneRef.current != null) {
+      let idx = _.findIndex(genes, g => g.gene === selectedGeneRef.current);
+      if (idx >= 0) {
+        // Scroll to the previously selected gene
+        if (idx > 1) idx--; // if this gene is not the first in the list, make sure it doesn't look like it is
+        setInitialIndex(idx);
+      } else {
+        // Collapses and deselect a gene if it's not contained in the new 'genes' list.
+        toggleGeneDetails(selectedGeneRef.current);
+        // And reset the scroll
+        setInitialIndex(0);
+      }
+    }
+  }, [genes]);
+
+  useEffect(() => {
+    if (genes != null)
+      setInitialIndex(0); // Always reset the scroll when sorting has changed
+  }, [sort]);
 
   const handleGeneSetOption = async (evt) => {
     const value = evt.target.value;
@@ -414,10 +469,12 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
           <GeneListPanel
             controller={controller}
             genes={genes}
-            sort={sort}
+            selectedGene={selectedGene}
+            initialIndex={initialIndex}
             isSearch={searchResult && searchResult !== ''}
             isIntersection={setOperation === 'intersection'}
             isMobile={isMobile}
+            onGeneClick={toggleGeneDetails}
           />
         )}
       </div>
