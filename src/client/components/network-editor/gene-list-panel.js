@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
+import clsx from 'clsx';
 import _ from 'lodash';
 
 import { useQuery } from "react-query";
@@ -30,6 +31,11 @@ const CHART_WIDTH = 160;
 const CHART_HEIGHT = 16;
 const GENE_RANK_ROUND_DIGITS = 2;
 
+/** Background color for hovering over selected elements */
+const HOVER_SELECTION_BG =
+  chroma(theme.palette.action.selected)
+  .alpha(chroma(theme.palette.action.hover).alpha() + chroma(theme.palette.action.selected).alpha())
+  .css();
 
 const useGeneMetadataPanelStyles = makeStyles((theme) => ({
   geneName: {
@@ -306,16 +312,22 @@ const useGeneListPanelStyles = makeStyles((theme) => ({
     height: 24,
     margin: 0,
     borderRadius: 4,
-    cursor: 'pointer',
     '&:hover': {
       backgroundColor: theme.palette.action.hover,
     },
-    "&[disabled]": {
+    cursor: 'pointer',
+    '&[disabled]': {
       color: theme.palette.divider,
-      cursor: "default",
-      "&:hover": {
-        textDecoration: "none"
-      }
+      cursor: 'default',
+      '&:hover': {
+        textDecoration: 'none',
+      },
+    },
+  },
+  listItemHeaderSelected: {
+    backgroundColor: theme.palette.action.selected,
+    '&:hover': {
+      backgroundColor: HOVER_SELECTION_BG,
     },
   },
   bulletIconContainer: {
@@ -337,25 +349,25 @@ const useGeneListPanelStyles = makeStyles((theme) => ({
   },
 }));
 
-const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMobile }) => {
-  const [selectedGene, setSelectedGene] = useState(null);
-  const [resetScroll, setResetScroll] = useState(true);
+const GeneListPanel = ({ 
+  controller,
+  genes,
+  selectedGene,
+  initialIndex = -1,
+  isSearch,
+  isIntersection,
+  isMobile,
+  onGeneClick,
+}) => {
   const classes = useGeneListPanelStyles();
-  const virtuoso = useRef();
-
-  const cy = controller.cy;
-  
-  // Resets the scroll position when either the gene list or the sort has changed
-  useEffect(() => {
-    setResetScroll(true);
-  }, [genes, sort]);
+  const virtuosoRef = useRef();
 
   useEffect(() => {
-    if (resetScroll && virtuoso && virtuoso.current) {
-      virtuoso.current.scrollToIndex({
-        index: 0,
-        behavior: 'auto',
-      });
+    // Check whether we need to change scroll the list to the required index
+    if (genes != null && initialIndex >= 0 &&
+        genes.length > initialIndex &&
+        virtuosoRef && virtuosoRef.current) {
+      virtuosoRef.current.scrollToIndex({ index: initialIndex, behavior: 'auto' });
     }
   });
 
@@ -363,31 +375,7 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
     return <NoResultsBox isSearch={isSearch} isIntersection={isIntersection} />;
   }
 
-  const toggleGeneDetails = async (symbol) => {
-    setResetScroll(false);
-    setSelectedGene(selectedGene !== symbol ? symbol : null);
-  };
-
-  const debouncedUpdateCyHighlights = _.debounce((symbol) => {
-    let nodes;
-    if (symbol) {
-      nodes = cy.pathwayNodes().filter(n => {
-        for (const gene of n.data('genes')) {
-          if (symbol === gene)
-            return true;
-        }
-        return false;
-      });
-    }
-    controller.highlightElements(nodes);
-  }, 200);
-
-  const updateCyHighlights = (symbol) => {
-    debouncedUpdateCyHighlights(symbol);
-  };
-
   const { minRank, maxRank } = controller;
-
   const rankColorScale = chroma.scale(REG_COLOR_RANGE.range3).domain([minRank, 0, maxRank]);
 
   const getRankColor = rank => {
@@ -443,6 +431,11 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
 
     const geneTextElemId = `gene_${idx}`;
 
+    const handleGeneClick = (symbol) => {
+      if (!loading)
+        onGeneClick(symbol);
+    };
+
     return (
       <ListItem key={idx} alignItems="flex-start" className={classes.listItem}>
         <ListItemText
@@ -455,10 +448,8 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
                 justifyContent="space-between"
                 alignItems='center'
                 disabled={loading}
-                className={classes.listItemHeader}
-                onClick={() => { if (!loading) toggleGeneDetails(symbol); }}
-                onMouseEnter={() => { if (!loading) updateCyHighlights(symbol); }}
-                onMouseLeave={() => { if (!loading) updateCyHighlights(); }}
+                className={clsx(classes.listItemHeader, { [classes.listItemHeaderSelected]: isSelected })}
+                onClick={() => handleGeneClick(symbol)}
               >
                 <Grid item className={classes.geneContainer}>
                   <Grid container direction="row" justifyContent="flex-start" alignItems="center">
@@ -510,7 +501,7 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
 
   return (
     <Virtuoso
-      ref={virtuoso}
+      ref={virtuosoRef}
       totalCount={totalGenes}
       itemContent={idx => renderGeneRow(idx)}
       overscan={200}
@@ -521,10 +512,12 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
 GeneListPanel.propTypes = {
   controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   genes: PropTypes.array,
-  sort: PropTypes.string,
+  selectedGene: PropTypes.string,
+  initialIndex: PropTypes.number,
   isSearch: PropTypes.bool,
   isIntersection: PropTypes.bool,
   isMobile: PropTypes.bool,
+  onGeneClick: PropTypes.func.isRequired,
 };
 
 export default GeneListPanel;
