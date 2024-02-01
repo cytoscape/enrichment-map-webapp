@@ -603,7 +603,7 @@ function Debug({ sampleFiles, onLoadSampleNetwork }) {
       {
         sampleRankFiles.length > 0 ?
         sampleRankFiles.map(file => (
-          <li key={file}><Link style={{ cursor: 'pointer' }} onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
+          <li key={file}><Link onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
         )) :
         <li>Loading...</li>
       }
@@ -613,7 +613,7 @@ function Debug({ sampleFiles, onLoadSampleNetwork }) {
       {
         sampleExprFiles.length > 0 ?
         sampleExprFiles.map(file => (
-          <li key={file}><Link style={{ cursor: 'pointer' }} onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
+          <li key={file}><Link onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
         )) :
         <li>Loading...</li>
       }
