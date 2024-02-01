@@ -354,7 +354,7 @@ const GeneListPanel = ({
   genes,
   selectedGene,
   initialIndex = -1,
-  isSearch,
+  isSearch = false,
   isIntersection,
   isMobile,
   onGeneClick,
