@@ -483,7 +483,7 @@ const GeneListPanel = ({ controller, genes, sort, isSearch, isIntersection, isMo
                       :
                       rank != null && (
                         <UpDownHBar
-                          value={rank}
+                          value={roundedRank}
                           minValue={minRank}
                           maxValue={maxRank}
                           color={rankColor}
