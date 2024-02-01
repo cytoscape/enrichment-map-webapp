@@ -1,7 +1,7 @@
 import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape'; // eslint-disable-line
 import MiniSearch from 'minisearch';
-
+import _ from 'lodash';
 
 
 export function parsePathwayName(pathway) {
@@ -25,8 +25,13 @@ export class SearchController {
     this.pathwaysReady = false;
 
     this.bus.on('networkLoaded', () => {
-      this.fetchAllGenesInNetwork();
-      this.fetchAllPathwaysInNetwork();
+      Promise.all([
+        this.fetchAllGenesInNetwork(),
+        this.fetchAllPathwaysInNetwork(),
+      ]).then(() => {
+        this.genesReady = true;
+        this.bus.emit('geneListIndexed');
+      });
     });
   }
 
@@ -39,7 +44,9 @@ export class SearchController {
   }
 
   /**
-   * Fetches all the genes in the network.
+   * Fetches all ranked genes in the network.
+   * Note: pathways usually contain genes that are not in the user's gene list, these genes do not have ranks
+   * and are not returned by the endpoint
    */
   async fetchAllGenesInNetwork() {
     const res = await fetch(`/api/${this.networkIDStr}/genesforsearch`);
@@ -54,13 +61,62 @@ export class SearchController {
       const documents = await res.json();
       this.geneMiniSearch.addAll(documents);
 
-      this.genesReady = true;
-      this.bus.emit('geneListIndexed');
+      ({pathwayGenes : this.pathwayGenes, geneRanks: this.geneRanks} = this._createMaps(documents));
     }
   }
 
+
+  _createMaps(documents) {
+    const pathwayGenes = new Map();
+    const geneRanks = new Map();
+
+    for(const doc of documents || []) {
+      const { gene, rank } = doc;
+      geneRanks.set(gene, rank);
+      for(const pathway of doc.pathwayNames || []) {
+        if(pathwayGenes.has(pathway)) {
+          pathwayGenes.get(pathway).push(gene);
+        } else {
+          pathwayGenes.set(pathway, [gene]);
+        }
+      }
+    }
+    return { pathwayGenes, geneRanks };
+  }
+
+
+  queryPathwayGenes(pathways, intersection = false) {
+    const { pathwayGenes, geneRanks } = this;
+
+    if(pathways === undefined || pathways.length == 0) {
+      pathways = [...pathwayGenes.keys()];
+    }
+
+    const result = new Set(pathwayGenes.get(pathways[0]));
+
+    for(const pathway of pathways.slice(1)) { 
+      if(intersection) {
+        const genes = new Set(pathwayGenes.get(pathway));
+        for(const gene of result) {
+          if(!genes.has(gene)) {
+            result.delete(gene);
+          }
+        }
+      } else {
+        const genes = pathwayGenes.get(pathway);
+        genes.forEach(g => result.add(g));
+      }
+    }
+
+    const genesWithRanks = [...result].map(gene => ({ gene, rank: geneRanks.get(gene) }));
+    return _.orderBy(genesWithRanks, 'rank', 'desc');
+  }
+
+
   /**
-   * Fetches all the genes in the network.
+   * Fetches all the pathways in the network.
+   * Note this includes all the genes in the pathway, which likely contains genes that are not
+   * in the user's gene list.
    */
   async fetchAllPathwaysInNetwork() {
     const res = await fetch(`/api/${this.networkIDStr}/pathwaysforsearch`);

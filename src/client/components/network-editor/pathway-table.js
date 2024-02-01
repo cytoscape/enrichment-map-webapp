@@ -79,6 +79,7 @@ const useStyles = makeStyles((theme) => ({
     borderLeft: `1px solid transparent`,
     borderImage: `linear-gradient(to bottom, transparent 25%,${theme.palette.divider} 25%,${theme.palette.divider} 75%,transparent 75%)`,
     borderImageSlice: 5,
+    cursor: 'default !important',
   },
   tableCell: {
     // --> WHATCH OUT! `padding[Top|Bottom]: 0` may cause a defect where the
@@ -89,6 +90,7 @@ const useStyles = makeStyles((theme) => ({
     paddingRight: theme.spacing(0.5),
     // <------------------------------------------------------------
     borderBottom: `1px solid ${theme.palette.background.default}`,
+    cursor: 'pointer',
   },
   checkCell: {
     maxWidth: 48,
@@ -160,7 +162,7 @@ const useStyles = makeStyles((theme) => ({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     marginRight: 4,
-    cursor: 'default',
+    cursor: 'pointer',
   },
   link: {
     "&[disabled]": {
