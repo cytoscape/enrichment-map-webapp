@@ -10,7 +10,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { BOTTOM_DRAWER_OPEN } from '../defaults';
 import theme from '../../theme';
 import { isMobile, isTablet } from './util';
-import { NetworkEditorController } from './controller';
+import { NetworkEditorController, CiSELayoutOptions } from './controller';
 import Main from './main';
 
 import createNetworkStyle from './network-style';
@@ -44,6 +44,9 @@ function createCy(id) {
 }
 
 
+/**
+ * @param { NetworkEditorController } controller
+ */
 async function loadNetwork(cy, controller, id) {
   console.log('Loading...');
 
@@ -63,24 +66,26 @@ async function loadNetwork(cy, controller, id) {
     parameters: networkJson.parameters
   });
 
-  // await controller.applyLayout();
+  // TODO, make clusterAttr a property of clusterLabels, so it doesn't have to be passed around separately.
+  const clusterLabels = networkJson.clusterLabels[0].labels;
+  const clusterAttr = 'mcode_cluster_id';
 
-  let positionsMap;
   let layoutWasRun = false;
 
   const positionsResult = await positionsPromise;
   if(positionsResult.status == 404) {
     console.log('running layout');
-    await controller.applyLayout();
-    layoutWasRun = true;
+    controller.createCompoundNodes(clusterLabels, clusterAttr);
+    await controller.applyLayout(clusterLabels, clusterAttr);
+    controller.createBubbleClusters();
+    layoutWasRun = true;  
   } else {
     console.log('got positions from server');
     const positionsJson = await positionsResult.json();
-    positionsMap = controller.applyPositions(positionsJson.positions);
+    const positionsMap = controller.applyPositions(positionsJson.positions);
+    controller.createCompoundNodes(clusterLabels, clusterAttr);
+    controller.createBubbleClusters(positionsMap);
   }
-
-  const clusterDefs = networkJson.clusterLabels[0].labels;
-  await controller.createClusters(clusterDefs, 'mcode_cluster_id', positionsMap);
 
   // Set network style
   const style = createNetworkStyle(cy);
