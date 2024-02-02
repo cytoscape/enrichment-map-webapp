@@ -20,3 +20,7 @@ a {
 * {
   outline: none !important;
 }
+
+path.unhighlighted {
+  visibility: hidden;
+}

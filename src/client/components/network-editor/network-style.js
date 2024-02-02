@@ -184,13 +184,9 @@ export const createNetworkStyle = (cy) => {
         }
       },
       {
-        selector: 'node.unhighlighted:child',
+        selector: 'node.unhighlighted:parent',
         style: {
-          'background-color': 'white',
-          'opacity': 0.05,
-          'border-width': 1,
-          'border-color': getNodeColor,
-          'border-opacity': 1.0,
+          'label': ''
         }
       },
       {

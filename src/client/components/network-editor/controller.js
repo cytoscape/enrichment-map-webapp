@@ -13,7 +13,6 @@ import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 import { SearchController } from './search-contoller';
 import { UndoHandler } from './undo-stack';
 import { getLegendSVG } from './legend-svg';
-import { stringToBlob } from './util';
 
 import ZoomOutMapIcon from '@material-ui/icons/ZoomOutMap';
 import { ZoomInIcon } from '../svg-icons';
@@ -21,6 +20,23 @@ import { ZoomInIcon } from '../svg-icons';
 // Clusters that have this many nodes get optimized.
 // Note we are using number of nodes as a proxy for number of edges, assuming large clusters are mostly complete.
 const LARGE_CLUSTER_SIZE = 33; // approx 500 edges in a complete graph
+
+// Keys for scratch data
+export const Scratch = {
+  // boolean flag indicating if the expand/collapse layout is currently running, attached to parent nodes
+  LAYOUT_RUNNING: '_layoutRunning',
+  // BubblePath instance, attached to parent nodes
+  BUBBLE: '_bubble',
+  // The HTML element for the expand/collapse toggle buttons, attached to parent nodes
+  TOGGLE_BUTTON_ELEM: '_buttonElem',
+};
+
+// Sizes of exported PNG images
+export const ImageSize = {
+  SMALL:  { value:'SMALL',  scale: 0.5 },
+  MEDIUM: { value:'MEDIUM', scale: 1.0 },
+  LARGE:  { value:'LARGE',  scale: 2.0 },
+};
 
 export const CoSELayoutOptions = {
   name: 'cose',
@@ -33,11 +49,6 @@ export const CoSELayoutOptions = {
   padding: DEFAULT_PADDING,
 };
 
-export const ImageSize = {
-  SMALL:  { value:'SMALL',  scale: 0.5 },
-  MEDIUM: { value:'MEDIUM', scale: 1.0 },
-  LARGE:  { value:'LARGE',  scale: 2.0 },
-};
 
 /**
  * The network editor controller contains all high-level model operations that the network
@@ -248,13 +259,27 @@ export class NetworkEditorController {
       toHl.not(this.cy.nodes(':compound')).addClass('highlighted');
       toUnhl.removeClass('highlighted');
       toUnhl.not(this.cy.nodes(':compound')).addClass('unhighlighted');
+
+      // Apply to compound nodes
+      eles.parent().forEach(parent => {
+         // If all children are unhighlighted then hide the parent
+        const hide = parent.children().hasClass('unhighlighted');
+        parent[hide ? 'addClass' : 'removeClass']('unhighlighted');
+
+        const bubble = parent.scratch(Scratch.BUBBLE);
+        bubble?.node?.classList?.[hide ? 'add' : 'remove']('unhighlighted');
+
+        const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
+        elem.style.opacity = hide ? 0 : 1; // don't mess with visibility because the mouse hover event uses that
+      });
     });
   }
 
+
   toggleExpandCollapse(parent, requestAnimate = false) {
-    if(parent.scratch('_layoutRunning'))
+    if(parent.scratch(Scratch.LAYOUT_RUNNING))
       return;
-    parent.scratch('_layoutRunning', true);
+    parent.scratch(Scratch.LAYOUT_RUNNING, true);
 
     const collapsed = parent.data('collapsed');
     const shrinkFactor = 0.2;
@@ -288,7 +313,7 @@ export class NetworkEditorController {
     }
 
     onStop.then(() => {
-      parent.scratch('_layoutRunning', false);
+      parent.scratch(Scratch.LAYOUT_RUNNING, false);
       this.bus.emit('toggleExpandCollapse', parent, collapsed);
     });
 
@@ -326,12 +351,12 @@ export class NetworkEditorController {
   /**
    * Creates, removes, or updates a bubble path depending on the state of the parent node.
    */
-  _updateBubblePath(parent) {
+  _createOrUpdateBubblePath(parent) {
     if(!this.bubbleSets) {
       this.bubbleSets = this.cy.bubbleSets(); // only create one instance of this plugin
     }
 
-    const existingPath = parent.scratch('_bubble');
+    const existingPath = parent.scratch(Scratch.BUBBLE);
     if(existingPath) {
       this.bubbleSets.removePath(existingPath);
     }
@@ -359,7 +384,7 @@ export class NetworkEditorController {
     });
 
     // Save the bubblePath object in the parent node
-    parent.scratch('_bubble', bubblePath);
+    parent.scratch(Scratch.BUBBLE, bubblePath);
     return bubblePath;
   }
 
@@ -380,7 +405,7 @@ export class NetworkEditorController {
 
     // Switch the button icon when the cluster is expanded or collapsed.
     this.bus.on('toggleExpandCollapse', parent => {
-      const elem = parent.scratch('buttonElem');
+      const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
       setButtonHTML(elem, parent);
     });
 
@@ -399,12 +424,12 @@ export class NetworkEditorController {
     cy.on('mousemove', _.throttle(e => {
       const parent = this.getBubbleSetParent(e.position);
       if(prevParent && prevParent !== parent) {
-        const elem = prevParent.scratch('buttonElem');
+        const elem = prevParent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
         elem.style.visibility = 'hidden';
         prevParent = null;
       }
       if(parent) {
-        const elem = parent.scratch('buttonElem');
+        const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
         elem.style.visibility = 'visible';
         prevParent = parent;
       }
@@ -414,7 +439,7 @@ export class NetworkEditorController {
     const createClusterToggleButton = (elem, parent) => {
       elem.classList.add('cluster-toggle-button');
       elem.style.visibility = 'hidden';
-      parent.scratch('buttonElem', elem);
+      parent.scratch(Scratch.TOGGLE_BUTTON_ELEM, elem);
 
       setButtonHTML(elem, parent);
 
@@ -491,7 +516,7 @@ export class NetworkEditorController {
       }
 
       this._setAverageNES(parent);
-      const bubblePath = this._updateBubblePath(parent);
+      const bubblePath = this._createOrUpdateBubblePath(parent);
 
       parent.on('position', () => {
         // When the children are ungrabified the 'position' event is not fired for them, must update the bubble path manually.
@@ -533,7 +558,7 @@ export class NetworkEditorController {
       const inside = path.node.isPointInFill(point);
       if(inside) {
         const parentNodes = this.cy.nodes(':parent');
-        const parent = parentNodes.filter(parent => path === parent.scratch('_bubble'));
+        const parent = parentNodes.filter(parent => path === parent.scratch(Scratch.BUBBLE));
         if(!parent.empty()) {
           return parent;
         }
@@ -556,7 +581,7 @@ export class NetworkEditorController {
 
     // Remove the bubble paths before deleting their contents, or else an error occurs
     parentNodes.forEach(parent => {
-      const bubblePath = parent.scratch('_bubble');
+      const bubblePath = parent.scratch(Scratch.BUBBLE);
       if(bubblePath) {
         this.bubbleSets.removePath(bubblePath);
       }
@@ -570,7 +595,7 @@ export class NetworkEditorController {
       } else {
         this._setAverageNES(parent);
       }
-      this._updateBubblePath(parent);
+      this._createOrUpdateBubblePath(parent);
     });
 
     this.bus.emit('deletedSelectedNodes', deletedNodes);
