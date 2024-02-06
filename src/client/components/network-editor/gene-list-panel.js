@@ -418,11 +418,11 @@ const GeneListPanel = ({
     const loading = genes == null;
     const isSelected = !loading && selectedGene != null && selectedGene === symbol;
 
+    const roundDigits = GENE_RANK_ROUND_DIGITS;
+    const roundedRank = _.isNumber(rank) ? (Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits)) : NaN;
+    
     const rankColor = getRankColor(rank);
 
-    const roundDigits = GENE_RANK_ROUND_DIGITS;
-    const roundedRank = rank != null ? (Math.round(rank * Math.pow(10, roundDigits)) / Math.pow(10, roundDigits)) : 0;
-    
     // Tooltip for rank:
     const sign = roundedRank > 0 ? '+' : '';
     let reg = roundedRank > 0 ? 'up' : 'down';
@@ -472,9 +472,9 @@ const GeneListPanel = ({
                     {loading ?
                       <Skeleton variant="rect" height={CHART_HEIGHT} />
                       :
-                      rank != null && (
+                      !isNaN(roundedRank) && (
                         <UpDownHBar
-                          value={rank}
+                          value={roundedRank}
                           minValue={minRank}
                           maxValue={maxRank}
                           color={rankColor}
