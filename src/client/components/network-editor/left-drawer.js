@@ -139,15 +139,15 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
 
   const classes = useStyles();
 
-  const sortGenes = (genes, sort) => {
+  const sortGenes = (list, sort) => {
     const args = sortOptions[sort];
-    return _.orderBy(genes, args.iteratees, args.orders);
+    return _.orderBy(list, args.iteratees, args.orders);
   };
 
   const fetchGeneList = async (geneSetNames, intersection = false) => {
     const res = await controller.fetchGeneList(geneSetNames, intersection);
-    const genes = res || [];
-    return genes;
+    const newGenes = res || [];
+    return newGenes;
   };
 
   const fetchAllRankedGenes = async (intersection = false) => {
@@ -177,15 +177,15 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   };
 
   const fetchGeneListFromElements = async (eles, intersection = false) => {
-    const genes = [];
+    const newGenes = [];
     const gsNames = getGeneSetNames(eles);
     
     if (gsNames.length > 0) {
       const nodeGenes = await fetchGeneList(gsNames, intersection);
-      genes.push(...nodeGenes);
+      newGenes.push(...nodeGenes);
     }
     
-    const unique = _.uniqBy(genes, 'gene'); // Remove duplicates
+    const unique = _.uniqBy(newGenes, 'gene'); // Remove duplicates
     return unique;
   };
 
@@ -194,16 +194,14 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     const intersection = setOperationRef.current === 'intersection';
 
     if (eles.length > 0) {
-      setGenes(null);
       if (eles.length === 1) {
         setSort(eles[0].data('NES') < 0 ? 'up' : 'down');
       }
-      const genes = await fetchGeneListFromElements(eles, intersection);
-      setGenes(sortGenes(genes, sortRef.current));
-    } else if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
-      setGenes(null);
-      const genes = await fetchAllRankedGenes(intersection);
-      setGenes(sortGenes(genes, sortRef.current));
+      const newGenes = await fetchGeneListFromElements(eles, intersection);
+      setGenes(sortGenes(newGenes, sortRef.current));
+    } else if (_.isEmpty(searchValueRef.current)) {
+      const newGenes = await fetchAllRankedGenes(intersection);
+      setGenes(sortGenes(newGenes, sortRef.current));
     }
   }, 250);
 
@@ -299,7 +297,9 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   useEffect(() => {
     if (searchResult != null) {
       setGenes(sortGenes(searchResult, sortRef.current));
-    } 
+    } else if (geneListIndexed) {
+      debouncedSelectionHandler();
+    }
   }, [searchResult]);
 
   useEffect(() => {
@@ -331,11 +331,11 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     const eles = cy.pathwayNodes(true);
     const intersection = value === 'intersection';
     if (eles.length > 0) {
-      const genes = await fetchGeneListFromElements(eles, intersection);
-      setGenes(sortGenes(genes, sortRef.current));
+      const newGenes = await fetchGeneListFromElements(eles, intersection);
+      setGenes(sortGenes(newGenes, sortRef.current));
     } else {
-      const genes = await fetchAllRankedGenes(intersection);
-      setGenes(sortGenes(genes, sortRef.current));
+      const newGenes = await fetchAllRankedGenes(intersection);
+      setGenes(sortGenes(newGenes, sortRef.current));
     }
   };
   const handleSort = (evt, value) => {
@@ -471,7 +471,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
             genes={genes}
             selectedGene={selectedGene}
             initialIndex={initialIndex}
-            isSearch={searchResult && searchResult !== ''}
+            isSearch={!_.isEmpty(searchResult)}
             isIntersection={setOperation === 'intersection'}
             isMobile={isMobile}
             onGeneClick={toggleGeneDetails}
