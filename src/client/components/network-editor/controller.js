@@ -374,14 +374,14 @@ export class NetworkEditorController {
       // Apply to compound nodes
       eles.parent().forEach(parent => {
          // If all children are unhighlighted then hide the parent
-        const hide = parent.children().hasClass('unhighlighted');
+        const hide = parent.children().every(child => child.hasClass('unhighlighted'));
         parent[hide ? 'addClass' : 'removeClass']('unhighlighted');
 
         const bubble = parent.scratch(Scratch.BUBBLE);
         bubble?.node?.classList?.[hide ? 'add' : 'remove']('unhighlighted');
 
         const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-        elem.style.opacity = hide ? 0 : 1; // don't mess with visibility because the mouse hover event uses that
+        elem.style.opacity = hide ? 0 : 1; // don't change 'visibility' prop because the mouse hover event uses that
       });
     });
   }
