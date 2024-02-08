@@ -40,7 +40,7 @@ const mobileMenuId = 'primary-menu-mobile';
 const logosDef = [
   { src: "/images/bader-lab-logo.svg", alt: "Bader Lab logo", href: "https://baderlab.org/" },
   { src: "/images/cytoscape-consortium-logo.svg", alt: "Cytoscape Consortium logo", href: "https://cytoscape.org/" },
-  { src: "/images/donnelly-logo.png", alt: "The Donnelly Centre logo", href: "https://thedonnellycentre.utoronto.ca/" },
+  // { src: "/images/donnelly-logo.png", alt: "The Donnelly Centre logo", href: "https://thedonnellycentre.utoronto.ca/" },
   { src: "/images/uoft-logo.svg", alt: "UofT logo", href: "https://www.utoronto.ca/" },
 ];
 
@@ -318,8 +318,8 @@ export function Content() {
     showNetwork(networkID);
   };
 
-  /** Render Componenets */
-  const { contents, ...stateToLog } = uploadState;
+  /** Render Components */
+  const { ...stateToLog } = uploadState;
   console.log("Content render. uploadState: " + JSON.stringify(stateToLog));
 
   return (
@@ -543,10 +543,8 @@ const useFooterStyles = makeStyles(theme => ({
     },
   },
   logoBar: {
-    justifyContent: 'space-between',
     paddingLeft: theme.spacing(15),
     [theme.breakpoints.down('sm')]: {
-      justifyContent: 'center',
       paddingLeft: 0,
     },
   },
@@ -565,22 +563,23 @@ function Footer({ mobile, tablet }) {
           alignItems={mobile || tablet ? 'center' : 'flex-start'}
           justifyContent={mobile || tablet ? 'space-around' : 'center'}
         >
-          <Grid item md={3} sm={12} className={classes.copyright}>
+          <Grid item md={4} sm={12} className={classes.copyright}>
             &copy; {new Date().getFullYear()} University of Toronto
           </Grid>
-          <Grid item md={9} sm={12}>
+          <Grid item md={8} sm={12}>
             <Grid
               container
               direction={mobile ? 'column' : 'row'}
               alignItems={mobile ? 'center' : 'flex-start'}
-              spacing={mobile ? 2 : 5}
+              justifyContent={mobile || tablet ? 'space-between' : 'flex-end'}
+              spacing={mobile ? 2 : 10}
               className={classes.logoBar}
             >
-          {logosDef.map((logo, idx) =>
-            <Grid item key={idx}>
-              <Logo src={logo.src} alt={logo.alt} href={logo.href} />
-            </Grid>
-          )}
+            {logosDef.map((logo, idx) =>
+              <Grid item key={idx}>
+                <Logo src={logo.src} alt={logo.alt} href={logo.href} />
+              </Grid>
+            )}
             </Grid>
           </Grid>
         </Grid>
@@ -604,7 +603,7 @@ function Debug({ sampleFiles, onLoadSampleNetwork }) {
       {
         sampleRankFiles.length > 0 ?
         sampleRankFiles.map(file => (
-          <li key={file}><Link style={{ cursor: 'pointer' }} onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
+          <li key={file}><Link onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
         )) :
         <li>Loading...</li>
       }
@@ -614,7 +613,7 @@ function Debug({ sampleFiles, onLoadSampleNetwork }) {
       {
         sampleExprFiles.length > 0 ?
         sampleExprFiles.map(file => (
-          <li key={file}><Link style={{ cursor: 'pointer' }} onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
+          <li key={file}><Link onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
         )) :
         <li>Loading...</li>
       }

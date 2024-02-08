@@ -119,6 +119,8 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   const [genes, setGenes] = useState(null);
   const [setOperation, setSetOperation] = useState('union');
   const [sort, setSort] = useState('down');
+  const [selectedGene, setSelectedGene] = useState(null);
+  const [initialIndex, setInitialIndex] = useState(-1); // -1 means "do NOT change the scroll position"
 
   const searchValueRef = useRef();
   searchValueRef.current = searchValue;
@@ -129,20 +131,23 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   const sortRef = useRef(sort);
   sortRef.current = sort;
 
+  const selectedGeneRef = useRef(selectedGene);
+  selectedGeneRef.current = selectedGene;
+
   const cy = controller.cy;
   const cyEmitter = new EventEmitterProxy(cy);
 
   const classes = useStyles();
 
-  const sortGenes = (genes, sort) => {
+  const sortGenes = (list, sort) => {
     const args = sortOptions[sort];
-    return _.orderBy(genes, args.iteratees, args.orders);
+    return _.orderBy(list, args.iteratees, args.orders);
   };
 
   const fetchGeneList = async (geneSetNames, intersection = false) => {
     const res = await controller.fetchGeneList(geneSetNames, intersection);
-    const genes = res || [];
-    return genes;
+    const newGenes = res || [];
+    return newGenes;
   };
 
   const fetchAllRankedGenes = async (intersection = false) => {
@@ -172,15 +177,15 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   };
 
   const fetchGeneListFromElements = async (eles, intersection = false) => {
-    const genes = [];
+    const newGenes = [];
     const gsNames = getGeneSetNames(eles);
     
     if (gsNames.length > 0) {
       const nodeGenes = await fetchGeneList(gsNames, intersection);
-      genes.push(...nodeGenes);
+      newGenes.push(...nodeGenes);
     }
     
-    const unique = _.uniqBy(genes, 'gene'); // Remove duplicates
+    const unique = _.uniqBy(newGenes, 'gene'); // Remove duplicates
     return unique;
   };
 
@@ -189,16 +194,14 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     const intersection = setOperationRef.current === 'intersection';
 
     if (eles.length > 0) {
-      setGenes(null);
       if (eles.length === 1) {
         setSort(eles[0].data('NES') < 0 ? 'up' : 'down');
       }
-      const genes = await fetchGeneListFromElements(eles, intersection);
-      setGenes(sortGenes(genes, sortRef.current));
-    } else if (searchValueRef.current == null || searchValueRef.current.trim() === '') {
-      setGenes(null);
-      const genes = await fetchAllRankedGenes(intersection);
-      setGenes(sortGenes(genes, sortRef.current));
+      const newGenes = await fetchGeneListFromElements(eles, intersection);
+      setGenes(sortGenes(newGenes, sortRef.current));
+    } else if (_.isEmpty(searchValueRef.current)) {
+      const newGenes = await fetchAllRankedGenes(intersection);
+      setGenes(sortGenes(newGenes, sortRef.current));
     }
   }, 250);
 
@@ -241,6 +244,28 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     }
   };
 
+  const updateCyHighlights = _.debounce((symbol) => {
+    let nodes;
+    if (symbol != null) {
+      nodes = cy.pathwayNodes().filter(n => {
+        for (const gene of n.data('genes')) {
+          if (symbol === gene)
+            return true;
+        }
+        return false;
+      });
+    }
+    controller.highlightElements(nodes);
+  }, 200);
+
+  const toggleGeneDetails = async (symbol) => {
+    const newSymbol = selectedGeneRef.current !== symbol ? symbol : null;
+    updateCyHighlights(newSymbol);
+    setSelectedGene(newSymbol);
+    if (newSymbol != null)
+      setInitialIndex(-1); // Make sure the scroll position doesn't change!
+  };
+
   useEffect(() => {
     controller.bus.on('networkLoaded', onNetworkLoaded);
     controller.bus.on('geneListIndexed', onGeneListIndexed);
@@ -255,6 +280,12 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     
     cyEmitter.on('select unselect', onCySelectionChanged);
     cyEmitter.on('select', () => clearSearch());
+    cyEmitter.on('tap', evt => {
+      if (evt.target === cy && selectedGeneRef.current != null) {
+        // Tapping the network background should collapse the selected gene and clear the highlight
+        toggleGeneDetails(selectedGeneRef.current);
+      }
+    });
 
     return function cleanup() {
       cyEmitter.removeAllListeners();
@@ -266,8 +297,32 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   useEffect(() => {
     if (searchResult != null) {
       setGenes(sortGenes(searchResult, sortRef.current));
-    } 
+    } else if (geneListIndexed) {
+      debouncedSelectionHandler();
+    }
   }, [searchResult]);
+
+  useEffect(() => {
+    // Check whether the previously selected gene is in the new 'genes' list
+    if (genes != null && selectedGeneRef.current != null) {
+      let idx = _.findIndex(genes, g => g.gene === selectedGeneRef.current);
+      if (idx >= 0) {
+        // Scroll to the previously selected gene
+        if (idx > 1) idx--; // if this gene is not the first in the list, make sure it doesn't look like it is
+        setInitialIndex(idx);
+      } else {
+        // Collapses and deselect a gene if it's not contained in the new 'genes' list.
+        toggleGeneDetails(selectedGeneRef.current);
+        // And reset the scroll
+        setInitialIndex(0);
+      }
+    }
+  }, [genes]);
+
+  useEffect(() => {
+    if (genes != null)
+      setInitialIndex(0); // Always reset the scroll when sorting has changed
+  }, [sort]);
 
   const handleGeneSetOption = async (evt) => {
     const value = evt.target.value;
@@ -276,11 +331,11 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     const eles = cy.pathwayNodes(true);
     const intersection = value === 'intersection';
     if (eles.length > 0) {
-      const genes = await fetchGeneListFromElements(eles, intersection);
-      setGenes(sortGenes(genes, sortRef.current));
+      const newGenes = await fetchGeneListFromElements(eles, intersection);
+      setGenes(sortGenes(newGenes, sortRef.current));
     } else {
-      const genes = await fetchAllRankedGenes(intersection);
-      setGenes(sortGenes(genes, sortRef.current));
+      const newGenes = await fetchAllRankedGenes(intersection);
+      setGenes(sortGenes(newGenes, sortRef.current));
     }
   };
   const handleSort = (evt, value) => {
@@ -295,6 +350,12 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   const sortDisabled = totalGenes <= 0;
   
   const drawerVariant = isMobile || isTablet ? 'temporary' : 'persistent';
+  
+  // The 'keepMounted' property is only available when variant="temporary"
+  // (keep it mounted so the GeneListPanel component can keep its state when closed)
+  const drawerProps = {
+    ...(drawerVariant === 'temporary' && { keepMounted: true })
+  };
 
   return (
     <Drawer
@@ -302,6 +363,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
       variant={drawerVariant}
       anchor="left"
       open={open}
+      {...drawerProps}
       PaperProps={{
         style: {
           overflow: "hidden"
@@ -407,10 +469,12 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
           <GeneListPanel
             controller={controller}
             genes={genes}
-            sort={sort}
-            isSearch={searchResult && searchResult !== ''}
+            selectedGene={selectedGene}
+            initialIndex={initialIndex}
+            isSearch={!_.isEmpty(searchResult)}
             isIntersection={setOperation === 'intersection'}
             isMobile={isMobile}
+            onGeneClick={toggleGeneDetails}
           />
         )}
       </div>

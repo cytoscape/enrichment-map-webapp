@@ -48,9 +48,12 @@ export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, 
     } else if (value < 0) { // neg. value should be shifted right by the size of the pos. max. bar size
       let offset = Math.abs(minValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
       textStyle =  { left: `${offset + 2}%` };
-    } else { // pos. value should be shifted left by the size of the neg. max. bar size
+    } else if (value > 0) { // pos. value should be shifted left by the size of the neg. max. bar size
       let offset = Math.abs(maxValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
       textStyle = { right: `${offset + 2}%` };
+    } else { // ZERO value should be centered
+      let offset = Math.abs(minValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
+      textStyle = { left: `${offset}%`, transform: 'translateX(-50%)' };
     }
   }
 
@@ -59,7 +62,10 @@ export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, 
   if (value != null) {
     data = [];
     
-    if (value < 0) {
+    if (value == 0) {
+      data.push({ value: -minValue, color: bgColor });
+      data.push({ value: maxValue, color: bgColor });
+    } else if (value < 0) {
       // Down
       if (minValue < 0 && minValue !== value) {
         data.push({ value: -(minValue - value), color: bgColor });
