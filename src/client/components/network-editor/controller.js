@@ -574,7 +574,7 @@ export class NetworkEditorController {
         group: 'nodes',
         name: label,
         data: { 
-          label: `${label} (${cluster.size()})`,
+          label, //: `${label} (${cluster.size()})`,
           id: clusterId,
           _isParent: true, // TODO (remove this).. Important, used to identify parent nodes when the undoHelper restores them.
         }
