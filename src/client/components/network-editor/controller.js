@@ -42,13 +42,12 @@ export const CoSELayoutOptions = {
   name: 'cose',
   idealEdgeLength: edge => 30 - 25 * (edge.data('similarity_coefficient')),
   edgeElasticity: edge => 10 / (edge.data('similarity_coefficient')),
-  nodeRepulsion: node => 1000,
+  // nodeRepulsion: node => 1000,
   // nodeSeparation: 75,
   randomize: true,
   animate: false,
   padding: DEFAULT_PADDING,
 };
-
 
 /**
  * The network editor controller contains all high-level model operations that the network
@@ -115,42 +114,110 @@ export class NetworkEditorController {
     return this.searchController.searchPathways(query);
   }
 
+
+  _computeFCOSEidealEdgeLengthMap(clusterLabels, clusterAttr) {
+    const idealLength = size => {
+      switch(true) {
+        case size < 10: return 40;
+        case size < 20: return 75;
+        case size < 30: return 120;
+        case size < 40: return 180;
+        default:        return 250;
+      }
+    };
+
+    const edgeLengthMap = new Map();
+
+    clusterLabels.forEach(({ clusterId }) => {
+      const cluster = this.cy.elements(`node[${clusterAttr}="${clusterId}"]`);
+      if(!cluster.empty()) {
+        const ideal = idealLength(cluster.size());
+        cluster.internalEdges().forEach(edge => {
+          edgeLengthMap.set(edge.data('id'), ideal);
+        });
+      }
+    });
+
+    return edgeLengthMap;
+  }
+
+
+  /**
+   * Used to downsample edges inside of clusters. Can be used when running a layout.
+   */
+  _getEdgesToRemove(clusterLabels, clusterAttr) {
+    let edgesToRemove = this.cy.collection();
+    clusterLabels.forEach(({ clusterId }) => {
+      const cluster = this.cy.elements(`node[${clusterAttr}="${clusterId}"]`);
+      if(cluster.empty())
+        return;
+      const edges = cluster.internalEdges();
+      const numToSample = Math.max(45, edges.size() / 10);
+      if(edges.size() > numToSample) {
+        const edgesToKeep = edges.shuffle().slice(0, numToSample);
+        edgesToRemove = edgesToRemove.add(edges.subtract(edgesToKeep));
+      }
+    });
+    return edgesToRemove;
+  }
+
+
   /**
    * Stops the currently running layout, if there is one, and apply the new layout options.
-   * @param {*} options
    */
-  async applyLayout(options) {
+  async applyLayout(clusterLabels, clusterAttr) {
     if (this.layout) {
       this.layout.stop();
     }
-
+    const { cy } = this;
     // unrestricted zoom, since the old restrictions may not apply if things have changed
-    this.cy.minZoom(-1e50);
-    this.cy.maxZoom(1e50);
+    cy.minZoom(-1e50);
+    cy.maxZoom(1e50);
+
+    const idealLengths = this._computeFCOSEidealEdgeLengthMap(clusterLabels, clusterAttr);
+
+    const options = {
+      name: 'fcose',
+      animate: false,
+      idealEdgeLength: edge => idealLengths.get(edge.data('id')) || 50,
+      nodeRepulsion: 100000
+    };
+
+    const allNodes = cy.nodes();
+    const disconnectedNodes = allNodes.filter(n => n.degree() === 0); // careful, our compound nodes have degree 0
+    const connectedNodes = allNodes.not(disconnectedNodes);
+    const networkWithoutDisconnectedNodes = cy.elements().not(disconnectedNodes);
+    let networkToLayout = networkWithoutDisconnectedNodes;
+
+    if(options.sampleEdges) {
+      const edgesToRemove = this._getEdgesToRemove(clusterLabels, clusterAttr);
+      networkToLayout = networkWithoutDisconnectedNodes.subtract(edgesToRemove);
+    }
 
     monkeyPatchMathRandom(); // just before the FD layout starts
+    
+    const start = performance.now();
 
-    this.layout = this.cy.layout(options ? options : CoSELayoutOptions);
-
+    this.layout = networkToLayout.layout(options);
     const onStop = this.layout.promiseOn('layoutstop');
-
     this.layout.run();
-
     await onStop;
+
+    const layoutDone = performance.now();
+    console.log(`layout time: ${Math.round(layoutDone - start)}ms`);
+
+    await this._packComponents(networkToLayout);
+
+    const packDone = performance.now();
+    console.log(`packing time: ${Math.round(packDone - layoutDone)}ms`);
 
     restoreMathRandom(); // after the FD layout is done
 
-    // move the disconnected nodes to the bottom
-    const allNodes = this.cy.nodes();
-    const disconnectedNodes = allNodes.filter(n => n.degree() === 0);
-    const connectedNodes = allNodes.not(disconnectedNodes);
-
     const connectedBB = connectedNodes.boundingBox();
-
-    const nodeWidth = disconnectedNodes.max(n => n.boundingBox({ nodeDimensionsIncludeLabels: true }).w).value;
-    const layoutWidth = connectedBB.w;
-    const avoidOverlapPadding = 10;
-    const cols = Math.floor(layoutWidth / (nodeWidth + avoidOverlapPadding));
+    // Style hasn't been applied yet, there are no labels. Filter out compound nodes.
+    const nodeWidth = disconnectedNodes.filter(n => !n.isParent()).max(n => n.boundingBox().w).value; 
+    const avoidOverlapPadding = 45;
+    const cols = Math.floor(connectedBB.w / (nodeWidth + avoidOverlapPadding));
 
     const cmpByNES = (a, b) => b.data('NES') - a.data('NES'); // up then down
 
@@ -159,7 +226,7 @@ export class NetworkEditorController {
       boundingBox: {
         x1: connectedBB.x1,
         x2: connectedBB.x2,
-        y1: connectedBB.y2 + DEFAULT_PADDING,
+        y1: connectedBB.y2 + DEFAULT_PADDING * 3,
         y2: connectedBB.y2 + DEFAULT_PADDING + 10000
       },
       avoidOverlapPadding,
@@ -169,6 +236,50 @@ export class NetworkEditorController {
       nodeDimensionsIncludeLabels: true,
       fit: false
     }).run();
+  }
+
+
+  async _packComponents(eles) {
+    eles = eles || this.cy.elements();
+    var components = eles.components();
+
+    var subgraphs = [];
+    components.forEach(component => {
+      var subgraph = { nodes:[], edges:[] };
+
+      component.edges().forEach(edge => {
+        const [ s, t ] = [ edge.sourceEndpoint(), edge.targetEndpoint() ];
+        subgraph.edges.push({ startX: s.x, startY: s.y, endX: t.x, endY: t.y });
+      });
+      component.nodes().forEach(node => {
+        var bb = node.boundingBox();
+        subgraph.nodes.push({ x: bb.x1, y: bb.y1, width: bb.w, height: bb.h });
+      });
+
+      subgraphs.push(subgraph);
+    });
+
+    // cytoscape-layout-utilities extension
+    const layoutUtils = this.cy.layoutUtilities({ desiredAspectRatio: 16/9 }); 
+    const result = layoutUtils.packComponents(subgraphs);
+
+    const layouts = components.map((component, i) => {
+      return component.nodes().layout({
+        name: 'preset',
+        animate: false,
+        fit: false,
+        transform: node => {
+          return {
+            x: node.position('x') + result.shifts[i].dx,
+            y: node.position('y') + result.shifts[i].dy
+          };
+        }
+      });
+    });
+
+    const promise = Promise.all(layouts.map(layout => layout.promiseOn('layoutstop')));
+    layouts.forEach(layout => layout.run());
+    await promise;
   }
 
 
@@ -464,11 +575,33 @@ export class NetworkEditorController {
   }
 
 
+  createCompoundNodes(clusterLabels, clusterAttr) {
+    clusterLabels.forEach(({ clusterId, label }) => {
+      const cluster = this.cy.elements(`node[${clusterAttr}="${clusterId}"]`);
+      if(cluster.empty())
+        return;
+  
+      // Create compound nodes
+      this.cy.add({
+        group: 'nodes',
+        name: label,
+        data: { 
+          label, //: `${label} (${cluster.size()})`,
+          id: clusterId,
+          _isParent: true, // TODO (remove this).. Important, used to identify parent nodes when the undoHelper restores them.
+        }
+      });
+      cluster.forEach(node => {
+        node.move({ parent: clusterId });
+      });
+    });
+  }
+
+
   /**
-   * clusterDefs: array of objects of the form { clusterId: 'Cluster 1', label: 'neuclotide synthesis' }
-   * positions: a Map object returned by applyPositions(), or undefined, contains info on which clusters are collapsed
+   * positionsMap: a Map object returned by applyPositions(), or undefined, contains info on which clusters are collapsed
    */
-  createClusters(clusterDefs, clusterAttr, positionsMap) {
+  createBubbleClusters(positionsMap) {
     const { cy } = this;
 
     if(positionsMap) {
@@ -477,31 +610,11 @@ export class NetworkEditorController {
       cy.remove(deletedNodes);
     }
     
-    cy.on('boxstart', () => {
-      cy.pathwayNodes().addClass('box-select-enabled');
-    });
-    cy.on('boxend', () => {
-      cy.pathwayNodes().removeClass('box-select-enabled');
-    });
+    cy.on('boxstart', () => cy.pathwayNodes().addClass('box-select-enabled'));
+    cy.on('boxend', () => cy.pathwayNodes().removeClass('box-select-enabled'));
 
-    clusterDefs.forEach(({ clusterId, label }) => {
-      const cluster = cy.elements(`node[${clusterAttr}="${clusterId}"]`);
-      if(cluster.empty())
-        return;
-  
-      // Create compound nodes
-      const parent = cy.add({
-        group: 'nodes',
-        name: label,
-        data: { 
-          label: label, 
-          id: clusterId,
-          _isParent: true, // TODO (remove this).. Important, used to identify parent nodes when the undoHelper restores them.
-        }
-      });
-      cluster.forEach(node => {
-        node.move({ parent: clusterId });
-      });
+    cy.clusterNodes().forEach(parent => {
+      const cluster = parent.children();
 
       if(positionsMap) {
         const id = cluster.slice(0,1).data('id');

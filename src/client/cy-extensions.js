@@ -2,9 +2,11 @@ import Cytoscape from 'cytoscape';
 import edgehandles from 'cytoscape-edgehandles';
 import dagre from 'cytoscape-dagre';
 import fcose from 'cytoscape-fcose';
+import cise from 'cytoscape-cise';
 import cola from 'cytoscape-cola';
 import popper from 'cytoscape-popper';
 import coseBilkent from 'cytoscape-cose-bilkent';
+import layoutUtilities from 'cytoscape-layout-utilities';
 import BubbleSets from 'cytoscape-bubblesets';
 import Layers from 'cytoscape-layers';
 
@@ -14,8 +16,10 @@ export const registerCytoscapeExtensions = () => {
   // Layout extensions
   Cytoscape.use(dagre);
   Cytoscape.use(fcose);
+  Cytoscape.use(cise);
   Cytoscape.use(cola);
   Cytoscape.use(coseBilkent);
+  Cytoscape.use(layoutUtilities);
   Cytoscape.use(Layers);
   Cytoscape.use(BubbleSets);
   Cytoscape.use(popper);

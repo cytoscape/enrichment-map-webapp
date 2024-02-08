@@ -233,6 +233,9 @@ http.get('/:netid/positions', async function(req, res, next) {
     } else {
       res.send(JSON.stringify(positions));
     }
+
+    res.sendStatus(404);
+    
   } catch (err) {
     next(err);
   }
