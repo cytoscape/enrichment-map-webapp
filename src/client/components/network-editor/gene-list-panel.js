@@ -40,15 +40,12 @@ const HOVER_SELECTION_BG =
 const useGeneMetadataPanelStyles = makeStyles((theme) => ({
   geneName: {
     color: 'inherit', 
-    whiteSpace:'nowrap', 
-    overflow:'hidden', 
-    textOverflow:'ellipsis'
   },
   geneMetadata: {
     fontSize: '1.0em',
     marginLeft: '0.6em',
     marginBottom: '0.25em',
-    padding: '0.25em 1.2em 0 1.05em',
+    padding: '0.25em 1.2em 0 0.85em',
     borderWidth: 1,
     borderColor: theme.palette.divider,
     borderStyle: 'hidden hidden hidden solid',
@@ -299,6 +296,13 @@ NoResultsBox.propTypes = {
 
 
 const useGeneListPanelStyles = makeStyles((theme) => ({
+  geneName: {
+    color: 'inherit',
+    width: '100px',
+    whiteSpace:'nowrap', 
+    overflow:'hidden', 
+    textOverflow:'ellipsis'
+  },
   listItem: {
     paddingTop: 4,
     paddingBottom: 0,
@@ -339,9 +343,6 @@ const useGeneListPanelStyles = makeStyles((theme) => ({
     marginRight: '4px',
     color: 'inherit',
     opacity: 0.5
-  },
-  geneContainer: {
-    width: '40%',
   },
   chartContainer: {
     width: CHART_WIDTH,
@@ -451,9 +452,9 @@ const GeneListPanel = ({
                 className={clsx(classes.listItemHeader, { [classes.listItemHeaderSelected]: isSelected })}
                 onClick={() => handleGeneClick(symbol)}
               >
-                <Grid item className={classes.geneContainer}>
+                <Grid item>
                   <Grid container direction="row" justifyContent="flex-start" alignItems="center">
-                    <Grid item xs={3} className={classes.bulletIconContainer}>
+                    <Grid item className={classes.bulletIconContainer}>
                       {isSelected ?
                         <KeyboardArrowDownIcon fontSize="small" className={classes.bulletIcon} />
                       :
