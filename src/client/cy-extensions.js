@@ -36,6 +36,7 @@ export const registerCytoscapeExtensions = () => {
 
 function clusterNodes(cy) {
   const clusterNodesImpl = function(selected) {
+    // If selected is false, return all cluster nodes.
     const eles = this;
     return eles.filter(ele => ele.isParent() && (!selected || ele.selected()));
   };
@@ -44,6 +45,7 @@ function clusterNodes(cy) {
 
 function pathwayNodes(cy) {
   const pathwayNodesImpl = function(selected) {
+    // If selected is false, return all pathways.
     const eles = this;
     return eles.filter(ele => ele.isChildless() && (!selected || ele.selected()));
   };
