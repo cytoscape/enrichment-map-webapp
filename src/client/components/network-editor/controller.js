@@ -38,17 +38,6 @@ export const ImageSize = {
   LARGE:  { value:'LARGE',  scale: 2.0 },
 };
 
-export const CoSELayoutOptions = {
-  name: 'cose',
-  idealEdgeLength: edge => 30 - 25 * (edge.data('similarity_coefficient')),
-  edgeElasticity: edge => 10 / (edge.data('similarity_coefficient')),
-  // nodeRepulsion: node => 1000,
-  // nodeSeparation: 75,
-  randomize: true,
-  animate: false,
-  padding: DEFAULT_PADDING,
-};
-
 /**
  * The network editor controller contains all high-level model operations that the network
  * editor view can perform.
