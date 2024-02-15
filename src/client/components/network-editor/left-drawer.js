@@ -206,7 +206,8 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   }, 250);
 
   const handleGeneListExport = () => {
-    const eles = cy.pathwayNodes(true);
+    const selected = cy.nodes(':selected').length > 0; // any selected nodes?
+    const eles = cy.pathwayNodes(selected);
     const gsNames = getGeneSetNames(eles);
     controller.saveGeneList(genes, gsNames);
   };

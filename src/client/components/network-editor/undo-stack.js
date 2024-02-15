@@ -92,7 +92,7 @@ export class UndoHandler {
 
       for(const id of parentIDs) {
         const parent = cy.elements(`node[id="${id}"]`);
-        this.controller._updateBubblePath(parent);
+        this.controller._createOrUpdateBubblePath(parent);
       }
     };
 

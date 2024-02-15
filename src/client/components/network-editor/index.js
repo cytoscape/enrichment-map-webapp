@@ -10,7 +10,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { BOTTOM_DRAWER_OPEN } from '../defaults';
 import theme from '../../theme';
 import { isMobile, isTablet } from './util';
-import { NetworkEditorController, CiSELayoutOptions } from './controller';
+import { NetworkEditorController } from './controller';
 import Main from './main';
 
 import createNetworkStyle from './network-style';
