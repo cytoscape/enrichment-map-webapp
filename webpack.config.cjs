@@ -1,9 +1,19 @@
 const path = require('path');
 const DotEnvPlugin = require('dotenv-webpack');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const { env } = require('process');
 const nodeEnv = env.NODE_ENV || 'development';
 const isProd = env.NODE_ENV === 'production';
+const isProfile = env.PROFILE === 'true';
 const minify = env.MINIFY == 'true' || isProd;
+
+let plugins = [
+  new DotEnvPlugin({ defaults: true })
+];
+
+if (isProfile) {
+  plugins.unshift(new BundleAnalyzerPlugin());
+}
 
 let conf = {
   mode: nodeEnv,
@@ -54,9 +64,7 @@ let conf = {
     usedExports: minify
   },
 
-  plugins: [
-    new DotEnvPlugin({ defaults: true })
-  ]
+  plugins
 };
 
 module.exports = conf;

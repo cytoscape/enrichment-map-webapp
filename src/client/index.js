@@ -27,14 +27,10 @@ if (SENTRY) {
 
 registerCytoscapeExtensions();
 
-let div = document.createElement('div');
-div.setAttribute('id', 'root');
-
-document.body.appendChild( div );
-
 ReactDOM.render(
   <Router/>,
-  div
+  document.getElementById('root'),
+  () => document.getElementById('loading-container').remove() // Remove the loading icon when the app is loaded
 );
 
 fixOldFashionedScrollStyle();

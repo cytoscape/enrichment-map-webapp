@@ -8,5 +8,12 @@
     ],
     ["@babel/preset-react"]
   ],
+  "plugins": [
+    [ "babel-plugin-import", { "libraryName": "lodash", "libraryDirectory": "", "camel2DashComponentName": false }, "lodash" ],
+    [ "babel-plugin-import", { "libraryName": "@material-ui/lab", "libraryDirectory": "", "camel2DashComponentName": false }, "mui-lab" ],
+    [ "babel-plugin-import", { "libraryName": "@material-ui/core", "libraryDirectory": "", "camel2DashComponentName": false }, "mui-core" ],
+    [ "babel-plugin-import", { "libraryName": "@material-ui/icons", "libraryDirectory": "", "camel2DashComponentName": false }, "mui-icons" ],
+    [ "babel-plugin-import", { "libraryName": "@material-ui/system", "libraryDirectory": "", "camel2DashComponentName": false }, "mui-system" ]
+  ],
   "ignore": ["node_modules/**/*"]
 }
