@@ -44,6 +44,9 @@
     <script defer src="/main.js"></script>
 
     <style>
+      .hidden {
+        display: none;
+      }
       #loading-container {
         height: 100%;
         display: flex;
@@ -86,7 +89,7 @@
       </div>
       <div id="loading-text">Loading...</div>
     </div>
-    <div id="root"></div>
+    <div id="root" class="hidden"><!-- The React component will be rendered here --></div>
   </body>
 
 </html>
