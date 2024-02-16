@@ -8,7 +8,8 @@ import * as Sentry from "@sentry/browser";
 import { BrowserTracing } from "@sentry/tracing";
 import { SENTRY, SENTRY_ENVIRONMENT } from './env';
 
-if( debug.enabled() ){
+
+if (debug.enabled()) {
   debug.init();
 }
 
@@ -30,7 +31,11 @@ registerCytoscapeExtensions();
 ReactDOM.render(
   <Router/>,
   document.getElementById('root'),
-  () => document.getElementById('loading-container').remove() // Remove the loading icon when the app is loaded
+  () => {
+    // Remove the loading icon when the app is loaded and show the React component
+    document.getElementById('loading-container').remove();
+    document.getElementById('root').classList.remove('hidden');
+  }
 );
 
 fixOldFashionedScrollStyle();
