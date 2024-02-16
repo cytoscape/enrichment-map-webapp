@@ -30,9 +30,9 @@
     <meta name="theme-color" content="#ffffff">
 
     <script>
-      (function(){
+      (function() {
         var needPolyfills = !('fetch' in window && 'assign' in Object);
-        if (needPolyfills){
+        if (needPolyfills) {
           var script = document.createElement('script');
           script.defer = true;
           script.src = '/polyfills.js';
@@ -56,7 +56,9 @@
         text-align: center;
       }
       #loading-icon {
-        margin-bottom: 10px;
+        width: 92px;
+        height: 48px;
+        margin-bottom: 6px;
         animation: bounce 2s ease infinite;
       }
       #loading-text {
@@ -80,9 +82,8 @@
   <body>
     <div id="loading-container">
       <div id="loading-icon">
-        <svg width="122px" height="64px" viewBox="0 0 122 64">
+        <svg viewBox="0 0 122 64">
           <path d="M-0,0 L122,0 L122,64 L-0,64 L-0,0 z" fill="#FFFFFF"/>
-          <path d="M78.156,74.752 z" fill="#33A02C"/>
           <path d="M61,3 L61,18.217 L34.84,18.217 L34.84,24.652 L61,24.652 L61,39.087 L34.84,39.087 L34.84,45.783 L61,45.783 L61,61 L3,61 L3,3 L61,3 z" fill="#1F78B4"/>
           <path d="M119,61 L103.783,61 L103.783,34.84 L97.348,34.84 L97.348,61 L82.913,61 L82.913,34.84 L76.217,34.84 L76.217,61 L61,61 L61,3 L119,3 L119,61 z" fill="#33A02C"/>
         </svg>
