@@ -4,6 +4,7 @@ import { parsePathwayName } from './search-contoller';
 
 export const NODE_OPACITY = 1;
 export const TEXT_OPACITY = 1;
+export const SELECTED_BORDER_COLOR = '#333333';
 
 /** Color range for up-down regulation. */
 export const REG_COLOR_RANGE = (() => {
@@ -156,8 +157,9 @@ export const createNetworkStyle = (cy) => {
         selector: 'node:selected',
         style: {
           'border-width': 8,
-          'border-color': '#333',
+          'border-color': SELECTED_BORDER_COLOR,
           'border-opacity': 1.0,
+          'text-outline-color': SELECTED_BORDER_COLOR,
           'z-index': 99999999,
         }
       },
