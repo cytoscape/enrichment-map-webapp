@@ -1,7 +1,5 @@
 /* css entry point for dependencies bundle */
 
-@import "normalize.css";
-
 /* fonts */
 
 /* main sans serif font */
@@ -21,5 +19,3 @@
 @import "./vendor/fonts/material-form.css";
 
 /* libraries */
-@import "tippy.js/dist/tippy.css";
-@import "tippy.js/themes/light.css";
