@@ -316,6 +316,7 @@ const useGeneListPanelStyles = makeStyles((theme) => ({
     height: 24,
     margin: 0,
     borderRadius: 4,
+    flexWrap: 'nowrap',
     '&:hover': {
       backgroundColor: theme.palette.action.hover,
     },
