@@ -255,8 +255,10 @@ export function Content() {
     }
   };
 
-  const onClickCreateDemo = async () => {
-    await uploadController.createDemoNetwork();
+  const onClickCreateDemo = () => {
+    if (uploadState.step != STEP.LOADING) {
+      setUploadState({ step: STEP.UPLOAD, demo: true });
+    }
   };
 
   const onClassesChanged = (rnaseqClasses) => {
@@ -278,11 +280,15 @@ export function Content() {
     await uploadController.sendDataToEMService(contents, format, 'ranks', name, requestID);
   };
 
-  const onSubmit = async () => {
+  const onSubmit = async (demo) => {
     requestID = uuid.v4();
-    const { contents, format, name, rnaseqClasses } = uploadState;
-    updateUploadState({ step: STEP.LOADING });
-    await uploadController.sendDataToEMService(contents, format, 'rnaseq', name, requestID, rnaseqClasses);
+    if(demo) {
+      await uploadController.createDemoNetwork(requestID);
+    } else {
+      const { contents, format, name, rnaseqClasses } = uploadState;
+      updateUploadState({ step: STEP.LOADING });
+      await uploadController.sendDataToEMService(contents, format, 'rnaseq', name, requestID, rnaseqClasses);
+    }
   };
 
   const onClasses = ({ format, columns, contents, name }) => {
@@ -380,6 +386,7 @@ export function Content() {
             <Grid item>
               <StartDialog
                 isMobile={mobile}
+                isDemo={uploadState.demo}
                 step={uploadState.step}
                 columns={uploadState.columns}
                 errorMessages={uploadState.errorMessages}
