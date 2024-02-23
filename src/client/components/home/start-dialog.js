@@ -62,7 +62,7 @@ const StartDialog = ({ step, isMobile, columns, errorMessages, rnaseqClasses, on
               </Typography>
             </>
           : errorMessages.slice(0,7).map((message, index) =>
-              <p key={index}>{message}</p>
+              <p key={index} style={{whiteSpace: "pre-wrap"}}>{message}</p>
             )
         }
       </div>
