@@ -63,7 +63,8 @@ async function loadNetwork(cy, controller, id) {
   cy.add(networkJson.network.elements);
   cy.data({ 
     name: networkJson.networkName, 
-    parameters: networkJson.parameters
+    parameters: networkJson.parameters,
+    demo: Boolean(networkJson.demo)
   });
 
   // TODO, make clusterAttr a property of clusterLabels, so it doesn't have to be passed around separately.
