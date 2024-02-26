@@ -72,6 +72,14 @@ const useStyles = makeStyles((theme) => ({
   spotlight: {
     backgroundColor: theme.palette.action.selected,
   },
+  demoThumbnail: {
+    borderRadius: '15px',
+    width: '300px'
+  },
+  pcLink: {
+    display: "flex", 
+    alignItems: "center"
+  }
 }));
 
 const createRankedRow = (gene, rank) => {
@@ -336,21 +344,23 @@ export function DemoPanel({ isMobile }) {
     <Typography component="p" variant="body1" className={classes.description}>
       Create a demo network from real world RNA-Seq data.
     </Typography>
-    <img src="/images/demo_small.png" alt="thumbnail of demo network" width={300} />
+    <img className={classes.demoThumbnail} src="/images/demo_small.png" alt="thumbnail of demo network" />
     <br/><br/>
     <Typography component="p" variant="body1">
       The data used to create this network is described in detail in the RNA-Seq Tutorial on Pathway Commons.
     </Typography>
     <br/>
-    <Typography component="p" variant="body1">
-      <img src="/images/pc_logo.png" alt="pathway commons logo" width={16} /> &nbsp;
-      <Link 
-        target="_blank" // open in new tab
-        rel="noopener"
-        href="https://www.pathwaycommons.org/guide/workflows/rna_seq_to_enrichment_map/process_data/">
-        Pathway Commons RNA-Seq Tutorial
-      </Link>
+    <div className={classes.pcLink}>
+      <img src="/images/pc_logo.png" alt="pathway commons logo" width={16}/>&nbsp;&nbsp;
+      <Typography component="p" variant="body1" > 
+        <Link 
+          target="_blank" // open in new tab
+          rel="noopener"
+          href="https://www.pathwaycommons.org/guide/workflows/rna_seq_to_enrichment_map/process_data/">
+          Pathway Commons RNA-Seq Tutorial
+        </Link>
     </Typography>
+    </div>
   </>;
 }
 DemoPanel.propTypes = {
