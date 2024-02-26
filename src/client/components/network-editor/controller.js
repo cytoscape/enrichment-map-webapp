@@ -103,6 +103,14 @@ export class NetworkEditorController {
     return this.searchController.searchPathways(query);
   }
 
+  isDemoNetwork() {
+    return Boolean(this.cy.data('demo'));
+  }
+
+  openDemoNetworkInfoSite() {
+    const pathwayCommonsURL = 'https://www.pathwaycommons.org/guide/workflows/rna_seq_to_enrichment_map/';
+    window.open(pathwayCommonsURL, '_blank');
+  }
 
   _computeFCOSEidealEdgeLengthMap(clusterLabels, clusterAttr) {
     const idealLength = size => {

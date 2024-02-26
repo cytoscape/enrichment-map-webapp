@@ -4,7 +4,7 @@ import clsx from 'clsx';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { Grid, Paper, Typography, Tooltip } from '@material-ui/core';
+import { Grid, Paper, Typography, Tooltip, Link } from '@material-ui/core';
 import { Accordion, AccordionDetails, AccordionSummary } from '@material-ui/core';
 import { Table, TableHead, TableRow, TableCell, TableBody } from '@material-ui/core';
 
@@ -72,6 +72,14 @@ const useStyles = makeStyles((theme) => ({
   spotlight: {
     backgroundColor: theme.palette.action.selected,
   },
+  demoThumbnail: {
+    borderRadius: '15px',
+    width: '300px'
+  },
+  pcLink: {
+    display: "flex", 
+    alignItems: "center"
+  }
 }));
 
 const createRankedRow = (gene, rank) => {
@@ -253,7 +261,7 @@ Spotlight.propTypes = {
 
 //==[ UploadPanel ]===================================================================================================
 
-const UploadPanel = ({ isMobile }) => {
+export function UploadPanel({ isMobile }) {
   const [ expanded, setExpanded ] = useState('f1');
   const [ spotlight, setSpotlight ] = useState();
 
@@ -324,9 +332,38 @@ const UploadPanel = ({ isMobile }) => {
       </FormatAccordion>
     </>
   );
-};
+}
 UploadPanel.propTypes = {
   isMobile: PropTypes.bool,
 };
 
-export default UploadPanel;
+
+export function DemoPanel({ isMobile }) {
+  const classes = useStyles();
+  return <>
+    <Typography component="p" variant="body1" className={classes.description}>
+      Create a demo network from real world RNA-Seq data.
+    </Typography>
+    <img className={classes.demoThumbnail} src="/images/demo_small.png" alt="thumbnail of demo network" />
+    <br/><br/>
+    <Typography component="p" variant="body1">
+      The data used to create this network is described in detail in the RNA-Seq Tutorial on Pathway Commons.
+    </Typography>
+    <br/>
+    <div className={classes.pcLink}>
+      <img src="/images/pc_logo.png" alt="pathway commons logo" width={16}/>&nbsp;&nbsp;
+      <Typography component="p" variant="body1" > 
+        <Link 
+          target="_blank" // open in new tab
+          rel="noopener"
+          href="https://www.pathwaycommons.org/guide/workflows/rna_seq_to_enrichment_map/process_data/">
+          Pathway Commons RNA-Seq Tutorial
+        </Link>
+    </Typography>
+    </div>
+  </>;
+}
+DemoPanel.propTypes = {
+  isMobile: PropTypes.bool,
+};
+

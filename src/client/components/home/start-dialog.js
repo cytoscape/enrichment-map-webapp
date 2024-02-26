@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import UploadPanel from './upload-panel';
+import { UploadPanel, DemoPanel } from './upload-panel';
 import ClassSelector from './class-selector';
 
 import { makeStyles } from '@material-ui/core/styles';
@@ -29,7 +29,7 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-const StartDialog = ({ step, isMobile, columns, errorMessages, rnaseqClasses, onUpload, onClassesChanged, onSubmit, onCancelled, onBack }) => {
+const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqClasses, onUpload, onClassesChanged, onSubmit, onCancelled, onBack }) => {
   const classes = useStyles();
   const open = step !== 'WAITING';
 
@@ -74,7 +74,7 @@ const StartDialog = ({ step, isMobile, columns, errorMessages, rnaseqClasses, on
       <DialogTitle>
       {
         {
-          'UPLOAD':  () => 'Upload your Data',
+          'UPLOAD':  () => isDemo ? 'Create Demo Network' : 'Upload your Data',
           'CLASSES': () => 'Groups',
           'LOADING': () => 'Loading',
           'ERROR':   () => 'Error',
@@ -84,7 +84,7 @@ const StartDialog = ({ step, isMobile, columns, errorMessages, rnaseqClasses, on
       <DialogContent dividers>
       { 
         {
-          'UPLOAD':  () => <UploadPanel isMobile={isMobile} />,
+          'UPLOAD':  () => isDemo ? <DemoPanel /> : <UploadPanel isMobile={isMobile} />,
           'CLASSES': () => <Classes />,
           'LOADING': () => <LoadingProgress />,
           'ERROR':   () => <ErrorReport />,
@@ -93,21 +93,33 @@ const StartDialog = ({ step, isMobile, columns, errorMessages, rnaseqClasses, on
       </DialogContent>
       <DialogActions>
       {step === 'CLASSES' && (
-        <Button variant="outlined" color="primary" startIcon={<NavigateBeforeIcon />} onClick={onBack}>
+        <Button variant="outlined" color="primary" 
+          startIcon={<NavigateBeforeIcon />} 
+          onClick={onBack}
+        >
           Back
         </Button>
       )}
       <span style={{flexGrow: 1}} />
-      <Button autoFocus variant="outlined" color="primary" startIcon={step !== 'ERROR' ? <CloseIcon /> : null} onClick={onCancelled}>
+      <Button autoFocus variant="outlined" color="primary" 
+        startIcon={step !== 'ERROR' ? <CloseIcon /> : null} 
+        onClick={onCancelled}
+      >
         { step === 'ERROR' ? 'OK' : 'Cancel' }
       </Button>
       {step === 'UPLOAD' && (
-        <Button variant="contained" color="primary" startIcon={<DescriptionOutlinedIcon />} onClick={onUpload}>
-          Upload File
+        <Button variant="contained" color="primary" 
+          startIcon={<DescriptionOutlinedIcon />} 
+          onClick={() => isDemo ? onSubmit('demo') : onUpload()}
+        >
+          { isDemo ? 'Create Network' : 'Upload File' }
         </Button>
       )}
       {step === 'CLASSES' && (
-        <Button variant="contained" color="primary" endIcon={<NavigateNextIcon />} onClick={onSubmit}>
+        <Button variant="contained" color="primary" 
+          endIcon={<NavigateNextIcon />} 
+          onClick={onSubmit}
+        >
           Submit
         </Button>
       )}
@@ -119,6 +131,7 @@ const StartDialog = ({ step, isMobile, columns, errorMessages, rnaseqClasses, on
 StartDialog.propTypes = {
   step: PropTypes.string.isRequired,
   isMobile: PropTypes.bool,
+  isDemo: PropTypes.bool,
   rnaseqClasses: PropTypes.array,
   columns: PropTypes.array,
   errorMessages: PropTypes.array,

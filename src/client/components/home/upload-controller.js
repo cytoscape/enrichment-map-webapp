@@ -44,7 +44,7 @@ export class UploadController {
     return file;
   }
 
-  async createDemoNetwork() {
+  async createDemoNetwork(requestID) {
     this.bus.emit('loading', true);
 
     const res = await fetch('/api/create/demo', {
@@ -53,10 +53,10 @@ export class UploadController {
 
     if(res.ok) {
       const networkID = await res.text();
-      this.bus.emit('finished', { networkID });
+      this.bus.emit('finished', { networkID, requestID });
       return networkID;
     } else {
-      this.bus.emit('error', { errors: ['cound not create demo network']  });
+      this.bus.emit('error', { errors: ['cound not create demo network'], requestID });
     }
   }
 
