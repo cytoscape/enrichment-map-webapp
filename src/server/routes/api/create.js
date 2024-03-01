@@ -88,7 +88,7 @@ function createPeformanceHook() {
       return duration;
     },
     dispose: () => {
-      markNames.forEach(performance.clearMarks);
+      markNames.forEach(m => performance.clearMarks(m));
     }
   };
 }
