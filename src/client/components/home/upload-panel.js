@@ -347,20 +347,14 @@ export function DemoPanel({ isMobile }) {
     <img className={classes.demoThumbnail} src="/images/demo_small.png" alt="thumbnail of demo network" />
     <br/><br/>
     <Typography component="p" variant="body1">
-      The data used to create this network is described in detail in the RNA-Seq Tutorial on Pathway Commons.
-    </Typography>
-    <br/>
-    <div className={classes.pcLink}>
-      <img src="/images/pc_logo.png" alt="pathway commons logo" width={16}/>&nbsp;&nbsp;
-      <Typography component="p" variant="body1" > 
-        <Link 
+      The data used to create this network is described in detail in the <br/>
+      <Link 
           target="_blank" // open in new tab
           rel="noopener"
           href="https://www.pathwaycommons.org/guide/workflows/rna_seq_to_enrichment_map/process_data/">
-          Pathway Commons RNA-Seq Tutorial
-        </Link>
+        RNA-Seq Tutorial on Pathway Commons.
+      </Link>
     </Typography>
-    </div>
   </>;
 }
 DemoPanel.propTypes = {
