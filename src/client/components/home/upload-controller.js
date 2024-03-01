@@ -61,9 +61,7 @@ export class UploadController {
   }
 
   async upload(files) {
-    // This is just for ranks TSV for now
     const file = files && files.length > 0 ? files[0] : null;
-   
     if (!file)
       return;
 
@@ -85,28 +83,32 @@ export class UploadController {
     }
 
     try {
-      if (TSV_EXTS.includes(ext)) {
-        console.log('Reading file');
-        const { type, format, columns, contents } = await readTextFile(file);
-        console.log(`Reading ${format} file as ${type}, columns: ${columns}`);
-  
-        if (type === 'ranks') {
-          this.bus.emit('ranks', { format, contents, name });
-        } else {
-          this.bus.emit('classes', { format, columns, contents, name });
-        }
-      } else if (EXCEL_EXTS.includes(ext)) {
-        const { columns, contents, format } = await readExcelFile(file);
-        console.log(`Reading Excel file, columns: ${columns}`);
-        this.bus.emit('classes', { format, columns, contents, name });
+      let read;
+      if(TSV_EXTS.includes(ext)) {
+        read = readTextFile;
+      } else if(EXCEL_EXTS.includes(ext)) {
+        read = readExcelFile;
       } else {
         const exts = TSV_EXTS.join(', ') + ', ' + EXCEL_EXTS.join(', ');
-        this.bus.emit('error', { errors: ["File extension not supported. Must be one of: " + exts] });
+        this.bus.emit('error', { errors: [`File extension not supported. Must be one of: ${exts}`] });
+        return;
+      }
+
+      console.log('Reading file');
+      const { type, format, columns, contents, errors } = await read(file);
+      console.log(`Reading ${format} file as ${type}, columns: ${columns}`);
+
+      if(errors && errors.length > 0) {
+        this.bus.emit('error', { errors });
+      } else if (type === 'ranks') {
+        this.bus.emit('ranks', { format, contents, name });
+      } else {
+        this.bus.emit('classes', { format, columns, contents, name });
       }
     } catch (e) {
-      this.bus.emit('error', { errors: [e] });
+      console.log(e);
+      this.bus.emit('error', { errors: ['Internal Error'] });
       this.captureNondescriptiveErrorInSentry('Some error in handling uploaded file:' + e.message);
-      
       return;
     }
   }
