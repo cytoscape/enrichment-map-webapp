@@ -165,7 +165,8 @@ export function BottomDrawer({ controller, open, leftDrawerOpen, isMobile, isTab
   const disabledRef = useRef(true);
   disabledRef.current = disabled;
 
-  const lastSelectedRowsRef = useRef([]); // Will be used to clear the search only when selecting a node on the network
+  const lastClickedRowRef = useRef(); // Will be used to prevent clearing the search when clicking a table row
+
   const currentRowRef = useRef();
   currentRowRef.current = currentRow;
   
@@ -287,7 +288,7 @@ export function BottomDrawer({ controller, open, leftDrawerOpen, isMobile, isTab
     cyEmitter.on('select unselect', debouncedOnNetworkSelection);
     cyEmitter.on('select', evt => {
       const selId = evt.target.length === 1 ? evt.target.data('id') : null;
-      if (!lastSelectedRowsRef.current.includes(selId)) {
+      if (lastClickedRowRef.current !== selId) {
         clearSearch();
       }
     });
@@ -311,8 +312,8 @@ export function BottomDrawer({ controller, open, leftDrawerOpen, isMobile, isTab
   }, []);
 
   const onRowSelectionChange = (row, selected, preventGotoNode = false) => {
+    lastClickedRowRef.current = row.id;
     if (selected) {
-      lastSelectedRowsRef.current = selectedRows;
       cy.nodes(`[id = "${row.id}"]`).select();
       setGotoCurrentNode(!preventGotoNode);
       setCurrentRow(row);
