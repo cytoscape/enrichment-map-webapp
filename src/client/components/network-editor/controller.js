@@ -236,47 +236,109 @@ export class NetworkEditorController {
   }
 
 
-  async _packComponents(eles) {
-    eles = eles || this.cy.elements();
-    var components = eles.components();
+  _packComponents(eles) {
+    const layoutNodes = [];
 
-    var subgraphs = [];
-    components.forEach(component => {
-      var subgraph = { nodes:[], edges:[] };
+    eles.components().forEach((component, i) => {
+      component.nodes().forEach(n => {
 
-      component.edges().forEach(edge => {
-        const [ s, t ] = [ edge.sourceEndpoint(), edge.targetEndpoint() ];
-        subgraph.edges.push({ startX: s.x, startY: s.y, endX: t.x, endY: t.y });
+        const bb = n.layoutDimensions({ nodeDimensionsIncludeLabels: true }); // TODO do we want labels included?
+
+        layoutNodes.push({
+          id: n.data('id'),
+          cmptId: i,
+          x: n.position('x'),
+          y: n.position('y'),
+          width:  bb.w,
+          height: bb.h,
+          isLocked: false
+        });
+
       });
-      component.nodes().forEach(node => {
-        var bb = node.boundingBox();
-        subgraph.nodes.push({ x: bb.x1, y: bb.y1, width: bb.w, height: bb.h });
-      });
-
-      subgraphs.push(subgraph);
     });
 
-    // cytoscape-layout-utilities extension
-    const layoutUtils = this.cy.layoutUtilities({ desiredAspectRatio: 16/9 }); 
-    const result = layoutUtils.packComponents(subgraphs);
+    // TODO can the width and height be specified to a specific aspect ratio?
+    const options = {
+      clientWidth:  this.cy.width(),
+      clientHeight: this.cy.height(),
+      componentSpacing: 40 // default is 40
+    };
 
-    const layouts = components.map((component, i) => {
-      return component.nodes().layout({
-        name: 'preset',
-        animate: false,
-        fit: false,
-        transform: node => {
-          return {
-            x: node.position('x') + result.shifts[i].dx,
-            y: node.position('y') + result.shifts[i].dy
-          };
+    // updates the x,y fields of each layoutNode object
+    this._separateComponents(layoutNodes, options);
+
+    // can call applyPositions() because each 'layoutNode' has x, y and id fields.
+    this.applyPositions(layoutNodes);
+  }
+
+  /**
+   * From the cytoscape.js 'cose' layout.
+   */
+  _separateComponents(nodes, options) {
+    const components = [];
+  
+    for(let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const cid = node.cmptId;
+      const component = components[cid] = components[cid] || [];
+      component.push(node);
+    }
+  
+    let totalA = 0;
+  
+    for(let i = 0; i < components.length; i++) {
+      const c = components[i];
+      if(!c){ continue; }
+  
+      c.x1 =  Infinity;
+      c.x2 = -Infinity;
+      c.y1 =  Infinity;
+      c.y2 = -Infinity;
+  
+      for(let j = 0; j < c.length; j++) {
+        const n = c[j];
+        c.x1 = Math.min( c.x1, n.x - n.width / 2 );
+        c.x2 = Math.max( c.x2, n.x + n.width / 2 );
+        c.y1 = Math.min( c.y1, n.y - n.height / 2 );
+        c.y2 = Math.max( c.y2, n.y + n.height / 2 );
+      }
+  
+      c.w = c.x2 - c.x1;
+      c.h = c.y2 - c.y1;
+      totalA += c.w * c.h;
+    }
+  
+    components.sort((c1, c2) =>  c2.w * c2.h - c1.w * c1.h);
+  
+    let x = 0;
+    let y = 0;
+    let usedW = 0;
+    let rowH = 0;
+    const maxRowW = Math.sqrt(totalA) * options.clientWidth / options.clientHeight;
+  
+    for(let i = 0; i < components.length; i++) {
+      const c = components[i];
+      if(!c){ continue; }
+  
+      for(let j = 0; j < c.length; j++) {
+        const n = c[j];
+        if(!n.isLocked) {
+          n.x += (x - c.x1);
+          n.y += (y - c.y1);
         }
-      });
-    });
-
-    const promise = Promise.all(layouts.map(layout => layout.promiseOn('layoutstop')));
-    layouts.forEach(layout => layout.run());
-    await promise;
+      }
+  
+      x += c.w + options.componentSpacing;
+      usedW += c.w + options.componentSpacing;
+      rowH = Math.max(rowH, c.h);
+  
+      if(usedW > maxRowW) {
+        y += rowH + options.componentSpacing;
+        x = 0;
+        usedW = 0;
+        rowH = 0;
+      }
+    }
   }
 
 

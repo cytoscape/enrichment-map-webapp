@@ -56,7 +56,6 @@
     "cytoscape-bubblesets": "^3.2.0",
     "cytoscape-fcose": "^2.2.0",
     "cytoscape-layers": "^2.4.1",
-    "cytoscape-layout-utilities": "1.1.1",
     "dotenv": "^6.2.0",
     "dotenv-defaults": "^5.0.0",
     "eventemitter3": "^3.1.2",
