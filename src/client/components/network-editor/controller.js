@@ -138,27 +138,6 @@ export class NetworkEditorController {
     return edgeLengthMap;
   }
 
-
-  /**
-   * Used to downsample edges inside of clusters. Can be used when running a layout.
-   */
-  _getEdgesToRemove(clusterLabels, clusterAttr) {
-    let edgesToRemove = this.cy.collection();
-    clusterLabels.forEach(({ clusterId }) => {
-      const cluster = this.cy.elements(`node[${clusterAttr}="${clusterId}"]`);
-      if(cluster.empty())
-        return;
-      const edges = cluster.internalEdges();
-      const numToSample = Math.max(45, edges.size() / 10);
-      if(edges.size() > numToSample) {
-        const edgesToKeep = edges.shuffle().slice(0, numToSample);
-        edgesToRemove = edgesToRemove.add(edges.subtract(edgesToKeep));
-      }
-    });
-    return edgesToRemove;
-  }
-
-
   /**
    * Stops the currently running layout, if there is one, and apply the new layout options.
    */
@@ -185,11 +164,6 @@ export class NetworkEditorController {
     const connectedNodes = allNodes.not(disconnectedNodes);
     const networkWithoutDisconnectedNodes = cy.elements().not(disconnectedNodes);
     let networkToLayout = networkWithoutDisconnectedNodes;
-
-    if(options.sampleEdges) {
-      const edgesToRemove = this._getEdgesToRemove(clusterLabels, clusterAttr);
-      networkToLayout = networkWithoutDisconnectedNodes.subtract(edgesToRemove);
-    }
 
     monkeyPatchMathRandom(); // just before the FD layout starts
     
