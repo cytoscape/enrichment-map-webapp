@@ -685,7 +685,11 @@ export class NetworkEditorController {
         const dx = cluster[0].position().x - x0;
         const dy = cluster[0].position().y - y0;
 
-        if (!dragging) {
+        const collapsed = parent.data('collapsed');
+
+        if (!collapsed && !e.target.same(parent) && !cluster.allAre(':selected')) {
+          // don't apply when expanded and dragging just some children
+        } else if (!dragging) {
           draggedBubblePathSVG = bubblePath.node.cloneNode();
           bubblePath.node.parentNode.appendChild(draggedBubblePathSVG);
 
