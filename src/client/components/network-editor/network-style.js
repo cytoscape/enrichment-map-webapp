@@ -97,17 +97,19 @@ export const createNetworkStyle = (cy) => {
           'width':  40,
           'height': 40,
           'font-size': '10px',
-          'text-valign': 'center',
+          'text-valign': 'top',
           'text-wrap': 'wrap',
-          'text-max-width': 80,
+          'text-max-width': 120,
           'text-outline-width': 4,
-          'text-outline-opacity': TEXT_OPACITY,
-          'color': '#fff',
+          'text-outline-opacity': 1,
+          'text-outline-color': '#fff',
+          'color': '#000',
           'z-index': 2,
           'label': nodeLabel,
           'font-weight': 'bold',
           'line-height': 1.2,
           'text-events': 'yes',
+          'text-margin-y': -2
         }
       },
       {
@@ -121,7 +123,7 @@ export const createNetworkStyle = (cy) => {
           'text-outline-opacity': 1,
           'text-outline-color': '#fff',
           'text-opacity': 1,
-          'color': clusterTextColor,
+          'color': '#000',
           'text-events': 'yes',
         }
       },
@@ -134,8 +136,7 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node[NES]:childless',
         style: {
-          'background-color':   getNodeColor,
-          'text-outline-color': getNodeColor,
+          'background-color':   getNodeColor
         }
       },
       {
