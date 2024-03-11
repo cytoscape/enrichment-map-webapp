@@ -679,28 +679,30 @@ export class NetworkEditorController {
       let draggedBubblePathSVG;
 
       parent.on('grab', (e) => {
-        dragging = true;
-
         x0 = cluster[0].position().x;
         y0 = cluster[0].position().y;
-
-        draggedBubblePathSVG = bubblePath.node.cloneNode();
-        bubblePath.node.parentNode.appendChild(draggedBubblePathSVG);
-
-        bubblePath.remove();
       }).on('drag', (e) => {
-        if(dragging) {
-          const dx = cluster[0].position().x - x0;
-          const dy = cluster[0].position().y - y0;
+        const dx = cluster[0].position().x - x0;
+        const dy = cluster[0].position().y - y0;
 
+        if (!dragging) {
+          draggedBubblePathSVG = bubblePath.node.cloneNode();
+          bubblePath.node.parentNode.appendChild(draggedBubblePathSVG);
+
+          bubblePath.remove();
+
+          dragging = true;
+        } else {
           draggedBubblePathSVG.style.transform = `translate(${dx}px, ${dy}px)`;
         }
       }).on('free', () => {
-        dragging = false;
+        if (dragging) {
+          dragging = false;
 
-        draggedBubblePathSVG.remove();
+          draggedBubblePathSVG.remove();
 
-        bubblePath = this._createOrUpdateBubblePath(parent);
+          bubblePath = this._createOrUpdateBubblePath(parent);
+        }
       });
   
       parent.on('tap', evt => {
