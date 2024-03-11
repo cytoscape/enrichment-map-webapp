@@ -25,7 +25,6 @@ import CloseIcon from '@material-ui/icons/Close';
 import DoneIcon from '@material-ui/icons/Done';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
 import UndoIcon from '@material-ui/icons/Undo';
@@ -34,6 +33,7 @@ import RestoreIcon from '@material-ui/icons/SettingsBackupRestore';
 import LinkIcon from '@material-ui/icons/Link';
 import InsertDriveFileOutlinedIcon from '@material-ui/icons/InsertDriveFileOutlined';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
+import { DownloadIcon } from '../svg-icons';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -394,7 +394,7 @@ const Main = ({
       unrelated: true,
     }, {
       title: "Share/Download",
-      icon: <CloudDownloadIcon />,
+      icon: <DownloadIcon />,
       subMenu: shareMenuDef,
     },
   ];
