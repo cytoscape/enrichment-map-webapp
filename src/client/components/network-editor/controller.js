@@ -138,10 +138,57 @@ export class NetworkEditorController {
     return edgeLengthMap;
   }
 
+
+  async applyLayout(clusterLabels, clusterAttr) {
+    const { cy } = this;
+
+    const merge = (components) => {
+      const collection = cy.collection();
+      components.forEach(comp => {
+        collection.merge(comp);
+      });
+      return collection;
+    };
+
+    const [ posComponents, negComponents ] = this._partitionComponentsByNES(cy.elements());
+    const negEles = merge(negComponents);
+    const posEles = merge(posComponents);
+
+    // Partitioned layout, blue on left, red on right
+    await this._applyLayoutToEles(negEles, clusterLabels, clusterAttr); // blue
+    await this._applyLayoutToEles(posEles, clusterLabels, clusterAttr); // red
+
+     // Shift over
+    const negBB = negEles.boundingBox();
+    const posBB = posEles.boundingBox();
+    const dx = negBB.w + 50; // padding
+    const dy = negBB.y2 - posBB.y2;
+    
+    posEles.nodes().positions(node => {
+      const pos = node.position();
+      return {
+        x: pos.x + dx,
+        y: pos.y + dy
+      };
+    });
+  }
+
+  _partitionComponentsByNES(eles) {
+    const components = eles.components(); // array of collections
+
+    const pos = [], neg = [];
+    components.forEach(comp => {
+      const avgNES = this.getAverageNES(comp.nodes());
+      (avgNES < 0 ? neg : pos).push(comp);
+    });
+
+    return [ pos, neg ]; 
+  }
+
   /**
    * Stops the currently running layout, if there is one, and apply the new layout options.
    */
-  async applyLayout(clusterLabels, clusterAttr) {
+  async _applyLayoutToEles(eles, clusterLabels, clusterAttr) {
     if (this.layout) {
       this.layout.stop();
     }
@@ -159,13 +206,13 @@ export class NetworkEditorController {
       nodeRepulsion: 100000
     };
 
-    const allNodes = cy.nodes();
+    const allNodes = eles.nodes();
     const disconnectedNodes = allNodes.filter(n => n.degree() === 0); // careful, our compound nodes have degree 0
     const connectedNodes = allNodes.not(disconnectedNodes);
-    const networkWithoutDisconnectedNodes = cy.elements().not(disconnectedNodes);
-    let networkToLayout = networkWithoutDisconnectedNodes;
+    const networkWithoutDisconnectedNodes = eles.not(disconnectedNodes);
+    const networkToLayout = networkWithoutDisconnectedNodes;
 
-    monkeyPatchMathRandom(); // just before the FD layout starts
+    // monkeyPatchMathRandom(); // just before the FD layout starts
     
     const start = performance.now();
 
@@ -177,12 +224,12 @@ export class NetworkEditorController {
     const layoutDone = performance.now();
     console.log(`layout time: ${Math.round(layoutDone - start)}ms`);
 
-    await this._packComponents(networkToLayout);
+    this._packComponents(networkToLayout);
 
     const packDone = performance.now();
     console.log(`packing time: ${Math.round(packDone - layoutDone)}ms`);
 
-    restoreMathRandom(); // after the FD layout is done
+    // restoreMathRandom(); // after the FD layout is done
 
     const connectedBB = connectedNodes.boundingBox();
     // Style hasn't been applied yet, there are no labels. Filter out compound nodes.
@@ -480,14 +527,16 @@ export class NetworkEditorController {
   }
 
 
-  _setAverageNES(parent) {
-    // Set the average NES to the parent
+  getAverageNES(nodes) {
     let nes = 0;
-    const cluster = parent.children();
-    cluster.forEach(node => {
+    nodes.forEach(node => {
       nes += node.data('NES');
     });
-    nes = _.round(nes / cluster.length, 4);
+    return _.round(nes / nodes.length, 4);
+  }
+
+  _setAverageNES(parent) {
+    const nes = this.getAverageNES(parent.children());
     parent.data('NES', nes); 
     return nes;
   }
