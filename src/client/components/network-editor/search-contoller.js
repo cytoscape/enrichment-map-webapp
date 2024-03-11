@@ -10,7 +10,7 @@ export function parsePathwayName(pathway) {
   if (i > 0) {
     name = name.substring(0, i);
   }
-  return name.toLowerCase().replace(/_/g, ' ');
+  return name.toUpperCase().replace(/_/g, ' ');
 }
 
 

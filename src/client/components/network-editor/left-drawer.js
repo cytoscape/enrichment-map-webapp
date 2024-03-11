@@ -56,6 +56,13 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flexFlow: 'column',
     height: '100%',
+    // Disable Text Selection (needed here as well because the Drawer can be 'temporary', rendered as a Dialog):
+    WebkitTouchCallout: 'none', /* iOS Safari */
+    WebkitUserSelect: 'none', /* Safari */
+    MozUserSelect: 'none', /* Firefox */
+    msUserSelect: 'none', /* Internet Explorer/Edge */
+    userSelect: 'none', /* Non-prefixed version (Chrome and Opera) */
+    // -----------------------
   },
   paper: {
     width: LEFT_DRAWER_WIDTH,
@@ -472,7 +479,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
             genes={genes}
             selectedGene={selectedGene}
             initialIndex={initialIndex}
-            isSearch={!_.isEmpty(searchResult)}
+            isSearch={!_.isEmpty(searchValue)}
             isIntersection={setOperation === 'intersection'}
             isMobile={isMobile}
             onGeneClick={toggleGeneDetails}

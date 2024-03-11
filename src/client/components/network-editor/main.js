@@ -107,6 +107,15 @@ NetworkBackground.propTypes = {
 };
 
 const useRestoreConfirmDialogStyles = makeStyles((theme) => ({
+  root: {
+    // Disable Text Selection:
+    WebkitTouchCallout: 'none', /* iOS Safari */
+    WebkitUserSelect: 'none', /* Safari */
+    MozUserSelect: 'none', /* Firefox */
+    msUserSelect: 'none', /* Internet Explorer/Edge */
+    userSelect: 'none', /* Non-prefixed version (Chrome and Opera) */
+    // -----------------------
+  },
   infoBox: {
     width: '100%',
     paddingTop: theme.spacing(0.5),
@@ -147,6 +156,7 @@ function RestoreConfirmDialog({ open, isMobile, onOk, onCancel }) {
   return (
     <Dialog
       maxWidth="xs"
+      className={classes.root}
       open={open}
       fullScreen={isMobile}
       TransitionComponent={isMobile ? DownSlideTransition : undefined}

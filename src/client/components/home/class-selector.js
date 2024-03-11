@@ -16,6 +16,15 @@ const BUTTONS_DEF = [
 ];
 
 const useStyles = makeStyles((theme) => ({
+  root: {
+    // Disable Text Selection (needed here as well because the Drawer can be 'temporary', rendered as a Dialog):
+    WebkitTouchCallout: 'none', /* iOS Safari */
+    WebkitUserSelect: 'none', /* Safari */
+    MozUserSelect: 'none', /* Firefox */
+    msUserSelect: 'none', /* Internet Explorer/Edge */
+    userSelect: 'none', /* Non-prefixed version (Chrome and Opera) */
+    // -----------------------
+  },
   header: {
     textAlign: 'center',
   },
@@ -74,7 +83,7 @@ function ClassSelector({ columns, isMobile, rnaseqClasses, onClassesChanged }) {
   const classes = useStyles();
 
   return (
-    <Grid container direction="column" spacing={4}>
+    <Grid container direction="column" spacing={4} className={classes.root}>
       <Grid item xs={12}>
         <Typography variant="body1">
           Define two sample groups that will be compared against each other &#8212; <i>Experiment</i> vs <i>Control</i>:

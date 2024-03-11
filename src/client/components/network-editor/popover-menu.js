@@ -1,10 +1,25 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+import { makeStyles } from '@material-ui/core/styles';
 import { MenuList, MenuItem, ListItemIcon, ListItemText, Popover } from '@material-ui/core';
 
 
+const useStyles = makeStyles(() => ({
+  root: {
+    // Disable Text Selection:
+    WebkitTouchCallout: 'none', /* iOS Safari */
+    WebkitUserSelect: 'none', /* Safari */
+    MozUserSelect: 'none', /* Firefox */
+    msUserSelect: 'none', /* Internet Explorer/Edge */
+    userSelect: 'none', /* Non-prefixed version (Chrome and Opera) */
+    // -----------------------
+  },
+}));
+
 export function PopoverMenu({ open, target, menu, onClose=() => null }) {
+  const classes = useStyles();
+
   const handleClick = (fn) => {
     onClose();
     fn?.();
@@ -14,6 +29,7 @@ export function PopoverMenu({ open, target, menu, onClose=() => null }) {
     <Popover
       id="menu-popover"
       anchorEl={target}
+      className={classes.root}
       open={open && Boolean(target)}
       anchorOrigin={{
         vertical: 'bottom',

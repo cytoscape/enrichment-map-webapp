@@ -60,7 +60,7 @@ function getMinMaxValues(cy, attr) {
 export const nodeLabel = _.memoize(node => {
   const label = node.data('label');
   if(label)
-    return label;
+    return label.toUpperCase();
   const name = node.data('name');
   const pathway = Array.isArray(name) ? name[0] : name;
   return parsePathwayName(pathway);
@@ -91,21 +91,23 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node',
         style: {
-          'min-zoomed-font-size': 10,
           'opacity': NODE_OPACITY,
           'border-width': 12,
           'border-opacity': 0,
           'width':  40,
           'height': 40,
-          'font-size': '8px',
+          'font-size': '10px',
           'text-valign': 'center',
           'text-wrap': 'wrap',
           'text-max-width': 80,
-          'text-outline-width': 2,
+          'text-outline-width': 4,
           'text-outline-opacity': TEXT_OPACITY,
           'color': '#fff',
           'z-index': 1,
           'label': nodeLabel,
+          'font-weight': 'bold',
+          'line-height': 1.2,
+          'text-events': 'yes',
         }
       },
       {
@@ -115,15 +117,22 @@ export const createNetworkStyle = (cy) => {
           'border-width': 0,
           'font-size': '14px',
           'text-valign':'top',
-          'text-outline-width': 0,
-          'text-outline-opacity': 0,
-          'text-opacity': 0.6,
+          'text-outline-width': 4,
+          'text-outline-opacity': 1,
+          'text-outline-color': '#fff',
+          'text-opacity': 1,
           'color': clusterTextColor,
           'text-events': 'yes',
         }
       },
       {
-        selector: 'node[NES]',
+        selector: 'node:active',
+        style: {
+          'overlay-opacity': 0.25
+        }
+      },
+      {
+        selector: 'node[NES]:childless',
         style: {
           'background-color':   getNodeColor,
           'text-outline-color': getNodeColor,
@@ -132,8 +141,20 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node[parent][?collapsed]',
         style: {
-          'label': n => '',
-          'events': 'no'
+          'label': ''
+        }
+      },
+      {
+        selector: 'node[parent][?collapsed]',
+        style: {
+          'label': '',
+          'overlay-opacity': 0
+        }
+      },
+      {
+        selector: 'node.grabbing-collapsed-child',
+        style: {
+          'overlay-opacity': 0.25
         }
       },
       {
@@ -181,7 +202,7 @@ export const createNetworkStyle = (cy) => {
         selector: 'node.unhighlighted',
         style: {
           'opacity': 0.1,
-          'label': () => '',
+          'label': '',
           'z-index': 1,
         }
       },
