@@ -389,7 +389,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
                 <Typography display="inline" variant="body2" color="textSecondary">
                   ({ totalGenes })
                 </Typography> &nbsp;&nbsp;
-                <Tooltip title="Export Current Gene List">
+                <Tooltip title="Download Current Gene List">
                   <IconButton size="small" onClick={handleGeneListExport}>
                     <DownloadIcon />
                   </IconButton>
