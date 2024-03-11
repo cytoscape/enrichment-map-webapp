@@ -56,6 +56,13 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flexFlow: 'column',
     height: '100%',
+    // Disable Text Selection (needed here as well because the Drawer can be 'temporary', rendered as a Dialog):
+    WebkitTouchCallout: 'none', /* iOS Safari */
+    WebkitUserSelect: 'none', /* Safari */
+    MozUserSelect: 'none', /* Firefox */
+    msUserSelect: 'none', /* Internet Explorer/Edge */
+    userSelect: 'none', /* Non-prefixed version (Chrome and Opera) */
+    // -----------------------
   },
   paper: {
     width: LEFT_DRAWER_WIDTH,
