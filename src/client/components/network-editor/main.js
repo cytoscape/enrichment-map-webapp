@@ -28,7 +28,6 @@ import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
 import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
 import UndoIcon from '@material-ui/icons/Undo';
-import DeleteIcon from '@material-ui/icons/Delete';
 import RestoreIcon from '@material-ui/icons/SettingsBackupRestore';
 import LinkIcon from '@material-ui/icons/Link';
 import InsertDriveFileOutlinedIcon from '@material-ui/icons/InsertDriveFileOutlined';
@@ -172,12 +171,12 @@ function RestoreConfirmDialog({ open, isMobile, onOk, onCancel }) {
             </ListItemIcon>
             <ListItemText className={classes.itemText} primary="All nodes will be returned to their initial positions." />
           </ListItem>
-          <ListItem className={classes.item}>
+          {/* <ListItem className={classes.item}>
             <ListItemIcon className={classes.itemIcon}>
               <KeyboardReturnIcon className={classes.itemIconIcon} />
             </ListItemIcon>
             <ListItemText className={classes.itemText} primary="All deleted nodes will be restored." />
-          </ListItem>
+          </ListItem> */}
         </List>
       </Paper>
       </DialogContent>
@@ -370,11 +369,12 @@ const Main = ({
       onClick: () => controller.undoHandler.undo(),
       isEnabled: () => undoEnabled,
     },
+    // {
+    //   title: "Delete Selected Nodes",
+    //   icon: <DeleteIcon />,
+    //   onClick: () => controller.deleteSelectedNodes(),
+    // },
     {
-      title: "Delete Selected Nodes",
-      icon: <DeleteIcon />,
-      onClick: () => controller.deleteSelectedNodes(),
-    }, {
       title: "Restore Network to Initial Layout",
       icon: <RestoreIcon />,
       onClick: handleNetworkRestore,
@@ -417,9 +417,10 @@ const Main = ({
       .bind('left', panner.panLeft)
       .bind('right', panner.panRight)
       .bind(['f', 'space'], panner.fit) 
-      .bind(['backspace','del'], () => controller.deleteSelectedNodes());
+      // .bind(['backspace','del'], () => controller.deleteSelectedNodes())
+    ;
   
-    return () => Mousetrap.unbind(['-','_','=','+','up','down','left','right','f','space','backspace','del']);
+    return () => Mousetrap.unbind(['-','_','=','+','up','down','left','right','f','space'/**,'backspace','del'*/]);
   }, [panner]);
 
   return (
