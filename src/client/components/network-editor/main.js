@@ -14,7 +14,6 @@ import LeftDrawer from './left-drawer';
 import RightDrawer from './right-drawer';
 import BottomDrawer from './bottom-drawer';
 import { TYPE as UNDO_TYPE } from './undo-stack';
-import { delay } from './util';
 
 import { Button, IconButton, Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
 import { Paper, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
@@ -29,10 +28,8 @@ import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
 import UndoIcon from '@material-ui/icons/Undo';
 import RestoreIcon from '@material-ui/icons/SettingsBackupRestore';
-import LinkIcon from '@material-ui/icons/Link';
-import InsertDriveFileOutlinedIcon from '@material-ui/icons/InsertDriveFileOutlined';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
-import { DownloadIcon } from '../svg-icons';
+import { DownloadIcon, ShareIcon } from '../svg-icons';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -283,8 +280,7 @@ const Main = ({
   const [ undoEnabled, setUndoEnabled ] = useState(false);
   const [ undoType, setUndoType] = useState(null);
   const [ panner ] = useState(() => createPanner(controller));
-  const [ imageExportEnabled, setImageExportEnabled ] = useState(true);
-  const [ dataExportEnabled, setDataExportEnabled ] = useState(true);
+  const [ exportEnabled, setExportEnabled ] = useState(true);
   const [ snackBarState, setSnackBarState ] = useState({
     open: false,
     message: "",
@@ -312,55 +308,17 @@ const Main = ({
 
   // Share/Download functions
   const handleCopyLink = async () => {
-    await handleCopyToClipboard();
+    handleCopyToClipboard();
     snack.showMessage("Link copied to clipboard");
   };
 
-  const handleExportImages = async () => {
-    setImageExportEnabled(false);
-    snack.showSpinner("Preparing network images...");
-    await delay(50); // allows the menu to close immediately, otherwise it hangs for a couple seconds
-    await controller.exportImageArchive(controller);
+  const handleExport = async () => {
+    setExportEnabled(false);
+    snack.showSpinner("Preparing enrichment data and network images...");
+    await controller.exportArchive(controller);
     snack.close();
-    setImageExportEnabled(true); 
+    setExportEnabled(true); 
   };
-
-  const handleExportData = async () => {
-    setDataExportEnabled(false);
-    const promise = controller.exportDataArchive(controller);
-    await spinnerUntilDone(promise, "Preparing enrichment data...");
-    setDataExportEnabled(true);
-  };
-
-  const spinnerUntilDone = async (promise, message) => {
-    // Only show spinner if it takes longer than the delay
-    const value = await Promise.race([ promise, delay(500) ]);
-    if (value === 'delay') {
-      // if the delay promise finished first
-      snack.showSpinner(message);
-    }
-    await promise; // wait for the export to finish if it hasn't already
-    snack.close();
-  };
-
-  // Definitons for the toolbar (or mobile menu drawer)
-  const shareMenuDef = [
-    {
-      title: "Share Link to Network",
-      icon: <LinkIcon />,
-      onClick: handleCopyLink,
-    }, {
-      title: "Download Network Images",
-      icon: <InsertDriveFileOutlinedIcon />,
-      disabled: !imageExportEnabled,
-      onClick: handleExportImages,
-    }, {
-      title: "Download Enrichment Data",
-      icon: <InsertDriveFileOutlinedIcon />,
-      disabled: !dataExportEnabled,
-      onClick: handleExportData,
-    }
-  ];
 
   const menuDef = [ 
     {
@@ -393,9 +351,14 @@ const Main = ({
       onClick: panner.fit,
       unrelated: true,
     }, {
-      title: "Share/Download",
+      title: "Download Enrichment Data and Images",
       icon: <DownloadIcon />,
-      subMenu: shareMenuDef,
+      onClick: handleExport,
+      isEnabled: () => exportEnabled,
+    }, {
+      title: "Share",
+      icon: <ShareIcon />,
+      onClick: handleCopyLink,
     },
   ];
 

@@ -307,6 +307,15 @@ export function DownloadIcon(props) {
   );
 }
 
+export function ShareIcon(props) {
+  return (
+    <SvgIcon viewBox="0, 0, 64, 64" {...props}>
+      <path d="M46.736,9.193 L46.736,0 L64,16.099 L46.736,32.241 L46.736,22.789 C34.737,22.789 26.839,26.457 20.839,34.528 C23.256,23.005 29.946,11.524 46.736,9.193 z" />
+      <path d="M22.25,6 L22.25,12.5 L12.5,12.5 L12.5,43.108 L12.5,43.108 L12.5,51.5 L51.5,51.5 L51.5,41.75 L58,41.75 L58,51.5 Q58,54.181 56.091,56.091 Q54.181,58 51.5,58 L12.5,58 Q9.819,58 7.909,56.091 Q6,54.181 6,51.5 L6,41.75 L6,41.75 L6,12.5 Q6,9.819 7.909,7.909 Q9.819,6 12.5,6 L22.25,6 z" />
+    </SvgIcon>
+  );
+}
+
 export function VennIntersectionIcon(props) {
   return (
     <SvgIcon viewBox="0 0 64 64" {...props}>

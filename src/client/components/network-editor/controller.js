@@ -761,27 +761,9 @@ export class NetworkEditorController {
       return geneSet.genes;
     }
   }
-  
 
-  async exportImageArchive() {
-    const blobs = await Promise.all([
-      this.createNetworkImageBlob(ImageSize.SMALL),
-      this.createNetworkImageBlob(ImageSize.MEDIUM),
-      this.createNetworkImageBlob(ImageSize.LARGE),
-      this.createSVGLegendBlob()
-    ]);
-  
-    const zip = new JSZip();
-    zip.file('enrichment_map_small.png',  blobs[0]);
-    zip.file('enrichment_map_medium.png', blobs[1]);
-    zip.file('enrichment_map_large.png',  blobs[2]);
-    zip.file('node_color_legend_NES.svg', blobs[3]);
-  
-    const fileName = this.getZipFileName('images');
-    this.saveZip(zip, fileName);
-  }
 
-  async exportDataArchive() {
+  async exportArchive() {
     const netID = this.networkIDStr;
   
     const fetchExport = async path => {
@@ -789,6 +771,12 @@ export class NetworkEditorController {
       return await res.text();
     };
   
+    const blobs = await Promise.all([
+      this.createNetworkImageBlob(ImageSize.SMALL),
+      this.createNetworkImageBlob(ImageSize.MEDIUM),
+      this.createNetworkImageBlob(ImageSize.LARGE),
+      this.createSVGLegendBlob()
+    ]);
     const files = await Promise.all([
       fetchExport(`/api/export/enrichment/${netID}`),
       fetchExport(`/api/export/ranks/${netID}`),
@@ -796,9 +784,13 @@ export class NetworkEditorController {
     ]);
   
     const zip = new JSZip();
-    zip.file('enrichment_results.txt', files[0]);
-    zip.file('ranks.txt', files[1]);
-    zip.file('gene_sets.gmt', files[2]);
+    zip.file('images/enrichment_map_small.png',  blobs[0]);
+    zip.file('images/enrichment_map_medium.png', blobs[1]);
+    zip.file('images/enrichment_map_large.png',  blobs[2]);
+    zip.file('images/node_color_legend_NES.svg', blobs[3]);
+    zip.file('data/enrichment_results.txt', files[0]);
+    zip.file('data/ranks.txt', files[1]);
+    zip.file('data/gene_sets.gmt', files[2]);
   
     const fileName = this.getZipFileName('enrichment');
     this.saveZip(zip, fileName);
