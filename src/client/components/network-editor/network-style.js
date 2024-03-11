@@ -103,7 +103,7 @@ export const createNetworkStyle = (cy) => {
           'text-outline-width': 4,
           'text-outline-opacity': TEXT_OPACITY,
           'color': '#fff',
-          'z-index': 1,
+          'z-index': 2,
           'label': nodeLabel,
           'font-weight': 'bold',
           'line-height': 1.2,
@@ -172,6 +172,16 @@ export const createNetworkStyle = (cy) => {
           'haystack-radius': 0,
           'width': ele => ele.data('similarity_coefficient') * 15,
           'z-index': 1,
+          'z-compound-depth': 'bottom',
+          'z-index-compare': 'manual'
+        }
+      },
+      {
+        selector: 'edge[!collapsed]',
+        style: {
+          'z-index': 1,
+          'z-compound-depth': 'auto',
+          'z-index-compare': 'auto'
         }
       },
       {

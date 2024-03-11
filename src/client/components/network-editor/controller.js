@@ -398,6 +398,7 @@ export class NetworkEditorController {
 
     const nodes = parent.children();
     const edges = nodes.internalEdges();
+    const connectedEdges = nodes.connectedEdges();
 
     const shouldAnimate = requestAnimate && nodes.size() < LARGE_CLUSTER_SIZE;
 
@@ -414,6 +415,9 @@ export class NetworkEditorController {
     const onStop = layout.promiseOn('layoutstop');
 
     parent.data('collapsed', !collapsed);
+
+    connectedEdges.data('collapsed', !collapsed);
+    this.cy.edges().not(connectedEdges).data('collapsed', collapsed);
 
     if(collapsed) {
       edges.style('visibility', 'visible');
@@ -771,6 +775,8 @@ export class NetworkEditorController {
         parent.removeClass('grabbing-collapsed-child');
       });
     });
+
+    cy.edges().data('collapsed', true);
   }
 
 
