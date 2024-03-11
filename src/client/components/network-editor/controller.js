@@ -494,7 +494,9 @@ export class NetworkEditorController {
    */
   _createOrUpdateBubblePath(parent) {
     if(!this.bubbleSets) {
-      this.bubbleSets = this.cy.bubbleSets(); // only create one instance of this plugin
+      this.bubbleSets = this.cy.bubbleSets({
+        interactive: false
+      }); // only create one instance of this plugin
     }
 
     const existingPath = parent.scratch(Scratch.BUBBLE);
@@ -661,13 +663,44 @@ export class NetworkEditorController {
       }
 
       this._setAverageNES(parent);
-      const bubblePath = this._createOrUpdateBubblePath(parent);
+      let bubblePath = this._createOrUpdateBubblePath(parent);
+
+      let dragging = false;
 
       parent.on('position', () => {
         // When the children are ungrabified the 'position' event is not fired for them, must update the bubble path manually.
-        if(!parent.children().grabbable()) { 
+        if(!parent.children().grabbable() && !dragging) { 
           bubblePath.update();
         }
+      });
+
+      let x0 = 0;
+      let y0 = 0;
+      let draggedBubblePathSVG;
+
+      parent.on('grab', (e) => {
+        dragging = true;
+
+        x0 = cluster[0].position().x;
+        y0 = cluster[0].position().y;
+
+        draggedBubblePathSVG = bubblePath.node.cloneNode();
+        bubblePath.node.parentNode.appendChild(draggedBubblePathSVG);
+
+        bubblePath.remove();
+      }).on('drag', (e) => {
+        if(dragging) {
+          const dx = cluster[0].position().x - x0;
+          const dy = cluster[0].position().y - y0;
+
+          draggedBubblePathSVG.style.transform = `translate(${dx}px, ${dy}px)`;
+        }
+      }).on('free', () => {
+        dragging = false;
+
+        draggedBubblePathSVG.remove();
+
+        bubblePath = this._createOrUpdateBubblePath(parent);
       });
   
       parent.on('tap', evt => {
