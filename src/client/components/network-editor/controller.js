@@ -439,7 +439,7 @@ export class NetworkEditorController {
         automoveRule.enable();
       }
 
-      const outOfBounds = nodes.some(node => {  // Check if any nodes are out of bounds
+      const outOfBounds = nodes.add(parent).some(node => {  // Check if any nodes are out of bounds
         const extent = this.cy.extent();
         const bb = node.boundingBox();
 
