@@ -479,7 +479,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
             genes={genes}
             selectedGene={selectedGene}
             initialIndex={initialIndex}
-            isSearch={!_.isEmpty(searchResult)}
+            isSearch={!_.isEmpty(searchValue)}
             isIntersection={setOperation === 'intersection'}
             isMobile={isMobile}
             onGeneClick={toggleGeneDetails}
