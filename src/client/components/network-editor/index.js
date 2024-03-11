@@ -23,6 +23,13 @@ const useStyles = makeStyles(() => ({
     position: 'absolute',
     width: '100%',
     height: '100%',
+    // Disable Text Selection:
+    WebkitTouchCallout: 'none', /* iOS Safari */
+    WebkitUserSelect: 'none', /* Safari */
+    MozUserSelect: 'none', /* Firefox */
+    msUserSelect: 'none', /* Internet Explorer/Edge */
+    userSelect: 'none', /* Non-prefixed version (Chrome and Opera) */
+    // -----------------------
   },
 }));
 

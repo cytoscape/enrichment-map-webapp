@@ -16,8 +16,7 @@ import SearchBar from './search-bar';
 
 import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
 import CloseIcon from '@material-ui/icons/Close';
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
-import { VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
+import { DownloadIcon, VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
 
 
 const setOperationOptions = {
@@ -56,6 +55,13 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
     flexFlow: 'column',
     height: '100%',
+    // Disable Text Selection (needed here as well because the Drawer can be 'temporary', rendered as a Dialog):
+    WebkitTouchCallout: 'none', /* iOS Safari */
+    WebkitUserSelect: 'none', /* Safari */
+    MozUserSelect: 'none', /* Firefox */
+    msUserSelect: 'none', /* Internet Explorer/Edge */
+    userSelect: 'none', /* Non-prefixed version (Chrome and Opera) */
+    // -----------------------
   },
   paper: {
     width: LEFT_DRAWER_WIDTH,
@@ -383,9 +389,9 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
                 <Typography display="inline" variant="body2" color="textSecondary">
                   ({ totalGenes })
                 </Typography> &nbsp;&nbsp;
-                <Tooltip title="Export Current Gene List">
+                <Tooltip title="Download Current Gene List">
                   <IconButton size="small" onClick={handleGeneListExport}>
-                    <CloudDownloadIcon />
+                    <DownloadIcon />
                   </IconButton>
                 </Tooltip>
               </>
@@ -472,7 +478,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
             genes={genes}
             selectedGene={selectedGene}
             initialIndex={initialIndex}
-            isSearch={!_.isEmpty(searchResult)}
+            isSearch={!_.isEmpty(searchValue)}
             isIntersection={setOperation === 'intersection'}
             isMobile={isMobile}
             onGeneClick={toggleGeneDetails}

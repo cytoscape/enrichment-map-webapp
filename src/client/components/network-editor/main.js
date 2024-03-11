@@ -14,7 +14,6 @@ import LeftDrawer from './left-drawer';
 import RightDrawer from './right-drawer';
 import BottomDrawer from './bottom-drawer';
 import { TYPE as UNDO_TYPE } from './undo-stack';
-import { delay } from './util';
 
 import { Button, IconButton, Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
 import { Paper, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
@@ -25,15 +24,12 @@ import CloseIcon from '@material-ui/icons/Close';
 import DoneIcon from '@material-ui/icons/Done';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
 import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
 import UndoIcon from '@material-ui/icons/Undo';
-import DeleteIcon from '@material-ui/icons/Delete';
 import RestoreIcon from '@material-ui/icons/SettingsBackupRestore';
-import LinkIcon from '@material-ui/icons/Link';
-import InsertDriveFileOutlinedIcon from '@material-ui/icons/InsertDriveFileOutlined';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
+import { DownloadIcon, ShareIcon } from '../svg-icons';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -107,6 +103,15 @@ NetworkBackground.propTypes = {
 };
 
 const useRestoreConfirmDialogStyles = makeStyles((theme) => ({
+  root: {
+    // Disable Text Selection:
+    WebkitTouchCallout: 'none', /* iOS Safari */
+    WebkitUserSelect: 'none', /* Safari */
+    MozUserSelect: 'none', /* Firefox */
+    msUserSelect: 'none', /* Internet Explorer/Edge */
+    userSelect: 'none', /* Non-prefixed version (Chrome and Opera) */
+    // -----------------------
+  },
   infoBox: {
     width: '100%',
     paddingTop: theme.spacing(0.5),
@@ -147,6 +152,7 @@ function RestoreConfirmDialog({ open, isMobile, onOk, onCancel }) {
   return (
     <Dialog
       maxWidth="xs"
+      className={classes.root}
       open={open}
       fullScreen={isMobile}
       TransitionComponent={isMobile ? DownSlideTransition : undefined}
@@ -162,12 +168,12 @@ function RestoreConfirmDialog({ open, isMobile, onOk, onCancel }) {
             </ListItemIcon>
             <ListItemText className={classes.itemText} primary="All nodes will be returned to their initial positions." />
           </ListItem>
-          <ListItem className={classes.item}>
+          {/* <ListItem className={classes.item}>
             <ListItemIcon className={classes.itemIcon}>
               <KeyboardReturnIcon className={classes.itemIconIcon} />
             </ListItemIcon>
             <ListItemText className={classes.itemText} primary="All deleted nodes will be restored." />
-          </ListItem>
+          </ListItem> */}
         </List>
       </Paper>
       </DialogContent>
@@ -274,8 +280,7 @@ const Main = ({
   const [ undoEnabled, setUndoEnabled ] = useState(false);
   const [ undoType, setUndoType] = useState(null);
   const [ panner ] = useState(() => createPanner(controller));
-  const [ imageExportEnabled, setImageExportEnabled ] = useState(true);
-  const [ dataExportEnabled, setDataExportEnabled ] = useState(true);
+  const [ exportEnabled, setExportEnabled ] = useState(true);
   const [ snackBarState, setSnackBarState ] = useState({
     open: false,
     message: "",
@@ -303,55 +308,17 @@ const Main = ({
 
   // Share/Download functions
   const handleCopyLink = async () => {
-    await handleCopyToClipboard();
+    handleCopyToClipboard();
     snack.showMessage("Link copied to clipboard");
   };
 
-  const handleExportImages = async () => {
-    setImageExportEnabled(false);
-    snack.showSpinner("Preparing network images...");
-    await delay(50); // allows the menu to close immediately, otherwise it hangs for a couple seconds
-    await controller.exportImageArchive(controller);
+  const handleExport = async () => {
+    setExportEnabled(false);
+    snack.showSpinner("Preparing enrichment data and network images...");
+    await controller.exportArchive(controller);
     snack.close();
-    setImageExportEnabled(true); 
+    setExportEnabled(true); 
   };
-
-  const handleExportData = async () => {
-    setDataExportEnabled(false);
-    const promise = controller.exportDataArchive(controller);
-    await spinnerUntilDone(promise, "Preparing enrichment data...");
-    setDataExportEnabled(true);
-  };
-
-  const spinnerUntilDone = async (promise, message) => {
-    // Only show spinner if it takes longer than the delay
-    const value = await Promise.race([ promise, delay(500) ]);
-    if (value === 'delay') {
-      // if the delay promise finished first
-      snack.showSpinner(message);
-    }
-    await promise; // wait for the export to finish if it hasn't already
-    snack.close();
-  };
-
-  // Definitons for the toolbar (or mobile menu drawer)
-  const shareMenuDef = [
-    {
-      title: "Share Link to Network",
-      icon: <LinkIcon />,
-      onClick: handleCopyLink,
-    }, {
-      title: "Download Network Images",
-      icon: <InsertDriveFileOutlinedIcon />,
-      disabled: !imageExportEnabled,
-      onClick: handleExportImages,
-    }, {
-      title: "Download Enrichment Data",
-      icon: <InsertDriveFileOutlinedIcon />,
-      disabled: !dataExportEnabled,
-      onClick: handleExportData,
-    }
-  ];
 
   const menuDef = [ 
     {
@@ -360,11 +327,12 @@ const Main = ({
       onClick: () => controller.undoHandler.undo(),
       isEnabled: () => undoEnabled,
     },
+    // {
+    //   title: "Delete Selected Nodes",
+    //   icon: <DeleteIcon />,
+    //   onClick: () => controller.deleteSelectedNodes(),
+    // },
     {
-      title: "Delete Selected Nodes",
-      icon: <DeleteIcon />,
-      onClick: () => controller.deleteSelectedNodes(),
-    }, {
       title: "Restore Network to Initial Layout",
       icon: <RestoreIcon />,
       onClick: handleNetworkRestore,
@@ -383,9 +351,14 @@ const Main = ({
       onClick: panner.fit,
       unrelated: true,
     }, {
-      title: "Share/Download",
-      icon: <CloudDownloadIcon />,
-      subMenu: shareMenuDef,
+      title: "Download Enrichment Data and Images",
+      icon: <DownloadIcon />,
+      onClick: handleExport,
+      isEnabled: () => exportEnabled,
+    }, {
+      title: "Share",
+      icon: <ShareIcon />,
+      onClick: handleCopyLink,
     },
   ];
 
@@ -407,9 +380,10 @@ const Main = ({
       .bind('left', panner.panLeft)
       .bind('right', panner.panRight)
       .bind(['f', 'space'], panner.fit) 
-      .bind(['backspace','del'], () => controller.deleteSelectedNodes());
+      // .bind(['backspace','del'], () => controller.deleteSelectedNodes())
+    ;
   
-    return () => Mousetrap.unbind(['-','_','=','+','up','down','left','right','f','space','backspace','del']);
+    return () => Mousetrap.unbind(['-','_','=','+','up','down','left','right','f','space'/**,'backspace','del'*/]);
   }, [panner]);
 
   return (
