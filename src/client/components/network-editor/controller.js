@@ -398,6 +398,7 @@ export class NetworkEditorController {
 
     const nodes = parent.children();
     const edges = nodes.internalEdges();
+    const connectedEdges = nodes.connectedEdges();
 
     const shouldAnimate = requestAnimate && nodes.size() < LARGE_CLUSTER_SIZE;
 
@@ -414,6 +415,9 @@ export class NetworkEditorController {
     const onStop = layout.promiseOn('layoutstop');
 
     parent.data('collapsed', !collapsed);
+
+    connectedEdges.data('collapsed', !collapsed);
+    this.cy.edges().not(connectedEdges).data('collapsed', collapsed);
 
     if(collapsed) {
       edges.style('visibility', 'visible');
@@ -554,7 +558,7 @@ export class NetworkEditorController {
     });
 
     // Toggle expand/collapse if user clicks direclty on the bubble.
-    cy.on('click', e => {
+    cy.on('tap', e => {
       if(e.target === cy) {
         const parent = this.getBubbleSetParent(e.position);
         if(parent) {
@@ -767,10 +771,12 @@ export class NetworkEditorController {
         }
       }).on('free', (evt) => {
         parent.removeClass('grabbing-collapsed-child');
-      }).on('click', (evt) => {
+      }).on('tap', (evt) => {
         parent.removeClass('grabbing-collapsed-child');
       });
     });
+
+    cy.edges().data('collapsed', true);
   }
 
 
