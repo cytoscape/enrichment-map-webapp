@@ -76,8 +76,8 @@ async function loadNetwork(cy, controller, id) {
   const positionsResult = await positionsPromise;
   if(positionsResult.status == 404) {
     console.log('running layout');
-    controller.createCompoundNodes(clusterLabels, clusterAttr);
     await controller.applyLayout(clusterLabels, clusterAttr);
+    controller.createCompoundNodes(clusterLabels, clusterAttr);
     controller.createBubbleClusters();
     layoutWasRun = true;  
   } else {

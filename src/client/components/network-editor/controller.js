@@ -262,8 +262,7 @@ export class NetworkEditorController {
 
     eles.components().forEach((component, i) => {
       component.nodes().forEach(n => {
-
-        const bb = n.layoutDimensions({ nodeDimensionsIncludeLabels: true }); // TODO do we want labels included?
+        const bb = n.layoutDimensions();
 
         layoutNodes.push({
           id: n.data('id'),
@@ -274,14 +273,12 @@ export class NetworkEditorController {
           height: bb.h,
           isLocked: false
         });
-
       });
     });
 
-    // TODO can the width and height be specified to a specific aspect ratio?
     const options = {
-      clientWidth:  this.cy.width(),
-      clientHeight: this.cy.height(),
+      clientWidth:  400,
+      clientHeight: 300,
       componentSpacing: 40 // default is 40
     };
 
