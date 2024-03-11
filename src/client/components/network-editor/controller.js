@@ -681,6 +681,12 @@ export class NetworkEditorController {
           // if (ele.isChild()) {
           //   setTimeout(() => { ele.unselect(); }, 0);
           // }
+        } else {
+          const clickedPreciseParent = this.getBubbleSetParent(evt.position);
+
+          if (!clickedPreciseParent) {
+            this.toggleExpandCollapse(parent, true);
+          }
         }
       });
 
