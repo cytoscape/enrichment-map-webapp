@@ -449,7 +449,7 @@ export class NetworkEditorController {
       if (outOfBounds && collapsed) {
         this.cy.animate({
           fit: {
-            eles: nodes,
+            eles: nodes.add(parent),
             padding: DEFAULT_PADDING
           },
           duration: 500,

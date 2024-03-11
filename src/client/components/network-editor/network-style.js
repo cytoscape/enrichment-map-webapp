@@ -188,6 +188,7 @@ export const createNetworkStyle = (cy) => {
         selector: 'node:parent:selected',
         style: {
           'border-width': 0,
+          'text-outline-color': '#fff',
         }
       },
       {
