@@ -29,6 +29,7 @@ export const Scratch = {
   BUBBLE: '_bubble',
   // The HTML element for the expand/collapse toggle buttons, attached to parent nodes
   TOGGLE_BUTTON_ELEM: '_buttonElem',
+  AUTOMOVE_RULE: '_automoveRule'
 };
 
 // Sizes of exported PNG images
@@ -81,6 +82,8 @@ export class NetworkEditorController {
         this.savePositions();
       }
     });
+
+    window.cy = cy; // for access in the console
   }
 
   isNetworkLoaded() {
@@ -396,11 +399,15 @@ export class NetworkEditorController {
     const nodes = parent.children();
     const edges = nodes.internalEdges();
 
+    const shouldAnimate = requestAnimate && nodes.size() < LARGE_CLUSTER_SIZE;
+
+    const automoveRule = parent.scratch(Scratch.AUTOMOVE_RULE);
+
     const layout = nodes.layout({
       name: 'preset',
       positions: n => n.position(),
       fit: false,
-      animate: requestAnimate && nodes.size() < LARGE_CLUSTER_SIZE,
+      animate: shouldAnimate,
       spacingFactor
     });
     
@@ -413,6 +420,8 @@ export class NetworkEditorController {
       onStop.then(() => { 
         nodes.data('collapsed', !collapsed);
       });
+
+      setTimeout(() => { nodes.select(); }, 0);
     } else {
       nodes.data('collapsed', !collapsed);
       onStop.then(() => {
@@ -420,14 +429,38 @@ export class NetworkEditorController {
       });
     }
 
-    onStop.then(() => {
+    const retPromise = onStop.then(() => {
       parent.scratch(Scratch.LAYOUT_RUNNING, false);
       this.bus.emit('toggleExpandCollapse', parent, collapsed);
+
+      if (collapsed) {
+        automoveRule.disable();
+      } else {
+        automoveRule.enable();
+      }
+
+      const outOfBounds = nodes.some(node => {  // Check if any nodes are out of bounds
+        const extent = this.cy.extent();
+        const bb = node.boundingBox();
+
+        return bb.x1 < extent.x1 || bb.x2 > extent.x2 || bb.y1 < extent.y1 || bb.y2 > extent.y2;
+      });
+
+      if (outOfBounds && collapsed) {
+        this.cy.animate({
+          fit: {
+            eles: nodes,
+            padding: DEFAULT_PADDING
+          },
+          duration: 500,
+          easing: 'spring(500, 37)'
+        });
+      }
     });
 
     layout.run();
 
-    return onStop;
+    return retPromise;
   }
 
 
@@ -509,6 +542,7 @@ export class NetworkEditorController {
       const jsx = collapsed ? <ZoomOutMapIcon /> : <ZoomInIcon />;
       const html = ReactDOMServer.renderToStaticMarkup(jsx);
       elem.innerHTML = html;
+      elem.style.opacity = collapsed ? 1 : 0;
     };
 
     // Switch the button icon when the cluster is expanded or collapsed.
@@ -547,6 +581,7 @@ export class NetworkEditorController {
     const createClusterToggleButton = (elem, parent) => {
       elem.classList.add('cluster-toggle-button');
       elem.style.visibility = 'hidden';
+      elem.style.pointerEvents = 'none';
       parent.scratch(Scratch.TOGGLE_BUTTON_ELEM, elem);
 
       setButtonHTML(elem, parent);
@@ -640,9 +675,55 @@ export class NetworkEditorController {
         const collapsed = parent.data('collapsed');
         // Click a compound node to toggle its collapsed state
         // or click any collapsed child node to expand the cluster
-        if (ele.isParent() || collapsed) {
+        if (collapsed) {
+          this.toggleExpandCollapse(parent, true);
+
+          // if (ele.isChild()) {
+          //   setTimeout(() => { ele.unselect(); }, 0);
+          // }
+        }
+      });
+
+      cy.on('tap', evt => {
+        const collapsed = parent.data('collapsed');
+        const tappedOnBg = evt.target === cy;
+
+        if (!collapsed && tappedOnBg) {
           this.toggleExpandCollapse(parent, true);
         }
+      });
+
+      const unrelatedEles = cy.elements().filter(el => {
+        return (el.isParent() && !el.same(parent)) || (!cluster.contains(el) && !el.edgesWith(cluster).empty());
+      });
+
+      unrelatedEles.on('tap', evt => {
+        const collapsed = parent.data('collapsed');
+
+        if (!collapsed) {
+          this.toggleExpandCollapse(parent, true);
+        }
+      });
+
+      const automoveRule = cy.automove({
+        nodesMatching: cluster,
+        reposition: 'drag',
+        dragWith: cluster
+      });
+
+      parent.scratch(Scratch.AUTOMOVE_RULE, automoveRule);
+
+      cluster.on('grab', (evt) => {
+        const ele = evt.target;
+        const collapsed = parent.data('collapsed');
+
+        if (collapsed) {
+          parent.addClass('grabbing-collapsed-child');
+        }
+      }).on('free', (evt) => {
+        parent.removeClass('grabbing-collapsed-child');
+      }).on('click', (evt) => {
+        parent.removeClass('grabbing-collapsed-child');
       });
     });
   }
