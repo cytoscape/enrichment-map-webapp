@@ -93,7 +93,6 @@ export function TitleEditor({ controller, disabled }) {
 
   return (
     <Tooltip
-      arrow
       placement="bottom"
       title="Rename Figure"
       disableHoverListener={disabled}

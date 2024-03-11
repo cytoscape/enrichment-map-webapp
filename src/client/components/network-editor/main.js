@@ -317,7 +317,7 @@ const Main = ({
     snack.showSpinner("Preparing enrichment data and network images...");
     await controller.exportArchive(controller);
     snack.close();
-    setExportEnabled(true); 
+    setExportEnabled(true);
   };
 
   const menuDef = [ 
