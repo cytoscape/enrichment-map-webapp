@@ -460,7 +460,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
                       size="small"
                       className={classes.sortButton}
                     >
-                      <Tooltip arrow placement="top" title={label}>
+                      <Tooltip placement="top" title={label}>
                         { icon }
                       </Tooltip>
                     </ToggleButton>
