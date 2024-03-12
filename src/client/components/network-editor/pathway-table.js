@@ -13,12 +13,9 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { IconButton, Checkbox, Paper, Typography, Link, Tooltip } from '@material-ui/core';
+import { IconButton, Paper, Typography, Link, Tooltip } from '@material-ui/core';
 import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 
-import CheckBoxOutlineBlankOutlinedIcon from '@material-ui/icons/CheckBoxOutlineBlankOutlined';
-import CheckBoxOutlinedIcon from '@material-ui/icons/CheckBoxOutlined';
-import IndeterminateCheckBoxOutlinedIcon from '@material-ui/icons/IndeterminateCheckBoxOutlined';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
@@ -84,22 +81,21 @@ const useStyles = makeStyles((theme) => ({
   tableCell: {
     // --> WHATCH OUT! `padding[Top|Bottom]: 0` may cause a defect where the
     //     TableVirtuoso's initialTopMostItemIndex prop doesn't work
-    paddingTop: 0,
-    paddingBottom: 0,
+    paddingTop: 2,
+    paddingBottom: 2,
     paddingLeft: `${theme.spacing(0.5)}px !important`,
     paddingRight: theme.spacing(0.5),
     // <------------------------------------------------------------
     borderBottom: `1px solid ${theme.palette.background.default}`,
     cursor: 'pointer',
   },
-  checkCell: {
-    maxWidth: 48,
-    paddingLeft: `${theme.spacing(0.5)}px !important`, // same padding as the 'currentRow' border/mark to prevent the checkbox from shifting
+  currentCell: {
+    width: 4,
+    paddingLeft: 0,
     paddingRight: 0,
   },
   currentRow: {
-    paddingLeft: '0 !important',
-    borderLeft: `${theme.spacing(0.5)}px solid ${theme.palette.primary.main}`,
+    backgroundColor: `${theme.palette.primary.main} !important`,
   },
   clusterCell: {
     paddingLeft: '1px !important',
@@ -130,19 +126,6 @@ const useStyles = makeStyles((theme) => ({
   },
   selectedCell: {
     backgroundColor: theme.palette.action.selected,
-  },
-  selectAllButton: {
-    maxWidth: 32,
-    maxHeight: 32,
-    color: theme.palette.text.secondary,
-  },
-  selectAllIcon: {
-    fontSize: '1.25rem',
-  },
-  checkbox: {
-    minWidth: 32,
-    padding: theme.spacing(0.5),
-    margin: '0 auto 0 auto',
   },
   clusterButton: {
     maxWidth: 20,
@@ -362,15 +345,9 @@ const ContentRow = ({ row, index, selected, current, controller, isMobile, handl
       <TableCell
         align="center"
         selected={selected}
-        className={clsx(classes.checkCell, { [classes.tableCell]: true, [classes.selectedCell]: selected, [classes.currentRow]: current })}
-      >
-        <Checkbox
-          checked={selected}
-          size="small"
-          className={classes.checkbox}
-          onClick={() => handleClick(row)}
-        />
-      </TableCell>
+        className={clsx(classes.currentCell, { [classes.tableCell]: true, [classes.selectedCell]: selected, [classes.currentRow]: current })}
+        onClick={() => handleClick(row)}
+      />
     {COLUMNS.map((col, idx) => (
       (!isMobile || !col.hideOnMobile) && (
         <TableCell
@@ -482,17 +459,6 @@ const PathwayTable = (
     onRowSelectionChange?.(row, selected, preventGotoNode);
   };
 
-  const handleSelectAllClick = (selectAll) => {
-    if (sortedDataRef.current) {
-      sortedDataRef.current.forEach(row => {
-        const selected = isRowSelected(row);
-        if ((selectAll && !selected) || (!selectAll && selected)) {
-          handleRowClick(row, true);
-        }
-      });
-    }
-  };
-
   if (data.length === 0 && searchTerms && searchTerms.length > 0) {
     return (
       <Paper className={classes.noResultsBox} style={{height: pathwayTableHeight()}}>
@@ -568,21 +534,7 @@ const PathwayTable = (
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
-          <TableCell className={clsx(classes.checkCell, { [classes.tableCell]: true })} style={{borderBottom: 'none'}}>
-            <Tooltip title={noneSelected ? 'Select All' : 'Select None'}>
-              <span>
-                <IconButton
-                  disabled={totalRows === 0}
-                  className={classes.selectAllButton}
-                  onClick={() => handleSelectAllClick(noneSelected)}
-                >
-                  { allSelected && <CheckBoxOutlinedIcon className={classes.selectAllIcon} /> }
-                  { noneSelected && <CheckBoxOutlineBlankOutlinedIcon className={classes.selectAllIcon} /> }
-                  { someSelected && <IndeterminateCheckBoxOutlinedIcon className={classes.selectAllIcon} /> }
-                </IconButton>
-              </span>
-            </Tooltip>
-          </TableCell>
+          <TableCell className={clsx(classes.currentCell, { [classes.tableCell]: true })} style={{borderBottom: 'none'}}/>
         {COLUMNS.map((col) => (
           (!isMobile || !col.hideOnMobile) && (
             <Tooltip key={col.id} title={col.tooltip || ''}>
