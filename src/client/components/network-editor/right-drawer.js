@@ -62,7 +62,7 @@ const RightDrawer = ({ menu, open, onClose }) => {
   const classes = useStyles();
 
   useEffect(() => {
-    if (!open) { // Reset to original state when the menu is closed...
+    if (open) { // Reset to original state when the menu is reopened...
       setMenuStack([ menu ]);
     }
   }, [open]);

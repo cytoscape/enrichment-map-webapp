@@ -121,18 +121,20 @@ export function Header({
           <ToolbarDivider classes={classes} unrelated />
           <TitleEditor controller={controller} disabled={!networkLoaded} />
           <ToolbarDivider classes={classes} unrelated />
-        {!showMobileMenu && menuDef.map(({title, icon, onClick, unrelated, isEnabled, subMenu }, idx) =>
-          <Fragment key={idx}>
-            <ToolbarButton
-              title={title}
-              icon={icon}
-              disabled={!networkLoaded || (isEnabled && !isEnabled())}
-              subMenu={subMenu}
-              onClick={onClick}
-              onOpenSubMenu={handleOpenSubMenu}
-            />
-            <ToolbarDivider classes={classes} unrelated={unrelated} />
-          </Fragment>
+        {menuDef.map(({title, icon, onClick, unrelated, isEnabled, alwaysShow, subMenu }, idx) =>
+          (!showMobileMenu || (alwaysShow && !isMobile)) && (
+            <Fragment key={idx}>
+              <ToolbarButton
+                title={title}
+                icon={icon}
+                disabled={!networkLoaded || (isEnabled && !isEnabled())}
+                subMenu={subMenu}
+                onClick={onClick}
+                onOpenSubMenu={handleOpenSubMenu}
+              />
+              <ToolbarDivider classes={classes} unrelated={unrelated} />
+            </Fragment>
+          )
         )}
         {showMobileMenu && (
           <ToolbarButton

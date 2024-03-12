@@ -351,10 +351,11 @@ const Main = ({
       onClick: panner.fit,
       unrelated: true,
     }, {
-      title: "Download Enrichment Data and Images",
+      title: "Download Data and Images",
       icon: <DownloadIcon />,
       onClick: handleExport,
       isEnabled: () => exportEnabled,
+      alwaysShow: true, // always show on desktop/tablet, but still hides on mobile
     }, {
       title: "Share",
       icon: <ShareIcon />,
@@ -386,6 +387,8 @@ const Main = ({
     return () => Mousetrap.unbind(['-','_','=','+','up','down','left','right','f','space'/**,'backspace','del'*/]);
   }, [panner]);
 
+  const rightMenuDef = isMobile ? menuDef : menuDef.filter(el => !el.alwaysShow);
+
   return (
     <>
       <Header
@@ -415,7 +418,7 @@ const Main = ({
           </div>
           <RightDrawer
             open={openRightDrawer}
-            menu={menuDef}
+            menu={rightMenuDef}
             onClose={onCloseRightDrawer}
           />
         </div>
