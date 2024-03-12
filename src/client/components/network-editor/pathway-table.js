@@ -173,7 +173,7 @@ const COLUMNS = [
       const c = row.nes < 0 ? REG_COLOR_RANGE.downMax : REG_COLOR_RANGE.upMax;
       const color1 = chroma(c).luminance(0.6).hex();
       const color2 = chroma(c).luminance(0.2).hex();
-      const tooltip = row.cluster;
+      const tooltip = row.cluster + ' (cluster)';
       const node = controller.cy.nodes(`[id = "${row.id}"]`);
       const parentId = node.parent().data('id');
       return (
