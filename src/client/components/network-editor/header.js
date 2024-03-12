@@ -109,7 +109,7 @@ export function Header({
           />
         )}
           <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
-            <Tooltip arrow placement="bottom" title="Home">
+            <Tooltip placement="bottom" title="Home">
               <IconButton 
                 aria-label='home' 
                 onClick={() => location.href = '/'}
@@ -168,6 +168,8 @@ Header.propTypes = {
 //==[ ToolbarButton ]=================================================================================================
 
 function ToolbarButton({ title, icon, color, className, disabled, subMenu, onClick, onOpenSubMenu }) {
+  const [ showTooltip, setShowTooltip ] = React.useState(false);
+
   const handleClick = (evt) => {
     if (subMenu) {
       onOpenSubMenu?.(evt, subMenu);
@@ -177,7 +179,13 @@ function ToolbarButton({ title, icon, color, className, disabled, subMenu, onCli
   };
 
   return (
-    <Tooltip arrow placement="bottom" title={title}>
+    <Tooltip
+      title={title}
+      disableHoverListener
+      open={showTooltip && !disabled} 
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
       <span> {/* span needed to prevent issues with tooltips on disabled buttons */}
         <IconButton
           disabled={disabled}

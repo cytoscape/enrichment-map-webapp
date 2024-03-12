@@ -16,8 +16,7 @@ import SearchBar from './search-bar';
 
 import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
 import CloseIcon from '@material-ui/icons/Close';
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
-import { VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
+import { DownloadIcon, VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
 
 
 const setOperationOptions = {
@@ -390,9 +389,9 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
                 <Typography display="inline" variant="body2" color="textSecondary">
                   ({ totalGenes })
                 </Typography> &nbsp;&nbsp;
-                <Tooltip title="Export Current Gene List">
+                <Tooltip title="Download Current Gene List">
                   <IconButton size="small" onClick={handleGeneListExport}>
-                    <CloudDownloadIcon />
+                    <DownloadIcon />
                   </IconButton>
                 </Tooltip>
               </>
@@ -461,7 +460,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
                       size="small"
                       className={classes.sortButton}
                     >
-                      <Tooltip arrow placement="top" title={label}>
+                      <Tooltip placement="top" title={label}>
                         { icon }
                       </Tooltip>
                     </ToggleButton>

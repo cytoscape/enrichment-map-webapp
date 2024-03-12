@@ -1,6 +1,5 @@
 import Cytoscape from 'cytoscape';
 import fcose from 'cytoscape-fcose';
-import layoutUtilities from 'cytoscape-layout-utilities';
 import BubbleSets from 'cytoscape-bubblesets';
 import Layers from 'cytoscape-layers';
 import automove from 'cytoscape-automove';
@@ -8,7 +7,6 @@ import automove from 'cytoscape-automove';
 export const registerCytoscapeExtensions = () => {
   // Layout extensions
   Cytoscape.use(fcose);
-  Cytoscape.use(layoutUtilities);
   Cytoscape.use(Layers);
   Cytoscape.use(BubbleSets);
   Cytoscape.use(automove);
