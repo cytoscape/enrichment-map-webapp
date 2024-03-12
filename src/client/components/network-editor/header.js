@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
+import _ from 'lodash';
 
 import { HEADER_HEIGHT, LEFT_DRAWER_WIDTH, MIN_DESKTOP_TOOLBAR_WIDTH } from '../defaults';
 import useElementSize from '../../use-element-size';
@@ -11,6 +12,7 @@ import PopoverMenu from './popover-menu';
 import { makeStyles } from '@material-ui/core/styles';
 
 import { AppBar, Box, IconButton, Divider, Tooltip,  Toolbar } from '@material-ui/core';
+import { ToggleButton } from '@material-ui/lab';
 
 import { AppLogoIcon } from '../svg-icons';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
@@ -121,13 +123,15 @@ export function Header({
           <ToolbarDivider classes={classes} unrelated />
           <TitleEditor controller={controller} disabled={!networkLoaded} />
           <ToolbarDivider classes={classes} unrelated />
-        {menuDef.map(({title, icon, onClick, unrelated, isEnabled, alwaysShow, subMenu }, idx) =>
+        {menuDef.map(({title, icon, description, onClick, unrelated, isEnabled, isSelected, alwaysShow, subMenu }, idx) =>
           (!showMobileMenu || (alwaysShow && !isMobile)) && (
             <Fragment key={idx}>
               <ToolbarButton
                 title={title}
                 icon={icon}
+                description={description}
                 disabled={!networkLoaded || (isEnabled && !isEnabled())}
+                selected={isSelected?.()}
                 subMenu={subMenu}
                 onClick={onClick}
                 onOpenSubMenu={handleOpenSubMenu}
@@ -169,26 +173,62 @@ Header.propTypes = {
 
 //==[ ToolbarButton ]=================================================================================================
 
-function ToolbarButton({ title, icon, color, className, disabled, subMenu, onClick, onOpenSubMenu }) {
+const useToolbarButtonStyles = makeStyles((theme) => ({
+  toggle: {
+    border: 'none',
+    color: 'inherit',
+  },
+}));
+
+function ToolbarButton({ title, icon, description, color, className, disabled, selected:defaultSelected, subMenu, onClick, onOpenSubMenu }) {
+  const [ selected, setSelected ] = React.useState(defaultSelected);
   const [ showTooltip, setShowTooltip ] = React.useState(false);
 
+  const classes = useToolbarButtonStyles();
+  
+  const isToggleButton = defaultSelected != null;
+
   const handleClick = (evt) => {
-    if (subMenu) {
+    if (isToggleButton) {
+      setSelected(!selected);
+      onClick?.(evt);
+    } else if (subMenu) {
       onOpenSubMenu?.(evt, subMenu);
     } else {
       onClick?.(evt);
     }
   };
+  
+  const tooltipText =
+    <>
+      <span style={{fontSize: '0.85rem'}}>{ title }</span>
+      {!_.isEmpty(description) && (
+        <><br />{ description }</>
+      )}
+    </>;
 
   return (
     <Tooltip
-      title={title}
+      title={tooltipText}
       disableHoverListener
       open={showTooltip && !disabled} 
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
       <span> {/* span needed to prevent issues with tooltips on disabled buttons */}
+      {isToggleButton ?
+        <ToggleButton
+          value="selected"
+          disabled={disabled}
+          selected={selected}
+          size="small"
+          color={color || 'inherit'}
+          className={clsx(classes.toggle, className)}
+          onClick={handleClick}
+        >
+          { icon }
+        </ToggleButton>
+      :
         <IconButton
           disabled={disabled}
           component={disabled ? "div" : undefined} // To prevent error: 'Material-UI: You are providing a disabled `button` child to the Tooltip component.'
@@ -199,6 +239,7 @@ function ToolbarButton({ title, icon, color, className, disabled, subMenu, onCli
         >
           { icon }
         </IconButton>
+      }
       </span>
     </Tooltip>
   );
@@ -206,9 +247,11 @@ function ToolbarButton({ title, icon, color, className, disabled, subMenu, onCli
 ToolbarButton.propTypes = {
   title: PropTypes.string.isRequired,
   icon: PropTypes.element.isRequired,
+  description: PropTypes.string,
   color: PropTypes.string,
   className: PropTypes.string,
   disabled: PropTypes.bool,
+  selected: PropTypes.bool,
   subMenu: PropTypes.array,
   onClick: PropTypes.func,
   onOpenSubMenu: PropTypes.func,

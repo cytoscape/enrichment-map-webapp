@@ -29,7 +29,7 @@ import RemoveIcon from '@material-ui/icons/Remove';
 import UndoIcon from '@material-ui/icons/Undo';
 import RestoreIcon from '@material-ui/icons/SettingsBackupRestore';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
-import { DownloadIcon, ShareIcon } from '../svg-icons';
+import { DragSelectIcon, DownloadIcon, ShareIcon } from '../svg-icons';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -291,6 +291,7 @@ const Main = ({
 
   const classes = useStyles();
 
+  const cy = controller.cy;
   const snack = snackBarOps(setSnackBarState);
 
   const shiftXCy = openLeftDrawer && !isMobile && !isTablet;
@@ -349,6 +350,14 @@ const Main = ({
       title: "Fit Figure to Screen",
       icon: <FitScreenIcon />,
       onClick: panner.fit,
+      unrelated: true,
+    }, {
+      title: "Enable Drag-to-Select",
+      description: "(or use SHIFT-select)",
+      icon: <DragSelectIcon />,
+      onClick: ()=> cy.userPanningEnabled(!cy.userPanningEnabled()),
+      isSelected: () => !cy.userPanningEnabled(),
+      alwaysShow: true, // always show on desktop/tablet, but still hides on mobile
       unrelated: true,
     }, {
       title: "Download Data and Images",
