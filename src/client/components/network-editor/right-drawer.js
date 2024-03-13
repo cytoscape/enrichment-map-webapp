@@ -5,12 +5,14 @@ import chroma from 'chroma-js';
 import { HEADER_HEIGHT, RIGHT_DRAWER_WIDTH } from '../defaults';
 
 import { makeStyles } from '@material-ui/core/styles';
+import Grow from '@material-ui/core/Grow';
 import Slide from '@material-ui/core/Slide';
 
 import { Drawer, Button, IconButton, MenuItem, Toolbar, Tooltip, Typography } from '@material-ui/core';
 
 import CloseIcon from '@material-ui/icons/Close';
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
+import CheckIcon from '@material-ui/icons/Check';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -46,6 +48,9 @@ const useStyles = makeStyles((theme) => ({
     width: 41,
     height: 41,
   },
+  checkIcon: {
+    color: theme.palette.primary.main,
+  },
 }));
 
 
@@ -53,6 +58,7 @@ const RightDrawer = ({ menu, open, onClose }) => {
   const [ menuStack, setMenuStack ] = useState([ menu ]);
   const [ forward, setForward ] = useState(true);
   const [ exit, setExit ] = useState(false);
+  const [ animatedSelect, setAnimatedSelect ] = useState({});
 
   const exitedRef = useRef(true); // Will indicate whether or not the slide transition has exited
   const forwardSubMenu = useRef(null); // Save the next sub-menu to be rendered after exiting the transition
@@ -101,12 +107,22 @@ const RightDrawer = ({ menu, open, onClose }) => {
       setExit(true);
     }
   };
-  const handleClick = (fn, subMenu) => {
-    if (subMenu) {
-      goForward(subMenu);
-    } else if (fn) {
-      onClose();
+  const handleClick = (title, fn, subMenu, isSelected) => {
+    if (isSelected != null) {
+      setAnimatedSelect({ title, selected: !isSelected() });
       fn();
+      setTimeout(() => {
+        // Give some time for the user to see the menu selection animation before closing the menu...
+        onClose();
+      }, 250);
+    } else {
+      setAnimatedSelect({});
+      if (subMenu) {
+        goForward(subMenu);
+      } else if (fn) {
+        onClose();
+        fn();
+      }
     }
   };
 
@@ -124,6 +140,7 @@ const RightDrawer = ({ menu, open, onClose }) => {
   };
 
   const currentMenu = menuStack[menuStack.length - 1];
+  const hasToggle = currentMenu.some(el => el.isSelected != null);
   
   return (
     <Drawer
@@ -163,8 +180,16 @@ const RightDrawer = ({ menu, open, onClose }) => {
         onExited={onExited}
       >
         <div className={classes.content}>
-        {currentMenu.map(({title, icon, onClick, subMenu}, idx) =>
-          <MenuItem key={idx} onClick={() => handleClick(onClick, subMenu)}>
+        {currentMenu.map(({title, icon, onClick, subMenu, isSelected}, idx) =>
+          <MenuItem key={idx} onClick={() => handleClick(title, onClick, subMenu, isSelected)}>
+          {animatedSelect.title === title && (
+            <Grow in={animatedSelect.selected} timeout={250}>
+              <CheckIcon className={classes.checkIcon} />
+            </Grow>
+          )}
+          {animatedSelect.title !== title && hasToggle && (
+            isSelected?.() ? <CheckIcon className={classes.checkIcon} /> : <span style={{width: 24}} />
+          )}
             <IconButton>{ icon }</IconButton>
             <p>{ title }</p>
           </MenuItem>
