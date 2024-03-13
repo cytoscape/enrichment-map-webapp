@@ -282,7 +282,7 @@ export function Content() {
 
   const onSubmit = async (demo) => {
     requestID = uuid.v4();
-    if(demo) {
+    if(demo === 'demo') {
       await uploadController.createDemoNetwork(requestID);
     } else {
       const { contents, format, name, rnaseqClasses } = uploadState;

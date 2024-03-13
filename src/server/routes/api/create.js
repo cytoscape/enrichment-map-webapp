@@ -225,6 +225,8 @@ async function runEM(fgseaResults, demo) {
       // These parameters correspond to the fields in EMCreationParametersDTO
       // similarityMetric: "JACCARD", 
       // similarityCutoff: 0.25,
+
+      // parameters only used by the demo network
       ...(demo && { 
         qvalue: 0.0001,
         similarityMetric: "JACCARD", 

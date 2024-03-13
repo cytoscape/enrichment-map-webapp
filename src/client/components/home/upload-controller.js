@@ -56,7 +56,7 @@ export class UploadController {
       this.bus.emit('finished', { networkID, requestID });
       return networkID;
     } else {
-      this.bus.emit('error', { errors: ['cound not create demo network'], requestID });
+      this.bus.emit('error', { errors: ['could not create demo network'], requestID });
     }
   }
 
