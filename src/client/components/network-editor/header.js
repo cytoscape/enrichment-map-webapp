@@ -17,6 +17,7 @@ import { ToggleButton } from '@material-ui/lab';
 import { AppLogoIcon } from '../svg-icons';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import MenuIcon from '@material-ui/icons/Menu';
+import MoreIcon from '@material-ui/icons/MoreVert';
 
 //==[ Header ]========================================================================================================
 
@@ -146,7 +147,7 @@ export function Header({
           )}
             <ToolbarButton
               title="Options"
-              icon={<MenuIcon />}
+              icon={toolbarBtnDef.length > 0 ? <MoreIcon /> : <MenuIcon />}
               className={classes.optionsButton}
               onClick={onOpenRightDrawer}
             />
