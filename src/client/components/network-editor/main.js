@@ -334,7 +334,7 @@ const Main = ({
     //   onClick: () => controller.deleteSelectedNodes(),
     // },
     {
-      title: "Restore Network to Initial Layout",
+      title: "Restore Network Layout",
       icon: <RestoreIcon />,
       onClick: handleNetworkRestore,
       unrelated: true,
