@@ -93,6 +93,7 @@ export function Header({
   };
 
   const shiftAppBar = leftDrawerOpen && !isMobile && !isTablet;
+  const toolbarBtnDef = menuDef.filter(el => !showMobileMenu || (el.alwaysShow && !isMobile));
 
   return (
     <>
@@ -120,43 +121,49 @@ export function Header({
               </IconButton>
             </Tooltip>
           </Box>
-          <ToolbarDivider classes={classes} unrelated />
+          <ToolbarDivider classes={classes} unrelated={!isMobile} />
           <TitleEditor controller={controller} disabled={!networkLoaded} />
-          <ToolbarDivider classes={classes} unrelated />
-        {menuDef.map(({title, icon, description, onClick, unrelated, isEnabled, isSelected, alwaysShow, subMenu }, idx) =>
-          (!showMobileMenu || (alwaysShow && !isMobile)) && (
-            <Fragment key={idx}>
-              <ToolbarButton
-                title={title}
-                icon={icon}
-                description={description}
-                disabled={!networkLoaded || (isEnabled && !isEnabled())}
-                selected={isSelected?.()}
-                subMenu={subMenu}
-                onClick={onClick}
-                onOpenSubMenu={handleOpenSubMenu}
-              />
-              <ToolbarDivider classes={classes} unrelated={unrelated} />
-            </Fragment>
-          )
+          <ToolbarDivider classes={classes} unrelated={!isMobile} />
+        {toolbarBtnDef.map(({title, icon, description, onClick, unrelated, isEnabled, isSelected, subMenu }, idx) =>
+          <Fragment key={idx}>
+            <ToolbarButton
+              title={title}
+              icon={icon}
+              description={description}
+              disabled={!networkLoaded || (isEnabled && !isEnabled())}
+              selected={isSelected?.()}
+              subMenu={subMenu}
+              onClick={onClick}
+              onOpenSubMenu={handleOpenSubMenu}
+            />
+            <ToolbarDivider classes={classes} unrelated={unrelated && !showMobileMenu} />
+          </Fragment>
         )}
         {showMobileMenu && (
-          <ToolbarButton
-            title="Options"
-            icon={<MenuIcon />}
-            className={classes.optionsButton}
-            onClick={onOpenRightDrawer}
-          />
+          <>
+          {toolbarBtnDef.length > 0 && (
+            <ToolbarDivider classes={classes} unrelated />
+          )}
+            <ToolbarButton
+              title="Options"
+              icon={<MenuIcon />}
+              className={classes.optionsButton}
+              onClick={onOpenRightDrawer}
+            />
+          </>
         )}
         </Toolbar>
       </AppBar>
     {!showMobileMenu && anchorEl && subMenu && (
-      <PopoverMenu
-        open
-        target={anchorEl}
-        menu={subMenu}
-        onClose={handleCloseSubMenu}
-      />
+      <>
+        <ToolbarDivider classes={classes} unrelated />
+        <PopoverMenu
+          open
+          target={anchorEl}
+          menu={subMenu}
+          onClose={handleCloseSubMenu}
+        />
+      </>
     )}
     </>
   );
