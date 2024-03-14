@@ -334,8 +334,17 @@ async function runEnsemblToHGNCMapping(body, contentType) {
     .filter(line => line && line.length > 0)
     .map(line => line.split(delim));
 
+  const removeVersionCode = (ensID) => {
+    const i = ensID.indexOf('.');
+    if(i > 0) {
+      return ensID.slice(0, i);
+    }
+    return ensID;
+  };
+
   // Call BridgeDB
-  const ensemblIDs = content.map(row => row[0]);
+  const ensemblIDs = content.map(row => row[0]).map(removeVersionCode);
+
   const hgncIDs = await runBridgeDB(ensemblIDs);
 
   // Replace old IDs with the new ones
