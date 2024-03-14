@@ -160,24 +160,22 @@ export class UploadController {
   }
 
   errorMessagesForCreateError(details) {
-    console.log('errorMessagesForCreateError');
-    console.log(details);
-    const { step, detail, cause } = details;
+    // File format validation errors can be found in data-file-reader.js
+    const { step, detail } = details;
     const errors = [];
 
     if(step === 'fgsea') {
-      errors.push('Error running FGSEA service');
-      if(cause?.code === 'ECONNREFUSED') {
-        errors.push('Could not connect to FGSEA service.');
-      }
+      errors.push('Error running FGSEA service.', 'Please try again later.');
     } else if(step == 'em') {
       if(detail === 'empty') {
          // Probable causes: The gene IDs don't match whats in our pathway database or none of the enriched pathways passed the filter cutoff.
-        errors.push("Not able to create a network from the provided data.");
-        errors.push("There are not enough significantly enriched gene sets.");
+        errors.push('Not able to create a network from the provided data.');
+        errors.push('There are not enough significantly enriched pathways.');
       } else {
-        errors.push('Error running EM service');
+        errors.push('Error running EnrichmentMap service.', 'Please try again later.');
       }
+    } else if(step == 'bridgedb') {
+      errors.push('Error running BridgeDB service.', 'Could not map Ensembl gene IDs to HGNC.', 'Please try again later.');
     }
 
     return errors;

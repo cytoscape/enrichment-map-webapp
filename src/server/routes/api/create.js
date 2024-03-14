@@ -102,18 +102,21 @@ async function runDataPipelineHttp(req, res, type) {
   let body = req.body;
   const { classes } = req.query;
 
-  await runDataPipeline({ networkName, contentType, type, classes, body }, res);
+  const perf = createPeformanceHook();
+  try {
+    await runDataPipeline({ networkName, contentType, type, classes, body }, res, perf);
+  } finally {
+    perf.dispose();
+  }
 }
 
 
-async function runDataPipeline({ networkName, contentType, type, classes, body, demo }, res) {
+async function runDataPipeline({ networkName, contentType, type, classes, body, demo }, res, perf) {
   console.log('/api/create/');
-
-  const preranked = type === 'preranked';
-  const perf = createPeformanceHook();
-
   // n.b. no await so as to not block
   saveUserUploadFileToS3(body, `${networkName}.csv`, contentType);
+
+  const preranked = type === 'preranked';
 
   perf.mark('bridgedb');
   const needIdMapping = isEnsembl(body);
@@ -121,37 +124,36 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
     body = await runEnsemblToHGNCMapping(body, contentType);
   }
 
+  perf.mark('fgsea');
   let rankedGeneList;
   let pathwaysForEM;
-  try {
-    perf.mark('fgsea');
-    if(preranked) {
-      const { pathways } = await runFGSEApreranked(body, contentType);
-      const delim = contentType === 'text/csv' ? ',' : '\t';
-      rankedGeneList = rankedGeneListToDocument(body, delim);
-      pathwaysForEM = pathways;
-    } else {
-      const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
-      sendMessagesToSentry('fgsea', messages);
-      rankedGeneList = fgseaServiceGeneRanksToDocument(ranks);
-      pathwaysForEM = pathways;
-    }
-  } catch(e) {
-    throw new CreateError({ step: 'fgsea', cause: e });
+  if(preranked) {
+    const { pathways } = await runFGSEApreranked(body, contentType);
+    const delim = contentType === 'text/csv' ? ',' : '\t';
+    rankedGeneList = rankedGeneListToDocument(body, delim);
+    pathwaysForEM = pathways;
+  } else {
+    // Messages from FGSEA are basically just warning about non-finite ranks
+    const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
+    sendMessagesToSentry('fgsea', messages);
+    rankedGeneList = fgseaServiceGeneRanksToDocument(ranks);
+    pathwaysForEM = pathways;
   }
 
   perf.mark('em');
   const networkJson = await runEM(pathwaysForEM, demo);
-
-  perf.mark('mongo');
-  let networkID;
   if(isEmptyNetwork(networkJson)) {
     throw new CreateError({ step: 'em', detail: 'empty' });
-    // res?.status(422)?.send("Empty Network");
-  } else {
+  }
+
+  let networkID;
+  try {
+    perf.mark('mongo');
     networkID = await Datastore.createNetwork(networkJson, networkName, type, DB_1, demo);
     await Datastore.initializeGeneRanks(DB_1, networkID, rankedGeneList);
     res?.send(networkID);
+  } catch(e) {
+    throw new CreateError({ step: 'mongo', cause: e });
   }
 
   perf.mark('end');
@@ -181,7 +183,6 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
     }]
   });
   
-  perf.dispose();
   return networkID;
 }
 
@@ -193,13 +194,20 @@ function isEmptyNetwork(networkJson) {
 
 
 async function runFGSEApreranked(ranksData, contentType) {
-  const response = await fetch(FGSEA_PRERANKED_SERVICE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': contentType },
-    body: ranksData
-  });
+  let response;
+  try {
+    response = await fetch(FGSEA_PRERANKED_SERVICE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body: ranksData
+    });
+  } catch(e) {
+    throw new CreateError({ step: 'fgsea', type: 'preranked', cause: e });
+  }
   if(!response.ok) {
-    throw new Error("Error running fgsea preranked service.");
+    const body = await response.text();
+    const status = response.status;
+    throw new CreateError({ step: 'fgsea', type: 'preranked', body, status });
   }
   return await response.json();
 }
@@ -207,13 +215,20 @@ async function runFGSEApreranked(ranksData, contentType) {
 
 async function runFGSEArnaseq(countsData, classes, contentType) {
   const url = FGSEA_RNASEQ_SERVICE_URL + '?' + new URLSearchParams({ classes });
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': contentType },
-    body: countsData
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body: countsData
+    });
+  } catch(e) {
+    throw new CreateError({ step: 'fgsea', type: 'rnaseq', cause: e });
+  }
   if(!response.ok) {
-    throw new Error("Error running fgsea rnaseq service.");
+    const body = await response.text();
+    const status = response.status;
+    throw new CreateError({ step: 'fgsea', type: 'rnaseq', body, status });
   }
   return await response.json();
 }
@@ -241,16 +256,22 @@ async function runEM(fgseaResults, demo) {
     }
   };
 
-  const response = await fetch(EM_SERVICE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if(!response.ok) {
-    throw new Error("Error running em service.");
+  let response;
+  try {
+    response = await fetch(EM_SERVICE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  } catch(e) {
+    throw new CreateError({ step: 'em', cause: e });
   }
-  const networkJson = await response.json();
-  return networkJson;
+  if(!response.ok) {
+    const body = await response.text();
+    const status = response.status;
+    throw new CreateError({ step: 'em', body, status });
+  }
+  return await response.json();
 }
 
 
@@ -272,13 +293,20 @@ async function runBridgeDB(ensemblIDs, species='Human', sourceType='En') {
   const url = `${BRIDGEDB_URL}/${species}/xrefsBatch/${sourceType}`;
   const body = ensemblIDs.join('\n');
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/html' }, // thats what it wants
-    body
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/html' }, // thats what it wants
+      body
+    });
+  } catch(e) {
+    throw new CreateError({ step: 'bridgedb', cause: e });
+  }
   if(!response.ok) {
-    throw new Error("Error running BridgeDB xrefsBatch service.");
+    const body = await response.text();
+    const status = response.status;
+    throw new CreateError({ step: 'bridgedb', body, status });
   }
 
   const responseBody = await response.text();
@@ -308,9 +336,7 @@ async function runEnsemblToHGNCMapping(body, contentType) {
 
   // Call BridgeDB
   const ensemblIDs = content.map(row => row[0]);
-  // console.log(ensemblIDs);
   const hgncIDs = await runBridgeDB(ensemblIDs);
-  // console.log(hgncIDs);
 
   // Replace old IDs with the new ones
   const newContent = [];
