@@ -13,6 +13,7 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import * as Sentry from "@sentry/node";
+import { ExtraErrorData } from "@sentry/integrations";
 import * as Tracing from "@sentry/tracing";
 
 import { NODE_ENV, PORT, UPLOAD_LIMIT, TESTING, SENTRY, SENTRY_ENVIRONMENT } from './env.js';
@@ -42,6 +43,8 @@ if (SENTRY) {
       new Sentry.Integrations.Http({ tracing: true }),
       // enable Express.js middleware tracing
       new Tracing.Integrations.Express({ app }),
+      // Capture extra details from custom exceptions
+      new ExtraErrorData()
     ],
 
     // Set tracesSampleRate to 1.0 to capture 100%
