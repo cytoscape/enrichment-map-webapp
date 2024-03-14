@@ -146,19 +146,41 @@ export class UploadController {
     if (res.ok) {
       const netID = await res.text();
       return { netID };
-
     } else if (res.status == 413) {
       // Max file size for uploads is defined in the dataParser in the server/routes/api/index.js file.
       return { errors: ["The uploaded file is too large. The maximum file size is 50 MB."] };
-
-    } else if (res.status == 422) {
-      // The EM-service returned an empty network. 
-      // Probable causes: The gene IDs don't match whats in our pathway database or none of the enriched pathways passed the filter cutoff.
-      return { errors: ["Not able to create a network from the provided data.", "There are not enough significantly enriched gene sets."] };
-
+    } else if (res.status == 450) {
+      // custom status code, error while running create data pipeline
+      const body = await res.json();
+      const errors = this.errorMessagesForCreateError(body.details);
+      return { errors };
     } else {
       return { errors: [] }; // empty array shows generic error message
     }
+  }
+
+  errorMessagesForCreateError(details) {
+    console.log('errorMessagesForCreateError');
+    console.log(details);
+    const { step, detail, cause } = details;
+    const errors = [];
+
+    if(step === 'fgsea') {
+      errors.push('Error running FGSEA service');
+      if(cause?.code === 'ECONNREFUSED') {
+        errors.push('Could not connect to FGSEA service.');
+      }
+    } else if(step == 'em') {
+      if(detail === 'empty') {
+         // Probable causes: The gene IDs don't match whats in our pathway database or none of the enriched pathways passed the filter cutoff.
+        errors.push("Not able to create a network from the provided data.");
+        errors.push("There are not enough significantly enriched gene sets.");
+      } else {
+        errors.push('Error running EM service');
+      }
+    }
+
+    return errors;
   }
 }
 

@@ -18,7 +18,7 @@ import * as Tracing from "@sentry/tracing";
 import { NODE_ENV, PORT, UPLOAD_LIMIT, TESTING, SENTRY, SENTRY_ENVIRONMENT } from './env.js';
 import indexRouter from './routes/index.js';
 import apiRouter from './routes/api/index.js';
-import createRouter from './routes/api/create.js';
+import createRouter, { createRouterErrorHandler } from './routes/api/create.js';
 import exportRouter from './routes/api/export.js';
 
 import Datastore, { DB_1 } from './datastore.js';
@@ -109,6 +109,9 @@ app.use('/api/export', exportRouter);
 if (SENTRY) {
   app.use(Sentry.Handlers.errorHandler());
 }
+
+// handle known errors from createRouter
+app.use(createRouterErrorHandler);
 
 // catch 404 and forward to error handler
 app.use(function(req, res) {

@@ -15,6 +15,8 @@ import {
   MONGO_URL,
 } from '../../env.js';
 
+const NETWORK_CREATE_ERROR_CODE = 450;
+
 const http = Express.Router();
 
 
@@ -119,19 +121,23 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
     body = await runEnsemblToHGNCMapping(body, contentType);
   }
 
-  perf.mark('fgsea');
   let rankedGeneList;
   let pathwaysForEM;
-  if(preranked) {
-    const { pathways } = await runFGSEApreranked(body, contentType);
-    const delim = contentType === 'text/csv' ? ',' : '\t';
-    rankedGeneList = rankedGeneListToDocument(body, delim);
-    pathwaysForEM = pathways;
-  } else {
-    const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
-    sendMessagesToSentry('fgsea', messages);
-    rankedGeneList = fgseaServiceGeneRanksToDocument(ranks);
-    pathwaysForEM = pathways;
+  try {
+    perf.mark('fgsea');
+    if(preranked) {
+      const { pathways } = await runFGSEApreranked(body, contentType);
+      const delim = contentType === 'text/csv' ? ',' : '\t';
+      rankedGeneList = rankedGeneListToDocument(body, delim);
+      pathwaysForEM = pathways;
+    } else {
+      const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
+      sendMessagesToSentry('fgsea', messages);
+      rankedGeneList = fgseaServiceGeneRanksToDocument(ranks);
+      pathwaysForEM = pathways;
+    }
+  } catch(e) {
+    throw new CreateError({ step: 'fgsea', cause: e });
   }
 
   perf.mark('em');
@@ -140,8 +146,8 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
   perf.mark('mongo');
   let networkID;
   if(isEmptyNetwork(networkJson)) {
-    console.log('sending empty network');
-    res?.status(422)?.send("Empty Network");
+    throw new CreateError({ step: 'em', detail: 'empty' });
+    // res?.status(422)?.send("Empty Network");
   } else {
     networkID = await Datastore.createNetwork(networkJson, networkName, type, DB_1, demo);
     await Datastore.initializeGeneRanks(DB_1, networkID, rankedGeneList);
@@ -359,5 +365,27 @@ function sendMessagesToSentry(service, messages) {
     Sentry.captureEvent(event);
   }
 }
+
+
+
+class CreateError extends Error {
+  constructor(details) {
+    const { message, cause } = details;
+    super(message ? message : "Network Creation Error", { cause });
+    this.details = details;
+  }  
+}
+
+export function createRouterErrorHandler(err, req, res, next) {
+  if(err instanceof CreateError) {
+    console.log(err);
+    res
+      .status(NETWORK_CREATE_ERROR_CODE)
+      .send({ details: err.details });
+  } else {
+    next(err);
+  }
+}
+
 
 export default http;

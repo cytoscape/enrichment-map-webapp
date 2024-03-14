@@ -325,9 +325,6 @@ export function Content() {
   };
 
   /** Render Components */
-  const { ...stateToLog } = uploadState;
-  console.log("Content render. uploadState: " + JSON.stringify(stateToLog));
-
   return (
     <div className={classNames({ [classes.root]: true, [classes.rootDropping]: droppingFile })}>
       <Header />
