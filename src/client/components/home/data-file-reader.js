@@ -19,7 +19,8 @@ import * as XLSX from "xlsx";
  * }
  */
 export function readTextFile(blob) {
-  return parseBlob(blob)
+  return blobToText(blob)
+    .then(parseText)
     .then(validateText);
 }
 
@@ -42,52 +43,17 @@ export function readExcelFile(blob, format) {
 }
 
 
-
-function parseBlob(blob) {
+function blobToText(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = reject;
-
     reader.onload = evt => {
       const text = reader.result;
-
-      const parseResult = parseText(text);
-      if(parseResult.error)
-        reject(parseResult.error);
-      else
-        resolve(parseResult);
+      resolve(text);
     };
-    
     reader.readAsText(blob);
   });
 }
-
-
-function parseText(text) {
-  const lineBreakChar = getLineBreakChar(text);
-  const lines = text.split(lineBreakChar);
-
-  if(lines[0].trim() === '#1.2') { // GCT files start with this line
-    lines.shift();
-    lines.shift(); // second line of GCT file needs to be skipped as well
-  }
-  while(lines[0][0] === '#') { // skip comment lines
-    lines.shift();
-  }
-
-  const delimiter = getDelimiter(lines[0]);
-  const header = processHeader(lines[0], delimiter);
-
-  if(header.type == 'error') {
-    return({ error: 'File format error: cannot determine the number of data columns.'});
-  }
-
-  const { type, columns } = header;
-  const format = delimiter === ',' ? 'csv' : 'tsv';
-
-  return({ type, format, delimiter, columns, lines });
-}
-
 
 function excelToText(blob, format = 'tsv') {
   return new Promise((resolve, reject) => {
@@ -115,32 +81,122 @@ function excelToText(blob, format = 'tsv') {
 }
 
 
-function validateText({ type, format, delimiter, columns, lines, error }) {
-  if(error) {
-    return { errors: [error] };
+function parseText(text) {
+  const lineBreakChar = getLineBreakChar(text);
+  const lines = text.split(lineBreakChar);
+
+  let startLine = 0;
+  if(lines[0].trim() === '#1.2') { // GCT files start with this line
+    lines.shift();
+    lines.shift(); // second line of GCT file needs to be skipped as well
+    startLine += 2;
+  }
+  while(lines[0][0] === '#') { // skip comment lines
+    lines.shift();
+    startLine++;
   }
 
-  const errorSet = new Set();
+  const delimiter = getDelimiter(lines[0]);
+  const header = processHeader(lines[0], delimiter);
 
-  for(var i = 1; i < lines.length; i++) { // skip header
-    const tokens = lines[i].split(delimiter).map(t => t.trim());
+  if(header.type == 'error') {
+    return({ error: 'File format error: cannot determine the number of data columns.'});
+  }
+
+  const { type, columns } = header;
+  const format = delimiter === ',' ? 'csv' : 'tsv';
+
+  return({ type, format, delimiter, columns, lines, startLine });
+}
+
+
+const Error = {
+  GENE_NAME_MISSING: 'GENE_NAME_MISSING',
+  GENE_NAME_NA: 'GENE_NAME_NA',
+
+  createMap: () => {
+    const errorMap = new Map();
+    Object.keys(Error).forEach(e => errorMap.set(e, []));
+    errorMap.hasError = k => {
+      return errorMap.has(k) && errorMap.get(k).length > 0;
+    };
+    errorMap.forError = (error, f) => {
+      if(errorMap.hasError(error)) {
+        const lineNums = errorMap.get(error);
+        f(lineNums, lineNums.length);
+      }
+    };
+    return errorMap;
+  }
+
+  
+};
+
+function validateText({ type, format, delimiter, columns, lines, error, startLine }) {
+  // If there was already an error when converting to text then just return it.
+  if(error) {
+    return { errors: [error] }; // TODO client code must check if errors is an array or a map
+  }
+
+  const errorMap = Error.createMap();
+  // const header = lines[startLineNumber];
+
+  // skip header line
+  for(var i = startLine + 1; i < lines.length; i++) { // skip header
+    const line = lines[i];
+    const lineNum = i + 1;
+
+    if(line.trim() === '') { // skip empty lines??
+      continue;
+    }
+
+    const tokens = line.split(delimiter).map(t => t.trim());
     const gene = tokens[0];
 
     // Detect bad or missing gene names
     if(gene === undefined || gene === '') {
-      errorSet.add('One or more rows are missing a gene name. \nPlease remove these rows and try again.');
-    } else if(gene.toUpperCase() === 'NA') {
-      errorSet.add('One or more rows have "NA" for the gene name. \nPlease remove these rows and try again.');
-    } else if(gene.toUpperCase() === 'N/A') {
-      errorSet.add('One or more rows have "N/A" for the gene name. \nPlease remove these rows and try again.');
+      errorMap.get(Error.GENE_NAME_MISSING).push(lineNum);
+    } else if(gene.toUpperCase() === 'NA' || gene.toUpperCase() === 'N/A') {
+      errorMap.get(Error.GENE_NAME_NA).push(lineNum);
     }
   }
 
-  // comment lines are removed
-  const contents = lines.join('\n');
-  const errors = Array.from(errorSet);
-
+  const errors = errorMapToMessageArray(errorMap);
+  
+  const contents = lines.join('\n'); // Do this here for convenience
   return { type, format, columns, contents, errors };
+}
+
+
+/**
+ * Convert the map of error codes and line numbers to an array of human-readable error messages.
+ * The 'lineNums' arrays should be sorted because we process the file from top to bottom.
+ */
+function errorMapToMessageArray(errorMap) {
+  const errors = [];
+  const printLines = lineNums => {
+    let str = lineNums.slice(0, 10).join(', ');
+    str += lineNums.length > 10 ? '... and more.' : '.';
+    return str;
+  };
+
+  errorMap.forError(Error.GENE_NAME_MISSING, (lineNums, length) => {
+    if(length == 1) {
+      errors.push(`There is a missing gene name on line ${lineNums[0]} of the input file.`);
+    } else {
+      errors.push(`The input file has ${length} lines with missing gene names. \nOn lines ${printLines(lineNums)}`);
+    }
+  });
+
+  errorMap.forError(Error.GENE_NAME_NA, (lineNums, length) => {
+    if(length == 1) {
+      errors.push(`The gene name on line ${lineNums[0]} is "NA".`);
+    } else {
+      errors.push(`The input file has ${length} gene names that are "NA". \nOn lines ${printLines(lineNums)}`);
+    }
+  });
+
+  return errors;
 }
 
 
