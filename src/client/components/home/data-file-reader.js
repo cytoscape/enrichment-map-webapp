@@ -8,38 +8,34 @@ import * as XLSX from "xlsx";
 
 /**
  * Reads a Ranks or Expression file in TSV or CSV format.
- * Comment lines are ignored and removed from the output.
- * 
- * Returns a Promise that resolves to an object with the following fields...
+ * Returns a Promise that resolves to an object with the following fields:
  * {
  *   columns: array of column headers,
- *   type: 'ranks' or 'rnaseq' (for expressions),
  *   format: 'tsv' or 'csv',
- *   contents: string that contains the file contents as TSV with comment lines removed,
+ *   delimiter: comma or tab
+ *   type: 'ranks' or 'rnaseq' (for expressions),
+ *   lines: array of lines (with the first few comment lines removed)
+ *   startLine: line number of header row
  * }
  */
 export function readTextFile(blob) {
-  return blobToText(blob)
-    .then(parseText)
-    .then(validateText);
+  return blobToText(blob).then(parseText);
 }
 
 /**
- * Reads an Excel file, and converts the first worksheet to TSV or CSV format
- * (TSV is the default).
- * 
- * Returns a Promise that resolves to an object with the following fields...
+ * Reads the first worksheet of an Excel file.
+ * Returns a Promise that resolves to an object with the following fields:
  * {
  *   columns: array of column headers,
+ *   format: 'tsv' or 'csv',
+ *   delimiter: comma or tab
  *   type: 'ranks' or 'rnaseq' (for expressions),
- *   format: 'tsv' or 'csv'
- *   contents: string that contains the file contents as TSV
+ *   lines: array of lines (with the first few comment lines removed)
+ *   startLine: line number of header row
  * }
  */
 export function readExcelFile(blob, format) {
-  return excelToText(blob, format)
-    .then(parseText)
-    .then(validateText);
+  return excelToText(blob, format).then(parseText);
 }
 
 
@@ -132,11 +128,12 @@ const Error = {
   
 };
 
-function validateText({ type, format, delimiter, columns, lines, error, startLine }) {
+export function validateText(fileInfo) {  // TODO need more info, like what columns to ignore
+  const { delimiter, lines, startLine } = fileInfo;
+
   // If there was already an error when converting to text then just return it.
-  if(error) {
-    return { errors: [error] }; // TODO client code must check if errors is an array or a map
-  }
+  // if(error)
+  //   return { errors: [error] };
 
   const errorMap = Error.createMap();
   // const header = lines[startLineNumber];
@@ -162,9 +159,9 @@ function validateText({ type, format, delimiter, columns, lines, error, startLin
   }
 
   const errors = errorMapToMessageArray(errorMap);
-  
-  const contents = lines.join('\n'); // Do this here for convenience
-  return { type, format, columns, contents, errors };
+
+  // const contents = lines.join('\n'); // Do this here for convenience
+  return { ...fileInfo, errors };
 }
 
 

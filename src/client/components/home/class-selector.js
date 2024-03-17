@@ -49,12 +49,12 @@ function assignGroupsSimple(columns) {
   return columns.map((c,i) => i < mid ? 'A' : 'B');
 }
 
-export function assignGroups(columns, contents, format) {
+export function assignGroups(columns, lines, format) {
   const groups = assignGroupsSimple(columns);
-  if(!contents || !format)
+  if(!lines || !format)
     return groups;
 
-  const secondLine = contents.split('\n', 2)[1];
+  const secondLine = lines[1];
   if(!secondLine)
     return groups;
 

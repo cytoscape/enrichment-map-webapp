@@ -182,7 +182,7 @@ export function Content() {
   const [ uploadState, setUploadState ] = useState({
     step: STEP.WAITING,
     format: null,
-    contents: null,
+    lines: null,
     columns: null, 
     name: null,
     rnaseqClasses: null,
@@ -206,9 +206,8 @@ export function Content() {
   }, []);
 
   useEffect(() => {
-    bus.on('loading', onLoading);
-    bus.on('classes', onClasses);
-    bus.on('ranks', onRanks);
+    bus.on('fileUploaded', onFileUploaded);
+    bus.on('loading', onLoading); // maybe should be called 'running'
     bus.on('finished', onFinished);
     bus.on('error', onError);
     return () => bus.removeAllListeners();
@@ -274,10 +273,23 @@ export function Content() {
     updateUploadState({ step: STEP.LOADING });
   };
 
-  const onRanks = async ({ format, contents, name }) => {
-    requestID = uuid.v4();
-    updateUploadState({ step: STEP.LOADING });
-    await uploadController.sendDataToEMService(contents, format, 'ranks', name, requestID);
+
+  /**
+   * @param fileInfo The object returned by readTextFile() in data-file-reader.js
+   */
+  const onFileUploaded = async (fileInfo) => {
+    const { type, columns, lines, format, name } = fileInfo;
+    if(type === 'rnaseq') {
+      // show the class selector
+      const rnaseqClasses = assignGroups(columns, lines, format);
+      setUploadState({ step: STEP.CLASSES, format, columns, lines, name, rnaseqClasses });
+    } else if(type === 'ranks') {
+      // send directly to EM service
+      // TODO need a chooser for the case where there's more than two columns
+      requestID = uuid.v4();
+      updateUploadState({ step: STEP.LOADING });
+      await uploadController.sendDataToEMService(lines, format, 'ranks', name, requestID);
+    }
   };
 
   const onSubmit = async (demo) => {
@@ -285,15 +297,10 @@ export function Content() {
     if(demo === 'demo') {
       await uploadController.createDemoNetwork(requestID);
     } else {
-      const { contents, format, name, rnaseqClasses } = uploadState;
+      const { lines, format, name, rnaseqClasses } = uploadState;
       updateUploadState({ step: STEP.LOADING });
-      await uploadController.sendDataToEMService(contents, format, 'rnaseq', name, requestID, rnaseqClasses);
+      await uploadController.sendDataToEMService(lines, format, 'rnaseq', name, requestID, rnaseqClasses);
     }
-  };
-
-  const onClasses = ({ format, columns, contents, name }) => {
-    const rnaseqClasses = assignGroups(columns, contents, format);
-    setUploadState({ step: STEP.CLASSES, format, columns, contents, name, rnaseqClasses });
   };
  
   const onError = ({ errors, requestID }) => {

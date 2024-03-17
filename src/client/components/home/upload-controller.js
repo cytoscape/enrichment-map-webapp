@@ -83,27 +83,27 @@ export class UploadController {
     }
 
     try {
-      let read;
+      let readFile;
       if(TSV_EXTS.includes(ext)) {
-        read = readTextFile;
+        readFile = readTextFile;
       } else if(EXCEL_EXTS.includes(ext)) {
-        read = readExcelFile;
+        readFile = readExcelFile;
       } else {
         const exts = TSV_EXTS.join(', ') + ', ' + EXCEL_EXTS.join(', ');
         this.bus.emit('error', { errors: [`File extension not supported. Must be one of: ${exts}`] });
         return;
       }
 
-      console.log('Reading file');
-      const { type, format, columns, contents, errors } = await read(file);
-      console.log(`Reading ${format} file as ${type}, columns: ${columns}`);
+      const fileInfo = await readFile(file);
+      fileInfo.name = name;
+      console.log('File uploaded', fileInfo);
 
+      // Check if there's errors when uploading the file.
+      const { errors } = fileInfo;
       if(errors && errors.length > 0) {
         this.bus.emit('error', { errors });
-      } else if (type === 'ranks') {
-        this.bus.emit('ranks', { format, contents, name });
       } else {
-        this.bus.emit('classes', { format, columns, contents, name });
+        this.bus.emit('fileUploaded', fileInfo);
       }
     } catch (e) {
       console.log(e);
@@ -114,6 +114,9 @@ export class UploadController {
   }
 
   async sendDataToEMService(text, format, type, networkName, requestID, classesArr) {
+    if(Array.isArray(text))
+      text = text.join('\n');
+
     const emRes = await this._sendDataToEMService(text, format, type, networkName, classesArr);
           
     if (emRes.errors) {
