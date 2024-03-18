@@ -1,19 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-
 import { makeStyles } from '@material-ui/core/styles';
-
-import { Grid, Typography } from '@material-ui/core';
+import { FormControl, Grid, InputLabel, MenuItem, Select, Typography } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
-
 import { ExperimentGroupIcon, ControlGroupIcon } from '../svg-icons';
 import BlockIcon from '@material-ui/icons/Block';
 
-const BUTTONS_DEF = [
-  { value: 'A', label: 'Experiment', mobileLabel: 'E',  icon: <ExperimentGroupIcon fontSize="small" /> },
-  { value: 'B', label: 'Control', mobileLabel: 'C',  icon: <ControlGroupIcon fontSize="small" /> },
-  { value: 'X', label: 'Ignored', mobileLabel: null, icon: <BlockIcon fontSize="small" /> },
-];
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -71,7 +63,88 @@ export function assignGroups(columns, lines, format) {
   return groups;
 }
 
-function ClassSelector({ columns, isMobile, rnaseqClasses, onClassesChanged }) {
+
+
+export function GeneColumnSelector({ columns, value, onChange }) {
+  const classes = useStyles();
+
+  return (
+    <Grid container direction="column" spacing={4} className={classes.root}>
+      <Grid item xs={12}>
+        <Typography variant="body1">
+          Select the column to use for <i>Gene Names</i>.
+        </Typography>
+      </Grid>
+      <Grid item xs={12}>
+        <FormControl fullWidth>
+          <InputLabel>Gene Name Column</InputLabel>
+          <Select
+            value={value}
+            label="Gene Name Column"
+            onChange={onChange}
+          >
+          { columns.map((col, i) => 
+            <MenuItem key={i} value={col}>{col}</MenuItem>
+          )}
+          </Select>
+        </FormControl>
+      </Grid>
+    </Grid>
+  );
+}
+
+GeneColumnSelector.propTypes = {
+  columns: PropTypes.array.isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func,
+};
+
+
+
+export function RankColumnSelector({ columns, value, onChange }) {
+  const classes = useStyles();
+
+  return (
+    <Grid container direction="column" spacing={4} className={classes.root}>
+      <Grid item xs={12}>
+        <Typography variant="body1">
+          Select the column to use for <i>Gene Ranks</i>.
+        </Typography>
+      </Grid>
+      <Grid item xs={12}>
+        <FormControl fullWidth>
+          <InputLabel>Gene Rank Column</InputLabel>
+          <Select
+            value={value}
+            label="Gene Rank Column"
+            onChange={onChange}
+          >
+          { columns.map((col, i) => 
+            <MenuItem key={i} value={col}>{col}</MenuItem>
+          )}
+          </Select>
+        </FormControl>
+      </Grid>
+    </Grid>
+  );
+}
+
+RankColumnSelector.propTypes = {
+  columns: PropTypes.array.isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func,
+};
+
+
+
+const CLASS_BUTTONS_DEF = [
+  { value: 'A', label: 'Experiment', mobileLabel: 'E',  icon: <ExperimentGroupIcon fontSize="small" /> },
+  { value: 'B', label: 'Control',    mobileLabel: 'C',  icon: <ControlGroupIcon fontSize="small" /> },
+  { value: 'X', label: 'Ignored',    mobileLabel: null, icon: <BlockIcon fontSize="small" /> },
+];
+
+export function ClassSelector({ columns, isMobile, rnaseqClasses, onClassesChanged }) {
+  const classes = useStyles();
 
   const handleChange = (i, newGroup) => {
     if(newGroup) {
@@ -79,8 +152,6 @@ function ClassSelector({ columns, isMobile, rnaseqClasses, onClassesChanged }) {
       onClassesChanged(newGroups);
     }
   };
-
-  const classes = useStyles();
 
   return (
     <Grid container direction="column" spacing={4} className={classes.root}>
@@ -106,7 +177,7 @@ function ClassSelector({ columns, isMobile, rnaseqClasses, onClassesChanged }) {
                     value={rnaseqClasses[i]} 
                     onChange={(e, newClass) => handleChange(i, newClass)}
                   >
-                  { BUTTONS_DEF.map((btn) => 
+                  { CLASS_BUTTONS_DEF.map((btn) => 
                     <ToggleButton key={btn.value} value={btn.value}>
                       { isMobile ? btn.icon : btn.label }
                     </ToggleButton>

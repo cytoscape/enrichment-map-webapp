@@ -2,7 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import { UploadPanel, DemoPanel } from './upload-panel';
-import ClassSelector from './class-selector';
+import { GeneColumnSelector, RankColumnSelector, ClassSelector } from './column-selector';
+import { ColumnType } from './data-file-reader';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -29,17 +30,31 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqClasses, onUpload, onClassesChanged, onSubmit, onCancelled, onBack }) => {
+
+
+const StartDialog = ({ 
+  step, isMobile, isDemo, errorMessages, 
+  fileType, fileInfo, geneCol, rankCol, rnaseqClasses,
+  onGeneColChanged, onRankColChanged, onClassesChanged,
+  onUpload, onSubmit, onCancelled, onBack
+}) => {
   const classes = useStyles();
   const open = step !== 'WAITING';
 
-  const Classes = () => 
-    <ClassSelector 
+  const Columns = () => {
+    const columns = fileInfo.numericColumns();
+    return <ClassSelector 
       columns={columns} 
       rnaseqClasses={rnaseqClasses}
       onClassesChanged={arr => onClassesChanged(arr)}
       isMobile={isMobile}
     />;
+  };
+
+  const GeneColumns = () => <p>Gene Column Selector</p>;
+    // <GeneColumnSelector 
+
+    // />;
 
   const LoadingProgress = () => 
     <div className={classes.progress}>
@@ -75,7 +90,7 @@ const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqCla
       {
         {
           'UPLOAD':  () => isDemo ? 'Create Demo Network' : 'Upload your Data',
-          'CLASSES': () => 'Groups',
+          'COLUMNS': () => 'Columns',
           'LOADING': () => 'Loading',
           'ERROR':   () => 'Error',
         }[step]()
@@ -85,14 +100,14 @@ const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqCla
       { 
         {
           'UPLOAD':  () => isDemo ? <DemoPanel /> : <UploadPanel isMobile={isMobile} />,
-          'CLASSES': () => <Classes />,
+          'COLUMNS': () => <Columns />,
           'LOADING': () => <LoadingProgress />,
           'ERROR':   () => <ErrorReport />,
         }[step]()
       }
       </DialogContent>
       <DialogActions>
-      {step === 'CLASSES' && (
+      {step === 'COLUMNS' && (
         <Button variant="outlined" color="primary" 
           startIcon={<NavigateBeforeIcon />} 
           onClick={onBack}
@@ -115,7 +130,7 @@ const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqCla
           { isDemo ? 'Create Network' : 'Upload File' }
         </Button>
       )}
-      {step === 'CLASSES' && (
+      {step === 'COLUMNS' && (
         <Button variant="contained" color="primary" 
           endIcon={<NavigateNextIcon />} 
           onClick={onSubmit}
@@ -132,10 +147,17 @@ StartDialog.propTypes = {
   step: PropTypes.string.isRequired,
   isMobile: PropTypes.bool,
   isDemo: PropTypes.bool,
-  rnaseqClasses: PropTypes.array,
-  columns: PropTypes.array,
   errorMessages: PropTypes.array,
+
+  fileType: PropTypes.string, 
+  fileInfo: PropTypes.any, // FileInfo object
+  geneCol: PropTypes.string,
+  rankCol: PropTypes.string,
+  rnaseqClasses: PropTypes.array,
+  
   onClassesChanged: PropTypes.func.isRequired,
+  onGeneColChanged: PropTypes.func.isRequired,
+  onRankColChanged: PropTypes.func.isRequired,
   onUpload: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   onCancelled: PropTypes.func.isRequired,

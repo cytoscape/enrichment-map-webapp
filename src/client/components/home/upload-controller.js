@@ -29,7 +29,7 @@ export class UploadController {
   }
 
 
-  async loadSampleData(fileName) {
+  async fetchSampleData(fileName) {
     const dataurl = `/sample-data/${fileName}`;
     const sdRes = await fetch(dataurl);
     

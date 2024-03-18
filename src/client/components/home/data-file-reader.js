@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import _ from 'lodash';
 
 /**
  * EM app code that does the same thing...
@@ -8,34 +9,30 @@ import * as XLSX from "xlsx";
 
 /**
  * Reads a Ranks or Expression file in TSV or CSV format.
- * Returns a Promise that resolves to an object with the following fields:
+ * Returns a Promise that resolves to a 'FileInfo' object with the following fields:
  * {
  *   columns: array of column headers,
  *   format: 'tsv' or 'csv',
  *   delimiter: comma or tab
- *   type: 'ranks' or 'rnaseq' (for expressions),
  *   lines: array of lines (with the first few comment lines removed)
  *   startLine: line number of header row
+ *   columnTypes: Map of column name to ColumnType
+ *   ...extra functions, see createFileInfo()
  * }
  */
-export function readTextFile(blob) {
-  return blobToText(blob).then(parseText);
+// TODO figure out how to use jsdoc to make above comment better
+export function readTextFile(blob) {  
+  return blobToText(blob)
+    .then(quickParseForFileInfo);
 }
 
 /**
- * Reads the first worksheet of an Excel file.
- * Returns a Promise that resolves to an object with the following fields:
- * {
- *   columns: array of column headers,
- *   format: 'tsv' or 'csv',
- *   delimiter: comma or tab
- *   type: 'ranks' or 'rnaseq' (for expressions),
- *   lines: array of lines (with the first few comment lines removed)
- *   startLine: line number of header row
- * }
+ * Reads the first worksheet of an Excel file and returns Promise<FileInfo>
+ * See docs for readTextFile() above.
  */
 export function readExcelFile(blob, format) {
-  return excelToText(blob, format).then(parseText);
+  return excelToText(blob, format)
+    .then(quickParseForFileInfo);
 }
 
 
@@ -77,7 +74,70 @@ function excelToText(blob, format = 'tsv') {
 }
 
 
-function parseText(text) {
+
+export const ColumnType = {
+  GENE: 'GENE', // single token stings
+  STRING: 'STRING', // longer strings that may contain spaces, like a 'description' column
+  NUMERIC: 'NUMERIC',
+  UNKNOWN: 'UNKNOWN',
+
+  isText: type => type === ColumnType.GENE || type === ColumnType.STRING
+};
+
+function isNumeric(n) { return !isNaN(parseFloat(n)) && isFinite(n); }
+function isToken(s) { return _.isString(s) && s.indexOf(' ') < 0; }
+function isNonEmptyString(s) { return _.isString(s) && s.length > 0; }
+
+function getColumnType(x) {
+  if(isNumeric(x))
+    return ColumnType.NUMERIC;
+  else if(isToken(x))
+    return ColumnType.GENE;
+  else if(isNonEmptyString(x))
+    return ColumnType.STRING;
+  else
+    return ColumnType.UNKNOWN;
+}
+
+function createColumnTypeMap() {
+  const columnTypes = new Map();
+
+  // TODO: maybe if the new type is UNKNOWN I should keep the current type
+  columnTypes.setType = (col, type) => {
+    if(columnTypes.has(col)) {
+      const prevType = columnTypes.get(col);
+      if(prevType !== type) {
+        if(ColumnType.isText(prevType) && ColumnType.isText(type)) {
+          columnTypes.set(col, ColumnType.STRING);
+        } else {
+          columnTypes.set(col, ColumnType.UNKNOWN);
+        }
+      }
+    } else {
+      columnTypes.set(col, type);
+    }
+  };
+
+  return columnTypes;
+}
+
+function createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes }) {
+  return { 
+    format, 
+    delimiter, 
+    columns, 
+    lines, 
+    startLine, 
+    columnTypes,
+    numericColumns: () => columns.filter(col => columnTypes.get(col) === ColumnType.NUMERIC),
+    geneColumns:    () => columns.filter(col => columnTypes.get(col) === ColumnType.GENE),
+  };
+}
+
+/**
+ * Parses just the header row and the first X data rows to infer information about the file.
+ */
+function quickParseForFileInfo(text) {
   const lineBreakChar = getLineBreakChar(text);
   const lines = text.split(lineBreakChar);
 
@@ -92,17 +152,33 @@ function parseText(text) {
     startLine++;
   }
 
-  const delimiter = getDelimiter(lines[0]);
-  const header = processHeader(lines[0], delimiter);
-
-  if(header.type == 'error') {
-    return({ error: 'File format error: cannot determine the number of data columns.'});
+  if(lines[0] === undefined) {
+    return { error: 'File format error: Cannot read data columns.'};
   }
 
-  const { type, columns } = header;
+  const delimiter = getDelimiter(lines[0]);
   const format = delimiter === ',' ? 'csv' : 'tsv';
+  const columns = lines[0].split(delimiter).map(t => t.trim());
 
-  return({ type, format, delimiter, columns, lines, startLine });
+  if(columns.length <= 1) {
+    return { error: 'File format error: There must be at least 2 data columns.'};
+  }
+
+  const numLinesToScan = 10;
+  const columnTypes = createColumnTypeMap();
+
+  for(let i = 1; i < Math.min(lines.length, numLinesToScan); i++) {
+    const line = lines[i];
+    const values = line.split(delimiter).map(t => t.trim());
+
+    for(let [col, val] of _.zip(columns, values)) {
+      if(col !== undefined) {
+        columnTypes.setType(col, getColumnType(val));
+      }
+    }
+  }
+
+  return createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes });
 }
 
 
@@ -197,21 +273,21 @@ function errorMapToMessageArray(errorMap) {
 }
 
 
-/**
- * Uses the header row to determine if its a ranked gene list ('ranks') or an rna-seq expression file ('rnaseq').
- * Also returns an array of column names for use in the ClassSelector if the type is 'rnaseq', the first 
- * column of gene names is removed from the array.
- */
-function processHeader(headerLine, delimiter) {
-  const columns = headerLine.split(delimiter || '\t');
-  if(columns.length == 2) {
-    return { type: 'ranks' };
-  } else if(columns.length > 2) {
-    return { type: 'rnaseq', columns: columns.slice(1) };
-  } else {
-    return { type: 'error' };
-  }
-}
+// /**
+//  * Uses the header row to determine if its a ranked gene list ('ranks') or an rna-seq expression file ('rnaseq').
+//  * Also returns an array of column names for use in the ClassSelector if the type is 'rnaseq', the first 
+//  * column of gene names is removed from the array.
+//  */
+// function processHeader(headerLine, delimiter) {
+//   const columns = headerLine.split(delimiter || '\t');
+//   if(columns.length == 2) {
+//     return { type: 'ranks' };
+//   } else if(columns.length > 2) {
+//     return { type: 'rnaseq', columns: columns.slice(1) };
+//   } else {
+//     return { type: 'error' };
+//   }
+// }
 
 
 function getLineBreakChar(text) {

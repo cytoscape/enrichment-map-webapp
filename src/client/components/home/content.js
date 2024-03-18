@@ -9,7 +9,7 @@ import EasyCitation from './citation.js';
 import { DebugMenu } from '../../debug-menu';
 import StartDialog from './start-dialog';
 import theme from '../../theme';
-import { assignGroups } from './class-selector';
+import { assignGroups } from './column-selector.js';
 
 import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@material-ui/core';
 import { Container, Grid, Divider, } from '@material-ui/core';
@@ -22,11 +22,11 @@ import classNames from 'classnames';
 import uuid from 'uuid';
 
 
-const STEP = {
+export const STEP = {
   WAITING: 'WAITING',
   UPLOAD:  'UPLOAD',
   LOADING: 'LOADING',
-  CLASSES: 'CLASSES',
+  COLUMNS: 'COLUMNS',
   ERROR:   'ERROR',
 };
 
@@ -181,10 +181,11 @@ export function Content() {
   // Each of the onXXX callbacks below must call setUploadState at most once.
   const [ uploadState, setUploadState ] = useState({
     step: STEP.WAITING,
-    format: null,
-    lines: null,
-    columns: null, 
-    name: null,
+    demo: null,
+    fileType: null, // 'rnaseq' or 'ranks'
+    fileInfo: null, // treat this object like its immutable
+    geneCol: null,
+    rankCol: null,
     rnaseqClasses: null,
     errorMessages: null,
   });
@@ -219,7 +220,7 @@ export function Content() {
   const loadSampleNetwork = async (fileName) => {
     if (uploadState.step == STEP.LOADING)
       return;
-    const file = await uploadController.loadSampleData(fileName);
+    const file = await uploadController.fetchSampleData(fileName);
     if(file) {
       await uploadController.upload([file]);
     }
@@ -264,6 +265,14 @@ export function Content() {
     updateUploadState({ rnaseqClasses });
   };
 
+  const onGeneColChanged = (geneCol) => {
+    updateUploadState({ geneCol });
+  };
+
+  const onRankColChanged = (rankCol) => {
+    updateUploadState({ rankCol });
+  };
+
   const onUpload = async () => {
     const files = await showFileDialog();
     await uploadController.upload(files);
@@ -275,21 +284,12 @@ export function Content() {
 
 
   /**
-   * @param fileInfo The object returned by readTextFile() in data-file-reader.js
+   * @param fileInfo The object returned by readTextFile/readExcelFile in data-file-reader.js
    */
   const onFileUploaded = async (fileInfo) => {
-    const { type, columns, lines, format, name } = fileInfo;
-    if(type === 'rnaseq') {
-      // show the class selector
-      const rnaseqClasses = assignGroups(columns, lines, format);
-      setUploadState({ step: STEP.CLASSES, format, columns, lines, name, rnaseqClasses });
-    } else if(type === 'ranks') {
-      // send directly to EM service
-      // TODO need a chooser for the case where there's more than two columns
-      requestID = uuid.v4();
-      updateUploadState({ step: STEP.LOADING });
-      await uploadController.sendDataToEMService(lines, format, 'ranks', name, requestID);
-    }
+    const rnaseqClasses = assignGroups(fileInfo.columns, fileInfo.lines, fileInfo.format);
+    // TODO: hard coding fileType for now
+    setUploadState({ step: STEP.COLUMNS, fileInfo, rnaseqClasses, fileType: 'rnaseq' });
   };
 
   const onSubmit = async (demo) => {
@@ -297,9 +297,13 @@ export function Content() {
     if(demo === 'demo') {
       await uploadController.createDemoNetwork(requestID);
     } else {
-      const { lines, format, name, rnaseqClasses } = uploadState;
+      const { lines, format, name, fileType, rnaseqClasses } = uploadState;
       updateUploadState({ step: STEP.LOADING });
-      await uploadController.sendDataToEMService(lines, format, 'rnaseq', name, requestID, rnaseqClasses);
+
+      // TODO: validate the input, but only the columns that the user selecte
+      // TODO: crate a string from only the selected columns (maybe sendDataToEMSerice should do that)
+
+      await uploadController.sendDataToEMService(lines, format, fileType, name, requestID, rnaseqClasses);
     }
   };
  
@@ -389,14 +393,21 @@ export function Content() {
           {uploadState.step !== STEP.WAITING && (
             <Grid item>
               <StartDialog
+                step={uploadState.step}
                 isMobile={mobile}
                 isDemo={uploadState.demo}
-                step={uploadState.step}
-                columns={uploadState.columns}
                 errorMessages={uploadState.errorMessages}
+
+                fileType={uploadState.fileType}
+                fileInfo={uploadState.fileInfo}
+                geneCol={uploadState.geneCol}
+                rankCol={uploadState.rankCol}
                 rnaseqClasses={uploadState.rnaseqClasses}
+
                 onUpload={onUpload}
                 onClassesChanged={onClassesChanged}
+                onRankColChanged={onRankColChanged}
+                onGeneColChanged={onGeneColChanged}
                 onSubmit={onSubmit}
                 onCancelled={onCancel}
                 onBack={onBack}
