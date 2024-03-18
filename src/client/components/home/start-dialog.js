@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import PropTypes from 'prop-types';
 
+import { RNA_SEQ } from './upload-controller';
 import { UploadPanel, DemoPanel } from './upload-panel';
 import ClassSelector from './class-selector';
 
@@ -16,6 +17,7 @@ import CloseIcon from '@material-ui/icons/Close';
 import WarningIcon from '@material-ui/icons/Warning';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
+const DEFAULT_FORMAT = RNA_SEQ;
 
 const useStyles = makeStyles(() => ({
   progress: {
@@ -30,6 +32,8 @@ const useStyles = makeStyles(() => ({
 }));
 
 const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqClasses, onUpload, onClassesChanged, onSubmit, onCancelled, onBack }) => {
+  const formatRef = useRef(DEFAULT_FORMAT);
+
   const classes = useStyles();
   const open = step !== 'WAITING';
 
@@ -84,7 +88,7 @@ const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqCla
       <DialogContent dividers>
       { 
         {
-          'UPLOAD':  () => isDemo ? <DemoPanel /> : <UploadPanel isMobile={isMobile} />,
+          'UPLOAD':  () => isDemo ? <DemoPanel /> : <UploadPanel isMobile={isMobile} initialFormat={DEFAULT_FORMAT} onFormatChanged={(format) => formatRef.current = format} />,
           'CLASSES': () => <Classes />,
           'LOADING': () => <LoadingProgress />,
           'ERROR':   () => <ErrorReport />,
@@ -110,7 +114,7 @@ const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqCla
       {step === 'UPLOAD' && (
         <Button variant="contained" color="primary" 
           startIcon={<DescriptionOutlinedIcon />} 
-          onClick={() => isDemo ? onSubmit('demo') : onUpload()}
+          onClick={() => isDemo ? onSubmit('demo') : onUpload(formatRef.current)}
         >
           { isDemo ? 'Create Network' : 'Upload File' }
         </Button>

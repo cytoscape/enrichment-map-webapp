@@ -4,7 +4,7 @@ import EventEmitter from 'eventemitter3';
 import _ from 'lodash';
 import { makeStyles } from '@material-ui/core/styles';
 
-import { UploadController } from './upload-controller';
+import { UploadController, RNA_SEQ, PRE_RANKED } from './upload-controller';
 import EasyCitation from './citation.js';
 import { DebugMenu } from '../../debug-menu';
 import StartDialog from './start-dialog';
@@ -217,12 +217,12 @@ export function Content() {
 
   /** Callbacks and utility functions */
 
-  const loadSampleNetwork = async (fileName) => {
+  const loadSampleNetwork = async (fileName, format) => {
     if (uploadState.step == STEP.LOADING)
       return;
     const file = await uploadController.loadSampleData(fileName);
     if(file) {
-      await uploadController.upload([file]);
+      await uploadController.upload([file], format);
     }
   };
 
@@ -265,9 +265,9 @@ export function Content() {
     updateUploadState({ rnaseqClasses });
   };
 
-  const onUpload = async () => {
+  const onUpload = async (format) => {
     const files = await showFileDialog();
-    await uploadController.upload(files);
+    await uploadController.upload(files, format);
   };
 
   const onLoading = () => {
@@ -610,7 +610,7 @@ function Debug({ sampleFiles, onLoadSampleNetwork }) {
       {
         sampleRankFiles.length > 0 ?
         sampleRankFiles.map(file => (
-          <li key={file}><Link onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
+          <li key={file}><Link onClick={() => onLoadSampleNetwork(file, PRE_RANKED)}>{file}</Link></li>
         )) :
         <li>Loading...</li>
       }
@@ -620,7 +620,7 @@ function Debug({ sampleFiles, onLoadSampleNetwork }) {
       {
         sampleExprFiles.length > 0 ?
         sampleExprFiles.map(file => (
-          <li key={file}><Link onClick={() => onLoadSampleNetwork(file)}>{file}</Link></li>
+          <li key={file}><Link onClick={() => onLoadSampleNetwork(file, RNA_SEQ)}>{file}</Link></li>
         )) :
         <li>Loading...</li>
       }

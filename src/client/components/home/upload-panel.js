@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
+import { RNA_SEQ, PRE_RANKED } from './upload-controller';
+
 import { makeStyles } from '@material-ui/core/styles';
 
 import { Grid, Paper, Typography, Tooltip, Link } from '@material-ui/core';
-import { Accordion, AccordionDetails, AccordionSummary } from '@material-ui/core';
+import { Accordion, AccordionDetails, AccordionSummary, Radio } from '@material-ui/core';
 import { Table, TableHead, TableRow, TableCell, TableBody } from '@material-ui/core';
 
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
@@ -50,6 +52,9 @@ const useStyles = makeStyles((theme) => ({
       paddingTop: 'inherit',
       paddingBottom: 'inherit',
     },
+  },
+  accordionSummaryContent: {
+      alignItems: 'center',
   },
   accordionHead: {
     fontSize: 'theme.typography.pxToRem(15)',
@@ -184,12 +189,18 @@ SampleTable.propTypes = {
 
 //==[ FormatAccordion ]===============================================================================================
 
-const FormatAccordion = ({ isMobile, id, title, summary, tableHead, tableRows, children, spotlight, expanded, onChange }) => {
+const FormatAccordion = ({ isMobile, id, title, summary, tableHead, tableRows, children, spotlight, selected, onChange }) => {
   const classes = useStyles();
 
   return (
-    <Accordion defaultExpanded={id === 'format1'} expanded={expanded} variant="outlined" onChange={onChange(id)}>
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+    <Accordion expanded={selected} variant="outlined" onChange={onChange(id)}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />} classes={{ content: classes.accordionSummaryContent }}>
+        <Radio
+          checked={selected}
+          onChange={onChange(id)}
+          value={id}
+          name={title}
+        />
         <Typography className={classes.accordionHead}>{ title }</Typography>
       </AccordionSummary>
       <AccordionDetails className={classes.accordionDetails}>
@@ -230,7 +241,7 @@ FormatAccordion.propTypes = {
     PropTypes.node
   ]).isRequired,
   spotlight: PropTypes.string,
-  expanded: PropTypes.bool.isRequired,
+  selected: PropTypes.bool.isRequired,
   onChange: PropTypes.func.isRequired,
 };
 
@@ -261,15 +272,17 @@ Spotlight.propTypes = {
 
 //==[ UploadPanel ]===================================================================================================
 
-export function UploadPanel({ isMobile }) {
-  const [ expanded, setExpanded ] = useState('f1');
+export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
+  const [ format, setFormat ] = useState(initialFormat);
   const [ spotlight, setSpotlight ] = useState();
 
   const classes = useStyles();
   
-  const handleChange = (panel) => (event, expand) => {
-    if (expand) // clicking an expanded accordion should not collapse it
-      setExpanded(panel);
+  const handleChange = (value) => (event, select) => {
+    if (select) { // clicking an expanded accordion should not collapse it
+      setFormat(value);
+      onFormatChanged(value);
+    }
   };
   const handleMouseOver = (text) => {
     setSpotlight(text);
@@ -296,14 +309,14 @@ export function UploadPanel({ isMobile }) {
         Upload your file (<code>CSV</code>, <code>TSV</code> or <code>Excel</code>) in one of the formats below:
       </Typography>
       <FormatAccordion
-        id="f1"
+        id={RNA_SEQ}
         title="RNA-Seq Expression Data"
         summary={summary}
         isMobile={isMobile}
         tableHead={RNASEQ_HEADER}
         tableRows={RNASEQ_ROWS}
         spotlight={spotlight}
-        expanded={expanded === "f1"}
+        selected={format === RNA_SEQ}
         onChange={handleChange}
       >
         <p className={classes.details}>Your spreadsheet must have 3 or more columns, as follows:</p>
@@ -314,14 +327,14 @@ export function UploadPanel({ isMobile }) {
         </ol>
       </FormatAccordion>
       <FormatAccordion
-        id="f2"
+        id={PRE_RANKED}
         title="Pre-Ranked Gene List"
         summary={summary}
         isMobile={isMobile}
         tableHead={RANKED_HEADER}
         tableRows={RANKED_ROWS}
         spotlight={spotlight}
-        expanded={expanded === "f2"}
+        selected={format === PRE_RANKED}
         onChange={handleChange}
       >
         <p className={classes.details}>Your spreadsheet must have exactly 2 columns, as follows:</p>
@@ -335,6 +348,8 @@ export function UploadPanel({ isMobile }) {
 }
 UploadPanel.propTypes = {
   isMobile: PropTypes.bool,
+  initialFormat: PropTypes.string.isRequired,
+  onFormatChanged: PropTypes.func.isRequired,
 };
 
 
