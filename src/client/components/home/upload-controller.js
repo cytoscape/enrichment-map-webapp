@@ -5,6 +5,9 @@ import { readTextFile, readExcelFile } from './data-file-reader';
 import * as Sentry from "@sentry/browser";
 
 
+export const RNA_SEQ = 'rnaseq';
+export const PRE_RANKED = 'ranks';
+
 const FILE_EXT_REGEX = /\.[^/.]+$/;
 const TSV_EXTS = ['txt', 'rnk', 'tsv', 'csv', 'gct'];
 const EXCEL_EXTS = ['xls', 'xlsx'];
@@ -60,7 +63,7 @@ export class UploadController {
     }
   }
 
-  async upload(files) {
+  async upload(files, type) {
     const file = files && files.length > 0 ? files[0] : null;
     if (!file)
       return;
@@ -94,8 +97,7 @@ export class UploadController {
         return;
       }
 
-      const fileInfo = await readFile(file);
-      fileInfo.name = name;
+      const fileInfo = await readFile(file, name, type);
       console.log('File uploaded', fileInfo);
 
       // Check if there's errors when uploading the file.
@@ -131,9 +133,9 @@ export class UploadController {
 
   async _sendDataToEMService(text, format, type, networkName, classesArr) {
     let url;
-    if (type === 'ranks') {
+    if (type === PRE_RANKED) {
       url = '/api/create/preranked?' + new URLSearchParams({ networkName });
-    } else if(type === 'rnaseq') {
+    } else if (type === RNA_SEQ) {
       const classes = classesArr.join(',');
       url = '/api/create/rnaseq?' + new URLSearchParams({ classes, networkName });
     } 

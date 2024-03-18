@@ -21,20 +21,19 @@ import _ from 'lodash';
  * }
  */
 // TODO figure out how to use jsdoc to make above comment better
-export function readTextFile(blob) {  
+export function readTextFile(blob, name, type) {  
   return blobToText(blob)
-    .then(quickParseForFileInfo);
+    .then(text => quickParseForFileInfo(text, name, type));
 }
 
 /**
  * Reads the first worksheet of an Excel file and returns Promise<FileInfo>
  * See docs for readTextFile() above.
  */
-export function readExcelFile(blob, format) {
-  return excelToText(blob, format)
-    .then(quickParseForFileInfo);
+export function readExcelFile(blob, name, type) {
+  return excelToText(blob)
+    .then(text => quickParseForFileInfo(text, name, type));
 }
-
 
 function blobToText(blob) {
   return new Promise((resolve, reject) => {
@@ -121,7 +120,7 @@ function createColumnTypeMap() {
   return columnTypes;
 }
 
-function createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes }) {
+function createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes, name, type }) {
   return { 
     format, 
     delimiter, 
@@ -129,6 +128,8 @@ function createFileInfo({ format, delimiter, columns, lines, startLine, columnTy
     lines, 
     startLine, 
     columnTypes,
+    name,
+    type,
     numericColumns: () => columns.filter(col => columnTypes.get(col) === ColumnType.NUMERIC),
     geneColumns:    () => columns.filter(col => columnTypes.get(col) === ColumnType.GENE),
   };
@@ -137,7 +138,7 @@ function createFileInfo({ format, delimiter, columns, lines, startLine, columnTy
 /**
  * Parses just the header row and the first X data rows to infer information about the file.
  */
-function quickParseForFileInfo(text) {
+function quickParseForFileInfo(text, name, type) {
   const lineBreakChar = getLineBreakChar(text);
   const lines = text.split(lineBreakChar);
 
@@ -178,7 +179,7 @@ function quickParseForFileInfo(text) {
     }
   }
 
-  return createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes });
+  return createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes, name, type });
 }
 
 

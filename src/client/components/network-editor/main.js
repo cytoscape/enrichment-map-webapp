@@ -29,7 +29,7 @@ import RemoveIcon from '@material-ui/icons/Remove';
 import UndoIcon from '@material-ui/icons/Undo';
 import RestoreIcon from '@material-ui/icons/SettingsBackupRestore';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
-import { DownloadIcon, ShareIcon } from '../svg-icons';
+import { DragSelectIcon, DownloadIcon, ShareIcon } from '../svg-icons';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -291,6 +291,7 @@ const Main = ({
 
   const classes = useStyles();
 
+  const cy = controller.cy;
   const snack = snackBarOps(setSnackBarState);
 
   const shiftXCy = openLeftDrawer && !isMobile && !isTablet;
@@ -333,7 +334,7 @@ const Main = ({
     //   onClick: () => controller.deleteSelectedNodes(),
     // },
     {
-      title: "Restore Network to Initial Layout",
+      title: "Restore Network Layout",
       icon: <RestoreIcon />,
       onClick: handleNetworkRestore,
       unrelated: true,
@@ -351,10 +352,19 @@ const Main = ({
       onClick: panner.fit,
       unrelated: true,
     }, {
-      title: "Download Enrichment Data and Images",
+      title: "Enable Drag-to-Select",
+      description: "(or use SHIFT-select)",
+      icon: <DragSelectIcon />,
+      onClick: ()=> cy.userPanningEnabled(!cy.userPanningEnabled()),
+      isSelected: () => !cy.userPanningEnabled(),
+      alwaysShow: true, // always show on desktop/tablet, but still hides on mobile
+      unrelated: true,
+    }, {
+      title: "Download Data and Images",
       icon: <DownloadIcon />,
       onClick: handleExport,
       isEnabled: () => exportEnabled,
+      alwaysShow: true, // always show on desktop/tablet, but still hides on mobile
     }, {
       title: "Share",
       icon: <ShareIcon />,
@@ -386,6 +396,8 @@ const Main = ({
     return () => Mousetrap.unbind(['-','_','=','+','up','down','left','right','f','space'/**,'backspace','del'*/]);
   }, [panner]);
 
+  const rightMenuDef = isMobile ? menuDef : menuDef.filter(el => !el.alwaysShow);
+
   return (
     <>
       <Header
@@ -415,7 +427,7 @@ const Main = ({
           </div>
           <RightDrawer
             open={openRightDrawer}
-            menu={menuDef}
+            menu={rightMenuDef}
             onClose={onCloseRightDrawer}
           />
         </div>
