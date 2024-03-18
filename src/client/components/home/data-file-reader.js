@@ -17,23 +17,23 @@ import _ from 'lodash';
  *   lines: array of lines (with the first few comment lines removed)
  *   startLine: line number of header row
  *   columnTypes: Map of column name to ColumnType
+ *   errors: array of error messages if the file couldn't be parsed at all, or if there's no gene or numberic columns
  *   ...extra functions, see createFileInfo()
  * }
  */
-// TODO figure out how to use jsdoc to make above comment better
-export function readTextFile(blob, name, type) {  
-  return blobToText(blob)
-    .then(text => quickParseForFileInfo(text, name, type));
+// TODO: figure out how to use jsdoc to make above comment into a standard format
+export function readTextFile(blob) {  
+  return blobToText(blob).then(quickParseForFileInfo);
 }
 
 /**
  * Reads the first worksheet of an Excel file and returns Promise<FileInfo>
  * See docs for readTextFile() above.
  */
-export function readExcelFile(blob, name, type) {
-  return excelToText(blob)
-    .then(text => quickParseForFileInfo(text, name, type));
+export function readExcelFile(blob) {
+  return excelToText(blob).then(quickParseForFileInfo);
 }
+
 
 function blobToText(blob) {
   return new Promise((resolve, reject) => {
@@ -120,7 +120,7 @@ function createColumnTypeMap() {
   return columnTypes;
 }
 
-function createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes, name, type }) {
+function createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes }) {
   return { 
     format, 
     delimiter, 
@@ -128,8 +128,6 @@ function createFileInfo({ format, delimiter, columns, lines, startLine, columnTy
     lines, 
     startLine, 
     columnTypes,
-    name,
-    type,
     numericColumns: () => columns.filter(col => columnTypes.get(col) === ColumnType.NUMERIC),
     geneColumns:    () => columns.filter(col => columnTypes.get(col) === ColumnType.GENE),
   };
@@ -138,7 +136,7 @@ function createFileInfo({ format, delimiter, columns, lines, startLine, columnTy
 /**
  * Parses just the header row and the first X data rows to infer information about the file.
  */
-function quickParseForFileInfo(text, name, type) {
+function quickParseForFileInfo(text) {
   const lineBreakChar = getLineBreakChar(text);
   const lines = text.split(lineBreakChar);
 
@@ -179,7 +177,16 @@ function quickParseForFileInfo(text, name, type) {
     }
   }
 
-  return createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes, name, type });
+  const fileInfo = createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes });
+
+  if(fileInfo.numericColumns().length === 0) {
+    return { error: 'File format error: Could not find any numeric columns.'};
+  }
+  if(fileInfo.geneColumns().length === 0) {
+    return { error: 'File format error: Could not find any columns with gene indentifiers.'};
+  }
+
+  return fileInfo;
 }
 
 
@@ -201,8 +208,6 @@ const Error = {
     };
     return errorMap;
   }
-
-  
 };
 
 export function validateText(fileInfo) {  // TODO need more info, like what columns to ignore

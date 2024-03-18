@@ -35,28 +35,58 @@ const useStyles = makeStyles(() => ({
 
 const StartDialog = ({ 
   step, isMobile, isDemo, errorMessages, 
-  fileType, fileInfo, geneCol, rankCol, rnaseqClasses,
+  fileInfo, geneCol, rankCol, rnaseqClasses,
   onGeneColChanged, onRankColChanged, onClassesChanged,
   onUpload, onSubmit, onCancelled, onBack
 }) => {
-  const formatRef = useRef(DEFAULT_FORMAT);
+  const fileFormatRef = useRef(); // needs to be a ref for the accordion animation to work
   const classes = useStyles();
   const open = step !== 'WAITING';
 
-  const Columns = () => {
-    const columns = fileInfo.numericColumns();
-    return <ClassSelector 
-      columns={columns} 
-      rnaseqClasses={rnaseqClasses}
-      onClassesChanged={arr => onClassesChanged(arr)}
-      isMobile={isMobile}
-    />;
+  const Upload = () => {
+    return isDemo 
+      ? <DemoPanel /> 
+      : <UploadPanel 
+          isMobile={isMobile} 
+          initialFormat={DEFAULT_FORMAT} 
+          onFormatChanged={format => fileFormatRef.current = format}
+        />;
   };
 
-  const GeneColumns = () => <p>Gene Column Selector</p>;
-    // <GeneColumnSelector 
+  const Columns = () => {
+    const [ numericColumns, geneColumns ] = [ fileInfo.numericColumns(), fileInfo.geneColumns() ];
+    if(fileFormatRef.current === RNA_SEQ) {
+      return <>
+        <GeneColumnSelector 
+          columns={geneColumns} 
+          value={geneCol} 
+          onChange={g => onGeneColChanged(g)}
+        />
+        <br/><br/>
+        <ClassSelector 
+          columns={numericColumns} 
+          rnaseqClasses={rnaseqClasses}
+          onClassesChanged={arr => onClassesChanged(arr)}
+          isMobile={isMobile}
+        />;
+      </>;
+    } else { // PRE_RANKED
+      return <>
+        <GeneColumnSelector 
+          columns={geneColumns} 
+          value={geneCol} 
+          onChange={g => onGeneColChanged(g)}
+        />
+        <br/><br/>
+        <RankColumnSelector 
+          columns={numericColumns} 
+          value={rankCol} 
+          onChange={r => onRankColChanged(r)}
+        />
+      </>;
+    }
+  };
 
-    // />;
 
   const LoadingProgress = () => 
     <div className={classes.progress}>
@@ -101,7 +131,7 @@ const StartDialog = ({
       <DialogContent dividers>
       { 
         {
-          'UPLOAD':  () => isDemo ? <DemoPanel /> : <UploadPanel isMobile={isMobile} initialFormat={DEFAULT_FORMAT} onFormatChanged={(format) => formatRef.current = format} />,
+          'UPLOAD':  () => <Upload />,
           'COLUMNS': () => <Columns />,
           'LOADING': () => <LoadingProgress />,
           'ERROR':   () => <ErrorReport />,
@@ -127,7 +157,7 @@ const StartDialog = ({
       {step === 'UPLOAD' && (
         <Button variant="contained" color="primary" 
           startIcon={<DescriptionOutlinedIcon />} 
-          onClick={() => isDemo ? onSubmit('demo') : onUpload(formatRef.current)}
+          onClick={() => isDemo ? onSubmit('demo') : onUpload()}
         >
           { isDemo ? 'Create Network' : 'Upload File' }
         </Button>
@@ -135,7 +165,7 @@ const StartDialog = ({
       {step === 'COLUMNS' && (
         <Button variant="contained" color="primary" 
           endIcon={<NavigateNextIcon />} 
-          onClick={onSubmit}
+          onClick={() => onSubmit(false, fileFormatRef.current)}
         >
           Submit
         </Button>
@@ -150,9 +180,8 @@ StartDialog.propTypes = {
   isMobile: PropTypes.bool,
   isDemo: PropTypes.bool,
   errorMessages: PropTypes.array,
-
-  fileType: PropTypes.string, 
   fileInfo: PropTypes.any, // FileInfo object
+  
   geneCol: PropTypes.string,
   rankCol: PropTypes.string,
   rnaseqClasses: PropTypes.array,
@@ -160,6 +189,7 @@ StartDialog.propTypes = {
   onClassesChanged: PropTypes.func.isRequired,
   onGeneColChanged: PropTypes.func.isRequired,
   onRankColChanged: PropTypes.func.isRequired,
+
   onUpload: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   onCancelled: PropTypes.func.isRequired,

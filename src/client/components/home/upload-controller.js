@@ -4,7 +4,7 @@ import { readTextFile, readExcelFile } from './data-file-reader';
 
 import * as Sentry from "@sentry/browser";
 
-
+// TODO find occurences of these string literals and replace with constants
 export const RNA_SEQ = 'rnaseq';
 export const PRE_RANKED = 'ranks';
 
@@ -63,7 +63,7 @@ export class UploadController {
     }
   }
 
-  async upload(files, type) {
+  async upload(files) {
     const file = files && files.length > 0 ? files[0] : null;
     if (!file)
       return;
@@ -97,7 +97,8 @@ export class UploadController {
         return;
       }
 
-      const fileInfo = await readFile(file, name, type);
+      const fileInfo = await readFile(file);
+      fileInfo.name = name;
       console.log('File uploaded', fileInfo);
 
       // Check if there's errors when uploading the file.

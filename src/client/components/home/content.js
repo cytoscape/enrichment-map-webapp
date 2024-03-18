@@ -182,7 +182,6 @@ export function Content() {
   const [ uploadState, setUploadState ] = useState({
     step: STEP.WAITING,
     demo: null,
-    fileType: null, // 'rnaseq' or 'ranks'
     fileInfo: null, // treat this object like its immutable
     geneCol: null,
     rankCol: null,
@@ -222,7 +221,7 @@ export function Content() {
       return;
     const file = await uploadController.fetchSampleData(fileName);
     if(file) {
-      await uploadController.upload([file], format);
+      await uploadController.upload([file]);
     }
   };
 
@@ -261,49 +260,44 @@ export function Content() {
     }
   };
 
-  const onClassesChanged = (rnaseqClasses) => {
-    updateUploadState({ rnaseqClasses });
-  };
-
-  const onGeneColChanged = (geneCol) => {
-    updateUploadState({ geneCol });
-  };
-
-  const onRankColChanged = (rankCol) => {
-    updateUploadState({ rankCol });
-  };
-
-  const onUpload = async (format) => {
+  const onUpload = async () => { // start of upload
     const files = await showFileDialog();
-    await uploadController.upload(files, format);
+    // TODO: guess the file format (ranks or rnaseq) based on the name
+    await uploadController.upload(files);
   };
 
   const onLoading = () => {
     updateUploadState({ step: STEP.LOADING });
   };
 
-
   /**
    * @param fileInfo The object returned by readTextFile/readExcelFile in data-file-reader.js
    */
-  const onFileUploaded = async (fileInfo) => {
-    const rnaseqClasses = assignGroups(fileInfo.columns, fileInfo.lines, fileInfo.format);
-    // TODO: hard coding fileType for now
-    setUploadState({ step: STEP.COLUMNS, fileInfo, rnaseqClasses, fileType: 'rnaseq' });
+  const onFileUploaded = async (fileInfo) => { // file has been uploaded and quick-parsed for basic info
+    const [ numericColumns, geneColumns ] = [ fileInfo.numericColumns(), fileInfo.geneColumns() ];
+    // Make guesses for these initial values
+    const rnaseqClasses = assignGroups(numericColumns);
+    const rankCol = numericColumns[0];
+    const geneCol = geneColumns[0];
+
+    setUploadState({ step: STEP.COLUMNS, fileInfo, geneCol, rankCol, rnaseqClasses }); 
   };
 
-  const onSubmit = async (demo) => {
+  const onSubmit = async (demo, fileFormat) => {
     requestID = uuid.v4();
     if(demo === 'demo') {
       await uploadController.createDemoNetwork(requestID);
     } else {
-      const { lines, format, name, fileType, rnaseqClasses } = uploadState;
-      updateUploadState({ step: STEP.LOADING });
+      console.log('onSubmit', fileFormat, uploadState);
+      setUploadState({ step: STEP.WAITING });
 
-      // TODO: validate the input, but only the columns that the user selecte
-      // TODO: crate a string from only the selected columns (maybe sendDataToEMSerice should do that)
+      // const { lines, format, name, fileType, rnaseqClasses } = uploadState;
+      // updateUploadState({ step: STEP.LOADING });
 
-      await uploadController.sendDataToEMService(lines, format, fileType, name, requestID, rnaseqClasses);
+      // // TODO: validate the input, but only the columns that the user selecte
+      // // TODO: crate a string from only the selected columns (maybe sendDataToEMSerice should do that)
+
+      // await uploadController.sendDataToEMService(lines, format, fileType, name, requestID, rnaseqClasses);
     }
   };
  
@@ -397,17 +391,17 @@ export function Content() {
                 isMobile={mobile}
                 isDemo={uploadState.demo}
                 errorMessages={uploadState.errorMessages}
-
-                fileType={uploadState.fileType}
                 fileInfo={uploadState.fileInfo}
+
                 geneCol={uploadState.geneCol}
                 rankCol={uploadState.rankCol}
                 rnaseqClasses={uploadState.rnaseqClasses}
+                
+                onClassesChanged={(rnaseqClasses) => updateUploadState({ rnaseqClasses })}
+                onRankColChanged={(rankCol) => updateUploadState({ rankCol })}
+                onGeneColChanged={(geneCol) => updateUploadState({ geneCol })}
 
                 onUpload={onUpload}
-                onClassesChanged={onClassesChanged}
-                onRankColChanged={onRankColChanged}
-                onGeneColChanged={onGeneColChanged}
                 onSubmit={onSubmit}
                 onCancelled={onCancel}
                 onBack={onBack}

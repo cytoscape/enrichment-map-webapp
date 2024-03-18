@@ -35,34 +35,11 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-function assignGroupsSimple(columns) {
+export function assignGroups(columns) {
   // Just assign first half to 'A' and second half to 'B'
   const mid = columns.length / 2;
   return columns.map((c,i) => i < mid ? 'A' : 'B');
 }
-
-export function assignGroups(columns, lines, format) {
-  const groups = assignGroupsSimple(columns);
-  if(!lines || !format)
-    return groups;
-
-  const secondLine = lines[1];
-  if(!secondLine)
-    return groups;
-
-  const tokens = secondLine.split(format == 'csv' ? ',' : '\t')?.slice(1);
-  if(!tokens || tokens.length != columns.length)
-    return groups;
-
-  for(var i = 0; i < tokens.length; i++) {
-    if(isNaN(tokens[i]) || columns[i].toLowerCase() === 'description') {
-      groups[i] = 'X';
-    }
-  }
-
-  return groups;
-}
-
 
 
 export function GeneColumnSelector({ columns, value, onChange }) {
@@ -70,18 +47,18 @@ export function GeneColumnSelector({ columns, value, onChange }) {
 
   return (
     <Grid container direction="column" spacing={4} className={classes.root}>
-      <Grid item xs={12}>
+      {/* <Grid item xs={12}>
         <Typography variant="body1">
           Select the column to use for <i>Gene Names</i>.
         </Typography>
-      </Grid>
+      </Grid> */}
       <Grid item xs={12}>
         <FormControl fullWidth>
           <InputLabel>Gene Name Column</InputLabel>
           <Select
             value={value}
             label="Gene Name Column"
-            onChange={onChange}
+            onChange={evt => onChange(evt.target.value)}
           >
           { columns.map((col, i) => 
             <MenuItem key={i} value={col}>{col}</MenuItem>
@@ -95,7 +72,7 @@ export function GeneColumnSelector({ columns, value, onChange }) {
 
 GeneColumnSelector.propTypes = {
   columns: PropTypes.array.isRequired,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onChange: PropTypes.func,
 };
 
@@ -106,18 +83,18 @@ export function RankColumnSelector({ columns, value, onChange }) {
 
   return (
     <Grid container direction="column" spacing={4} className={classes.root}>
-      <Grid item xs={12}>
+      {/* <Grid item xs={12}>
         <Typography variant="body1">
           Select the column to use for <i>Gene Ranks</i>.
         </Typography>
-      </Grid>
+      </Grid> */}
       <Grid item xs={12}>
         <FormControl fullWidth>
           <InputLabel>Gene Rank Column</InputLabel>
           <Select
             value={value}
             label="Gene Rank Column"
-            onChange={onChange}
+            onChange={evt => onChange(evt.target.value)}
           >
           { columns.map((col, i) => 
             <MenuItem key={i} value={col}>{col}</MenuItem>
@@ -131,7 +108,7 @@ export function RankColumnSelector({ columns, value, onChange }) {
 
 RankColumnSelector.propTypes = {
   columns: PropTypes.array.isRequired,
-  value: PropTypes.string.isRequired,
+  value: PropTypes.string,
   onChange: PropTypes.func,
 };
 
