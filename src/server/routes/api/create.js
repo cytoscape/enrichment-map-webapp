@@ -55,21 +55,25 @@ http.post('/rnaseq', dataParser, async function(req, res, next) {
  * created network, then returns its ID.
  */
 http.post('/demo', async function(req, res, next) {
+  const perf = createPeformanceHook();
   try {
     const rankFile = './public/geneset-db/brca_hd_tep_ranks.rnk';
     let data = await fs.readFile(rankFile, 'utf8');
-
+    
     const networkID = await runDataPipeline({
       demo: true,
       networkName: 'Demo Network',
       contentType: 'text/tab-separated-values',
       type: 'preranked',
-      body: data
+      body: data,
+      perf
     });
 
     res.send(networkID);
   } catch (err) {
     next(err);
+  } finally {
+    perf.dispose();
   }
 });
 
@@ -104,14 +108,14 @@ async function runDataPipelineHttp(req, res, type) {
 
   const perf = createPeformanceHook();
   try {
-    await runDataPipeline({ networkName, contentType, type, classes, body }, res, perf);
+    await runDataPipeline({ networkName, contentType, type, classes, body, perf }, res);
   } finally {
     perf.dispose();
   }
 }
 
 
-async function runDataPipeline({ networkName, contentType, type, classes, body, demo }, res, perf) {
+async function runDataPipeline({ networkName, contentType, type, classes, body, demo, perf }, res) {
   console.log('/api/create/');
   // n.b. no await so as to not block
   saveUserUploadFileToS3(body, `${networkName}.csv`, contentType);
