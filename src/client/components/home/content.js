@@ -270,7 +270,7 @@ export function Content() {
     updateUploadState({ step: STEP.LOADING });
   };
 
-  /**
+  /** 
    * @param fileInfo The object returned by readTextFile/readExcelFile in data-file-reader.js
    */
   const onFileUploaded = async (fileInfo) => { // file has been uploaded and quick-parsed for basic info
@@ -284,6 +284,7 @@ export function Content() {
   };
 
   const onSubmit = async (demo, fileFormat) => {
+    console.log('onSubmit', fileFormat, uploadState);
     requestID = uuid.v4();
     updateUploadState({ step: STEP.LOADING });
 
@@ -292,15 +293,11 @@ export function Content() {
       return;
     }
 
-    console.log('onSubmit', fileFormat, uploadState);
+    const { fileInfo } = uploadState; // fileInfo comes from the quick-parse done by data-file-reader.js
+    const { geneCol, rankCol, rnaseqClasses } = uploadState; // comes from the user's choices in the wizard
 
-    // const { lines, format, name, fileType, rnaseqClasses } = uploadState;
-    // updateUploadState({ step: STEP.LOADING });
-
-    // // TODO: validate the input, but only the columns that the user selecte
-    // // TODO: crate a string from only the selected columns (maybe sendDataToEMSerice should do that)
-
-    // await uploadController.sendDataToEMService(lines, format, fileType, name, requestID, rnaseqClasses);
+    // If validation fails it will call the onError event handler below
+    await uploadController.validateAndSendDataToEMService(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses, requestID);
   };
  
   const onError = ({ errors, requestID }) => {
@@ -324,6 +321,11 @@ export function Content() {
   };
 
   const onFinished = ({ networkID, requestID }) => {
+    if(networkID === 'blah') {
+      onCancel();
+      return;
+    }
+
     if(requestID && cancelledRequests.includes(requestID)) {
       console.log(`Ignoring cancelled request: { networkID:${networkID}, requestID:${requestID} }`);
       return;

@@ -1,6 +1,6 @@
 import EventEmitter from 'eventemitter3';
 import { SENTRY } from '../../env';
-import { readTextFile, readExcelFile } from './data-file-reader';
+import { readTextFile, readExcelFile, validateText } from './data-file-reader';
 
 import * as Sentry from "@sentry/browser";
 
@@ -116,17 +116,28 @@ export class UploadController {
     }
   }
 
-  async sendDataToEMService(text, format, type, networkName, requestID, classesArr) {
-    if(Array.isArray(text))
-      text = text.join('\n');
+  
+  async validateAndSendDataToEMService(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses, requestID) {
+    const validationResult = validateText(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses);
+    const { errors, contents, classes } = validationResult;
+    console.log('Validation Result', validationResult);
 
-    const emRes = await this._sendDataToEMService(text, format, type, networkName, classesArr);
+    if(errors && errors.length > 0) {
+      this.bus.emit('error', { errors, requestID });
+      return;
+    }
+
+    const { name, format:type }  = fileInfo; // TODO really need to make the use of 'format' and 'type' consistent
+    const emRes = await this._sendDataToEMService(contents, fileFormat, type, name, classes);
           
     if (emRes.errors) {
       this.bus.emit('error', { errors: emRes.errors, requestID });
-      this.captureNondescriptiveErrorInSentry('Error in EM service with uploaded rank file');
+      // TODO: Is this necessary? Errors on the server should get logged by the server, right?
+      this.captureNondescriptiveErrorInSentry('Error in EM service with uploaded file'); 
       return;
     }
+
+    console.log('finished', { networkID: emRes.netID, requestID });
 
     this.bus.emit('finished', { networkID: emRes.netID, requestID });
   }
@@ -134,14 +145,14 @@ export class UploadController {
 
   async _sendDataToEMService(text, format, type, networkName, classesArr) {
     let url;
-    if (type === PRE_RANKED) {
+    if (format === PRE_RANKED) {
       url = '/api/create/preranked?' + new URLSearchParams({ networkName });
-    } else if (type === RNA_SEQ) {
+    } else if (format === RNA_SEQ) {
       const classes = classesArr.join(',');
       url = '/api/create/rnaseq?' + new URLSearchParams({ classes, networkName });
     } 
 
-    const contentType = format === 'tsv' ? 'text/tab-separated-values' : 'text/csv';
+    const contentType = type === 'tsv' ? 'text/tab-separated-values' : 'text/csv';
     
     const res = await fetch(url, {
       method: 'POST',

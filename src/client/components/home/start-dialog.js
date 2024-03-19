@@ -39,7 +39,7 @@ const StartDialog = ({
   onGeneColChanged, onRankColChanged, onClassesChanged,
   onUpload, onSubmit, onCancelled, onBack
 }) => {
-  const fileFormatRef = useRef(); // needs to be a ref for the accordion animation to work
+  const fileFormatRef = useRef(DEFAULT_FORMAT); // needs to be a ref for the accordion animation to work
   const classes = useStyles();
   const open = step !== 'WAITING';
 
@@ -48,7 +48,7 @@ const StartDialog = ({
       ? <DemoPanel /> 
       : <UploadPanel 
           isMobile={isMobile} 
-          initialFormat={DEFAULT_FORMAT} 
+          initialFormat={fileFormatRef.current} 
           onFormatChanged={format => fileFormatRef.current = format}
         />;
   };
@@ -68,7 +68,7 @@ const StartDialog = ({
           rnaseqClasses={rnaseqClasses}
           onClassesChanged={onClassesChanged}
           isMobile={isMobile}
-        />;
+        />
       </>;
     } else { // PRE_RANKED
       return <>

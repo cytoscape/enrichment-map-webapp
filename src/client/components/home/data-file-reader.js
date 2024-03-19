@@ -120,6 +120,7 @@ function createColumnTypeMap() {
   return columnTypes;
 }
 
+
 function createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes }) {
   return { 
     format, 
@@ -132,6 +133,7 @@ function createFileInfo({ format, delimiter, columns, lines, startLine, columnTy
     geneCols:    () => columns.filter(c => columnTypes.get(c) === ColumnType.GENE),
   };
 }
+
 
 /**
  * Parses just the header row and the first X data rows to infer information about the file.
@@ -190,60 +192,136 @@ function quickParseForFileInfo(text) {
 }
 
 
+/**
+ * Errors that can occur during the validation step.
+ */
 const Error = {
   GENE_NAME_MISSING: 'GENE_NAME_MISSING',
   GENE_NAME_NA: 'GENE_NAME_NA',
-
-  createMap: () => {
-    const errorMap = new Map();
-    Object.keys(Error).forEach(e => errorMap.set(e, []));
-    errorMap.hasError = k => {
-      return errorMap.has(k) && errorMap.get(k).length > 0;
-    };
-    errorMap.forError = (error, f) => {
-      if(errorMap.hasError(error)) {
-        const lineNums = errorMap.get(error);
-        f(lineNums, lineNums.length);
-      }
-    };
-    return errorMap;
-  }
+  NUMERIC_VAL_BAD: 'NUMERIC_VAL_BAD',
+  WRONG_NUMBER_OF_TOKENS: 'WRONG_NUMBER_OF_TOKENS',
 };
 
-export function validateText(fileInfo) {  // TODO need more info, like what columns to ignore
+
+function createErrorMap() {
+  const errorMap = new Map();
+  Object.keys(Error).forEach(e => errorMap.set(e, new Set()));
+
+  errorMap.add = (err, lineNum) => {
+    errorMap.get(err).add(lineNum);
+  };
+
+  errorMap.hasError = err => {
+    return errorMap.has(err) && errorMap.get(err).length > 0;
+  };
+
+  errorMap.getLineNums = err => {
+    if(errorMap.hasError(err)) {
+      const lineNums = Array.from(errorMap.get(err));
+      lineNums.sort();
+      return lineNums;
+    }
+  };
+
+  errorMap.forError = (error, f) => {
+    if(errorMap.hasError(error)) {
+      const lineNums = errorMap.getLineNums(error);
+      f(lineNums, lineNums.length);
+    }
+  };
+  
+  return errorMap;
+}
+
+
+function getColumnIndicies(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses) {
+  const { columns } = fileInfo;
+  const geneIndex = columns.indexOf(geneCol);
+
+  const numericIndicies = [];
+  const classes = [];
+  const headerNames = [ geneCol ];
+
+  if(fileFormat === 'ranks') {
+    const index = columns.indexOf(rankCol);
+    numericIndicies.push(index);
+    headerNames.push(columns[index]);
+  } else {
+    // rnaseqClasses looks like [X,A,A,A,B,B,B] where X=ignored and A,B=two experiments
+    const numericCols = fileInfo.numericCols();
+    for(let [colName, klass] of _.zip(numericCols, rnaseqClasses)) {
+      if(colName !== undefined && (klass === 'A' || klass === 'B')) {
+        const index = columns.indexOf(colName);
+        numericIndicies.push(index);
+        classes.push(klass);
+        headerNames.push(columns[index]);
+      }
+    }
+  }
+
+  return { geneIndex, numericIndicies, classes, headerNames };
+}
+
+
+/**
+ * Returns an object with the following fields:
+ * {
+ *   errors: array of error messages, may be empty
+ *   contents: big string of file contents to send to server
+ *   classes: the classes array to send to the FGSEA service, but with ignored classes removed
+ * }
+*/
+export function validateText(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses) { 
   const { delimiter, lines, startLine } = fileInfo;
+  const numCols = fileInfo.columns.length;
 
-  // If there was already an error when converting to text then just return it.
-  // if(error)
-  //   return { errors: [error] };
+  const { geneIndex, numericIndicies, classes, headerNames } = 
+    getColumnIndicies(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses);
 
-  const errorMap = Error.createMap();
-  // const header = lines[startLineNumber];
+  const errorMap = createErrorMap();
+  const processedLines = [ headerNames.join(delimiter) ];
 
-  // skip header line
   for(var i = startLine + 1; i < lines.length; i++) { // skip header
     const line = lines[i];
     const lineNum = i + 1;
+    const tokens = line.split(delimiter).map(t => t.trim());
+    const newTokens = [];
 
-    if(line.trim() === '') { // skip empty lines??
+    // Verify correct number of columns
+    if(tokens.length !== numCols) {
+      errorMap.add(Error.WRONG_NUMBER_OF_TOKENS, lineNum);
       continue;
     }
 
-    const tokens = line.split(delimiter).map(t => t.trim());
-    const gene = tokens[0];
-
     // Detect bad or missing gene names
+    const gene = tokens[geneIndex];
     if(gene === undefined || gene === '') {
-      errorMap.get(Error.GENE_NAME_MISSING).push(lineNum);
+      errorMap.add(Error.GENE_NAME_MISSING, lineNum);
     } else if(gene.toUpperCase() === 'NA' || gene.toUpperCase() === 'N/A') {
-      errorMap.get(Error.GENE_NAME_NA).push(lineNum);
+      errorMap.add(Error.GENE_NAME_NA, lineNum);
     }
+
+    newTokens.push(gene);
+
+    // Detect bad or missing numeric values
+    for(let ni of numericIndicies) {
+      const numStr = tokens[ni];
+      if(!isNumeric(numStr)) {
+        errorMap.add(Error.NUMERIC_VAL_BAD, lineNum);
+      }
+      newTokens.push(numStr);
+    }
+
+    processedLines.push(newTokens.join(delimiter));
   }
 
   const errors = errorMapToMessageArray(errorMap);
+  if(errors.length > 0) {
+    return { errors };
+  }
 
-  // const contents = lines.join('\n'); // Do this here for convenience
-  return { ...fileInfo, errors };
+  const contents = processedLines.join('\n');
+  return { contents, classes };
 }
 
 
@@ -275,25 +353,24 @@ function errorMapToMessageArray(errorMap) {
     }
   });
 
+  errorMap.forError(Error.WRONG_NUMBER_OF_TOKENS, (lineNums, length) => {
+    if(length == 1) {
+      errors.push(`There are a wrong number of values on line ${lineNums[0]} of the input file.`);
+    } else {
+      errors.push(`The input file has ${length} lines with wrong number of values. \nOn lines ${printLines(lineNums)}`);
+    }
+  });
+
+  errorMap.forError(Error.NUMERIC_VAL_BAD, (lineNums, length) => {
+    if(length == 1) {
+      errors.push(`There are badly formatted numeric values on line ${lineNums[0]} of the input file.`);
+    } else {
+      errors.push(`The input file has ${length} lines with missing or badly formatted numeric values. \nOn lines ${printLines(lineNums)}`);
+    }
+  });
+
   return errors;
 }
-
-
-// /**
-//  * Uses the header row to determine if its a ranked gene list ('ranks') or an rna-seq expression file ('rnaseq').
-//  * Also returns an array of column names for use in the ClassSelector if the type is 'rnaseq', the first 
-//  * column of gene names is removed from the array.
-//  */
-// function processHeader(headerLine, delimiter) {
-//   const columns = headerLine.split(delimiter || '\t');
-//   if(columns.length == 2) {
-//     return { type: 'ranks' };
-//   } else if(columns.length > 2) {
-//     return { type: 'rnaseq', columns: columns.slice(1) };
-//   } else {
-//     return { type: 'error' };
-//   }
-// }
 
 
 function getLineBreakChar(text) {
