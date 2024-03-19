@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import _ from 'lodash';
+import { PRE_RANKED } from "./upload-controller";
 
 /**
  * EM app code that does the same thing...
@@ -240,14 +241,15 @@ function getColumnIndicies(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses
 
   const numericIndicies = [];
   const classes = [];
-  const headerNames = [ geneCol ];
+  const headerNames = [];
 
-  if(fileFormat === 'ranks') {
+  if(fileFormat === PRE_RANKED) {
     const index = columns.indexOf(rankCol);
     numericIndicies.push(index);
-    headerNames.push(columns[index]);
+    headerNames.push('gene', 'rank'); // this is expected by the server for rank files
   } else {
     // rnaseqClasses looks like [X,A,A,A,B,B,B] where X=ignored and A,B=two experiments
+    headerNames.push(geneCol);
     const numericCols = fileInfo.numericCols();
     for(let [colName, klass] of _.zip(numericCols, rnaseqClasses)) {
       if(colName !== undefined && (klass === 'A' || klass === 'B')) {

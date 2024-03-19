@@ -98,7 +98,8 @@ export class UploadController {
       }
 
       const fileInfo = await readFile(file);
-      fileInfo.name = name;
+      fileInfo.fileName = file.name;
+      fileInfo.networkName = name;
       console.log('File uploaded', fileInfo);
 
       // Check if there's errors when uploading the file.
@@ -127,8 +128,8 @@ export class UploadController {
       return;
     }
 
-    const { name, format:type }  = fileInfo; // TODO really need to make the use of 'format' and 'type' consistent
-    const emRes = await this._sendDataToEMService(contents, fileFormat, type, name, classes);
+    const { networkName, format:type }  = fileInfo; // TODO really need to make the use of 'format' and 'type' consistent
+    const emRes = await this._sendDataToEMService(contents, fileFormat, type, networkName, classes);
           
     if (emRes.errors) {
       this.bus.emit('error', { errors: emRes.errors, requestID });
