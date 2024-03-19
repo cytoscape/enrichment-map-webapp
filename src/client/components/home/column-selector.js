@@ -139,30 +139,28 @@ export function ClassSelector({ columns, isMobile, rnaseqClasses, onClassesChang
       </Grid>
       <Grid item xs={12}>
       { columns.map((column, i) => 
-          column.toLowerCase() === 'description' 
-          ? null
-          : <Grid container key={i} direction="row" justifyContent="space-between">
-              <Grid item className={classes.col} sm={6}>
-                <div className={classes.colNameContainer}>
-                  { column }
-                </div>
-              </Grid>
-              <Grid item className={classes.col} sm={6}>
-                <Grid container direction="row">
-                  <ToggleButtonGroup 
-                    exclusive
-                    value={rnaseqClasses[i]} 
-                    onChange={(e, newClass) => handleChange(i, newClass)}
-                  >
-                  { CLASS_BUTTONS_DEF.map((btn) => 
-                    <ToggleButton key={btn.value} value={btn.value}>
-                      { isMobile ? btn.icon : btn.label }
-                    </ToggleButton>
-                  )}
-                  </ToggleButtonGroup>
-                </Grid>
+        <Grid container key={i} direction="row" justifyContent="space-between">
+            <Grid item className={classes.col} sm={6}>
+              <div className={classes.colNameContainer}>
+                { column }
+              </div>
+            </Grid>
+            <Grid item className={classes.col} sm={6}>
+              <Grid container direction="row">
+                <ToggleButtonGroup 
+                  exclusive
+                  value={rnaseqClasses[i]} 
+                  onChange={(e, newClass) => handleChange(i, newClass)}
+                >
+                { CLASS_BUTTONS_DEF.map((btn) => 
+                  <ToggleButton key={btn.value} value={btn.value}>
+                    { isMobile ? btn.icon : btn.label }
+                  </ToggleButton>
+                )}
+                </ToggleButtonGroup>
               </Grid>
             </Grid>
+          </Grid>
       )}
       </Grid>
     </Grid>
