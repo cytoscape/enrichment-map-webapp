@@ -43,6 +43,10 @@ const StartDialog = ({
   const classes = useStyles();
   const open = step !== 'WAITING';
 
+  if(fileInfo && fileInfo.format) {
+    fileFormatRef.current = fileInfo.format;
+  }
+
   const Upload = () => {
     return isDemo 
       ? <DemoPanel /> 

@@ -63,7 +63,7 @@ export class UploadController {
     }
   }
 
-  async upload(files) {
+  async upload(files, format) {
     const file = files && files.length > 0 ? files[0] : null;
     if (!file)
       return;
@@ -100,6 +100,9 @@ export class UploadController {
       const fileInfo = await readFile(file);
       fileInfo.fileName = file.name;
       fileInfo.networkName = name;
+      if(format) {
+        fileInfo.format = format;
+      }
       console.log('File uploaded', fileInfo);
 
       // Check if there's errors when uploading the file.

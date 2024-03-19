@@ -221,7 +221,7 @@ export function Content() {
       return;
     const file = await uploadController.fetchSampleData(fileName);
     if(file) {
-      await uploadController.upload([file]);
+      await uploadController.upload([file], format);
     }
   };
 
