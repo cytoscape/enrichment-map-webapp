@@ -274,31 +274,33 @@ export function Content() {
    * @param fileInfo The object returned by readTextFile/readExcelFile in data-file-reader.js
    */
   const onFileUploaded = async (fileInfo) => { // file has been uploaded and quick-parsed for basic info
-    const [ numericColumns, geneColumns ] = [ fileInfo.numericColumns(), fileInfo.geneColumns() ];
+    const [ numericCols, geneCols ] = [ fileInfo.numericCols(), fileInfo.geneCols() ];
     // Make guesses for these initial values
-    const rnaseqClasses = assignGroups(numericColumns);
-    const rankCol = numericColumns[0];
-    const geneCol = geneColumns[0];
+    const rnaseqClasses = assignGroups(numericCols);
+    const rankCol = numericCols[0];
+    const geneCol = geneCols[0];
 
     setUploadState({ step: STEP.COLUMNS, fileInfo, geneCol, rankCol, rnaseqClasses }); 
   };
 
   const onSubmit = async (demo, fileFormat) => {
     requestID = uuid.v4();
+    updateUploadState({ step: STEP.LOADING });
+
     if(demo === 'demo') {
       await uploadController.createDemoNetwork(requestID);
-    } else {
-      console.log('onSubmit', fileFormat, uploadState);
-      setUploadState({ step: STEP.WAITING });
-
-      // const { lines, format, name, fileType, rnaseqClasses } = uploadState;
-      // updateUploadState({ step: STEP.LOADING });
-
-      // // TODO: validate the input, but only the columns that the user selecte
-      // // TODO: crate a string from only the selected columns (maybe sendDataToEMSerice should do that)
-
-      // await uploadController.sendDataToEMService(lines, format, fileType, name, requestID, rnaseqClasses);
+      return;
     }
+
+    console.log('onSubmit', fileFormat, uploadState);
+
+    // const { lines, format, name, fileType, rnaseqClasses } = uploadState;
+    // updateUploadState({ step: STEP.LOADING });
+
+    // // TODO: validate the input, but only the columns that the user selecte
+    // // TODO: crate a string from only the selected columns (maybe sendDataToEMSerice should do that)
+
+    // await uploadController.sendDataToEMService(lines, format, fileType, name, requestID, rnaseqClasses);
   };
  
   const onError = ({ errors, requestID }) => {

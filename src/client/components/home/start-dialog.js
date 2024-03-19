@@ -54,34 +54,34 @@ const StartDialog = ({
   };
 
   const Columns = () => {
-    const [ numericColumns, geneColumns ] = [ fileInfo.numericColumns(), fileInfo.geneColumns() ];
+    const [ numericCols, geneCols ] = [ fileInfo.numericCols(), fileInfo.geneCols() ];
     if(fileFormatRef.current === RNA_SEQ) {
       return <>
         <GeneColumnSelector 
-          columns={geneColumns} 
+          columns={geneCols} 
           value={geneCol} 
-          onChange={g => onGeneColChanged(g)}
+          onChange={onGeneColChanged}
         />
         <br/><br/>
         <ClassSelector 
-          columns={numericColumns} 
+          columns={numericCols} 
           rnaseqClasses={rnaseqClasses}
-          onClassesChanged={arr => onClassesChanged(arr)}
+          onClassesChanged={onClassesChanged}
           isMobile={isMobile}
         />;
       </>;
     } else { // PRE_RANKED
       return <>
         <GeneColumnSelector 
-          columns={geneColumns} 
+          columns={geneCols} 
           value={geneCol} 
-          onChange={g => onGeneColChanged(g)}
+          onChange={onGeneColChanged}
         />
         <br/><br/>
         <RankColumnSelector 
-          columns={numericColumns} 
+          columns={numericCols} 
           value={rankCol} 
-          onChange={r => onRankColChanged(r)}
+          onChange={onRankColChanged}
         />
       </>;
     }
@@ -181,7 +181,7 @@ StartDialog.propTypes = {
   isDemo: PropTypes.bool,
   errorMessages: PropTypes.array,
   fileInfo: PropTypes.any, // FileInfo object
-  
+
   geneCol: PropTypes.string,
   rankCol: PropTypes.string,
   rnaseqClasses: PropTypes.array,

@@ -128,8 +128,8 @@ function createFileInfo({ format, delimiter, columns, lines, startLine, columnTy
     lines, 
     startLine, 
     columnTypes,
-    numericColumns: () => columns.filter(col => columnTypes.get(col) === ColumnType.NUMERIC),
-    geneColumns:    () => columns.filter(col => columnTypes.get(col) === ColumnType.GENE),
+    numericCols: () => columns.filter(c => columnTypes.get(c) === ColumnType.NUMERIC),
+    geneCols:    () => columns.filter(c => columnTypes.get(c) === ColumnType.GENE),
   };
 }
 
@@ -179,10 +179,10 @@ function quickParseForFileInfo(text) {
 
   const fileInfo = createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes });
 
-  if(fileInfo.numericColumns().length === 0) {
+  if(fileInfo.numericCols().length === 0) {
     return { error: 'File format error: Could not find any numeric columns.'};
   }
-  if(fileInfo.geneColumns().length === 0) {
+  if(fileInfo.geneCols().length === 0) {
     return { error: 'File format error: Could not find any columns with gene indentifiers.'};
   }
 
