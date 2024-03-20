@@ -279,7 +279,7 @@ export function Content() {
    * @param fileInfo The object returned by readTextFile/readExcelFile in data-file-reader.js
    */
   const onFileUploaded = async (fileInfo) => {
-    const [ numericCols, geneCols ] = [ fileInfo.numericCols(), fileInfo.geneCols() ];
+    const { numericCols, geneCols } = fileInfo;
     // Make guesses for these initial values
     const rnaseqClasses = guessRnaseqClasses(numericCols);
     const rankCol = numericCols[0];

@@ -10,14 +10,14 @@ import { PRE_RANKED } from "./upload-controller";
 
 /**
  * @typedef {Object} FileInfo
- * @property {Array<string>} columns Array of column names taken from the header row
+ * @property {Array<string>} columns array of all column names taken from the header row
+ * @property {Array<string>} numericCols array of column names that have been guessed to be numeric
+ * @property {Array<string>} geneCols array of column names that have been guessed to be gene names
  * @property {string} delimieter comma or tab
  * @property {Array<string>} lines array of lines (if the file starts with comment lines they are removed)
  * @property {number} startLine line number of header row
  * @property {Map<string,string>} columnTypes Map of column name to ColumnType
  * @property {Array<string>} errors array of error messages if the file couldn't be parsed at all, or if there's no gene or numberic columns
- * @property {Function} numericCols function that returns an array of column names that have been guessed to be numeric
- * @property {Function} geneCols function that returns an array of column names that have been guessed to be gene names
  */
 
 /**
@@ -79,41 +79,45 @@ function excelToText(blob, format = 'tsv') {
 
 
 export const ColumnType = {
-  GENE: 'GENE', // single token stings
-  STRING: 'STRING', // longer strings that may contain spaces, like a 'description' column
+  GENE: 'GENE',       // single token stings
+  STRING: 'STRING',   // longer strings that may contain spaces, like a 'description' column
   NUMERIC: 'NUMERIC',
-  UNKNOWN: 'UNKNOWN',
-
-  isText: type => type === ColumnType.GENE || type === ColumnType.STRING
+  BLANK: 'BLANK',     // empty string, skippable
+  UNKNOWN: 'UNKNOWN', // when types are mixed we say unknown
 };
 
-function isNumeric(n) { return !isNaN(parseFloat(n)) && isFinite(n); }
-function isToken(s) { return _.isString(s) && s.indexOf(' ') < 0; }
-function isNonEmptyString(s) { return _.isString(s) && s.length > 0; }
+const isNumeric = s => !isNaN(parseFloat(s)) && isFinite(s);
+const isBlank = s => s.trim() === '';
+const isToken = s => !isBlank(s) && s.indexOf(' ') < 0;
+const isNonEmptyString = s => s.length > 0;
 
-function getColumnType(x) {
-  if(isNumeric(x))
+function getValueType(str) {
+  if(isBlank(str))
+    return ColumnType.BLANK;
+  else if(isNumeric(str))
     return ColumnType.NUMERIC;
-  else if(isToken(x))
+  else if(isToken(str))
     return ColumnType.GENE;
-  else if(isNonEmptyString(x))
+  else if(isNonEmptyString(str))
     return ColumnType.STRING;
   else
-    return ColumnType.UNKNOWN;
+    return ColumnType.UNKNOWN; 
 }
 
 function createColumnTypeMap() {
+  const isText = type => type === ColumnType.GENE || type === ColumnType.STRING;
   const columnTypes = new Map();
 
-  // TODO: maybe if the new type is UNKNOWN I should keep the current type
   columnTypes.setType = (col, type) => {
     if(columnTypes.has(col)) {
       const prevType = columnTypes.get(col);
       if(prevType !== type) {
-        if(ColumnType.isText(prevType) && ColumnType.isText(type)) {
+        if(isText(prevType) && isText(type)) {
           columnTypes.set(col, ColumnType.STRING);
-        } else {
-          columnTypes.set(col, ColumnType.UNKNOWN);
+        } else if(prevType === ColumnType.BLANK) {
+          columnTypes.set(col, type);
+        } else if(type !== ColumnType.BLANK) {
+          columnTypes.set(col, ColumnType.UNKNOWN); 
         }
       }
     } else {
@@ -128,14 +132,16 @@ function createColumnTypeMap() {
  * @return {FileInfo} constructs a FileInfo object
  */
 function createFileInfo({ delimiter, columns, lines, startLine, columnTypes }) {
+  const numericCols = columns.filter(c => columnTypes.get(c) === ColumnType.NUMERIC);
+  const geneCols    = columns.filter(c => columnTypes.get(c) === ColumnType.GENE);
   return { 
     delimiter, 
     columns, 
     lines, 
     startLine, 
     columnTypes,
-    numericCols: () => columns.filter(c => columnTypes.get(c) === ColumnType.NUMERIC),
-    geneCols:    () => columns.filter(c => columnTypes.get(c) === ColumnType.GENE),
+    numericCols,
+    geneCols,
   };
 }
 
@@ -148,48 +154,70 @@ function quickParseForFileInfo(text) {
   const lineBreakChar = getLineBreakChar(text);
   const lines = text.split(lineBreakChar);
 
+  let i = 0;
   let startLine = 0;
-  if(lines[0].trim() === '#1.2') { // GCT files start with this line
-    lines.shift();
-    lines.shift(); // second line of GCT file needs to be skipped as well
-    startLine += 2;
-  }
-  while(lines[0][0] === '#') { // skip comment lines
-    lines.shift();
-    startLine++;
+
+  // Special handling for GCT files
+  // https://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats#GCT:_Gene_Cluster_Text_file_format_.28.2A.gct.29
+  if(lines[0].trim() === '#1.2') {
+    lines[0] = undefined;
+    lines[1] = undefined;
+    i = 2;
+    startLine = 2;
   }
 
-  if(lines[0] === undefined) {
+  const skippable = (line) => line === undefined || line.trim() === '' || line[0] === '#';
+
+  // Scan for header row and validate
+  while(i < lines.length && skippable(lines[i])) {
+    lines[i] = undefined;
+    i++;
+  }
+  startLine = i;
+
+  if(startLine === lines.length) {
     return { errors: ['File format error: Cannot read data columns.']};
   }
 
-  const delimiter = getDelimiter(lines[0]);
-  const columns = lines[0].split(delimiter).map(t => t.trim());
+  const header = lines[startLine];
+  const delimiter = getDelimiter(header);
+  const columns = header.split(delimiter).map(t => t.trim());
+  i++;
 
   if(columns.length <= 1) {
     return { errors: ['File format error: There must be at least 2 data columns.']};
   }
 
-  const numLinesToScan = 10;
+  // Scan data rows and guess column types. Scan the entire file because its loaded into memory anyway, and we can preprocess empty and comment lines.
+  // Set empty and comment lines to undefined, they will get filtered out later when unused columns are filtered out.
+  // This keeps line numbers consistent with the indicies in the lines array, which is necessary for reporting line numbers of errors in validateText().
   const columnTypes = createColumnTypeMap();
 
-  for(let i = 1; i < Math.min(lines.length, numLinesToScan); i++) {
+  while(i < lines.length) {
     const line = lines[i];
+    if(skippable(line)) {
+      lines[i] = undefined;
+      i++;
+      continue;
+
+    }
     const values = line.split(delimiter).map(t => t.trim());
 
     for(let [col, val] of _.zip(columns, values)) {
       if(col !== undefined) {
-        columnTypes.setType(col, getColumnType(val));
+        columnTypes.setType(col, getValueType(val));
       }
     }
+    i++;
   }
 
+  // Create a FileInfo object
   const fileInfo = createFileInfo({ delimiter, columns, lines, startLine, columnTypes });
 
-  if(fileInfo.numericCols().length === 0) {
+  if(fileInfo.numericCols.length === 0) {
     return { errors: ['File format error: Could not find any numeric columns.']};
   }
-  if(fileInfo.geneCols().length === 0) {
+  if(fileInfo.geneCols.length === 0) {
     return { errors: ['File format error: Could not find any columns with gene indentifiers.']};
   }
 
@@ -217,7 +245,7 @@ function createErrorMap() {
   };
 
   errorMap.hasError = err => {
-    return errorMap.has(err) && errorMap.get(err).length > 0;
+    return errorMap.has(err) && errorMap.get(err).size > 0;
   };
 
   errorMap.getLineNums = err => {
@@ -254,8 +282,7 @@ function getColumnIndicies(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses
   } else {
     // rnaseqClasses looks like [X,A,A,A,B,B,B] where X=ignored and A,B=two experiments
     headerNames.push(geneCol);
-    const numericCols = fileInfo.numericCols();
-    for(let [colName, klass] of _.zip(numericCols, rnaseqClasses)) {
+    for(let [colName, klass] of _.zip(fileInfo.numericCols, rnaseqClasses)) {
       if(colName !== undefined && (klass === 'A' || klass === 'B')) {
         const index = columns.indexOf(colName);
         numericIndicies.push(index);
@@ -289,12 +316,17 @@ export function validateText(fileInfo, fileFormat, geneCol, rankCol, rnaseqClass
 
   for(var i = startLine + 1; i < lines.length; i++) { // skip header
     const line = lines[i];
+    if(line === undefined) {
+      continue;
+    }
+    
     const lineNum = i + 1;
     const tokens = line.split(delimiter).map(t => t.trim());
     const newTokens = [];
 
-    // Verify correct number of columns
+    // Verify correct number of columns, 
     if(tokens.length !== numCols) {
+      console.log(lineNum, lines.length);
       errorMap.add(Error.WRONG_NUMBER_OF_TOKENS, lineNum);
       continue;
     }

@@ -58,7 +58,7 @@ const StartDialog = ({
   };
 
   const Columns = () => {
-    const [ numericCols, geneCols ] = [ fileInfo.numericCols(), fileInfo.geneCols() ];
+    const { numericCols, geneCols } = fileInfo;
     if(fileFormatRef.current === RNA_SEQ) {
       return <>
         <GeneColumnSelector 
