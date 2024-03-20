@@ -131,8 +131,8 @@ export class UploadController {
       return;
     }
 
-    const { networkName, format:type }  = fileInfo; // TODO really need to make the use of 'format' and 'type' consistent
-    const emRes = await this._sendDataToEMService(contents, fileFormat, type, networkName, classes);
+    const { networkName, delimiter }  = fileInfo;
+    const emRes = await this._sendDataToEMService(contents, fileFormat, delimiter, networkName, classes);
           
     if (emRes.errors) {
       this.bus.emit('error', { errors: emRes.errors, requestID });
@@ -147,7 +147,7 @@ export class UploadController {
   }
   
 
-  async _sendDataToEMService(text, format, type, networkName, classesArr) {
+  async _sendDataToEMService(text, format, delimiter, networkName, classesArr) {
     let url;
     if (format === PRE_RANKED) {
       url = '/api/create/preranked?' + new URLSearchParams({ networkName });
@@ -156,7 +156,7 @@ export class UploadController {
       url = '/api/create/rnaseq?' + new URLSearchParams({ classes, networkName });
     } 
 
-    const contentType = type === 'tsv' ? 'text/tab-separated-values' : 'text/csv';
+    const contentType = delimiter === '\t' ? 'text/tab-separated-values' : 'text/csv';
     
     const res = await fetch(url, {
       method: 'POST',

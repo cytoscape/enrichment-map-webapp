@@ -13,7 +13,6 @@ import { PRE_RANKED } from "./upload-controller";
  * Returns a Promise that resolves to a 'FileInfo' object with the following fields:
  * {
  *   columns: array of column headers,
- *   format: 'tsv' or 'csv',
  *   delimiter: comma or tab
  *   lines: array of lines (with the first few comment lines removed)
  *   startLine: line number of header row
@@ -122,9 +121,8 @@ function createColumnTypeMap() {
 }
 
 
-function createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes }) {
+function createFileInfo({ delimiter, columns, lines, startLine, columnTypes }) {
   return { 
-    format, 
     delimiter, 
     columns, 
     lines, 
@@ -159,7 +157,6 @@ function quickParseForFileInfo(text) {
   }
 
   const delimiter = getDelimiter(lines[0]);
-  const format = delimiter === ',' ? 'csv' : 'tsv';
   const columns = lines[0].split(delimiter).map(t => t.trim());
 
   if(columns.length <= 1) {
@@ -180,7 +177,7 @@ function quickParseForFileInfo(text) {
     }
   }
 
-  const fileInfo = createFileInfo({ format, delimiter, columns, lines, startLine, columnTypes });
+  const fileInfo = createFileInfo({ delimiter, columns, lines, startLine, columnTypes });
 
   if(fileInfo.numericCols().length === 0) {
     return { error: 'File format error: Could not find any numeric columns.'};
