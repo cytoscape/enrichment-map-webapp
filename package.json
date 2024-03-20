@@ -72,6 +72,7 @@
     "node-fetch": "^2.6.7",
     "prop-types": "^15.7.2",
     "react": "^16.13.1",
+    "react-archer": "^4.3.0",
     "react-dom": "^16.13.1",
     "react-horizontal-stacked-bar-chart": "^8.15.2",
     "react-query": "^3.39.2",
