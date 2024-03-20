@@ -35,12 +35,6 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-export function assignGroups(columns) {
-  // Just assign first half to 'A' and second half to 'B'
-  const mid = columns.length / 2;
-  return columns.map((c,i) => i < mid ? 'A' : 'B');
-}
-
 
 export function GeneColumnSelector({ columns, value, onChange }) {
   const classes = useStyles();

@@ -9,7 +9,6 @@ import EasyCitation from './citation.js';
 import { DebugMenu } from '../../debug-menu';
 import StartDialog from './start-dialog';
 import theme from '../../theme';
-import { assignGroups } from './column-selector.js';
 
 import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@material-ui/core';
 import { Container, Grid, Divider, } from '@material-ui/core';
@@ -72,6 +71,12 @@ async function showFileDialog() {
     });
     input.click();
   });
+}
+
+function guessRnaseqClasses(columns) {
+  // Just assign first half to 'A' and second half to 'B'
+  const mid = columns.length / 2;
+  return columns.map((c,i) => i < mid ? 'A' : 'B');
 }
 
 
@@ -262,7 +267,6 @@ export function Content() {
 
   const onUpload = async () => { // start of upload
     const files = await showFileDialog();
-    // TODO: guess the file format (ranks or rnaseq) based on the name
     await uploadController.upload(files);
   };
 
@@ -271,20 +275,24 @@ export function Content() {
   };
 
   /** 
+   * Called after the file has been uploaded and quick-parsed for basic info.
    * @param fileInfo The object returned by readTextFile/readExcelFile in data-file-reader.js
    */
-  const onFileUploaded = async (fileInfo) => { // file has been uploaded and quick-parsed for basic info
+  const onFileUploaded = async (fileInfo) => {
     const [ numericCols, geneCols ] = [ fileInfo.numericCols(), fileInfo.geneCols() ];
     // Make guesses for these initial values
-    const rnaseqClasses = assignGroups(numericCols);
+    const rnaseqClasses = guessRnaseqClasses(numericCols);
     const rankCol = numericCols[0];
     const geneCol = geneCols[0];
 
     setUploadState({ step: STEP.COLUMNS, fileInfo, geneCol, rankCol, rnaseqClasses }); 
   };
 
+  /**
+   * fileFormat is a separate argument because its a ref in the StartDialog
+   */
   const onSubmit = async (demo, fileFormat) => {
-    console.log('onSubmit', fileFormat, uploadState);
+    console.log('onSubmit', uploadState, demo);
     requestID = uuid.v4();
     updateUploadState({ step: STEP.LOADING });
 
