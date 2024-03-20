@@ -3,7 +3,8 @@ import PropTypes from 'prop-types';
 
 import { RNA_SEQ } from './upload-controller';
 import { UploadPanel, DemoPanel } from './upload-panel';
-import ClassSelector from './class-selector';
+import { GeneColumnSelector, RankColumnSelector, ClassSelector } from './column-selector';
+import { ColumnType } from './data-file-reader';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -31,19 +32,65 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqClasses, onUpload, onClassesChanged, onSubmit, onCancelled, onBack }) => {
-  const formatRef = useRef(DEFAULT_FORMAT);
 
+const StartDialog = ({ 
+  step, isMobile, isDemo, errorMessages, 
+  fileInfo, geneCol, rankCol, rnaseqClasses,
+  onGeneColChanged, onRankColChanged, onClassesChanged,
+  onUpload, onSubmit, onCancelled, onBack
+}) => {
+  const fileFormatRef = useRef(DEFAULT_FORMAT); // needs to be a ref for the accordion animation to work
   const classes = useStyles();
   const open = step !== 'WAITING';
 
-  const Classes = () => 
-    <ClassSelector 
-      columns={columns} 
-      rnaseqClasses={rnaseqClasses}
-      onClassesChanged={arr => onClassesChanged(arr)}
-      isMobile={isMobile}
-    />;
+  if(fileInfo && fileInfo.format) {
+    fileFormatRef.current = fileInfo.format;
+  }
+
+  const Upload = () => {
+    return isDemo 
+      ? <DemoPanel /> 
+      : <UploadPanel 
+          isMobile={isMobile} 
+          initialFormat={fileFormatRef.current} 
+          onFormatChanged={format => fileFormatRef.current = format}
+        />;
+  };
+
+  const Columns = () => {
+    const { numericCols, geneCols } = fileInfo;
+    if(fileFormatRef.current === RNA_SEQ) {
+      return <>
+        <GeneColumnSelector 
+          columns={geneCols} 
+          value={geneCol} 
+          onChange={onGeneColChanged}
+        />
+        <br/><br/>
+        <ClassSelector 
+          columns={numericCols} 
+          rnaseqClasses={rnaseqClasses}
+          onClassesChanged={onClassesChanged}
+          isMobile={isMobile}
+        />
+      </>;
+    } else { // PRE_RANKED
+      return <>
+        <GeneColumnSelector 
+          columns={geneCols} 
+          value={geneCol} 
+          onChange={onGeneColChanged}
+        />
+        <br/><br/>
+        <RankColumnSelector 
+          columns={numericCols} 
+          value={rankCol} 
+          onChange={onRankColChanged}
+        />
+      </>;
+    }
+  };
+
 
   const LoadingProgress = () => 
     <div className={classes.progress}>
@@ -79,7 +126,7 @@ const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqCla
       {
         {
           'UPLOAD':  () => isDemo ? 'Create Demo Network' : 'Upload your Data',
-          'CLASSES': () => 'Groups',
+          'COLUMNS': () => 'Columns',
           'LOADING': () => 'Loading',
           'ERROR':   () => 'Error',
         }[step]()
@@ -88,15 +135,15 @@ const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqCla
       <DialogContent dividers>
       { 
         {
-          'UPLOAD':  () => isDemo ? <DemoPanel /> : <UploadPanel isMobile={isMobile} initialFormat={DEFAULT_FORMAT} onFormatChanged={(format) => formatRef.current = format} />,
-          'CLASSES': () => <Classes />,
+          'UPLOAD':  () => <Upload />,
+          'COLUMNS': () => <Columns />,
           'LOADING': () => <LoadingProgress />,
           'ERROR':   () => <ErrorReport />,
         }[step]()
       }
       </DialogContent>
       <DialogActions>
-      {step === 'CLASSES' && (
+      {step === 'COLUMNS' && (
         <Button variant="outlined" color="primary" 
           startIcon={<NavigateBeforeIcon />} 
           onClick={onBack}
@@ -114,15 +161,15 @@ const StartDialog = ({ step, isMobile, isDemo, columns, errorMessages, rnaseqCla
       {step === 'UPLOAD' && (
         <Button variant="contained" color="primary" 
           startIcon={<DescriptionOutlinedIcon />} 
-          onClick={() => isDemo ? onSubmit('demo') : onUpload(formatRef.current)}
+          onClick={() => isDemo ? onSubmit('demo') : onUpload()}
         >
           { isDemo ? 'Create Network' : 'Upload File' }
         </Button>
       )}
-      {step === 'CLASSES' && (
+      {step === 'COLUMNS' && (
         <Button variant="contained" color="primary" 
           endIcon={<NavigateNextIcon />} 
-          onClick={onSubmit}
+          onClick={() => onSubmit(false, fileFormatRef.current)}
         >
           Submit
         </Button>
@@ -136,10 +183,17 @@ StartDialog.propTypes = {
   step: PropTypes.string.isRequired,
   isMobile: PropTypes.bool,
   isDemo: PropTypes.bool,
-  rnaseqClasses: PropTypes.array,
-  columns: PropTypes.array,
   errorMessages: PropTypes.array,
+  fileInfo: PropTypes.any, // FileInfo object
+
+  geneCol: PropTypes.string,
+  rankCol: PropTypes.string,
+  rnaseqClasses: PropTypes.array,
+  
   onClassesChanged: PropTypes.func.isRequired,
+  onGeneColChanged: PropTypes.func.isRequired,
+  onRankColChanged: PropTypes.func.isRequired,
+
   onUpload: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   onCancelled: PropTypes.func.isRequired,

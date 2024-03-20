@@ -122,7 +122,6 @@ export class SearchController {
     const res = await fetch(`/api/${this.networkIDStr}/pathwaysforsearch`);
 
     if (res.ok) {
-      // TODO add 'description' and 'leadingEdge'
       this.pathwayMiniSearch = new MiniSearch({
         idField: 'name',
         fields: ['name', 'genes', 'description'],
