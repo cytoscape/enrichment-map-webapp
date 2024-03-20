@@ -9,26 +9,30 @@ import { PRE_RANKED } from "./upload-controller";
 
 
 /**
- * Reads a Ranks or Expression file in TSV or CSV format.
- * Returns a Promise that resolves to a 'FileInfo' object with the following fields:
- * {
- *   columns: array of column headers,
- *   delimiter: comma or tab
- *   lines: array of lines (with the first few comment lines removed)
- *   startLine: line number of header row
- *   columnTypes: Map of column name to ColumnType
- *   errors: array of error messages if the file couldn't be parsed at all, or if there's no gene or numberic columns
- *   ...extra functions, see createFileInfo()
- * }
+ * @typedef {Object} FileInfo
+ * @property {Array<string>} columns Array of column names taken from the header row
+ * @property {string} delimieter comma or tab
+ * @property {Array<string>} lines array of lines (if the file starts with comment lines they are removed)
+ * @property {number} startLine line number of header row
+ * @property {Map<string,string>} columnTypes Map of column name to ColumnType
+ * @property {Array<string>} errors array of error messages if the file couldn't be parsed at all, or if there's no gene or numberic columns
+ * @property {Function} numericCols function that returns an array of column names that have been guessed to be numeric
+ * @property {Function} geneCols function that returns an array of column names that have been guessed to be gene names
  */
-// TODO: figure out how to use jsdoc to make above comment into a standard format
+
+/**
+ * Reads a Ranks or Expression file in TSV or CSV format.
+ * @param {Blob} blob
+ * @return {Promise<FileInfo>}
+ */
 export function readTextFile(blob) {  
   return blobToText(blob).then(quickParseForFileInfo);
 }
 
 /**
- * Reads the first worksheet of an Excel file and returns Promise<FileInfo>
- * See docs for readTextFile() above.
+ * Reads the first worksheet of an Excel file.
+ * @param {Blob} blob
+ * @return {Promise<FileInfo>}
  */
 export function readExcelFile(blob) {
   return excelToText(blob).then(quickParseForFileInfo);
@@ -120,7 +124,9 @@ function createColumnTypeMap() {
   return columnTypes;
 }
 
-
+/**
+ * @return {FileInfo} constructs a FileInfo object
+ */
 function createFileInfo({ delimiter, columns, lines, startLine, columnTypes }) {
   return { 
     delimiter, 
@@ -136,6 +142,7 @@ function createFileInfo({ delimiter, columns, lines, startLine, columnTypes }) {
 
 /**
  * Parses just the header row and the first X data rows to infer information about the file.
+ * @return {FileInfo}
  */
 function quickParseForFileInfo(text) {
   const lineBreakChar = getLineBreakChar(text);
@@ -153,14 +160,14 @@ function quickParseForFileInfo(text) {
   }
 
   if(lines[0] === undefined) {
-    return { error: 'File format error: Cannot read data columns.'};
+    return { errors: ['File format error: Cannot read data columns.']};
   }
 
   const delimiter = getDelimiter(lines[0]);
   const columns = lines[0].split(delimiter).map(t => t.trim());
 
   if(columns.length <= 1) {
-    return { error: 'File format error: There must be at least 2 data columns.'};
+    return { errors: ['File format error: There must be at least 2 data columns.']};
   }
 
   const numLinesToScan = 10;
@@ -180,10 +187,10 @@ function quickParseForFileInfo(text) {
   const fileInfo = createFileInfo({ delimiter, columns, lines, startLine, columnTypes });
 
   if(fileInfo.numericCols().length === 0) {
-    return { error: 'File format error: Could not find any numeric columns.'};
+    return { errors: ['File format error: Could not find any numeric columns.']};
   }
   if(fileInfo.geneCols().length === 0) {
-    return { error: 'File format error: Could not find any columns with gene indentifiers.'};
+    return { errors: ['File format error: Could not find any columns with gene indentifiers.']};
   }
 
   return fileInfo;

@@ -187,7 +187,7 @@ export function Content() {
   const [ uploadState, setUploadState ] = useState({
     step: STEP.WAITING,
     demo: null,
-    fileInfo: null, // treat this object like its immutable
+    fileInfo: null, // FileInfo object returned by readTextFile()/readExcelFile()
     geneCol: null,
     rankCol: null,
     rnaseqClasses: null,

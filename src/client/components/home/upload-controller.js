@@ -1,10 +1,8 @@
 import EventEmitter from 'eventemitter3';
 import { SENTRY } from '../../env';
 import { readTextFile, readExcelFile, validateText } from './data-file-reader';
-
 import * as Sentry from "@sentry/browser";
 
-// TODO find occurences of these string literals and replace with constants
 export const RNA_SEQ = 'rnaseq';
 export const PRE_RANKED = 'ranks';
 
