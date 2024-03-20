@@ -200,9 +200,26 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     const intersection = setOperationRef.current === 'intersection';
 
     if (eles.length > 0) {
-      if (eles.length === 1) {
-        setSort(eles[0].data('NES') < 0 ? 'up' : 'down');
+      // The sorting must be the same as the colour of the selection (one or more nodes),
+      // but only if all the nodes in the selection are the same colour
+      let hasPositive = false;
+      let hasNegative = false;
+      for (let i = 0; i < eles.length; i++) {
+        const nes = eles[i].data('NES');
+        if (nes > 0) {
+          hasPositive = true;
+        } else if (nes < 0) {
+          hasNegative = true;
+        }
+        if (hasPositive && hasNegative)
+          break;
       }
+      if (hasPositive && !hasNegative) {
+        setSort('down');
+      } else if (hasNegative && !hasPositive) {
+        setSort('up');
+      }
+      // Update the sorted gene list
       const newGenes = await fetchGeneListFromElements(eles, intersection);
       setGenes(sortGenes(newGenes, sortRef.current));
     } else if (_.isEmpty(searchValueRef.current)) {

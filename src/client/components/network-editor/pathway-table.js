@@ -111,8 +111,6 @@ const useStyles = makeStyles((theme) => ({
     width: '75%',
     maxWidth: 0,
     alignItems: 'center',
-    overflow: 'hidden',
-    whiteSpace: 'nowrap',
   },
   nesCell: {
     width: '25%',
@@ -140,14 +138,12 @@ const useStyles = makeStyles((theme) => ({
   },
   nameCellText: {
     alignItems: 'center',
-    maxWidth: 'calc(100% - 20px)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    marginRight: 4,
+    textWrap: 'pretty',
+    marginRight: 2,
     cursor: 'pointer',
   },
   link: {
+    marginLeft: theme.spacing(0.5),
     "&[disabled]": {
       color: theme.palette.text.secondary,
       cursor: "default",
@@ -211,8 +207,7 @@ const COLUMNS = [
     label: 'Pathway',
     render: (row, col, classes) => {
       return (
-        <div style={{display: 'flex'}}>
-          <div className={classes.nameCellText}>{ row[col.id] }</div>
+        <div className={classes.nameCellText}>{ row[col.id] }
         {row.href && (
           <Tooltip title={row.db}>
             <Link
