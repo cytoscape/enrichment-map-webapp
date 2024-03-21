@@ -9,7 +9,6 @@ import EasyCitation from './citation.js';
 import { DebugMenu } from '../../debug-menu';
 import StartDialog from './start-dialog';
 import theme from '../../theme';
-import { assignGroups } from './class-selector';
 
 import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@material-ui/core';
 import { Container, Grid, Divider, } from '@material-ui/core';
@@ -22,11 +21,11 @@ import classNames from 'classnames';
 import uuid from 'uuid';
 
 
-const STEP = {
+export const STEP = {
   WAITING: 'WAITING',
   UPLOAD:  'UPLOAD',
   LOADING: 'LOADING',
-  CLASSES: 'CLASSES',
+  COLUMNS: 'COLUMNS',
   ERROR:   'ERROR',
 };
 
@@ -72,6 +71,12 @@ async function showFileDialog() {
     });
     input.click();
   });
+}
+
+function guessRnaseqClasses(columns) {
+  // Just assign first half to 'A' and second half to 'B'
+  const mid = columns.length / 2;
+  return columns.map((c,i) => i < mid ? 'A' : 'B');
 }
 
 
@@ -181,10 +186,10 @@ export function Content() {
   // Each of the onXXX callbacks below must call setUploadState at most once.
   const [ uploadState, setUploadState ] = useState({
     step: STEP.WAITING,
-    format: null,
-    contents: null,
-    columns: null, 
-    name: null,
+    demo: null,
+    fileInfo: null, // FileInfo object returned by readTextFile()/readExcelFile()
+    geneCol: null,
+    rankCol: null,
     rnaseqClasses: null,
     errorMessages: null,
   });
@@ -206,9 +211,8 @@ export function Content() {
   }, []);
 
   useEffect(() => {
-    bus.on('loading', onLoading);
-    bus.on('classes', onClasses);
-    bus.on('ranks', onRanks);
+    bus.on('fileUploaded', onFileUploaded);
+    bus.on('loading', onLoading); // maybe should be called 'running'
     bus.on('finished', onFinished);
     bus.on('error', onError);
     return () => bus.removeAllListeners();
@@ -220,7 +224,7 @@ export function Content() {
   const loadSampleNetwork = async (fileName, format) => {
     if (uploadState.step == STEP.LOADING)
       return;
-    const file = await uploadController.loadSampleData(fileName);
+    const file = await uploadController.fetchSampleData(fileName);
     if(file) {
       await uploadController.upload([file], format);
     }
@@ -261,39 +265,47 @@ export function Content() {
     }
   };
 
-  const onClassesChanged = (rnaseqClasses) => {
-    updateUploadState({ rnaseqClasses });
-  };
-
-  const onUpload = async (format) => {
+  const onUpload = async () => { // start of upload
     const files = await showFileDialog();
-    await uploadController.upload(files, format);
+    await uploadController.upload(files);
   };
 
   const onLoading = () => {
     updateUploadState({ step: STEP.LOADING });
   };
 
-  const onRanks = async ({ format, contents, name }) => {
+  /** 
+   * Called after the file has been uploaded and quick-parsed for basic info.
+   * @param fileInfo The object returned by readTextFile/readExcelFile in data-file-reader.js
+   */
+  const onFileUploaded = async (fileInfo) => {
+    const { numericCols, geneCols } = fileInfo;
+    // Make guesses for these initial values
+    const rnaseqClasses = guessRnaseqClasses(numericCols);
+    const rankCol = numericCols[0];
+    const geneCol = geneCols[0];
+
+    setUploadState({ step: STEP.COLUMNS, fileInfo, geneCol, rankCol, rnaseqClasses }); 
+  };
+
+  /**
+   * fileFormat is a separate argument because its a ref in the StartDialog
+   */
+  const onSubmit = async (demo, fileFormat) => {
+    console.log('onSubmit', uploadState, demo);
     requestID = uuid.v4();
     updateUploadState({ step: STEP.LOADING });
-    await uploadController.sendDataToEMService(contents, format, 'ranks', name, requestID);
-  };
 
-  const onSubmit = async (demo) => {
-    requestID = uuid.v4();
     if(demo === 'demo') {
       await uploadController.createDemoNetwork(requestID);
-    } else {
-      const { contents, format, name, rnaseqClasses } = uploadState;
-      updateUploadState({ step: STEP.LOADING });
-      await uploadController.sendDataToEMService(contents, format, 'rnaseq', name, requestID, rnaseqClasses);
+      return;
     }
-  };
 
-  const onClasses = ({ format, columns, contents, name }) => {
-    const rnaseqClasses = assignGroups(columns, contents, format);
-    setUploadState({ step: STEP.CLASSES, format, columns, contents, name, rnaseqClasses });
+    const { fileInfo } = uploadState; // fileInfo comes from the quick-parse done by data-file-reader.js
+    const { geneCol, rankCol, rnaseqClasses } = uploadState; // comes from the user's choices in the wizard
+
+    // If validation fails it will call the onError event handler below
+    await uploadController.validateAndSendDataToEMService(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses, requestID);
   };
  
   const onError = ({ errors, requestID }) => {
@@ -317,6 +329,11 @@ export function Content() {
   };
 
   const onFinished = ({ networkID, requestID }) => {
+    if(networkID === 'blah') {
+      onCancel();
+      return;
+    }
+
     if(requestID && cancelledRequests.includes(requestID)) {
       console.log(`Ignoring cancelled request: { networkID:${networkID}, requestID:${requestID} }`);
       return;
@@ -325,9 +342,6 @@ export function Content() {
   };
 
   /** Render Components */
-  const { ...stateToLog } = uploadState;
-  console.log("Content render. uploadState: " + JSON.stringify(stateToLog));
-
   return (
     <div className={classNames({ [classes.root]: true, [classes.rootDropping]: droppingFile })}>
       <Header />
@@ -385,14 +399,21 @@ export function Content() {
           {uploadState.step !== STEP.WAITING && (
             <Grid item>
               <StartDialog
+                step={uploadState.step}
                 isMobile={mobile}
                 isDemo={uploadState.demo}
-                step={uploadState.step}
-                columns={uploadState.columns}
                 errorMessages={uploadState.errorMessages}
+                fileInfo={uploadState.fileInfo}
+
+                geneCol={uploadState.geneCol}
+                rankCol={uploadState.rankCol}
                 rnaseqClasses={uploadState.rnaseqClasses}
+                
+                onClassesChanged={(rnaseqClasses) => updateUploadState({ rnaseqClasses })}
+                onRankColChanged={(rankCol) => updateUploadState({ rankCol })}
+                onGeneColChanged={(geneCol) => updateUploadState({ geneCol })}
+
                 onUpload={onUpload}
-                onClassesChanged={onClassesChanged}
                 onSubmit={onSubmit}
                 onCancelled={onCancel}
                 onBack={onBack}
