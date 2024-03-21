@@ -53,6 +53,7 @@
     "classnames": "^2.2.6",
     "cookie-parser": "^1.4.5",
     "cytoscape": "^3.25.0",
+    "cytoscape-automove": "^1.10.3",
     "cytoscape-bubblesets": "^3.2.0",
     "cytoscape-fcose": "^2.2.0",
     "cytoscape-layers": "^2.4.1",
