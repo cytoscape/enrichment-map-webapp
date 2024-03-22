@@ -57,6 +57,8 @@ const useStyles =  makeStyles((theme) => ({
 function EasyCitation() {
   const classes = useStyles();
 
+  // Note: This text is also included in the README.md file that's part of the data export.
+  // If you change the text here it needs to be changed there as well.
   return (
     <Grid container direction="column" alignItems="center">
       <Container className={classes.cite}>

@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import { Canvg, presets } from 'canvg';
 import { saveAs } from 'file-saver';
 import { getLegendSVG } from './legend-svg';
+import dedent from 'dedent';
 // eslint-disable-next-line no-unused-vars
 import { NetworkEditorController } from './controller';
 
@@ -11,6 +12,19 @@ export const ImageSize = {
   SMALL:  { value:'SMALL',  scale: 0.5 },
   MEDIUM: { value:'MEDIUM', scale: 1.0 },
   LARGE:  { value:'LARGE',  scale: 2.0 },
+};
+
+const Path = {
+  IMAGE_FOLDER:  'images',
+  IMAGE_SMALL:   'images/enrichment_map_small.png',
+  IMAGE_MEDIUM:  'images/enrichment_map_medium.png',
+  IMAGE_LARGE:   'images/enrichment_map_large.png',
+  IMAGE_LEGEND:  'images/node_color_legend_NES.svg',
+  DATA_FOLDER:   'data',
+  DATA_ENRICH:   'data/enrichment_results.txt',
+  DATA_RANKS:    'data/ranks.txt',
+  DATA_GENESETS: 'data/gene_sets.gmt',
+  README:        'README.md'
 };
 
 
@@ -44,17 +58,20 @@ export class ExportController {
       fetchExport(`/api/export/ranks/${netID}`),
       fetchExport(`/api/export/gmt/${netID}`),
     ]);
+
+    const readme = createREADME(this.controller);
     const blobs = await blobsPromise;
     const files = await filesPromise;
   
     const zip = new JSZip();
-    zip.file('images/enrichment_map_small.png',  blobs[0]);
-    zip.file('images/enrichment_map_medium.png', blobs[1]);
-    zip.file('images/enrichment_map_large.png',  blobs[2]);
-    zip.file('images/node_color_legend_NES.svg', blobs[3]);
-    zip.file('data/enrichment_results.txt', files[0]);
-    zip.file('data/ranks.txt', files[1]);
-    zip.file('data/gene_sets.gmt', files[2]);
+    zip.file(Path.IMAGE_SMALL,   blobs[0]);
+    zip.file(Path.IMAGE_MEDIUM,  blobs[1]);
+    zip.file(Path.IMAGE_LARGE,   blobs[2]);
+    zip.file(Path.IMAGE_LEGEND,  blobs[3]);
+    zip.file(Path.DATA_ENRICH,   files[0]);
+    zip.file(Path.DATA_RANKS,    files[1]);
+    zip.file(Path.DATA_GENESETS, files[2]);
+    zip.file(Path.README,        readme);
   
     const fileName = this._getZipFileName('enrichment');
     this._saveZip(zip, fileName);
@@ -151,4 +168,81 @@ export class ExportController {
     await saveAs(archiveBlob, fileName);
   }
 
+}
+
+
+
+function createREADME(controller) {
+  const { cy } = controller;
+  const name = cy.data('name');
+  const link = window.location.href;
+  const parameters = cy.data('parameters');
+
+  return dedent`
+    EnrichmentMap::RNA-Seq - ${name}
+    -------------------------${'-'.repeat(name.length)}
+
+    Network Permalink: ${link}
+
+    EnrichmentMap is a web-app that allows you to perform functional enrichment analysis on 
+    gene lists derived from RNA-seq experiments and visualise the results as a network.
+
+    This archive contains the following files:
+    * ${Path.IMAGE_LARGE}
+    * ${Path.IMAGE_MEDIUM}
+    * ${Path.IMAGE_SMALL}
+      * Network PNG images in various sizes.
+    * ${Path.IMAGE_LEGEND}
+      * An SVG image of the NES color legend used for the nodes in the network.
+    * ${Path.DATA_ENRICH}
+      * Results of Gene Set Enrichment Analysis from the FGSEA R package.
+    * ${Path.DATA_RANKS}
+      * Gene ranks.
+    * ${Path.DATA_GENESETS}
+      * Gene sets (pathways) that correspond to nodes in the network.
+
+
+    How to cite EnrichmentMap
+    -------------------------
+    To cite this app in a paper, for now, please cite this Nature Protocols 
+    article (an article specific to this app will be published shortly):
+    https://doi.org/10.1038/s41596-018-0103-9
+    Reimand, J., Isserlin, R., ..., Bader, G.
+    Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, Cytoscape and EnrichmentMap.
+    Nat Protoc 14, 482–517 (2019).
+
+
+    Importing data into the Cytoscape EnrichmentMap App
+    ---------------------------------------------------
+    * Download and install Cytoscape
+      * https://cytoscape.org/download.html
+    * Download and install the EnrichmentMap App
+      * https://apps.cytoscape.org/apps/enrichmentmap
+    * (optional) If your network was created from an RNA-seq expression file you may copy 
+      it to the '${Path.DATA_FOLDER}' folder.
+    * Start Cytoscape.
+    * Go to the main menu and select *Apps > EnrichmentMap*
+    * Click the button that says *Add* then select *Scan a folder for enrichment data*.
+    * Select the '${Path.DATA_FOLDER}' folder.
+    * The three files contained in this archive will show up in the *Enrichments*, *GMT* 
+      and *Ranks* fields in the dialog.
+      * Note, if you copied the RNA-seq expression file to the zip output '${Path.DATA_FOLDER}' 
+        folder it should also appear in the *Expressions* field. If it does not then rename 
+        the file to include the word “expression”, then try again.
+    * Click the *Build* button.
+    * Documentation for the EnrichmentMap Cytoscape App is available here...
+      * https://enrichmentmap.readthedocs.io/
+    
+    
+    Gene-set filtering parameters
+    -----------------------------
+    The following cutoff parameters were used to filter the results of enrichment analysis.
+    * Gene-sets with q-value (padj) greater than ${parameters.qvalue} are removed from the network.
+    * Edges represent similarity between gene-sets. 
+      * Similarity is calculated using the ${parameters.similarityMetric} method and must have a 
+        value of at least ${parameters.similarityCutoff}.
+      ${parameters.similarityMetric === 'JACCARD' ? 
+      '* JACCARD coefficient is computed as the size of the intersection divided by the size of the union.' : ''
+      }
+  `;
 }
