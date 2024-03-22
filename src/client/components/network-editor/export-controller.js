@@ -32,17 +32,20 @@ export class ExportController {
       return await res.text();
     };
   
-    const blobs = await Promise.all([
+    // Let image generation run in parallel with fetching data from server
+    const blobsPromise = Promise.all([
       this._createNetworkImageBlob(ImageSize.SMALL),
       this._createNetworkImageBlob(ImageSize.MEDIUM),
       this._createNetworkImageBlob(ImageSize.LARGE),
       this._createSVGLegendBlob()
     ]);
-    const files = await Promise.all([
+    const filesPromise = Promise.all([
       fetchExport(`/api/export/enrichment/${netID}`),
       fetchExport(`/api/export/ranks/${netID}`),
       fetchExport(`/api/export/gmt/${netID}`),
     ]);
+    const blobs = await blobsPromise;
+    const files = await filesPromise;
   
     const zip = new JSZip();
     zip.file('images/enrichment_map_small.png',  blobs[0]);
