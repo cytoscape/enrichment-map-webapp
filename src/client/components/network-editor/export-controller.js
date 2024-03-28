@@ -46,28 +46,26 @@ export class ExportController {
       return await res.text();
     };
   
-    // Let image generation run in parallel with fetching data from server
-    const blobsPromise = Promise.all([
-      this._createNetworkImageBlob(ImageSize.SMALL),
-      this._createNetworkImageBlob(ImageSize.MEDIUM),
-      this._createNetworkImageBlob(ImageSize.LARGE),
-      this._createSVGLegendBlob()
-    ]);
+    // Let the fethching happen in the background while we generate the images
     const filesPromise = Promise.all([
       fetchExport(`/api/export/enrichment/${netID}`),
       fetchExport(`/api/export/ranks/${netID}`),
       fetchExport(`/api/export/gmt/${netID}`),
     ]);
 
-    const readme = createREADME(this.controller);
-    const blobs = await blobsPromise;
+    // Let image generation run in parallel with fetching data from server
+    const blob0 = await this._createNetworkImageBlob(ImageSize.SMALL);
+    const blob1 = await this._createNetworkImageBlob(ImageSize.MEDIUM);
+    const blob2 = await this._createNetworkImageBlob(ImageSize.LARGE);
+    const blob3 = await this._createSVGLegendBlob();
     const files = await filesPromise;
+    const readme = createREADME(this.controller);
   
     const zip = new JSZip();
-    zip.file(Path.IMAGE_SMALL,   blobs[0]);
-    zip.file(Path.IMAGE_MEDIUM,  blobs[1]);
-    zip.file(Path.IMAGE_LARGE,   blobs[2]);
-    zip.file(Path.IMAGE_LEGEND,  blobs[3]);
+    zip.file(Path.IMAGE_SMALL,   blob0);
+    zip.file(Path.IMAGE_MEDIUM,  blob1);
+    zip.file(Path.IMAGE_LARGE,   blob2);
+    zip.file(Path.IMAGE_LEGEND,  blob3);
     zip.file(Path.DATA_ENRICH,   files[0]);
     zip.file(Path.DATA_RANKS,    files[1]);
     zip.file(Path.DATA_GENESETS, files[2]);
