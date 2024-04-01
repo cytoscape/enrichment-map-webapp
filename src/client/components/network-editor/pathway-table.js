@@ -19,7 +19,6 @@ import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@mate
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
-import { ClusterIcon } from '../svg-icons';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -97,11 +96,6 @@ const useStyles = makeStyles((theme) => ({
   currentRow: {
     backgroundColor: `${theme.palette.primary.main} !important`,
   },
-  clusterCell: {
-    paddingLeft: '1px !important',
-    paddingRight: '1px !important',
-    textAlign: 'center',
-  },
   dbCell: {
     paddingLeft: '1px !important',
     paddingRight: '1px !important',
@@ -124,13 +118,6 @@ const useStyles = makeStyles((theme) => ({
   },
   selectedCell: {
     backgroundColor: theme.palette.action.selected,
-  },
-  clusterButton: {
-    maxWidth: 20,
-    maxHeight: 20,
-  },
-  clusterIcon: {
-    verticalAlign: 'middle',
   },
   pathwayIcon: {
     verticalAlign: 'middle',
@@ -158,32 +145,6 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const COLUMNS = [
-  {
-    id: 'cluster',
-    numeric: false,
-    hideOnMobile: false,
-    label: <>&nbsp;</>,
-    tooltip: 'Cluster',
-    preventGotoNode: true,
-    render: (row, col, classes, controller) => {
-      const c = row.nes < 0 ? REG_COLOR_RANGE.downMax : REG_COLOR_RANGE.upMax;
-      const color1 = chroma(c).luminance(0.6).hex();
-      const color2 = chroma(c).luminance(0.2).hex();
-      const tooltip = row.cluster + ' (cluster)';
-      const node = controller.cy.nodes(`[id = "${row.id}"]`);
-      const parentId = node.parent().data('id');
-      return (
-        row[col.id] ?
-          <Tooltip title={tooltip}>
-            <IconButton className={classes.clusterButton} onClick={() => gotoNode(parentId, controller.cy)}>
-              <ClusterIcon fontSize="small" color1={color1} color2={color2} className={classes.clusterIcon} />
-            </IconButton>
-          </Tooltip>
-          :
-          ' '
-      );
-    }
-  },
   {
     id: 'db',
     numeric: false,
