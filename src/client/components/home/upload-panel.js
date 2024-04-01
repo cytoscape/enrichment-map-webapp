@@ -386,7 +386,7 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
             >
               <div
                 className={classes.legend}
-                style={{ top: 60, left: (isMobile ? 100 : 225), maxWidth: 170 }}
+                style={{ top: 60, left: 'calc((100% / 2) - 25px)', maxWidth: 170 }}
                 onMouseOver={() => handleMouseOver('rank')}
                 onMouseOut={() => handleMouseOut()}
               >
