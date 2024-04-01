@@ -316,7 +316,7 @@ const Main = ({
   const handleExport = async () => {
     setExportEnabled(false);
     snack.showSpinner("Preparing enrichment data and network images...");
-    await controller.exportArchive(controller);
+    await controller.exportController.exportArchive();
     snack.close();
     setExportEnabled(true);
   };

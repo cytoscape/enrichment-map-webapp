@@ -61,6 +61,11 @@ export const nodeLabel = _.memoize(node => {
   const label = node.data('label');
   if(label)
     return label;
+
+  const desc = node.data('description');
+  if(desc)
+    return Array.isArray(desc) ? desc[0] : desc;
+
   const name = node.data('name');
   const pathway = Array.isArray(name) ? name[0] : name;
   return parsePathwayName(pathway);

@@ -232,7 +232,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     const selected = cy.nodes(':selected').length > 0; // any selected nodes?
     const eles = cy.pathwayNodes(selected);
     const gsNames = getGeneSetNames(eles);
-    controller.saveGeneList(genes, gsNames);
+    controller.exportController.exportGeneList(genes, gsNames);
   };
 
   const onNetworkLoaded = () => {
