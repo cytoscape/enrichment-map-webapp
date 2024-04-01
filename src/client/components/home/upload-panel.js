@@ -180,16 +180,28 @@ SampleTable.propTypes = {
 //==[ FormatAccordion ]===============================================================================================
 
 const useFormatAccordionStyles = makeStyles((theme) => ({
-  accordionSummaryContent: {
-    alignItems: 'center',
+  summaryRoot: {
+    minHeight: `48px !important`,
+    padding: theme.spacing(0, 2, 0, 1),
+    [theme.breakpoints.down('xs')]: {
+      padding: theme.spacing(0, 1, 0, 0),
+    },
   },
-  accordionHead: {
+  summaryContent: {
+    alignItems: 'center',
+    margin: `${theme.spacing(0.5, 0)} !important`,
+  },
+  title: {
     fontSize: 'theme.typography.pxToRem(15)',
     fontWeight: theme.typography.fontWeightRegular,
   },
-  accordionDetails: {
+  details: {
     width: '100%',
     justifyContent: 'center',
+    padding: theme.spacing(0.5, 2, 1, 2),
+    [theme.breakpoints.down('xs')]: {
+      padding: theme.spacing(0.5, 1, 1, 1),
+    },
   },
 }));
 
@@ -198,16 +210,16 @@ const FormatAccordion = ({ id, title, children, selected, onChange }) => {
 
   return (
     <Accordion expanded={selected} variant="outlined" onChange={onChange(id)}>
-      <AccordionSummary expandIcon={<ExpandMoreIcon />} classes={{ content: classes.accordionSummaryContent }}>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />} classes={{ root: classes.summaryRoot, content: classes.summaryContent }}>
         <Radio
           checked={selected}
           onChange={onChange(id)}
           value={id}
           name={title}
         />
-        <Typography className={classes.accordionHead}>{ title }</Typography>
+        <Typography className={classes.title}>{ title }</Typography>
       </AccordionSummary>
-      <AccordionDetails className={classes.accordionDetails}>
+      <AccordionDetails className={classes.details}>
         { children }
       </AccordionDetails>
     </Accordion>
@@ -259,10 +271,10 @@ const useUploadPanelStyles = makeStyles((theme) => ({
       color: theme.palette.text.primary,
     },
   },
-  pcLink: {
-    display: "flex", 
-    alignItems: "center"
-  }
+  linkout: {
+    color: 'inherit',
+    borderBottom: 'dotted 1px',
+  },
 }));
 
 export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
@@ -283,6 +295,16 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
   const handleMouseOut = () => {
     setSpotlight(null);
   };
+
+  const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "none" };
+  const GeneIdLabel = () => (
+    <>
+      <b>Gene ID Column:</b>&nbsp;&nbsp;from&nbsp;
+      <Link href="https://www.ensembl.org/Homo_sapiens/Info/Index" className={classes.linkout} {...linkoutProps}>Ensembl</Link> or&nbsp;
+      <Link href="https://www.genenames.org/" className={classes.linkout} {...linkoutProps}>HGNC</Link>&nbsp;
+      &#40;for human&#41;
+    </>
+  );
 
   return (
     <>
@@ -308,11 +330,11 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
             >
               <div
                 className={classes.legend}
-                style={{ top: 0, left: 10 }}
+                style={{ top: 0, left: 0, maxWidth: 200 }}
                 onMouseOver={() => handleMouseOver('gene')}
                 onMouseOut={() => handleMouseOut()}
               >
-                <b>1<sup>st</sup> Column:</b> the gene IDs<br/>&#40;from Ensembl or HGNC&#41;
+                <GeneIdLabel />
               </div>
             </ArcherElement>
             <ArcherElement
@@ -321,11 +343,11 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
             >
               <div
                 className={classes.legend}
-                style={{ top: 60, left: 100 }}
+                style={{ top: 60, left: (isMobile ? 100 : 150), maxWidth: 220 }}
                 onMouseOver={() => handleMouseOver('sample1,sample2,others,samplen')}
                 onMouseOut={() => handleMouseOut()}
               >
-                <b>Expression Columns:</b> at least 2<br/>&#40;numeric expression values&#41;
+                <b>Expression Columns:</b>&nbsp;&nbsp;2 or more numeric columns &#40;e.g. raw counts&#41;
               </div>
             </ArcherElement>
           </div>
@@ -351,11 +373,11 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
             >
               <div
                 className={classes.legend}
-                style={{ top: 0, left: 10 }}
+                style={{ top: 0, left: 0, maxWidth: 200 }}
                 onMouseOver={() => handleMouseOver('gene')}
                 onMouseOut={() => handleMouseOut()}
               >
-                <b>1<sup>st</sup> Column:</b> the gene IDs<br/>&#40;from Ensembl or HGNC&#41;
+                <GeneIdLabel />
               </div>
             </ArcherElement>
             <ArcherElement
@@ -364,11 +386,11 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
             >
               <div
                 className={classes.legend}
-                style={{ top: 60, left: 120 }}
+                style={{ top: 60, left: (isMobile ? 100 : 225), maxWidth: 170 }}
                 onMouseOver={() => handleMouseOver('rank')}
                 onMouseOut={() => handleMouseOut()}
               >
-                <b>2<sup>nd</sup> Column:</b> the numeric ranks
+                <b>Gene Ranks Column:</b>&nbsp;&nbsp;the numeric ranks
               </div>
             </ArcherElement>
           </div>
