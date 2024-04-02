@@ -195,8 +195,15 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     return unique;
   };
 
+  /** Flashes the list quickly (shows the loading skeleton) so the user sees that the list has changed */
+  const flashAndSetGenes = (genes) => {
+    setGenes(null);
+    setTimeout(() => setGenes(genes), 100);
+  };
+
   const debouncedSelectionHandler = _.debounce(async () => {
     const eles = cy.pathwayNodes(true);
+    // Force UINION if only 0 or 1 pathway is selected
     if (eles.length < 2) {
       setSetOperation('union');
     }
@@ -223,10 +230,10 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
       }
       // Update the sorted gene list
       const newGenes = await fetchGeneListFromElements(eles, intersection);
-      setGenes(sortGenes(newGenes, sortRef.current));
+      flashAndSetGenes(sortGenes(newGenes, sortRef.current));
     } else if (_.isEmpty(searchValueRef.current)) {
       const newGenes = await fetchAllRankedGenes(intersection);
-      setGenes(sortGenes(newGenes, sortRef.current));
+      flashAndSetGenes(sortGenes(newGenes, sortRef.current));
     }
   }, 250);
 
