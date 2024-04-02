@@ -2,6 +2,7 @@ import Cytoscape from 'cytoscape';
 import fcose from 'cytoscape-fcose';
 import BubbleSets from 'cytoscape-bubblesets';
 import Layers from 'cytoscape-layers';
+import Pdf from 'cytoscape-pdf-export';
 
 export const registerCytoscapeExtensions = () => {
   // Layout extensions
@@ -16,6 +17,7 @@ export const registerCytoscapeExtensions = () => {
   // Core extensions
   Cytoscape.use(clusterNodes);
   Cytoscape.use(pathwayNodes);
+  Cytoscape.use(Pdf);
 };
 
 
