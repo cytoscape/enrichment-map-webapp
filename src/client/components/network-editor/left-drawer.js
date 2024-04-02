@@ -197,8 +197,10 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
 
   const debouncedSelectionHandler = _.debounce(async () => {
     const eles = cy.pathwayNodes(true);
+    if (eles.length < 2) {
+      setSetOperation('union');
+    }
     const intersection = setOperationRef.current === 'intersection';
-
     if (eles.length > 0) {
       // The sorting must be the same as the colour of the selection (one or more nodes),
       // but only if all the nodes in the selection are the same colour
@@ -371,7 +373,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
 
   const selectedPathways = cy.pathwayNodes(true);
   const isSearch = !_.isEmpty(searchValue);
-  const setOperationsDisabled = isSearch;
+  const setOperationsDisabled = isSearch || selectedPathways.length < 2;
   const totalGenes = genes != null ? genes.length : -1;
   const sortDisabled = totalGenes <= 0;
   
