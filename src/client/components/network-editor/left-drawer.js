@@ -310,6 +310,9 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
       if (evt.target === cy && selectedGeneRef.current != null) {
         // Tapping the network background should collapse the selected gene and clear the highlight
         toggleGeneDetails(selectedGeneRef.current);
+      } else if (evt.target.group && evt.target.group() === 'edges') {
+        // Clicking an edge should automatically select INTERSECTION
+        setSetOperation('intersection');
       }
     });
 
