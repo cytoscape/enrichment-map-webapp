@@ -60,7 +60,12 @@ function getMinMaxValues(cy, attr) {
 export const nodeLabel = _.memoize(node => {
   const label = node.data('label');
   if(label)
-    return label.toUpperCase();
+    return label;
+
+  const desc = node.data('description');
+  if(desc)
+    return Array.isArray(desc) ? desc[0] : desc;
+
   const name = node.data('name');
   const pathway = Array.isArray(name) ? name[0] : name;
   return parsePathwayName(pathway);
@@ -96,20 +101,15 @@ export const createNetworkStyle = (cy) => {
           'border-opacity': 0,
           'width':  40,
           'height': 40,
-          'font-size': '10px',
-          'text-valign': 'top',
+          'font-size': '8px',
+          'text-valign': 'center',
           'text-wrap': 'wrap',
-          'text-max-width': 120,
-          'text-outline-width': 4,
-          'text-outline-opacity': 1,
-          'text-outline-color': '#fff',
-          'color': '#000',
-          'z-index': 2,
+          'text-max-width': 80,
+          'text-outline-width': 2,
+          'text-outline-opacity': TEXT_OPACITY,
+          'color': '#fff',
+          'z-index': 1,
           'label': nodeLabel,
-          'font-weight': 'bold',
-          'line-height': 1.2,
-          'text-events': 'yes',
-          'text-margin-y': -2
         }
       },
       {
@@ -119,12 +119,18 @@ export const createNetworkStyle = (cy) => {
           'border-width': 0,
           'font-size': '14px',
           'text-valign':'top',
-          'text-outline-width': 4,
-          'text-outline-opacity': 1,
-          'text-outline-color': '#fff',
-          'text-opacity': 1,
-          'color': '#000',
+          'text-outline-width': 0,
+          'text-outline-opacity': 0,
+          'text-opacity': 0.6,
+          'color': clusterTextColor,
           'text-events': 'yes',
+        }
+      },
+      {
+        selector: 'node[NES]',
+        style: {
+          'background-color':   getNodeColor,
+          'text-outline-color': getNodeColor,
         }
       },
       {
@@ -199,7 +205,6 @@ export const createNetworkStyle = (cy) => {
         selector: 'node:parent:selected',
         style: {
           'border-width': 0,
-          'text-outline-color': '#fff',
         }
       },
       {

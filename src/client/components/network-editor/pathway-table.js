@@ -2,27 +2,21 @@ import React, { forwardRef, useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
-import chroma from 'chroma-js';
 import theme from '../../theme';
 import { DEFAULT_PADDING, pathwayTableHeight } from '../defaults';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar, PValueStarRating } from './charts';
-import { REG_COLOR_RANGE } from './network-style';
 
 import { makeStyles } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { IconButton, Checkbox, Paper, Typography, Link, Tooltip } from '@material-ui/core';
+import { Paper, Typography, Link, Tooltip } from '@material-ui/core';
 import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 
-import CheckBoxOutlineBlankOutlinedIcon from '@material-ui/icons/CheckBoxOutlineBlankOutlined';
-import CheckBoxOutlinedIcon from '@material-ui/icons/CheckBoxOutlined';
-import IndeterminateCheckBoxOutlinedIcon from '@material-ui/icons/IndeterminateCheckBoxOutlined';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
-import { ClusterIcon } from '../svg-icons';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -84,27 +78,21 @@ const useStyles = makeStyles((theme) => ({
   tableCell: {
     // --> WHATCH OUT! `padding[Top|Bottom]: 0` may cause a defect where the
     //     TableVirtuoso's initialTopMostItemIndex prop doesn't work
-    paddingTop: 0,
-    paddingBottom: 0,
+    paddingTop: 2,
+    paddingBottom: 2,
     paddingLeft: `${theme.spacing(0.5)}px !important`,
     paddingRight: theme.spacing(0.5),
     // <------------------------------------------------------------
     borderBottom: `1px solid ${theme.palette.background.default}`,
     cursor: 'pointer',
   },
-  checkCell: {
-    maxWidth: 48,
-    paddingLeft: `${theme.spacing(0.5)}px !important`, // same padding as the 'currentRow' border/mark to prevent the checkbox from shifting
+  currentCell: {
+    width: 4,
+    paddingLeft: 0,
     paddingRight: 0,
   },
   currentRow: {
-    paddingLeft: '0 !important',
-    borderLeft: `${theme.spacing(0.5)}px solid ${theme.palette.primary.main}`,
-  },
-  clusterCell: {
-    paddingLeft: '1px !important',
-    paddingRight: '1px !important',
-    textAlign: 'center',
+    backgroundColor: `${theme.palette.primary.main} !important`,
   },
   dbCell: {
     paddingLeft: '1px !important',
@@ -115,8 +103,6 @@ const useStyles = makeStyles((theme) => ({
     width: '75%',
     maxWidth: 0,
     alignItems: 'center',
-    overflow: 'hidden',
-    whiteSpace: 'nowrap',
   },
   nesCell: {
     width: '25%',
@@ -131,40 +117,18 @@ const useStyles = makeStyles((theme) => ({
   selectedCell: {
     backgroundColor: theme.palette.action.selected,
   },
-  selectAllButton: {
-    maxWidth: 32,
-    maxHeight: 32,
-    color: theme.palette.text.secondary,
-  },
-  selectAllIcon: {
-    fontSize: '1.25rem',
-  },
-  checkbox: {
-    minWidth: 32,
-    padding: theme.spacing(0.5),
-    margin: '0 auto 0 auto',
-  },
-  clusterButton: {
-    maxWidth: 20,
-    maxHeight: 20,
-  },
-  clusterIcon: {
-    verticalAlign: 'middle',
-  },
   pathwayIcon: {
     verticalAlign: 'middle',
     fontSize: '1.25rem',
   },
   nameCellText: {
     alignItems: 'center',
-    maxWidth: 'calc(100% - 20px)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    marginRight: 4,
+    textWrap: 'pretty',
+    marginRight: 2,
     cursor: 'pointer',
   },
   link: {
+    marginLeft: theme.spacing(0.5),
     "&[disabled]": {
       color: theme.palette.text.secondary,
       cursor: "default",
@@ -179,32 +143,6 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const COLUMNS = [
-  {
-    id: 'cluster',
-    numeric: false,
-    hideOnMobile: false,
-    label: <>&nbsp;</>,
-    tooltip: 'Cluster',
-    preventGotoNode: true,
-    render: (row, col, classes, controller) => {
-      const c = row.nes < 0 ? REG_COLOR_RANGE.downMax : REG_COLOR_RANGE.upMax;
-      const color1 = chroma(c).luminance(0.6).hex();
-      const color2 = chroma(c).luminance(0.2).hex();
-      const tooltip = row.cluster;
-      const node = controller.cy.nodes(`[id = "${row.id}"]`);
-      const parentId = node.parent().data('id');
-      return (
-        row[col.id] ?
-          <Tooltip title={tooltip}>
-            <IconButton className={classes.clusterButton} onClick={() => gotoNode(parentId, controller.cy)}>
-              <ClusterIcon fontSize="small" color1={color1} color2={color2} className={classes.clusterIcon} />
-            </IconButton>
-          </Tooltip>
-          :
-          ' '
-      );
-    }
-  },
   {
     id: 'db',
     numeric: false,
@@ -228,8 +166,7 @@ const COLUMNS = [
     label: 'Pathway',
     render: (row, col, classes) => {
       return (
-        <div style={{display: 'flex'}}>
-          <div className={classes.nameCellText}>{ row[col.id] }</div>
+        <div className={classes.nameCellText}>{ row[col.id] }
         {row.href && (
           <Tooltip title={row.db}>
             <Link
@@ -362,15 +299,9 @@ const ContentRow = ({ row, index, selected, current, controller, isMobile, handl
       <TableCell
         align="center"
         selected={selected}
-        className={clsx(classes.checkCell, { [classes.tableCell]: true, [classes.selectedCell]: selected, [classes.currentRow]: current })}
-      >
-        <Checkbox
-          checked={selected}
-          size="small"
-          className={classes.checkbox}
-          onClick={() => handleClick(row)}
-        />
-      </TableCell>
+        className={clsx(classes.currentCell, { [classes.tableCell]: true, [classes.selectedCell]: selected, [classes.currentRow]: current })}
+        onClick={() => handleClick(row)}
+      />
     {COLUMNS.map((col, idx) => (
       (!isMobile || !col.hideOnMobile) && (
         <TableCell
@@ -482,17 +413,6 @@ const PathwayTable = (
     onRowSelectionChange?.(row, selected, preventGotoNode);
   };
 
-  const handleSelectAllClick = (selectAll) => {
-    if (sortedDataRef.current) {
-      sortedDataRef.current.forEach(row => {
-        const selected = isRowSelected(row);
-        if ((selectAll && !selected) || (!selectAll && selected)) {
-          handleRowClick(row, true);
-        }
-      });
-    }
-  };
-
   if (data.length === 0 && searchTerms && searchTerms.length > 0) {
     return (
       <Paper className={classes.noResultsBox} style={{height: pathwayTableHeight()}}>
@@ -568,21 +488,7 @@ const PathwayTable = (
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
-          <TableCell className={clsx(classes.checkCell, { [classes.tableCell]: true })} style={{borderBottom: 'none'}}>
-            <Tooltip title={noneSelected ? 'Select All' : 'Select None'}>
-              <span>
-                <IconButton
-                  disabled={totalRows === 0}
-                  className={classes.selectAllButton}
-                  onClick={() => handleSelectAllClick(noneSelected)}
-                >
-                  { allSelected && <CheckBoxOutlinedIcon className={classes.selectAllIcon} /> }
-                  { noneSelected && <CheckBoxOutlineBlankOutlinedIcon className={classes.selectAllIcon} /> }
-                  { someSelected && <IndeterminateCheckBoxOutlinedIcon className={classes.selectAllIcon} /> }
-                </IconButton>
-              </span>
-            </Tooltip>
-          </TableCell>
+          <TableCell className={clsx(classes.currentCell, { [classes.tableCell]: true })} style={{borderBottom: 'none'}}/>
         {COLUMNS.map((col) => (
           (!isMobile || !col.hideOnMobile) && (
             <Tooltip key={col.id} title={col.tooltip || ''}>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
+import _ from 'lodash';
 
 import { HEADER_HEIGHT, LEFT_DRAWER_WIDTH, MIN_DESKTOP_TOOLBAR_WIDTH } from '../defaults';
 import useElementSize from '../../use-element-size';
@@ -11,10 +12,12 @@ import PopoverMenu from './popover-menu';
 import { makeStyles } from '@material-ui/core/styles';
 
 import { AppBar, Box, IconButton, Divider, Tooltip,  Toolbar } from '@material-ui/core';
+import { ToggleButton } from '@material-ui/lab';
 
 import { AppLogoIcon } from '../svg-icons';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import MenuIcon from '@material-ui/icons/Menu';
+import MoreIcon from '@material-ui/icons/MoreVert';
 
 //==[ Header ]========================================================================================================
 
@@ -91,6 +94,7 @@ export function Header({
   };
 
   const shiftAppBar = leftDrawerOpen && !isMobile && !isTablet;
+  const toolbarBtnDef = menuDef.filter(el => !showMobileMenu || (el.alwaysShow && !isMobile));
 
   return (
     <>
@@ -109,7 +113,7 @@ export function Header({
           />
         )}
           <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
-            <Tooltip arrow placement="bottom" title="Home">
+            <Tooltip placement="bottom" title="Home">
               <IconButton 
                 aria-label='home' 
                 onClick={() => location.href = '/'}
@@ -118,39 +122,49 @@ export function Header({
               </IconButton>
             </Tooltip>
           </Box>
-          <ToolbarDivider classes={classes} unrelated />
+          <ToolbarDivider classes={classes} unrelated={!isMobile} />
           <TitleEditor controller={controller} disabled={!networkLoaded} />
-          <ToolbarDivider classes={classes} unrelated />
-        {!showMobileMenu && menuDef.map(({title, icon, onClick, unrelated, isEnabled, subMenu }, idx) =>
+          <ToolbarDivider classes={classes} unrelated={!isMobile} />
+        {toolbarBtnDef.map(({title, icon, description, onClick, unrelated, isEnabled, isSelected, subMenu }, idx) =>
           <Fragment key={idx}>
             <ToolbarButton
               title={title}
               icon={icon}
+              description={description}
               disabled={!networkLoaded || (isEnabled && !isEnabled())}
+              selected={isSelected?.()}
               subMenu={subMenu}
               onClick={onClick}
               onOpenSubMenu={handleOpenSubMenu}
             />
-            <ToolbarDivider classes={classes} unrelated={unrelated} />
+            <ToolbarDivider classes={classes} unrelated={unrelated && !showMobileMenu} />
           </Fragment>
         )}
         {showMobileMenu && (
-          <ToolbarButton
-            title="Options"
-            icon={<MenuIcon />}
-            className={classes.optionsButton}
-            onClick={onOpenRightDrawer}
-          />
+          <>
+          {toolbarBtnDef.length > 0 && (
+            <ToolbarDivider classes={classes} unrelated />
+          )}
+            <ToolbarButton
+              title="Options"
+              icon={toolbarBtnDef.length > 0 ? <MoreIcon /> : <MenuIcon />}
+              className={classes.optionsButton}
+              onClick={onOpenRightDrawer}
+            />
+          </>
         )}
         </Toolbar>
       </AppBar>
     {!showMobileMenu && anchorEl && subMenu && (
-      <PopoverMenu
-        open
-        target={anchorEl}
-        menu={subMenu}
-        onClose={handleCloseSubMenu}
-      />
+      <>
+        <ToolbarDivider classes={classes} unrelated />
+        <PopoverMenu
+          open
+          target={anchorEl}
+          menu={subMenu}
+          onClose={handleCloseSubMenu}
+        />
+      </>
     )}
     </>
   );
@@ -167,18 +181,62 @@ Header.propTypes = {
 
 //==[ ToolbarButton ]=================================================================================================
 
-function ToolbarButton({ title, icon, color, className, disabled, subMenu, onClick, onOpenSubMenu }) {
+const useToolbarButtonStyles = makeStyles((theme) => ({
+  toggle: {
+    border: 'none',
+    color: 'inherit',
+  },
+}));
+
+function ToolbarButton({ title, icon, description, color, className, disabled, selected:defaultSelected, subMenu, onClick, onOpenSubMenu }) {
+  const [ selected, setSelected ] = React.useState(defaultSelected);
+  const [ showTooltip, setShowTooltip ] = React.useState(false);
+
+  const classes = useToolbarButtonStyles();
+  
+  const isToggleButton = defaultSelected != null;
+
   const handleClick = (evt) => {
-    if (subMenu) {
+    if (isToggleButton) {
+      setSelected(!selected);
+      onClick?.(evt);
+    } else if (subMenu) {
       onOpenSubMenu?.(evt, subMenu);
     } else {
       onClick?.(evt);
     }
   };
+  
+  const tooltipText =
+    <>
+      <span style={{fontSize: '0.85rem'}}>{ title }</span>
+      {!_.isEmpty(description) && (
+        <><br />{ description }</>
+      )}
+    </>;
 
   return (
-    <Tooltip arrow placement="bottom" title={title}>
+    <Tooltip
+      title={tooltipText}
+      disableHoverListener
+      open={showTooltip && !disabled} 
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
       <span> {/* span needed to prevent issues with tooltips on disabled buttons */}
+      {isToggleButton ?
+        <ToggleButton
+          value="selected"
+          disabled={disabled}
+          selected={selected}
+          size="small"
+          color={color || 'inherit'}
+          className={clsx(classes.toggle, className)}
+          onClick={handleClick}
+        >
+          { icon }
+        </ToggleButton>
+      :
         <IconButton
           disabled={disabled}
           component={disabled ? "div" : undefined} // To prevent error: 'Material-UI: You are providing a disabled `button` child to the Tooltip component.'
@@ -189,6 +247,7 @@ function ToolbarButton({ title, icon, color, className, disabled, subMenu, onCli
         >
           { icon }
         </IconButton>
+      }
       </span>
     </Tooltip>
   );
@@ -196,9 +255,11 @@ function ToolbarButton({ title, icon, color, className, disabled, subMenu, onCli
 ToolbarButton.propTypes = {
   title: PropTypes.string.isRequired,
   icon: PropTypes.element.isRequired,
+  description: PropTypes.string,
   color: PropTypes.string,
   className: PropTypes.string,
   disabled: PropTypes.bool,
+  selected: PropTypes.bool,
   subMenu: PropTypes.array,
   onClick: PropTypes.func,
   onOpenSubMenu: PropTypes.func,

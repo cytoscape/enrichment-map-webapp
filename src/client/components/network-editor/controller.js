@@ -3,16 +3,13 @@ import EventEmitter from 'eventemitter3';
 import Cytoscape from 'cytoscape'; // eslint-disable-line
 import _ from 'lodash';
 import ReactDOMServer from 'react-dom/server';
-import JSZip from 'jszip';
-import { Canvg, presets } from 'canvg';
-import { saveAs } from 'file-saver';
 
 import { DEFAULT_PADDING } from '../defaults';
 import { clusterColor } from './network-style';
 import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
 import { SearchController } from './search-contoller';
+import { ExportController } from './export-controller';
 import { UndoHandler } from './undo-stack';
-import { getLegendSVG } from './legend-svg';
 
 import ZoomOutMapIcon from '@material-ui/icons/ZoomOutMap';
 import { ZoomInIcon } from '../svg-icons';
@@ -32,12 +29,6 @@ export const Scratch = {
   AUTOMOVE_RULE: '_automoveRule'
 };
 
-// Sizes of exported PNG images
-export const ImageSize = {
-  SMALL:  { value:'SMALL',  scale: 0.5 },
-  MEDIUM: { value:'MEDIUM', scale: 1.0 },
-  LARGE:  { value:'LARGE',  scale: 2.0 },
-};
 
 /**
  * The network editor controller contains all high-level model operations that the network
@@ -68,6 +59,7 @@ export class NetworkEditorController {
     this.networkIDStr = cy.data('id');
 
     this.searchController = new SearchController(cy, this.bus);
+    this.exportController = new ExportController(this);
     this.undoHandler = new UndoHandler(this);
 
     this.networkLoaded = false;
@@ -142,30 +134,56 @@ export class NetworkEditorController {
   }
 
 
-  /**
-   * Used to downsample edges inside of clusters. Can be used when running a layout.
-   */
-  _getEdgesToRemove(clusterLabels, clusterAttr) {
-    let edgesToRemove = this.cy.collection();
-    clusterLabels.forEach(({ clusterId }) => {
-      const cluster = this.cy.elements(`node[${clusterAttr}="${clusterId}"]`);
-      if(cluster.empty())
-        return;
-      const edges = cluster.internalEdges();
-      const numToSample = Math.max(45, edges.size() / 10);
-      if(edges.size() > numToSample) {
-        const edgesToKeep = edges.shuffle().slice(0, numToSample);
-        edgesToRemove = edgesToRemove.add(edges.subtract(edgesToKeep));
-      }
+  async applyLayout(clusterLabels, clusterAttr) {
+    const { cy } = this;
+
+    const merge = (components) => {
+      const collection = cy.collection();
+      components.forEach(comp => {
+        collection.merge(comp);
+      });
+      return collection;
+    };
+
+    const [ posComponents, negComponents ] = this._partitionComponentsByNES(cy.elements());
+    const negEles = merge(negComponents);
+    const posEles = merge(posComponents);
+
+    // Partitioned layout, blue on left, red on right
+    await this._applyLayoutToEles(negEles, clusterLabels, clusterAttr); // blue
+    await this._applyLayoutToEles(posEles, clusterLabels, clusterAttr); // red
+
+     // Shift over
+    const negBB = negEles.boundingBox();
+    const posBB = posEles.boundingBox();
+    const dx = negBB.w + 50; // padding
+    const dy = negBB.y2 - posBB.y2;
+    
+    posEles.nodes().positions(node => {
+      const pos = node.position();
+      return {
+        x: pos.x + dx,
+        y: pos.y + dy
+      };
     });
-    return edgesToRemove;
   }
 
+  _partitionComponentsByNES(eles) {
+    const components = eles.components(); // array of collections
+
+    const pos = [], neg = [];
+    components.forEach(comp => {
+      const avgNES = this.getAverageNES(comp.nodes());
+      (avgNES < 0 ? neg : pos).push(comp);
+    });
+
+    return [ pos, neg ]; 
+  }
 
   /**
    * Stops the currently running layout, if there is one, and apply the new layout options.
    */
-  async applyLayout(clusterLabels, clusterAttr) {
+  async _applyLayoutToEles(eles, clusterLabels, clusterAttr) {
     if (this.layout) {
       this.layout.stop();
     }
@@ -183,18 +201,13 @@ export class NetworkEditorController {
       nodeRepulsion: 100000
     };
 
-    const allNodes = cy.nodes();
+    const allNodes = eles.nodes();
     const disconnectedNodes = allNodes.filter(n => n.degree() === 0); // careful, our compound nodes have degree 0
     const connectedNodes = allNodes.not(disconnectedNodes);
-    const networkWithoutDisconnectedNodes = cy.elements().not(disconnectedNodes);
-    let networkToLayout = networkWithoutDisconnectedNodes;
+    const networkWithoutDisconnectedNodes = eles.not(disconnectedNodes);
+    const networkToLayout = networkWithoutDisconnectedNodes;
 
-    if(options.sampleEdges) {
-      const edgesToRemove = this._getEdgesToRemove(clusterLabels, clusterAttr);
-      networkToLayout = networkWithoutDisconnectedNodes.subtract(edgesToRemove);
-    }
-
-    monkeyPatchMathRandom(); // just before the FD layout starts
+    // monkeyPatchMathRandom(); // just before the FD layout starts
     
     const start = performance.now();
 
@@ -206,12 +219,12 @@ export class NetworkEditorController {
     const layoutDone = performance.now();
     console.log(`layout time: ${Math.round(layoutDone - start)}ms`);
 
-    await this._packComponents(networkToLayout);
+    this._packComponents(networkToLayout);
 
     const packDone = performance.now();
     console.log(`packing time: ${Math.round(packDone - layoutDone)}ms`);
 
-    restoreMathRandom(); // after the FD layout is done
+    // restoreMathRandom(); // after the FD layout is done
 
     const connectedBB = connectedNodes.boundingBox();
     // Style hasn't been applied yet, there are no labels. Filter out compound nodes.
@@ -239,47 +252,106 @@ export class NetworkEditorController {
   }
 
 
-  async _packComponents(eles) {
-    eles = eles || this.cy.elements();
-    var components = eles.components();
+  _packComponents(eles) {
+    const layoutNodes = [];
 
-    var subgraphs = [];
-    components.forEach(component => {
-      var subgraph = { nodes:[], edges:[] };
+    eles.components().forEach((component, i) => {
+      component.nodes().forEach(n => {
+        const bb = n.layoutDimensions();
 
-      component.edges().forEach(edge => {
-        const [ s, t ] = [ edge.sourceEndpoint(), edge.targetEndpoint() ];
-        subgraph.edges.push({ startX: s.x, startY: s.y, endX: t.x, endY: t.y });
+        layoutNodes.push({
+          id: n.data('id'),
+          cmptId: i,
+          x: n.position('x'),
+          y: n.position('y'),
+          width:  bb.w,
+          height: bb.h,
+          isLocked: false
+        });
       });
-      component.nodes().forEach(node => {
-        var bb = node.boundingBox();
-        subgraph.nodes.push({ x: bb.x1, y: bb.y1, width: bb.w, height: bb.h });
-      });
-
-      subgraphs.push(subgraph);
     });
 
-    // cytoscape-layout-utilities extension
-    const layoutUtils = this.cy.layoutUtilities({ desiredAspectRatio: 16/9 }); 
-    const result = layoutUtils.packComponents(subgraphs);
+    const options = {
+      clientWidth:  400,
+      clientHeight: 300,
+      componentSpacing: 40 // default is 40
+    };
 
-    const layouts = components.map((component, i) => {
-      return component.nodes().layout({
-        name: 'preset',
-        animate: false,
-        fit: false,
-        transform: node => {
-          return {
-            x: node.position('x') + result.shifts[i].dx,
-            y: node.position('y') + result.shifts[i].dy
-          };
+    // updates the x,y fields of each layoutNode object
+    this._separateComponents(layoutNodes, options);
+
+    // can call applyPositions() because each 'layoutNode' has x, y and id fields.
+    this.applyPositions(layoutNodes);
+  }
+
+  /**
+   * From the cytoscape.js 'cose' layout.
+   */
+  _separateComponents(nodes, options) {
+    const components = [];
+  
+    for(let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const cid = node.cmptId;
+      const component = components[cid] = components[cid] || [];
+      component.push(node);
+    }
+  
+    let totalA = 0;
+  
+    for(let i = 0; i < components.length; i++) {
+      const c = components[i];
+      if(!c){ continue; }
+  
+      c.x1 =  Infinity;
+      c.x2 = -Infinity;
+      c.y1 =  Infinity;
+      c.y2 = -Infinity;
+  
+      for(let j = 0; j < c.length; j++) {
+        const n = c[j];
+        c.x1 = Math.min( c.x1, n.x - n.width / 2 );
+        c.x2 = Math.max( c.x2, n.x + n.width / 2 );
+        c.y1 = Math.min( c.y1, n.y - n.height / 2 );
+        c.y2 = Math.max( c.y2, n.y + n.height / 2 );
+      }
+  
+      c.w = c.x2 - c.x1;
+      c.h = c.y2 - c.y1;
+      totalA += c.w * c.h;
+    }
+  
+    components.sort((c1, c2) =>  c2.w * c2.h - c1.w * c1.h);
+  
+    let x = 0;
+    let y = 0;
+    let usedW = 0;
+    let rowH = 0;
+    const maxRowW = Math.sqrt(totalA) * options.clientWidth / options.clientHeight;
+  
+    for(let i = 0; i < components.length; i++) {
+      const c = components[i];
+      if(!c){ continue; }
+  
+      for(let j = 0; j < c.length; j++) {
+        const n = c[j];
+        if(!n.isLocked) {
+          n.x += (x - c.x1);
+          n.y += (y - c.y1);
         }
-      });
-    });
-
-    const promise = Promise.all(layouts.map(layout => layout.promiseOn('layoutstop')));
-    layouts.forEach(layout => layout.run());
-    await promise;
+      }
+  
+      x += c.w + options.componentSpacing;
+      usedW += c.w + options.componentSpacing;
+      rowH = Math.max(rowH, c.h);
+  
+      if(usedW > maxRowW) {
+        y += rowH + options.componentSpacing;
+        x = 0;
+        usedW = 0;
+        rowH = 0;
+      }
+    }
   }
 
 
@@ -481,14 +553,16 @@ export class NetworkEditorController {
   }
 
 
-  _setAverageNES(parent) {
-    // Set the average NES to the parent
+  getAverageNES(nodes) {
     let nes = 0;
-    const cluster = parent.children();
-    cluster.forEach(node => {
+    nodes.forEach(node => {
       nes += node.data('NES');
     });
-    nes = _.round(nes / cluster.length, 4);
+    return _.round(nes / nodes.length, 4);
+  }
+
+  _setAverageNES(parent) {
+    const nes = this.getAverageNES(parent.children());
     parent.data('NES', nes); 
     return nes;
   }
@@ -894,136 +968,4 @@ export class NetworkEditorController {
     }
   }
   
-
-  async exportImageArchive() {
-    const blobs = await Promise.all([
-      this.createNetworkImageBlob(ImageSize.SMALL),
-      this.createNetworkImageBlob(ImageSize.MEDIUM),
-      this.createNetworkImageBlob(ImageSize.LARGE),
-      this.createSVGLegendBlob()
-    ]);
-  
-    const zip = new JSZip();
-    zip.file('enrichment_map_small.png',  blobs[0]);
-    zip.file('enrichment_map_medium.png', blobs[1]);
-    zip.file('enrichment_map_large.png',  blobs[2]);
-    zip.file('node_color_legend_NES.svg', blobs[3]);
-  
-    const fileName = this.getZipFileName('images');
-    this.saveZip(zip, fileName);
-  }
-
-  async exportDataArchive() {
-    const netID = this.networkIDStr;
-  
-    const fetchExport = async path => {
-      const res = await fetch(path);
-      return await res.text();
-    };
-  
-    const files = await Promise.all([
-      fetchExport(`/api/export/enrichment/${netID}`),
-      fetchExport(`/api/export/ranks/${netID}`),
-      fetchExport(`/api/export/gmt/${netID}`),
-    ]);
-  
-    const zip = new JSZip();
-    zip.file('enrichment_results.txt', files[0]);
-    zip.file('ranks.txt', files[1]);
-    zip.file('gene_sets.gmt', files[2]);
-  
-    const fileName = this.getZipFileName('enrichment');
-    this.saveZip(zip, fileName);
-  }
-
-  async saveGeneList(genesJSON, pathways) { // used by the gene list panel (actually left-drawer.js)
-    if(pathways.length == 0)
-      return;
-
-    let fileName = 'gene_ranks.zip';
-    if(pathways.length == 1)
-      fileName = `gene_ranks_(${pathways[0]}).zip`;
-    else if(pathways.length <= 3)
-      fileName = `gene_ranks_(${pathways.slice(0,3).join(',')}).zip`;
-    else
-      fileName = `gene_ranks_${pathways.length}_pathways.zip`;
-
-    const geneLines = ['gene\trank'];
-    for(const { gene, rank } of genesJSON) {
-      geneLines.push(`${gene}\t${rank}`);
-    }
-    const genesText = geneLines.join('\n');
-    const pathwayText = pathways.join('\n');
-  
-    const zip = new JSZip();
-    zip.file('gene_ranks.txt', genesText);
-    zip.file('pathways.txt', pathwayText);
-
-    this.saveZip(zip, fileName);
-  }
-
-  async createNetworkImageBlob(imageSize) {
-    const { cy, bubbleSets } = this;
-    const renderer = cy.renderer();
-  
-    // render the network to a buffer canvas
-    const cyoptions = {
-      output: 'blob',
-      bg: 'white',
-      full: true, // full must be true for the calculations below to work
-      scale: imageSize.scale,
-    };
-    const cyCanvas = renderer.bufferCanvasImage(cyoptions);
-    const { width, height } = cyCanvas;
-  
-    // compute the transform to be applied to the bubbleSet svg layer
-    // this code was adapted from the code in renderer.bufferCanvasImage()
-    var bb = cy.elements().boundingBox();
-    const pxRatio = renderer.getPixelRatio();
-    const scale = imageSize.scale * pxRatio;
-    const dx = -bb.x1 * scale;
-    const dy = -bb.y1 * scale;
-    const transform = `translate(${dx},${dy})scale(${scale})`;
-  
-    // get the bubbleSet svg element
-    const svgElem = bubbleSets.layer.node.parentNode.cloneNode(true);
-    svgElem.firstChild.setAttribute('transform', transform); // firstChild is a <g> tag
-  
-    // render the bubbleSet svg layer using Canvg library
-    const svgCanvas = new OffscreenCanvas(width, height);
-    const ctx = svgCanvas.getContext('2d');
-    const svgRenderer = await Canvg.from(ctx, svgElem.innerHTML, presets.offscreen());
-    await svgRenderer.render();
-  
-    // combine the layers
-    const combinedCanvas = new OffscreenCanvas(width, height);
-    const combinedCtx = combinedCanvas.getContext('2d');
-    combinedCtx.drawImage(cyCanvas,  0, 0);
-    combinedCtx.drawImage(svgCanvas, 0, 0);
-  
-    const blob = await combinedCanvas.convertToBlob();
-    return blob;
-  }
-
-  async createSVGLegendBlob() {
-    const svg = getLegendSVG(this);
-    return new Blob([svg], { type: 'text/plain;charset=utf-8' });
-  }
-   
-  getZipFileName(suffix) {
-    const networkName = this.cy.data('name');
-    if(networkName) {
-      // eslint-disable-next-line no-control-regex
-      const reserved = /[<>:"/\\|?*\u0000-\u001F]/g;
-      if(!reserved.test(networkName)) {
-        return `${networkName}_${suffix}.zip`;
-      }
-    }
-    return `enrichment_map_${suffix}.zip`;
-  }
-
-  async saveZip(zip, fileName) {
-    const archiveBlob = await zip.generateAsync({ type: 'blob' });
-    await saveAs(archiveBlob, fileName);
-  }
 }

@@ -1,9 +1,10 @@
 import EventEmitter from 'eventemitter3';
 import { SENTRY } from '../../env';
-import { readTextFile, readExcelFile } from './data-file-reader';
-
+import { readTextFile, readExcelFile, validateText } from './data-file-reader';
 import * as Sentry from "@sentry/browser";
 
+export const RNA_SEQ = 'rnaseq';
+export const PRE_RANKED = 'ranks';
 
 const FILE_EXT_REGEX = /\.[^/.]+$/;
 const TSV_EXTS = ['txt', 'rnk', 'tsv', 'csv', 'gct'];
@@ -29,7 +30,7 @@ export class UploadController {
   }
 
 
-  async loadSampleData(fileName) {
+  async fetchSampleData(fileName) {
     const dataurl = `/sample-data/${fileName}`;
     const sdRes = await fetch(dataurl);
     
@@ -56,11 +57,11 @@ export class UploadController {
       this.bus.emit('finished', { networkID, requestID });
       return networkID;
     } else {
-      this.bus.emit('error', { errors: ['cound not create demo network'], requestID });
+      this.bus.emit('error', { errors: ['could not create demo network'], requestID });
     }
   }
 
-  async upload(files) {
+  async upload(files, format) {
     const file = files && files.length > 0 ? files[0] : null;
     if (!file)
       return;
@@ -83,27 +84,31 @@ export class UploadController {
     }
 
     try {
-      let read;
+      let readFile;
       if(TSV_EXTS.includes(ext)) {
-        read = readTextFile;
+        readFile = readTextFile;
       } else if(EXCEL_EXTS.includes(ext)) {
-        read = readExcelFile;
+        readFile = readExcelFile;
       } else {
         const exts = TSV_EXTS.join(', ') + ', ' + EXCEL_EXTS.join(', ');
         this.bus.emit('error', { errors: [`File extension not supported. Must be one of: ${exts}`] });
         return;
       }
 
-      console.log('Reading file');
-      const { type, format, columns, contents, errors } = await read(file);
-      console.log(`Reading ${format} file as ${type}, columns: ${columns}`);
+      const fileInfo = await readFile(file);
+      fileInfo.fileName = file.name;
+      fileInfo.networkName = name;
+      if(format) {
+        fileInfo.format = format;
+      }
+      console.log('File uploaded', fileInfo);
 
+      // Check if there's errors when uploading the file.
+      const { errors } = fileInfo;
       if(errors && errors.length > 0) {
         this.bus.emit('error', { errors });
-      } else if (type === 'ranks') {
-        this.bus.emit('ranks', { format, contents, name });
       } else {
-        this.bus.emit('classes', { format, columns, contents, name });
+        this.bus.emit('fileUploaded', fileInfo);
       }
     } catch (e) {
       console.log(e);
@@ -113,29 +118,43 @@ export class UploadController {
     }
   }
 
-  async sendDataToEMService(text, format, type, networkName, requestID, classesArr) {
-    const emRes = await this._sendDataToEMService(text, format, type, networkName, classesArr);
+  
+  async validateAndSendDataToEMService(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses, requestID) {
+    const validationResult = validateText(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses);
+    const { errors, contents, classes } = validationResult;
+    console.log('Validation Result', validationResult);
+
+    if(errors && errors.length > 0) {
+      this.bus.emit('error', { errors, requestID });
+      return;
+    }
+
+    const { networkName, delimiter }  = fileInfo;
+    const emRes = await this._sendDataToEMService(contents, fileFormat, delimiter, networkName, classes);
           
     if (emRes.errors) {
       this.bus.emit('error', { errors: emRes.errors, requestID });
-      this.captureNondescriptiveErrorInSentry('Error in EM service with uploaded rank file');
+      // TODO: Is this necessary? Errors on the server should get logged by the server, right?
+      this.captureNondescriptiveErrorInSentry('Error in EM service with uploaded file'); 
       return;
     }
+
+    console.log('finished', { networkID: emRes.netID, requestID });
 
     this.bus.emit('finished', { networkID: emRes.netID, requestID });
   }
   
 
-  async _sendDataToEMService(text, format, type, networkName, classesArr) {
+  async _sendDataToEMService(text, format, delimiter, networkName, classesArr) {
     let url;
-    if (type === 'ranks') {
+    if (format === PRE_RANKED) {
       url = '/api/create/preranked?' + new URLSearchParams({ networkName });
-    } else if(type === 'rnaseq') {
+    } else if (format === RNA_SEQ) {
       const classes = classesArr.join(',');
       url = '/api/create/rnaseq?' + new URLSearchParams({ classes, networkName });
     } 
 
-    const contentType = format === 'tsv' ? 'text/tab-separated-values' : 'text/csv';
+    const contentType = delimiter === '\t' ? 'text/tab-separated-values' : 'text/csv';
     
     const res = await fetch(url, {
       method: 'POST',
@@ -146,19 +165,39 @@ export class UploadController {
     if (res.ok) {
       const netID = await res.text();
       return { netID };
-
     } else if (res.status == 413) {
       // Max file size for uploads is defined in the dataParser in the server/routes/api/index.js file.
       return { errors: ["The uploaded file is too large. The maximum file size is 50 MB."] };
-
-    } else if (res.status == 422) {
-      // The EM-service returned an empty network. 
-      // Probable causes: The gene IDs don't match whats in our pathway database or none of the enriched pathways passed the filter cutoff.
-      return { errors: ["Not able to create a network from the provided data.", "There are not enough significantly enriched gene sets."] };
-
+    } else if (res.status == 450) {
+      // custom status code, error while running create data pipeline
+      const body = await res.json();
+      const errors = this.errorMessagesForCreateError(body.details);
+      return { errors };
     } else {
       return { errors: [] }; // empty array shows generic error message
     }
+  }
+
+  errorMessagesForCreateError(details) {
+    // File format validation errors can be found in data-file-reader.js
+    const { step, detail } = details;
+    const errors = [];
+
+    if(step === 'fgsea') {
+      errors.push('Error running FGSEA service.', 'Please try again later.');
+    } else if(step == 'em') {
+      if(detail === 'empty') {
+         // Probable causes: The gene IDs don't match whats in our pathway database or none of the enriched pathways passed the filter cutoff.
+        errors.push('Not able to create a network from the provided data.');
+        errors.push('There are not enough significantly enriched pathways.');
+      } else {
+        errors.push('Error running EnrichmentMap service.', 'Please try again later.');
+      }
+    } else if(step == 'bridgedb') {
+      errors.push('Error running BridgeDB service.', 'Could not map Ensembl gene IDs to HGNC.', 'Please try again later.');
+    }
+
+    return errors;
   }
 }
 

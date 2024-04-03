@@ -15,6 +15,8 @@ import {
   MONGO_URL,
 } from '../../env.js';
 
+const NETWORK_CREATE_ERROR_CODE = 450;
+
 const http = Express.Router();
 
 
@@ -53,21 +55,25 @@ http.post('/rnaseq', dataParser, async function(req, res, next) {
  * created network, then returns its ID.
  */
 http.post('/demo', async function(req, res, next) {
+  const perf = createPeformanceHook();
   try {
     const rankFile = './public/geneset-db/brca_hd_tep_ranks.rnk';
     let data = await fs.readFile(rankFile, 'utf8');
-
+    
     const networkID = await runDataPipeline({
       demo: true,
       networkName: 'Demo Network',
       contentType: 'text/tab-separated-values',
       type: 'preranked',
-      body: data
+      body: data,
+      perf
     });
 
     res.send(networkID);
   } catch (err) {
     next(err);
+  } finally {
+    perf.dispose();
   }
 });
 
@@ -100,18 +106,21 @@ async function runDataPipelineHttp(req, res, type) {
   let body = req.body;
   const { classes } = req.query;
 
-  await runDataPipeline({ networkName, contentType, type, classes, body }, res);
+  const perf = createPeformanceHook();
+  try {
+    await runDataPipeline({ networkName, contentType, type, classes, body, perf }, res);
+  } finally {
+    perf.dispose();
+  }
 }
 
 
-async function runDataPipeline({ networkName, contentType, type, classes, body, demo }, res) {
+async function runDataPipeline({ networkName, contentType, type, classes, body, demo, perf }, res) {
   console.log('/api/create/');
-
-  const preranked = type === 'preranked';
-  const perf = createPeformanceHook();
-
   // n.b. no await so as to not block
   saveUserUploadFileToS3(body, `${networkName}.csv`, contentType);
+
+  const preranked = type === 'preranked';
 
   perf.mark('bridgedb');
   const needIdMapping = isEnsembl(body);
@@ -128,6 +137,7 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
     rankedGeneList = rankedGeneListToDocument(body, delim);
     pathwaysForEM = pathways;
   } else {
+    // Messages from FGSEA are basically just warning about non-finite ranks
     const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
     sendMessagesToSentry('fgsea', messages);
     rankedGeneList = fgseaServiceGeneRanksToDocument(ranks);
@@ -136,16 +146,18 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
 
   perf.mark('em');
   const networkJson = await runEM(pathwaysForEM, demo);
-
-  perf.mark('mongo');
-  let networkID;
   if(isEmptyNetwork(networkJson)) {
-    console.log('sending empty network');
-    res?.status(422)?.send("Empty Network");
-  } else {
+    throw new CreateError({ step: 'em', detail: 'empty' });
+  }
+
+  let networkID;
+  try {
+    perf.mark('mongo');
     networkID = await Datastore.createNetwork(networkJson, networkName, type, DB_1, demo);
     await Datastore.initializeGeneRanks(DB_1, networkID, rankedGeneList);
     res?.send(networkID);
+  } catch(e) {
+    throw new CreateError({ step: 'mongo', cause: e });
   }
 
   perf.mark('end');
@@ -175,7 +187,6 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
     }]
   });
   
-  perf.dispose();
   return networkID;
 }
 
@@ -187,13 +198,20 @@ function isEmptyNetwork(networkJson) {
 
 
 async function runFGSEApreranked(ranksData, contentType) {
-  const response = await fetch(FGSEA_PRERANKED_SERVICE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': contentType },
-    body: ranksData
-  });
+  let response;
+  try {
+    response = await fetch(FGSEA_PRERANKED_SERVICE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body: ranksData
+    });
+  } catch(e) {
+    throw new CreateError({ step: 'fgsea', type: 'preranked', cause: e });
+  }
   if(!response.ok) {
-    throw new Error("Error running fgsea preranked service.");
+    const body = await response.text();
+    const status = response.status;
+    throw new CreateError({ step: 'fgsea', type: 'preranked', body, status });
   }
   return await response.json();
 }
@@ -201,13 +219,20 @@ async function runFGSEApreranked(ranksData, contentType) {
 
 async function runFGSEArnaseq(countsData, classes, contentType) {
   const url = FGSEA_RNASEQ_SERVICE_URL + '?' + new URLSearchParams({ classes });
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': contentType },
-    body: countsData
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body: countsData
+    });
+  } catch(e) {
+    throw new CreateError({ step: 'fgsea', type: 'rnaseq', cause: e });
+  }
   if(!response.ok) {
-    throw new Error("Error running fgsea rnaseq service.");
+    const body = await response.text();
+    const status = response.status;
+    throw new CreateError({ step: 'fgsea', type: 'rnaseq', body, status });
   }
   return await response.json();
 }
@@ -225,6 +250,8 @@ async function runEM(fgseaResults, demo) {
       // These parameters correspond to the fields in EMCreationParametersDTO
       // similarityMetric: "JACCARD", 
       // similarityCutoff: 0.25,
+
+      // parameters only used by the demo network
       ...(demo && { 
         qvalue: 0.0001,
         similarityMetric: "JACCARD", 
@@ -233,16 +260,22 @@ async function runEM(fgseaResults, demo) {
     }
   };
 
-  const response = await fetch(EM_SERVICE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if(!response.ok) {
-    throw new Error("Error running em service.");
+  let response;
+  try {
+    response = await fetch(EM_SERVICE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  } catch(e) {
+    throw new CreateError({ step: 'em', cause: e });
   }
-  const networkJson = await response.json();
-  return networkJson;
+  if(!response.ok) {
+    const body = await response.text();
+    const status = response.status;
+    throw new CreateError({ step: 'em', body, status });
+  }
+  return await response.json();
 }
 
 
@@ -264,13 +297,20 @@ async function runBridgeDB(ensemblIDs, species='Human', sourceType='En') {
   const url = `${BRIDGEDB_URL}/${species}/xrefsBatch/${sourceType}`;
   const body = ensemblIDs.join('\n');
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/html' }, // thats what it wants
-    body
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/html' }, // thats what it wants
+      body
+    });
+  } catch(e) {
+    throw new CreateError({ step: 'bridgedb', cause: e });
+  }
   if(!response.ok) {
-    throw new Error("Error running BridgeDB xrefsBatch service.");
+    const body = await response.text();
+    const status = response.status;
+    throw new CreateError({ step: 'bridgedb', body, status });
   }
 
   const responseBody = await response.text();
@@ -298,11 +338,18 @@ async function runEnsemblToHGNCMapping(body, contentType) {
     .filter(line => line && line.length > 0)
     .map(line => line.split(delim));
 
+  const removeVersionCode = (ensID) => {
+    const i = ensID.indexOf('.');
+    if(i > 0) {
+      return ensID.slice(0, i);
+    }
+    return ensID;
+  };
+
   // Call BridgeDB
-  const ensemblIDs = content.map(row => row[0]);
-  // console.log(ensemblIDs);
+  const ensemblIDs = content.map(row => row[0]).map(removeVersionCode);
+
   const hgncIDs = await runBridgeDB(ensemblIDs);
-  // console.log(hgncIDs);
 
   // Replace old IDs with the new ones
   const newContent = [];
@@ -357,5 +404,27 @@ function sendMessagesToSentry(service, messages) {
     Sentry.captureEvent(event);
   }
 }
+
+
+
+class CreateError extends Error {
+  constructor(details) {
+    const { message, cause } = details;
+    super(message ? message : "Network Creation Error", { cause });
+    this.details = details;
+  }  
+}
+
+export function createRouterErrorHandler(err, req, res, next) {
+  if(err instanceof CreateError) {
+    console.log(err);
+    res
+      .status(NETWORK_CREATE_ERROR_CODE)
+      .send({ details: err.details });
+  } else {
+    next(err);
+  }
+}
+
 
 export default http;
