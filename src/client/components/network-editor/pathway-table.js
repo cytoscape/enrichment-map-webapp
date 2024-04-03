@@ -2,18 +2,16 @@ import React, { forwardRef, useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
-import chroma from 'chroma-js';
 import theme from '../../theme';
 import { DEFAULT_PADDING, pathwayTableHeight } from '../defaults';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar, PValueStarRating } from './charts';
-import { REG_COLOR_RANGE } from './network-style';
 
 import { makeStyles } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { IconButton, Paper, Typography, Link, Tooltip } from '@material-ui/core';
+import { Paper, Typography, Link, Tooltip } from '@material-ui/core';
 import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
