@@ -195,10 +195,19 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     return unique;
   };
 
+  /** Flashes the list quickly (shows the loading skeleton) so the user sees that the list has changed */
+  const flashAndSetGenes = (genes) => {
+    setGenes(null);
+    setTimeout(() => setGenes(genes), 100);
+  };
+
   const debouncedSelectionHandler = _.debounce(async () => {
     const eles = cy.pathwayNodes(true);
+    // Force UINION if only 0 or 1 pathway is selected
+    if (eles.length < 2) {
+      setSetOperation('union');
+    }
     const intersection = setOperationRef.current === 'intersection';
-
     if (eles.length > 0) {
       // The sorting must be the same as the colour of the selection (one or more nodes),
       // but only if all the nodes in the selection are the same colour
@@ -221,10 +230,10 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
       }
       // Update the sorted gene list
       const newGenes = await fetchGeneListFromElements(eles, intersection);
-      setGenes(sortGenes(newGenes, sortRef.current));
+      flashAndSetGenes(sortGenes(newGenes, sortRef.current));
     } else if (_.isEmpty(searchValueRef.current)) {
       const newGenes = await fetchAllRankedGenes(intersection);
-      setGenes(sortGenes(newGenes, sortRef.current));
+      flashAndSetGenes(sortGenes(newGenes, sortRef.current));
     }
   }, 250);
 
@@ -308,6 +317,9 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
       if (evt.target === cy && selectedGeneRef.current != null) {
         // Tapping the network background should collapse the selected gene and clear the highlight
         toggleGeneDetails(selectedGeneRef.current);
+      } else if (evt.target.group && evt.target.group() === 'edges') {
+        // Clicking an edge should automatically select INTERSECTION
+        setSetOperation('intersection');
       }
     });
 
@@ -369,8 +381,10 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
     }
   };
 
+  const selectedPathways = cy.pathwayNodes(true);
+  const isSearch = !_.isEmpty(searchValue);
+  const setOperationsDisabled = isSearch || selectedPathways.length < 2;
   const totalGenes = genes != null ? genes.length : -1;
-  const setOperationsDisabled = searchValue != null && searchValue !== '';
   const sortDisabled = totalGenes <= 0;
   
   const drawerVariant = isMobile || isTablet ? 'temporary' : 'persistent';
@@ -380,6 +394,14 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   const drawerProps = {
     ...(drawerVariant === 'temporary' && { keepMounted: true })
   };
+
+  // Change title according to node selection
+  let title = 'All Genes';
+  if (isSearch) {
+    title = 'Search Results';
+  } else if (selectedPathways.length > 0) {
+    title = 'Genes in Selection';
+  }
 
   return (
     <Drawer
@@ -400,7 +422,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
         <div className={classes.header}>
           <Toolbar variant="dense" className={classes.toolbar}>
             <Typography display="block" variant="subtitle2" color="textPrimary" className={classes.title}>
-              Genes&nbsp;
+              { title }&nbsp;
             {totalGenes >= 0 && (
               <>
                 <Typography display="inline" variant="body2" color="textSecondary">
@@ -495,7 +517,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
             genes={genes}
             selectedGene={selectedGene}
             initialIndex={initialIndex}
-            isSearch={!_.isEmpty(searchValue)}
+            isSearch={isSearch}
             isIntersection={setOperation === 'intersection'}
             isMobile={isMobile}
             onGeneClick={toggleGeneDetails}

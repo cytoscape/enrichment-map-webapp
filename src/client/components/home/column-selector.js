@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
-import { FormControl, Grid, InputLabel, MenuItem, Select, Typography } from '@material-ui/core';
+import { Grid, Link, Typography } from '@material-ui/core';
+import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import { ExperimentGroupIcon, ControlGroupIcon } from '../svg-icons';
 import BlockIcon from '@material-ui/icons/Block';
@@ -32,32 +33,60 @@ const useStyles = makeStyles((theme) => ({
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-  }
+    color: theme.palette.text.secondary,
+  },
+  controlContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  formControl: {
+    margin: theme.spacing(1, 0, 1, 0),
+    minWidth: 375,
+    [theme.breakpoints.down('xs')]: {
+      minWidth: 0,
+      width: '100%',
+    },
+  },
+  inputLabel: {
+    color: theme.palette.text.primary,
+  },
+  select: {
+    fontSize: theme.typography.button.fontSize,
+    color: theme.palette.text.secondary,
+    paddingRight: 0,
+  },
 }));
 
 
 export function GeneColumnSelector({ columns, value, onChange }) {
   const classes = useStyles();
 
+  const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "none" };
+
   return (
     <Grid container direction="column" spacing={4} className={classes.root}>
-      {/* <Grid item xs={12}>
-        <Typography variant="body1">
-          Select the column to use for <i>Gene Names</i>.
-        </Typography>
-      </Grid> */}
-      <Grid item xs={12}>
-        <FormControl fullWidth>
-          <InputLabel>Gene Name Column</InputLabel>
+      <Grid item xs={12} className={classes.controlContainer}>
+        <InputLabel disableAnimation className={classes.inputLabel}>
+          Gene Name Column:
+        </InputLabel>
+        <FormControl className={classes.formControl}>
           <Select
             value={value}
-            label="Gene Name Column"
+            variant="outlined"
+            className={classes.select}
             onChange={evt => onChange(evt.target.value)}
           >
           { columns.map((col, i) => 
             <MenuItem key={i} value={col}>{col}</MenuItem>
           )}
           </Select>
+          <FormHelperText>
+            Identifiers from&nbsp;
+            <Link href="https://www.ensembl.org/Homo_sapiens/Info/Index" className={classes.linkout} {...linkoutProps}>Ensembl</Link> or&nbsp;
+            <Link href="https://www.genenames.org/" className={classes.linkout} {...linkoutProps}>HGNC</Link>&nbsp;
+            &#40;for human only&#41;
+          </FormHelperText>
         </FormControl>
       </Grid>
     </Grid>
@@ -77,17 +106,15 @@ export function RankColumnSelector({ columns, value, onChange }) {
 
   return (
     <Grid container direction="column" spacing={4} className={classes.root}>
-      {/* <Grid item xs={12}>
-        <Typography variant="body1">
-          Select the column to use for <i>Gene Ranks</i>.
-        </Typography>
-      </Grid> */}
-      <Grid item xs={12}>
-        <FormControl fullWidth>
-          <InputLabel>Gene Rank Column</InputLabel>
+      <Grid item xs={12} className={classes.controlContainer}>
+        <InputLabel disableAnimation className={classes.inputLabel}>
+          Gene Rank Column:
+        </InputLabel>
+        <FormControl className={classes.formControl}>
           <Select
             value={value}
-            label="Gene Rank Column"
+            variant="outlined"
+            className={classes.select}
             onChange={evt => onChange(evt.target.value)}
           >
           { columns.map((col, i) => 

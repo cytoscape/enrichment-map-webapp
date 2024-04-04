@@ -4,7 +4,6 @@ import PropTypes from 'prop-types';
 import { RNA_SEQ } from './upload-controller';
 import { UploadPanel, DemoPanel } from './upload-panel';
 import { GeneColumnSelector, RankColumnSelector, ClassSelector } from './column-selector';
-import { ColumnType } from './data-file-reader';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -20,7 +19,17 @@ import CircularProgressIcon from '@material-ui/core/CircularProgress';
 
 const DEFAULT_FORMAT = RNA_SEQ;
 
-const useStyles = makeStyles(() => ({
+const useStyles = makeStyles((theme) => ({
+  titleRoot: {
+    [theme.breakpoints.down('xs')]: {
+      padding: theme.spacing(2, 1),
+    },
+  },
+  dividers: {
+    [theme.breakpoints.down('xs')]: {
+      padding: theme.spacing(2, 1),
+    },
+  },
   progress: {
     display: 'flex',
     flexDirection: 'column',
@@ -122,7 +131,7 @@ const StartDialog = ({
 
   return (
     <Dialog maxWidth="sm" fullScreen={isMobile} open={open}>
-      <DialogTitle>
+      <DialogTitle classes={{ root: classes.titleRoot }}>
       {
         {
           'UPLOAD':  () => isDemo ? 'Create Demo Network' : 'Upload your Data',
@@ -132,7 +141,7 @@ const StartDialog = ({
         }[step]()
       }
       </DialogTitle>
-      <DialogContent dividers>
+      <DialogContent dividers classes={{ dividers: classes.dividers }}>
       { 
         {
           'UPLOAD':  () => <Upload />,
