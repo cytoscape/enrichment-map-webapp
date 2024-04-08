@@ -15,25 +15,30 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
   constructor(bus) {
     /** @type {EventEmitter} */
     this.bus = bus || new EventEmitter();
+
+    LocalForage.config({
+      name    : 'EM-Web',
+      version : 1.0,
+    });
   }
 
-   saveRecentNetwork({ secret, cy }) {
+   saveRecentNetwork(cy) {
     const id = cy.data('id');
     const now = new Date();
     const opened = now.getTime();
-    const value = this._localStorageValue({ secret, opened: opened, cy });
+    const value = this._localStorageValue({ opened: opened, cy });
     
     LocalForage.setItem(id, value).catch((err) => {
       console.log(err);
     });
   }
 
-  updateRecentNetwork({ secret, cy }) {
+  updateRecentNetwork(cy) {
     const id = cy.data('id');
    
     LocalForage.getItem(id).then((val) => {
       if (val) {
-        const newValue = this._localStorageValue({ secret, opened: val.opened, cy });
+        const newValue = this._localStorageValue({ opened: val.opened, cy });
         
         LocalForage.setItem(id, newValue).catch((err) => {
           console.log(err);
@@ -86,7 +91,7 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
     });
   }
 
-  _localStorageValue({ secret, opened, cy }) {
+  _localStorageValue({ opened, cy }) {
     const name = cy.data('name');
     const now = new Date();
     const modified = now.getTime();
@@ -95,11 +100,10 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
       maxWidth: NETWORK_THUMBNAIL_WIDTH,
       maxHeight: NETWORK_THUMBNAIL_HEIGHT,
       full: true,
-      bg: '#ffffff' // TODO use network BG color
+      bg: '#ffffff', // TODO use network BG color
     });
 
     return {
-      secret,
       name,
       thumbnail,
       opened: opened ? opened : modified,

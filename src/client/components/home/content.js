@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import EventEmitter from 'eventemitter3';
 import _ from 'lodash';
+
 import { makeStyles } from '@material-ui/core/styles';
 
+import { RecentNetworksController } from '../recent-networks-controller.js';
 import { UploadController, RNA_SEQ, PRE_RANKED } from './upload-controller';
 import EasyCitation from './citation.js';
 import { DebugMenu } from '../../debug-menu';
@@ -19,6 +21,7 @@ import { AppLogoIcon } from '../svg-icons';
 
 import classNames from 'classnames';
 import uuid from 'uuid';
+import RecentNetworksList from './recent-networks-list.js';
 
 
 export const STEP = {
@@ -166,7 +169,7 @@ const useContentStyles = makeStyles(theme => ({
   },
 }));
 
-export function Content() {
+export function Content({ recentNetworksController }) {
   const classes = useContentStyles();
 
   /** State */
@@ -180,6 +183,7 @@ export function Content() {
   const [ mobile, setMobile ] = useState(() => isMobileWidth());
   const [ tablet, setTablet ] = useState(() => isTabletWidth());
   const [ droppingFile, setDroppingFile ] = useState(false);
+  const [ showRecentNetworks, setShowRecentNetworks ] = useState(false);
 
   // This state must be kept as a single object because the eventbus callbacks run asyncronously, 
   // so this state must be updated atomically to avoid extra re-renders (which also cause errors).
@@ -196,6 +200,11 @@ export function Content() {
   const updateUploadState = (update) => setUploadState(prev => ({ ...prev, ...update }));
 
   /** Effects */
+
+  // trigger getInitialValues only on component init using useEffect
+  useEffect(() => {
+    recentNetworksController.getRecentNetworksLength(length => setShowRecentNetworks(length > 0));
+  }, []); 
 
   useEffect(() => {
     loadSampleFiles().then(setSampleFiles);
@@ -354,6 +363,11 @@ export function Content() {
           onDragEnd={onDragEndUpload}
         >
           <Grid container direction="column" justifyContent="center" alignItems="center">
+          {showRecentNetworks && (
+            <Grid item className={classes.section} xs={12}>
+              <RecentNetworksList isMobile={mobile} onToggle={() => {}} recentNetworksController={recentNetworksController} />
+            </Grid>
+          )}
             <Grid item>
               <Grid
                 container
@@ -396,31 +410,29 @@ export function Content() {
             <Grid item xs={mobile ? 10 : 8}>
               <EasyCitation />
             </Grid>
-          {uploadState.step !== STEP.WAITING && (
-            <Grid item>
-              <StartDialog
-                step={uploadState.step}
-                isMobile={mobile}
-                isDemo={uploadState.demo}
-                errorMessages={uploadState.errorMessages}
-                fileInfo={uploadState.fileInfo}
-
-                geneCol={uploadState.geneCol}
-                rankCol={uploadState.rankCol}
-                rnaseqClasses={uploadState.rnaseqClasses}
-                
-                onClassesChanged={(rnaseqClasses) => updateUploadState({ rnaseqClasses })}
-                onRankColChanged={(rankCol) => updateUploadState({ rankCol })}
-                onGeneColChanged={(geneCol) => updateUploadState({ geneCol })}
-
-                onUpload={onUpload}
-                onSubmit={onSubmit}
-                onCancelled={onCancel}
-                onBack={onBack}
-              />
-            </Grid>
-          )}
           </Grid>
+        {uploadState.step !== STEP.WAITING && (
+          <StartDialog
+            step={uploadState.step}
+            isMobile={mobile}
+            isDemo={uploadState.demo}
+            errorMessages={uploadState.errorMessages}
+            fileInfo={uploadState.fileInfo}
+
+            geneCol={uploadState.geneCol}
+            rankCol={uploadState.rankCol}
+            rnaseqClasses={uploadState.rnaseqClasses}
+            
+            onClassesChanged={(rnaseqClasses) => updateUploadState({ rnaseqClasses })}
+            onRankColChanged={(rankCol) => updateUploadState({ rankCol })}
+            onGeneColChanged={(geneCol) => updateUploadState({ geneCol })}
+
+            onUpload={onUpload}
+            onSubmit={onSubmit}
+            onCancelled={onCancel}
+            onBack={onBack}
+          />
+        )}
         </div>
         {/* <MobileMenu /> */}
         <Debug 
@@ -432,6 +444,9 @@ export function Content() {
     </div>
   );
 }
+Content.propTypes = {
+  recentNetworksController: PropTypes.instanceOf(RecentNetworksController).isRequired,
+};
 
 //==[ Figure ]========================================================================================================
 

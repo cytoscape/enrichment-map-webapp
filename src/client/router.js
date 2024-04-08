@@ -2,8 +2,11 @@ import React from 'react';
 import _ from 'lodash';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import PageNotFound from './components/page-not-found';
+import { RecentNetworksController } from './components/recent-networks-controller';
 import { Home } from './components/home';
 import { NetworkEditor } from './components/network-editor';
+
+const recentNetworksController = new RecentNetworksController();
 
 export const Router = () => (
   <BrowserRouter>
@@ -12,13 +15,13 @@ export const Router = () => (
         path='/'
         exact
         render={(props) => (
-          <Home {...props} />
+          <Home {...props} recentNetworksController={recentNetworksController} />
         )}
       />
       <Route
         path='/document/:id/:secret'
         render={(props) => (
-          <NetworkEditor {...props} />
+          <NetworkEditor {...props} recentNetworksController={recentNetworksController} />
         )}
       />
       <Route
@@ -28,7 +31,7 @@ export const Router = () => (
           const full = params['full'] === 'true';
           const id = _.get(props, ['match', 'params', 'id'], _.get(props, 'id'));
           const secret = _.get(props, ['match', 'params', 'secret'], _.get(props, 'secret'));
-          return <NetworkEditor id={id} secret={secret} full={full} />;
+          return <NetworkEditor id={id} secret={secret} full={full} recentNetworksController={recentNetworksController} />;
         }}
       />
       <Route status={404} exact component={PageNotFound} />
