@@ -57,7 +57,7 @@
     "cytoscape-automove": "^1.10.3",
     "cytoscape-bubblesets": "^3.2.0",
     "cytoscape-fcose": "^2.2.0",
-    "cytoscape-layers": "^2.4.1",
+    "cytoscape-layers": "file:/Users/mkucera/git/cytoscape.js-layers",
     "dedent": "^1.5.1",
     "dotenv": "^6.2.0",
     "dotenv-defaults": "^5.0.0",

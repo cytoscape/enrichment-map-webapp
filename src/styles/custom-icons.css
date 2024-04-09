@@ -7,12 +7,3 @@
 
   /* add custom icons here: */
 }
-
-.cluster-toggle-button {
-  display: flex;
-  background-color: black;
-  filter: drop-shadow(0 0 0.75rem black);
-  opacity: 0.75;
-  border-radius: 50%;
-  padding: 5px;
-}

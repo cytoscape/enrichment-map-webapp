@@ -11,8 +11,6 @@ import { SearchController } from './search-contoller';
 import { ExportController } from './export-controller';
 import { UndoHandler } from './undo-stack';
 
-import { NorthEastIcon, NorthWestIcon, SouthEastIcon, SouthWestIcon } from '../svg-icons';
-
 // Clusters that have this many nodes get optimized.
 // Note we are using number of nodes as a proxy for number of edges, assuming large clusters are mostly complete.
 const LARGE_CLUSTER_SIZE = 33; // approx 500 edges in a complete graph
@@ -451,8 +449,8 @@ export class NetworkEditorController {
         const bubble = parent.scratch(Scratch.BUBBLE);
         bubble?.node?.classList?.[hide ? 'add' : 'remove']('unhighlighted');
 
-        const elems = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-        Object.values(elems).forEach(elem => elem.style.opacity = hide ? 0 : 1); // don't change 'visibility' prop because the mouse hover event uses that
+        const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
+        elem.style.opacity = hide ? 0 : 1; // don't change 'visibility' prop because the mouse hover event uses that
       });
     });
   }
@@ -611,117 +609,58 @@ export class NetworkEditorController {
 
   _createExpandCollapseButtons() {
     const { cy } = this;
+    const layers = cy.layers();
 
-    const setButtonHTML = (elem, parent, position) => {
+    // Create a layer to hold the button elements
+    const buttonLayer = layers.append('html', { stopClicks: true });
+
+    const setButtonHTML = (elem, parent) => {
       const collapsed = parent.data('collapsed');
-      let jsx;
-      if(position === 'top-left') 
-        jsx = collapsed ? <NorthWestIcon /> : <SouthEastIcon />;
-      else if(position === 'top-right') 
-        jsx = collapsed ? <NorthEastIcon /> : <SouthWestIcon />;
-      else if(position === 'bottom-left') 
-        jsx = collapsed ? <SouthEastIcon /> : <NorthWestIcon />;
-      else if(position === 'bottom-right') 
-        jsx = collapsed ? <SouthWestIcon /> : <NorthEastIcon />;
+      const text = collapsed ? '+ Expand' : '- Collapse';
+      const className = `cluster_toggle_button ${collapsed ? 'expand' : 'collapse'}`;
+      const jsx = <button className={className}>{text}</button>;
       const html = ReactDOMServer.renderToStaticMarkup(jsx);
       elem.innerHTML = html;
-      elem.style.opacity = collapsed ? 1 : 0;
     };
 
     // Switch the button icon when the cluster is expanded or collapsed.
     this.bus.on('toggleExpandCollapse', parent => {
-      const elems = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-      for(const [position, elem] of Object.entries(elems)) {
-        setButtonHTML(elem, parent, position);
-      }
+      const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
+      setButtonHTML(elem, parent);
     });
 
-    // Toggle expand/collapse if user clicks direclty on the bubble.
-    // cy.on('tap', e => {
-    //   if(e.target === cy) {
-    //     const parent = this.getBubbleSetParent(e.position);
-    //     if(parent) {
-    //       this.toggleExpandCollapse(parent, true);
-    //     }
-    //   }
-    // });
-  
-    // Detect when the user hovers over the bubble and show/hide the button.
-    // let prevParent = null;
-    // cy.on('mousemove', _.throttle(e => {
-    //   const parent = this.getBubbleSetParent(e.position);
-    //   if(prevParent && prevParent !== parent) {
-    //     const elems = prevParent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-    //     for(const elem of Object.values(elems)) {
-    //       elem.style.visibility = 'hidden';
-    //     }
-    //     prevParent = null;
-    //   }
-    //   if(parent) {
-    //     const elems = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-    //     for(const elem of Object.values(elems)) {
-    //       elem.style.visibility = 'visible';
-    //     }
-    //     prevParent = parent;
-    //   }
-    // }, 100));
-
-
-
     // Create a button for each cluster
-    const createClusterToggleButton = (elem, parent, position) => {
-      elem.classList.add('cluster-toggle-button');
+    const createClusterToggleButton = (elem, parent) => {
+      parent.scratch(Scratch.TOGGLE_BUTTON_ELEM, elem);
+      setButtonHTML(elem, parent);
       elem.style.visibility = 'hidden';
-      // elem.style.pointerEvents = 'none';
-      const elems = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-      if(elems === undefined) {
-        parent.scratch(Scratch.TOGGLE_BUTTON_ELEM, { [position]: elem });
-      } else {
-        elems[position] = elem;
-      }
-
-      setButtonHTML(elem, parent, position);
-
       // Toggle expand/collapse when user clicks on the button
       elem.addEventListener('click', async () => {
         await this.toggleExpandCollapse(parent, true);
       });
     };
 
-    const layers = cy.layers();
-
-    for(const [position, buttonLayer] of [
-      ['top-right',    layers.append('html', { stopClicks: true })], 
-      ['top-left',     layers.append('html', { stopClicks: true })],
-      ['bottom-left',  layers.append('html', { stopClicks: true })],
-      ['bottom-right', layers.append('html', { stopClicks: true })]
-    ]) {
-      // eslint-disable-next-line no-unused-vars
-      layers.renderPerNode(buttonLayer, (elem, node, bb) => {}, {
-        init: (elem, node) => {
-          if(node.isParent()) {
-            createClusterToggleButton(elem, node, position);
-          }
-        },
-        transform: 'translate(-50%,-50%)',
-        uniqueElements: true,
-        checkBounds: true,
-        position
-      });
-    }
+    // eslint-disable-next-line no-unused-vars
+    layers.renderPerNode(buttonLayer, (elem, node, bb) => {}, {
+      init: (elem, node) => {
+        if(node.isParent()) {
+          createClusterToggleButton(elem, node);
+        }
+      },
+      transform: 'translate(-50%,-50%)',
+      position: 'bottom',
+      uniqueElements: true,
+      checkBounds: true,
+    });
 
     cy.clusterNodes().forEach(parent => {
       parent.on('mouseover', () => {
-        const elems = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-        for(const elem of Object.values(elems)) {
-          elem.style.visibility = 'visible';
-        }
+        const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
+        elem.style.visibility = 'visible';
       });
       parent.on('mouseout', () => {
-        const elems = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-        for(const elem of Object.values(elems)) {
-          elem.style.visibility = 'hiddenf';
-        }
+        const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
+        elem.style.visibility = 'hidden';
       });
     });
   }

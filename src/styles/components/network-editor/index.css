@@ -4,3 +4,25 @@ body {
   background: rgb(24 24 24);
   color-scheme: dark;
 }
+
+.cluster_toggle_button {
+  border: none;
+  color: white;
+  padding: 4px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 12px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.expand {
+  background-color: #04AA6D;
+}
+
+.collapse {
+  background-color: #e3c011;
+}
