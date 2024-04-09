@@ -19,6 +19,7 @@ const Path = {
   IMAGE_SMALL:   'images/enrichment_map_small.png',
   IMAGE_MEDIUM:  'images/enrichment_map_medium.png',
   IMAGE_LARGE:   'images/enrichment_map_large.png',
+  IMAGE_PDF:     'images/enrichment_map.pdf',
   IMAGE_LEGEND:  'images/node_color_legend_NES.svg',
   DATA_FOLDER:   'data',
   DATA_ENRICH:   'data/enrichment_results.txt',
@@ -57,7 +58,8 @@ export class ExportController {
     const blob0 = await this._createNetworkImageBlob(ImageSize.SMALL);
     const blob1 = await this._createNetworkImageBlob(ImageSize.MEDIUM);
     const blob2 = await this._createNetworkImageBlob(ImageSize.LARGE);
-    const blob3 = await this._createSVGLegendBlob();
+    const blob3 = await this._createNetworkPDFBlob();
+    const blob4 = await this._createSVGLegendBlob();
     const files = await filesPromise;
     const readme = createREADME(this.controller);
   
@@ -65,7 +67,8 @@ export class ExportController {
     zip.file(Path.IMAGE_SMALL,   blob0);
     zip.file(Path.IMAGE_MEDIUM,  blob1);
     zip.file(Path.IMAGE_LARGE,   blob2);
-    zip.file(Path.IMAGE_LEGEND,  blob3);
+    zip.file(Path.IMAGE_PDF,     blob3);
+    zip.file(Path.IMAGE_LEGEND,  blob4);
     zip.file(Path.DATA_ENRICH,   files[0]);
     zip.file(Path.DATA_RANKS,    files[1]);
     zip.file(Path.DATA_GENESETS, files[2]);
@@ -100,6 +103,7 @@ export class ExportController {
 
     this._saveZip(zip, fileName);
   }
+
 
   async _createNetworkImageBlob(imageSize) {
     const { cy, bubbleSets } = this.controller;
@@ -141,6 +145,14 @@ export class ExportController {
     combinedCtx.drawImage(svgCanvas, 0, 0);
   
     const blob = await combinedCanvas.convertToBlob();
+    return blob;
+  }
+
+  async _createNetworkPDFBlob() {
+    const { cy } = this.controller;
+    const blob = await cy.pdf({
+      includeSvgLayers: true, // include bubbles
+    });
     return blob;
   }
 
