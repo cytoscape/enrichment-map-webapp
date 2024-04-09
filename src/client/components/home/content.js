@@ -164,7 +164,6 @@ const useContentStyles = makeStyles(theme => ({
     [theme.breakpoints.down('xs')]: {
       textAlign: 'center',
       alignItems: 'center',
-      marginTop: theme.spacing(1),
     },
   },
 }));

@@ -6,7 +6,7 @@ import { RecentNetworksController } from '../recent-networks-controller';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { Container, Paper, Grid } from '@material-ui/core';
+import { Box, Paper, Grid } from '@material-ui/core';
 import { Typography, Tooltip } from '@material-ui/core';
 import { Popover, MenuList, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@material-ui/core';
@@ -18,47 +18,39 @@ import DeleteForeverIcon from '@material-ui/icons/DeleteForever';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 
 
-const MAX_ITEMS = 25;
+const MAX_ITEMS = 20;
 const DEF_NETWORK_NAME = 'Untitled Network';
 /** Transparent 1 pixel PNG */
 const EMPTY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
 
 
 const useStyles = theme => ({
-  root: {
-    margin: 0,
-    padding: 0,
-    justifyContent: 'space-between',
-  },
-  item: {
-    margin: 0,
-    padding: 0,
-  },
-  metadata: {
-    textAlign: 'left',
-    margin: 0,
-    padding: theme.spacing(0.5, 0.25, 0.5, 1),
-  },
-  metadataSkeleton: {
-    margin: 0,
-    padding: '10px 2px 10px 2px',
-  },
   paper: {
-    marginBottom: theme.spacing(2),
-    padding: theme.spacing(1, 0, 1, 0),
     whiteSpace: 'nowrap',
     boxShadow: 'none',
-  },
-  container: {
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'left',
+    border: 'none',
+    marginBottom: theme.spacing(2),
+    padding: theme.spacing(1, 2.75, 0, 2.75),
     [theme.breakpoints.down('xs')]: {
-      justifyContent: 'center',
+      padding: theme.spacing(0.5, 0.75, 0, 0.75),
     },
   },
+  container: {
+    display: 'grid',
+    overflow: 'hidden',
+    justifyContent: 'left',
+  },
+  imageList: {
+    display: 'flex',
+    listStyle: 'none',
+    overflowY: 'auto',
+    flexWrap: 'nowrap',
+    webkitOverflowScrolling: 'touch',
+    padding: theme.spacing(0, 0, 1, 0),
+    transform: 'translateZ(0)', // Promote the list into his own layer on Chrome. This cost memory but helps keeping high FPS.
+  },
   paperItem: {
+    display: 'inline-block',
     margin: theme.spacing(0.5),
     cursor: 'pointer',
   },
@@ -75,6 +67,15 @@ const useStyles = theme => ({
       width: 148,
       height: 128,
     },
+  },
+  metadata: {
+    textAlign: 'left',
+    margin: 0,
+    padding: theme.spacing(0.5, 0.25, 0.5, 1),
+  },
+  metadataSkeleton: {
+    margin: 0,
+    padding: '10px 2px 10px 2px',
   },
   button: {
     margin: 0,
@@ -209,9 +210,9 @@ export class RecentNetworksList extends Component {
       <>
         { length > 0 && (
           <Paper variant="outlined" square className={classes.paper}>
-            <Grid container direction="column" alignItems="stretch" alignContent="stretch" justifyContent="flex-start" className={classes.root}>
+            <Grid container direction="column" alignItems="stretch" alignContent="stretch" justifyContent="flex-start">
               <Grid item>
-                <Container>
+                <Box>
                   <Grid container alignItems='center' alignContent="center" justifyContent="space-between">
                     <Grid item>
                       <Typography variant="subtitle1" gutterBottom className={classes.subtitle1}>
@@ -231,17 +232,17 @@ export class RecentNetworksList extends Component {
                       </Button>
                     </Grid> */}
                   </Grid>
-                </Container>
+                </Box>
               </Grid>
-              <Grid item style={{ justifyContent: 'center' }}>
-                <Container className={classes.container}>
+              <Grid item className={classes.container}>
+                <Box className={classes.imageList}>
                   { loading && length > 0 && _.times(length, (idx) =>
                     this.renderItem({}, idx)
                   )}
                   { !loading && recentNetworks && recentNetworks.map((obj, idx) =>
                     this.renderItem(obj, idx)
                   )}
-                </Container>
+                </Box>
               </Grid>
               { anchorEl && currentItem && (
                 this.renderPopover()
@@ -276,15 +277,15 @@ export class RecentNetworksList extends Component {
         className={id ? classes.paperItem : classes.paperItemSkeleton}
         {...(enabled && { onClick })}
       >
-        <Grid container direction="column" alignItems="stretch" justifyContent="center" className={classes.root}>
-          <Grid item className={classes.item}>
+        <Grid container direction="column" alignItems="stretch" justifyContent="center">
+          <Grid item>
             { enabled ? (
               <img src={imgSrc} className={classes.thumbnail} style={{ background: bgColor }} />
             ) : (
               <Skeleton variant="rect" className={classes.thumbnail} />
             )}
           </Grid>
-          <Grid item className={classes.item}>
+          <Grid item>
             <Grid
               container
               direction="column"
@@ -292,7 +293,7 @@ export class RecentNetworksList extends Component {
               justifyContent="center"
               className={id ? classes.metadata : classes.metadataSkeleton}
             >
-              <Grid item className={classes.item}>
+              <Grid item>
                 { enabled ? (
                   <Tooltip title={name}>
                     <Typography variant="body2" className={classes.body2}>
@@ -303,17 +304,17 @@ export class RecentNetworksList extends Component {
                   <Skeleton variant="text" height={24} />
                 )}
               </Grid>
-              <Grid item className={classes.item}>
+              <Grid item>
                 { enabled ? (
-                  <Grid container direction="row" alignItems='center' justifyContent="space-between" className={classes.root}>
-                    <Grid item className={classes.item}>
+                  <Grid container direction="row" alignItems='center' justifyContent="space-between">
+                    <Grid item>
                       <Tooltip title={'Opened ' + new Date(obj.opened).toLocaleString('en-US')}>
                         <Typography variant="caption" className={classes.caption}>
                           { new Date(obj.opened).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) }
                         </Typography>
                       </Tooltip>
                     </Grid>
-                    <Grid item className={classes.item}>
+                    <Grid item>
                       <IconButton size="small" onClick={e => this.showPopover(e, obj)}>
                         <MoreVertIcon />
                       </IconButton>
