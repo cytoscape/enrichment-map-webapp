@@ -11,12 +11,12 @@ import { Box, Paper, Grid } from '@material-ui/core';
 import { Typography, Tooltip } from '@material-ui/core';
 import { Popover, MenuList, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@material-ui/core';
-import { Button, IconButton, Link } from '@material-ui/core';
+import { Button, IconButton } from '@material-ui/core';
 import { Skeleton } from '@material-ui/lab';
 import Collapse from '@material-ui/core/Collapse';
 
 import MoreVertIcon from '@material-ui/icons/MoreVert';
-import DeleteForeverIcon from '@material-ui/icons/DeleteForever';
+import DeleteIcon from '@material-ui/icons/Delete';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 
 
@@ -80,10 +80,6 @@ const useStyles = theme => ({
     margin: 0,
     padding: '10px 2px 10px 2px',
   },
-  button: {
-    margin: 0,
-    textTransform: 'unset',
-  },
   subtitle1: {
     fontWeight: 'bold',
     textAlign: 'center',
@@ -119,9 +115,13 @@ export class RecentNetworksList extends Component {
       currentItem: null,
       anchorEl: null,
       confirm: false,  // Whether or not to show the confirmation dialog
+      confirmTitle: null, // Dialog title
+      confirmText: null, // Dialog text
+      confirmLabel: null, // OK button's label
       confirmFn: null, // Function to be executed after the action is confirmed through the confirmation dialog
     };
 
+    this.clearRecentNetworks = this.clearRecentNetworks.bind(this);
     this.deleteCurrentNetwork = this.deleteCurrentNetwork.bind(this);
   }
 
@@ -164,12 +164,11 @@ export class RecentNetworksList extends Component {
     }
   }
 
-  // clearRecentNetworks() {
-  //   const { recentNetworks } = this.state;
-
-  //   if (recentNetworks)
-  //     this.controller.clearRecentNetworks(() => this.refresh());
-  // }
+  clearRecentNetworks() {
+    const { recentNetworks } = this.state;
+    if (recentNetworks)
+      this.controller.clearRecentNetworks(() => this.refresh());
+  }
 
   async deleteCurrentNetwork() {
     const { currentItem } = this.state;
@@ -178,16 +177,16 @@ export class RecentNetworksList extends Component {
   }
 
   async deleteNetwork(id, refresh) {
-    await fetch(`/api/document/${id}`, {
-      method: 'DELETE',
-    }).then(() => {
+    // await fetch(`/api/document/${id}`, {
+    //   method: 'DELETE',
+    // }).then(() => {
       this.controller.removeRecentNetwork(id, () => {
         if (refresh)
           this.refresh();
       });
-    }).catch((err) => {
-      console.log(err);
-    });
+    // }).catch((err) => {
+    //   console.log(err);
+    // });
   }
 
   showPopover(event, currentItem) {
@@ -206,7 +205,7 @@ export class RecentNetworksList extends Component {
   }
 
   render() {
-    const { loading, length, recentNetworks, currentItem, anchorEl, confirm } = this.state;
+    const { loading, length, recentNetworks, anchorEl, confirm } = this.state;
     const { classes } = this.props;
 
     return (
@@ -221,18 +220,11 @@ export class RecentNetworksList extends Component {
                       Recent Networks ({ length }):
                     </Typography>
                   </Grid>
-                  {/* <Grid item>
-                    <Button
-                      size='small'
-                      variant="contained"
-                      color="default"
-                      className={classes.button}
-                      disabled={loading || length <= 0}
-                      onClick={() => this.clearRecentNetworks()}
-                    >
-                      Clear
-                    </Button>
-                  </Grid> */}
+                  <Grid item>
+                    <IconButton size="small" onClick={e => this.showPopover(e)}>
+                      <MoreVertIcon />
+                    </IconButton>
+                  </Grid>
                 </Grid>
               </Box>
             </Grid>
@@ -246,10 +238,10 @@ export class RecentNetworksList extends Component {
                 )}
               </Box>
             </Grid>
-            { anchorEl && currentItem && (
+            { anchorEl && (
               this.renderPopover()
             )}
-            { confirm && currentItem && (
+            { confirm && (
               this.renderConfirmationDialog()
             )}
           </Grid>
@@ -334,10 +326,23 @@ export class RecentNetworksList extends Component {
   renderPopover() {
     const { currentItem, anchorEl } = this.state;
 
-    const deleteIfConfirmed = () => {
+    const deleteIfConfirmed = (currentItem) => {
       this.setState({
         confirm: true,
+        confirmTitle: 'Remove Network?',
+        confirmText: `The network &quot;<b>${currentItem.name ? currentItem.name : DEF_NETWORK_NAME}</b>&quot; will be removed from the list.`,
+        confirmLabel: 'Remove Network',
         confirmFn: this.deleteCurrentNetwork,
+        anchorEl: null,
+      });
+    };
+    const clearListIfConfirmed = () => {
+      this.setState({
+        confirm: true,
+        confirmTitle: 'Clear Recent Network List?',
+        confirmText: `The list of recent networks will be cleared.`,
+        confirmLabel: 'Clear List',
+        confirmFn: this.clearRecentNetworks,
         anchorEl: null,
       });
     };
@@ -349,12 +354,23 @@ export class RecentNetworksList extends Component {
         open={Boolean(anchorEl)}
         onClose={() => this.hidePopover()}
       >
+      {currentItem == null && (
         <MenuList>
-          <MenuItem onClick={() => deleteIfConfirmed()}>
+          <MenuItem onClick={() => clearListIfConfirmed()}>
             <ListItemIcon>
-              <DeleteForeverIcon fontSize="small" />
+              <DeleteIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText primary="Remove" />
+            <ListItemText primary="Clear List..." />
+          </MenuItem>
+        </MenuList>
+      )}
+      {currentItem && (
+        <MenuList>
+          <MenuItem onClick={() => deleteIfConfirmed(currentItem)}>
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Remove..." />
           </MenuItem>
           <MenuItem onClick={() => this.openNetwork(currentItem.id, currentItem.secret, true)}>
             <ListItemIcon>
@@ -363,16 +379,23 @@ export class RecentNetworksList extends Component {
             <ListItemText primary="Open in New Tab" />
           </MenuItem>
         </MenuList>
+      )}
       </Popover>
     );
   }
 
   renderConfirmationDialog() {
-    const { confirm, confirmFn, currentItem } = this.state;
-    const name = currentItem.name ? currentItem.name : DEF_NETWORK_NAME;
+    const { confirm, confirmTitle, confirmText, confirmLabel, confirmFn } = this.state;
 
     const handleClose = () => {
-      this.setState({ confirm: false, confirmFn: null, currentItem: null });
+      this.setState({
+        confirm: false,
+        confirmTitle: null,
+        confirmText: null,
+        confirmLabel: null,
+        confirmFn: null,
+        currentItem: null
+      });
     };
     const handleOK = async () => {
       if (confirmFn) { await confirmFn(); }
@@ -384,18 +407,16 @@ export class RecentNetworksList extends Component {
         open={confirm}
         onClose={handleClose}
       >
-        <DialogTitle>Delete Network?</DialogTitle>
+        <DialogTitle>{ confirmTitle }</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            The network &quot;<b>{name}</b>&quot; will be removed from the list.
-          </DialogContentText>
+          <DialogContentText>{ confirmText }</DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button variant="outlined" color="primary" onClick={handleClose} >
             Cancel
           </Button>
           <Button variant="contained" color="primary" autoFocus onClick={handleOK}>
-            Delete
+            { confirmLabel }
           </Button>
         </DialogActions>
       </Dialog>
