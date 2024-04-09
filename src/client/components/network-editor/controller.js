@@ -384,6 +384,17 @@ export class NetworkEditorController {
     } 
   }
 
+  renameNetwork(newName) {console.log("rename network: " + newName);
+    const networkName = newName != null ? newName.trim() : null;
+    this.cy.data({ name: networkName });
+  
+    fetch(`/api/${this.networkIDStr}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ networkName })
+    });
+  }
+
   async restoreNetwork() {
     const res = await fetch(`/api/${this.networkIDStr}/positions`, {
       method: 'DELETE',

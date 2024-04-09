@@ -1,5 +1,6 @@
 import EventEmitter from 'eventemitter3';
 import LocalForage from 'localforage';
+import { NETWORK_BACKGROUND } from './defaults';
 
 const NETWORK_THUMBNAIL_WIDTH = 344;
 const NETWORK_THUMBNAIL_HEIGHT = 344;
@@ -100,7 +101,7 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
       maxWidth: NETWORK_THUMBNAIL_WIDTH,
       maxHeight: NETWORK_THUMBNAIL_HEIGHT,
       full: true,
-      bg: '#ffffff', // TODO use network BG color
+      bg: NETWORK_BACKGROUND,
     });
 
     return {

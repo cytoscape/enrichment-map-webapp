@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
 
+import { NETWORK_BACKGROUND } from '../defaults';
 import { RecentNetworksController } from '../recent-networks-controller';
 
 import { withStyles } from '@material-ui/core/styles';
@@ -265,7 +266,6 @@ export class RecentNetworksList extends Component {
     const name = obj.name ? obj.name : DEF_NETWORK_NAME;
     const png = obj.thumbnail ? obj.thumbnail : EMPTY_PNG;
     const imgSrc = `data:image/png;base64,${png}`;
-    const bgColor = '#ffffff'; // TODO use the network background color
     const enabled = id != null;
 
     const onClick = () => this.openNetwork(id, secret);
@@ -280,7 +280,7 @@ export class RecentNetworksList extends Component {
         <Grid container direction="column" alignItems="stretch" justifyContent="center">
           <Grid item>
             { enabled ? (
-              <img src={imgSrc} className={classes.thumbnail} style={{ background: bgColor }} />
+              <img src={imgSrc} className={classes.thumbnail} style={{ background: NETWORK_BACKGROUND }} />
             ) : (
               <Skeleton variant="rect" className={classes.thumbnail} />
             )}
