@@ -111,6 +111,9 @@ async function loadNetwork(id, cy, controller, recentNetworksController) {
     controller.savePositions();
     recentNetworksController.updateRecentNetwork(cy);
   }, 4000));
+  cy.on('data', _.debounce(() => {
+    recentNetworksController.updateRecentNetwork(cy);
+  }, 1000));
 
   // Selecting an edge should select its nodes, but the edge itself must never be selected
   // (this makes it easier to keep the Pathways table selection consistent)
