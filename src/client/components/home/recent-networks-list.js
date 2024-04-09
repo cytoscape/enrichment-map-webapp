@@ -10,8 +10,9 @@ import { Box, Paper, Grid } from '@material-ui/core';
 import { Typography, Tooltip } from '@material-ui/core';
 import { Popover, MenuList, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@material-ui/core';
-import { Button, IconButton } from '@material-ui/core';
+import { Button, IconButton, Link } from '@material-ui/core';
 import { Skeleton } from '@material-ui/lab';
+import Collapse from '@material-ui/core/Collapse';
 
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import DeleteForeverIcon from '@material-ui/icons/DeleteForever';
@@ -55,9 +56,10 @@ const useStyles = theme => ({
     cursor: 'pointer',
   },
   paperItemSkeleton: {
+    display: 'inline-block',
     margin: theme.spacing(0.5),
-    border: '1px solid transparent',
     cursor: 'default',
+    border: '1px solid transparent',
   },
   thumbnail: {
     width: 172,
@@ -207,53 +209,51 @@ export class RecentNetworksList extends Component {
     const { classes } = this.props;
 
     return (
-      <>
-        { length > 0 && (
-          <Paper variant="outlined" square className={classes.paper}>
-            <Grid container direction="column" alignItems="stretch" alignContent="stretch" justifyContent="flex-start">
-              <Grid item>
-                <Box>
-                  <Grid container alignItems='center' alignContent="center" justifyContent="space-between">
-                    <Grid item>
-                      <Typography variant="subtitle1" gutterBottom className={classes.subtitle1}>
-                        Recent Networks ({ length }):
-                      </Typography>
-                    </Grid>
-                    {/* <Grid item>
-                      <Button
-                        size='small'
-                        variant="contained"
-                        color="default"
-                        className={classes.button}
-                        disabled={loading || length <= 0}
-                        onClick={() => this.clearRecentNetworks()}
-                      >
-                        Clear
-                      </Button>
-                    </Grid> */}
+      <Collapse in={length > 0} timeout={500}>
+        <Paper variant="outlined" square className={classes.paper}>
+          <Grid container direction="column" alignItems="stretch" alignContent="stretch" justifyContent="flex-start">
+            <Grid item>
+              <Box>
+                <Grid container alignItems='center' alignContent="center" justifyContent="space-between">
+                  <Grid item>
+                    <Typography variant="subtitle1" gutterBottom className={classes.subtitle1}>
+                      Recent Networks ({ length }):
+                    </Typography>
                   </Grid>
-                </Box>
-              </Grid>
-              <Grid item className={classes.container}>
-                <Box className={classes.imageList}>
-                  { loading && length > 0 && _.times(length, (idx) =>
-                    this.renderItem({}, idx)
-                  )}
-                  { !loading && recentNetworks && recentNetworks.map((obj, idx) =>
-                    this.renderItem(obj, idx)
-                  )}
-                </Box>
-              </Grid>
-              { anchorEl && currentItem && (
-                this.renderPopover()
-              )}
-              { confirm && currentItem && (
-                this.renderConfirmationDialog()
-              )}
+                  {/* <Grid item>
+                    <Button
+                      size='small'
+                      variant="contained"
+                      color="default"
+                      className={classes.button}
+                      disabled={loading || length <= 0}
+                      onClick={() => this.clearRecentNetworks()}
+                    >
+                      Clear
+                    </Button>
+                  </Grid> */}
+                </Grid>
+              </Box>
             </Grid>
-          </Paper>
-        )}
-      </>
+            <Grid item className={classes.container}>
+              <Box className={classes.imageList}>
+                { loading && length > 0 && _.times(length, (idx) =>
+                  this.renderItem({}, idx)
+                )}
+                { !loading && recentNetworks && recentNetworks.map((obj, idx) =>
+                  this.renderItem(obj, idx)
+                )}
+              </Box>
+            </Grid>
+            { anchorEl && currentItem && (
+              this.renderPopover()
+            )}
+            { confirm && currentItem && (
+              this.renderConfirmationDialog()
+            )}
+          </Grid>
+        </Paper>
+      </Collapse>
     );
   }
 
@@ -387,7 +387,7 @@ export class RecentNetworksList extends Component {
         <DialogTitle>Delete Network?</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            The network &quot;<b>{name}</b>&quot; will be permanently deleted.
+            The network &quot;<b>{name}</b>&quot; will be removed from the list.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
