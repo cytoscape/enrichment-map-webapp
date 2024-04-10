@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
+import chroma from 'chroma-js';
 
 import { NETWORK_BACKGROUND } from '../defaults';
 import { RecentNetworksController } from '../recent-networks-controller';
@@ -13,11 +14,15 @@ import { Popover, MenuList, MenuItem, ListItemIcon, ListItemText } from '@materi
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@material-ui/core';
 import { Button, IconButton } from '@material-ui/core';
 import { Skeleton } from '@material-ui/lab';
+import { Snackbar, SnackbarContent } from '@material-ui/core';
 import Collapse from '@material-ui/core/Collapse';
 
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import DeleteIcon from '@material-ui/icons/Delete';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
+import CloseIcon from '@material-ui/icons/Close';
+import CircularProgressIcon from '@material-ui/core/CircularProgress';
+import { ShareIcon } from '../svg-icons';
 
 
 const DEF_NETWORK_NAME = 'Untitled Network';
@@ -109,6 +114,15 @@ const useStyles = theme => ({
   caption: {
     color: theme.palette.secondary.main,
   },
+  snackBar: {
+    top: '10px',
+    zOrder: 1000,
+  },
+  snackBarContent: {
+    color: 'inherit',
+    background: theme.palette.primary.main,
+    border: `1px solid ${theme.palette.text.disabled}`,
+  },
 });
 
 
@@ -130,10 +144,19 @@ export class RecentNetworksList extends Component {
       confirmText: null, // Dialog text
       confirmLabel: null, // OK button's label
       confirmFn: null, // Function to be executed after the action is confirmed through the confirmation dialog
+      snackBarState: {
+        open: false,
+        message: "",
+        autoHideDelay: 4000,
+        closeable: true,
+        spinner: false,
+      },
     };
 
     this.clearRecentNetworks = this.clearRecentNetworks.bind(this);
     this.deleteCurrentNetwork = this.deleteCurrentNetwork.bind(this);
+
+    this.snack = this.snackBarOps();
   }
 
   componentDidMount() {
@@ -214,49 +237,82 @@ export class RecentNetworksList extends Component {
     });
   }
 
+  snackBarOps() {
+    return {
+      close: () => this.setState({ snackBarState: { open: false }}),
+      showMessage: message => this.setState({ snackBarState: { open: true, closeable: true, autoHideDelay: 3000, message }}),
+      showSpinner: message => this.setState({ snackBarState: { open: true, closeable: false, spinner: true, message }}),
+    };
+  }
+
   render() {
     const { loading, length, recentNetworks, anchorEl, confirm } = this.state;
     const { classes } = this.props;
 
     return (
-      <Collapse in={length > 0} timeout={500}>
-        <Paper variant="outlined" square className={classes.paper}>
-          <Grid container direction="column" alignItems="stretch" alignContent="stretch" justifyContent="flex-start">
-            <Grid item>
-              <Box>
-                <Grid container alignItems='center' alignContent="center" justifyContent="space-between">
-                  <Grid item>
-                    <Typography variant="subtitle1" gutterBottom className={classes.title}>
-                      Recent Networks ({ length }):
-                    </Typography>
+      <>
+        <Collapse in={length > 0} timeout={500}>
+          <Paper variant="outlined" square className={classes.paper}>
+            <Grid container direction="column" alignItems="stretch" alignContent="stretch" justifyContent="flex-start">
+              <Grid item>
+                <Box>
+                  <Grid container alignItems='center' alignContent="center" justifyContent="space-between">
+                    <Grid item>
+                      <Typography variant="subtitle1" gutterBottom className={classes.title}>
+                        Recent Networks ({ length }):
+                      </Typography>
+                    </Grid>
+                    <Grid item>
+                      <IconButton size="small" onClick={e => this.showPopover(e)}>
+                        <MoreVertIcon />
+                      </IconButton>
+                    </Grid>
                   </Grid>
-                  <Grid item>
-                    <IconButton size="small" onClick={e => this.showPopover(e)}>
-                      <MoreVertIcon />
-                    </IconButton>
-                  </Grid>
-                </Grid>
-              </Box>
+                </Box>
+              </Grid>
+              <Grid item className={classes.container}>
+                <Box className={classes.imageList}>
+                  { loading && length > 0 && _.times(length, (idx) =>
+                    this.renderItem({}, idx)
+                  )}
+                  { !loading && recentNetworks && recentNetworks.map((obj, idx) =>
+                    this.renderItem(obj, idx)
+                  )}
+                </Box>
+              </Grid>
+              { anchorEl && (
+                this.renderPopover()
+              )}
+              { confirm && (
+                this.renderConfirmationDialog()
+              )}
             </Grid>
-            <Grid item className={classes.container}>
-              <Box className={classes.imageList}>
-                { loading && length > 0 && _.times(length, (idx) =>
-                  this.renderItem({}, idx)
-                )}
-                { !loading && recentNetworks && recentNetworks.map((obj, idx) =>
-                  this.renderItem(obj, idx)
-                )}
-              </Box>
-            </Grid>
-            { anchorEl && (
-              this.renderPopover()
-            )}
-            { confirm && (
-              this.renderConfirmationDialog()
-            )}
-          </Grid>
-        </Paper>
-      </Collapse>
+          </Paper>
+        </Collapse>
+        <Snackbar
+          className={classes.snackBar}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          open={this.state.snackBarState.open || false} 
+          autoHideDuration={this.state.snackBarState.autoHideDelay || null} 
+          onClose={() => this.setState({ snackBarState: { open: false }})} 
+        >
+          <SnackbarContent 
+            className={classes.snackBarContent}
+            message={<span>{this.state.snackBarState.message || ""}</span>}
+            action={(() => {
+              if (this.state.snackBarState.closeable) {
+                return (
+                  <IconButton size='small' onClick={() => this.setState({ snackBarState: { open: false }})}>
+                    <CloseIcon />
+                  </IconButton>
+                );
+              } else if(this.state.snackBarState.spinner) {
+                return <CircularProgressIcon size={20}/>;
+              }
+            })()}
+          />
+        </Snackbar>
+      </>
     );
   }
 
@@ -349,8 +405,25 @@ export class RecentNetworksList extends Component {
   }
 
   renderPopover() {
-    const { currentItem, anchorEl } = this.state;
+    const { recentNetworks, currentItem, anchorEl } = this.state;
 
+    const handleCopyLink = async () => {
+      if (recentNetworks && recentNetworks.length > 0) {
+        // Copy the links of all networks to the clipboard
+        let text = '';
+        recentNetworks.forEach((obj, idx) => {
+          text += `${obj.name}\t${window.location.origin}/document/${obj.id}`;
+          if (idx < recentNetworks.length - 1) {
+            text += '\n';
+          }
+        });
+        navigator.clipboard.writeText(text);
+        // Close the popup
+        this.setState({ anchorEl: null });
+        // Show the snackbar
+        this.snack.showMessage("Links copied to clipboard");
+      }
+    };
     const deleteIfConfirmed = (currentItem) => {
       this.setState({
         confirm: true,
@@ -359,6 +432,7 @@ export class RecentNetworksList extends Component {
         confirmLabel: 'Remove Network',
         confirmFn: this.deleteCurrentNetwork,
         anchorEl: null,
+        snackBarState: { open: false },
       });
     };
     const clearListIfConfirmed = () => {
@@ -381,6 +455,12 @@ export class RecentNetworksList extends Component {
       >
       {currentItem == null && (
         <MenuList>
+          <MenuItem onClick={() => handleCopyLink()}>
+            <ListItemIcon>
+              <ShareIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Share..." />
+          </MenuItem>
           <MenuItem onClick={() => clearListIfConfirmed()}>
             <ListItemIcon>
               <DeleteIcon fontSize="small" />
