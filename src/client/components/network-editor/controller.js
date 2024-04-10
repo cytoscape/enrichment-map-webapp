@@ -653,16 +653,33 @@ export class NetworkEditorController {
       checkBounds: true,
     });
 
-    cy.clusterNodes().forEach(parent => {
-      parent.on('mouseover', () => {
+    const getClusterUnderPointer = position => {
+      const { x, y } = position;
+      for(const parent of cy.clusterNodes()) {
+        const bb = parent.bb();
+        if(x >= bb.x1 && x <= bb.x2 && y >= bb.y1 && y <= bb.y2) {
+          return parent;
+        }
+      }
+    };
+
+    // Detect when the user hovers over the parent node and show/hide the button.
+    // We do it this way instead of using the parent's 'mouseover' event because that
+    // causes the button to disapear when hovering over an edge.
+    let prevParent = null;
+    cy.on('mousemove', _.throttle(e => {
+      const parent = getClusterUnderPointer(e.position);
+      if(prevParent && prevParent !== parent) {
+        const elem = prevParent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
+        elem.style.visibility = 'hidden';
+        prevParent = null;
+      }
+      if(parent) {
         const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
         elem.style.visibility = 'visible';
-      });
-      parent.on('mouseout', () => {
-        const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-        elem.style.visibility = 'hidden';
-      });
-    });
+        prevParent = parent;
+      }
+    }, 100));
   }
 
 
