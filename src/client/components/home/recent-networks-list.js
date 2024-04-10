@@ -20,7 +20,6 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 
 
-const MAX_ITEMS = 20;
 const DEF_NETWORK_NAME = 'Untitled Network';
 /** Transparent 1 pixel PNG */
 const EMPTY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
@@ -31,11 +30,16 @@ const useStyles = theme => ({
     whiteSpace: 'nowrap',
     boxShadow: 'none',
     border: 'none',
+    borderRadius: '0 0 8px 8px',
     marginBottom: theme.spacing(2),
     padding: theme.spacing(1, 2.75, 0, 2.75),
     [theme.breakpoints.down('xs')]: {
       padding: theme.spacing(0.5, 0.75, 0, 0.75),
     },
+  },
+  title: {
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   container: {
     display: 'grid',
@@ -48,24 +52,35 @@ const useStyles = theme => ({
     overflowY: 'auto',
     flexWrap: 'nowrap',
     webkitOverflowScrolling: 'touch',
-    padding: theme.spacing(0, 0, 1, 0),
+    padding: theme.spacing(0, 0, 1.5, 0),
     transform: 'translateZ(0)', // Promote the list into his own layer on Chrome. This cost memory but helps keeping high FPS.
   },
   paperItem: {
     display: 'inline-block',
     margin: theme.spacing(0.5),
+    padding: theme.spacing(0.5),
     cursor: 'pointer',
+    border: `2px solid ${theme.palette.background.default}`,
+    borderRadius: '8px',
+    backgroundColor: theme.palette.background.default,
+    "&:hover": {
+      backgroundColor: theme.palette.action.hover,
+    }
   },
   paperItemSkeleton: {
     display: 'inline-block',
     margin: theme.spacing(0.5),
+    padding: theme.spacing(0.5),
     cursor: 'default',
-    border: '1px solid transparent',
+    border: `2px solid ${theme.palette.background.default}`,
+    borderRadius: '8px',
+    backgroundColor: theme.palette.background.default,
   },
   thumbnail: {
     width: 172,
     height: 148,
     objectFit: 'contain',
+    borderRadius: 4,
     [theme.breakpoints.down('xs')]: {
       width: 148,
       height: 128,
@@ -74,18 +89,14 @@ const useStyles = theme => ({
   metadata: {
     textAlign: 'left',
     margin: 0,
-    padding: theme.spacing(0.5, 0.25, 0.5, 1),
+    padding: theme.spacing(0.5, 0.25, 0.5, 0.25),
   },
   metadataSkeleton: {
     margin: 0,
     padding: '10px 2px 10px 2px',
   },
-  subtitle1: {
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  body2: {
-    maxWidth: 148,
+  name: {
+    maxWidth: 160,
     margin: 0,
     padding: 0,
     whiteSpace: 'nowrap',
@@ -134,12 +145,11 @@ export class RecentNetworksList extends Component {
     this.controller.getRecentNetworksLength((length) => {
       this.setState({
         loading: true,
-        length: Math.min(length, MAX_ITEMS),
+        length: length,
         currentItem: null,
         anchorEl: null,
       }, () => {
-        this.controller.getRecentNetworks((val) => {
-          const recentNetworks = val.slice(0, MAX_ITEMS);
+        this.controller.getRecentNetworks('opened', (recentNetworks) => {
           this.setState({
             loading: false,
             length: recentNetworks.length,
@@ -216,7 +226,7 @@ export class RecentNetworksList extends Component {
               <Box>
                 <Grid container alignItems='center' alignContent="center" justifyContent="space-between">
                   <Grid item>
-                    <Typography variant="subtitle1" gutterBottom className={classes.subtitle1}>
+                    <Typography variant="subtitle1" gutterBottom className={classes.title}>
                       Recent Networks ({ length }):
                     </Typography>
                   </Grid>
@@ -262,6 +272,21 @@ export class RecentNetworksList extends Component {
 
     const onClick = () => this.openNetwork(id, secret);
 
+    const tooltipText = () => {
+      return <>
+        <code>Last opened: { new Date(obj.opened).toLocaleString('en-US') }</code><br />
+        <code>Created:&nbsp;&nbsp;&nbsp;&nbsp; { new Date(obj.created).toLocaleString('en-US') }</code>
+      </>;
+    };
+    const lastOpenedText = () => {
+      const date = new Date(obj.opened);
+      let today = new Date();
+      if (new Date(date).setHours(0,0,0,0) == today.setHours(0,0,0,0)) { // call setHours to take the time out of the comparison
+          return date.toLocaleTimeString('en-US', { hour: "2-digit", minute: "2-digit" }); // Date equals today's date, so display only the time
+      }
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
     return (
       <Paper
         key={idx}
@@ -288,7 +313,7 @@ export class RecentNetworksList extends Component {
               <Grid item>
                 { enabled ? (
                   <Tooltip title={name}>
-                    <Typography variant="body2" className={classes.body2}>
+                    <Typography variant="body2" className={classes.name}>
                       { name }
                     </Typography>
                   </Tooltip>
@@ -300,9 +325,9 @@ export class RecentNetworksList extends Component {
                 { enabled ? (
                   <Grid container direction="row" alignItems='center' justifyContent="space-between">
                     <Grid item>
-                      <Tooltip title={'Opened ' + new Date(obj.opened).toLocaleString('en-US')}>
+                      <Tooltip title={tooltipText()}>
                         <Typography variant="caption" className={classes.caption}>
-                          { new Date(obj.opened).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) }
+                          { lastOpenedText() }
                         </Typography>
                       </Tooltip>
                     </Grid>
