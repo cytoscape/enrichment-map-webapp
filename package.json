@@ -57,7 +57,7 @@
     "cytoscape-automove": "^1.10.3",
     "cytoscape-bubblesets": "^3.2.0",
     "cytoscape-fcose": "^2.2.0",
-    "cytoscape-layers": "^2.4.4",
+    "cytoscape-layers": "^2.4.1",
     "cytoscape-pdf-export": "cytoscape/cytoscape.js-pdf-export#release/0.0.1",
     "dedent": "^1.5.1",
     "dotenv": "^6.2.0",
