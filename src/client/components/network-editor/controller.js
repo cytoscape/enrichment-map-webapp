@@ -648,12 +648,12 @@ export class NetworkEditorController {
         }
       },
       transform: 'translate(-50%,-50%)',
-      position: 'bottom',
+      position: 'center',
       uniqueElements: true,
       checkBounds: true,
     });
 
-    const getClusterUnderPointer = position => {
+    const getCompoundNodeUnderPointer = position => {
       const { x, y } = position;
       for(const parent of cy.clusterNodes()) {
         const bb = parent.bb();
@@ -663,23 +663,44 @@ export class NetworkEditorController {
       }
     };
 
-    // Detect when the user hovers over the parent node and show/hide the button.
-    // We do it this way instead of using the parent's 'mouseover' event because that
-    // causes the button to disapear when hovering over an edge.
-    let prevParent = null;
-    cy.on('mousemove', _.throttle(e => {
-      const parent = getClusterUnderPointer(e.position);
-      if(prevParent && prevParent !== parent) {
-        const elem = prevParent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-        elem.style.visibility = 'hidden';
-        prevParent = null;
-      }
-      if(parent) {
+    const showOnlyOneButton = (parentToShow) => {
+      // hides all the buttons except the one passed in as argument
+      for(const parent of cy.clusterNodes()) {
         const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-        elem.style.visibility = 'visible';
-        prevParent = parent;
+        if(elem) {
+          if(parent === parentToShow) {
+            elem.style.visibility = 'visible';
+          } else {
+            elem.style.visibility = 'hidden';
+          }
+        }
       }
+    };
+    const hideAllButtons = () => showOnlyOneButton(null);
+
+    // Detect when the user hovers over the parent (compound) node and show the button.
+    // Do it this way instead of using the parent's 'mouseover' event because that
+    // causes the button to disapear when hovering over an edge.
+    // Automatically hide the button after a timeout, so it doesn't always obscure the nodes under it.
+    const timeout = 3000;
+    let prevParent = null;
+    let timeoutID = null;
+    cy.on('mousemove', _.throttle(e => {
+      const parent = getCompoundNodeUnderPointer(e.position);
+      if(prevParent !== parent) {
+        clearTimeout(timeoutID);
+        showOnlyOneButton(parent);
+        timeoutID = setTimeout(hideAllButtons, timeout);
+      }
+      prevParent = parent;
     }, 100));
+    // reset the timer on expand/collapse
+    this.bus.on('toggleExpandCollapse', parent => {
+      if(prevParent === parent) {
+        clearTimeout(timeoutID);
+        timeoutID = setTimeout(hideAllButtons, timeout);
+      }
+    });
   }
 
 
