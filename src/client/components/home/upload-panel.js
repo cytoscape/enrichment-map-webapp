@@ -408,10 +408,11 @@ UploadPanel.propTypes = {
 
 //==[ DemoPanel ]=====================================================================================================
 
-const useDemoPanelStyles = makeStyles(() => ({
+const useDemoPanelStyles = makeStyles((theme) => ({
   thumbnail: {
-    borderRadius: '15px',
-    width: '300px'
+    borderRadius: '8px',
+    width: '100%',
+    margin: theme.spacing(2.5, 0, 2.5, 0),
   },
 }));
 
@@ -419,18 +420,17 @@ export function DemoPanel() {
   const classes = useDemoPanelStyles();
   return <>
     <Typography component="p" variant="body1" className={classes.description}>
-      Create a demo network from real world RNA-Seq data.
+      Create a demo network from RNA-Seq data.
     </Typography>
     <img className={classes.thumbnail} src="/images/demo_small.png" alt="thumbnail of demo network" />
-    <br/><br/>
     <Typography component="p" variant="body1">
-      The data used to create this network is described in detail in the <br/>
+      The data used to create this network is described in the&nbsp;
       <Link 
           target="_blank" // open in new tab
           rel="noopener"
           href="https://www.pathwaycommons.org/guide/workflows/rna_seq_to_enrichment_map/process_data/">
-        RNA-Seq Tutorial on Pathway Commons.
-      </Link>
+        RNA-Seq Tutorial on Pathway Commons
+      </Link>.
     </Typography>
   </>;
 }

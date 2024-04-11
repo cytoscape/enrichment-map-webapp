@@ -130,7 +130,7 @@ const StartDialog = ({
   };
 
   return (
-    <Dialog maxWidth="sm" fullScreen={isMobile} open={open}>
+    <Dialog maxWidth={isDemo ? 'xs' : 'sm'} fullScreen={isMobile} open={open}>
       <DialogTitle classes={{ root: classes.titleRoot }}>
       {
         {
