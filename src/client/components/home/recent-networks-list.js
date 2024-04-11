@@ -1,16 +1,17 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
-import chroma from 'chroma-js';
 
 import { NETWORK_BACKGROUND } from '../defaults';
+import { networkURL } from '../util';
+import theme from '../../theme';
 import { RecentNetworksController } from '../recent-networks-controller';
 
 import { withStyles } from '@material-ui/core/styles';
 
 import { Box, Paper, Grid } from '@material-ui/core';
 import { Typography, Tooltip } from '@material-ui/core';
-import { Popover, MenuList, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import { Popover, MenuList, MenuItem, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@material-ui/core';
 import { Button, IconButton } from '@material-ui/core';
 import { Skeleton } from '@material-ui/lab';
@@ -19,10 +20,10 @@ import Collapse from '@material-ui/core/Collapse';
 
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import DeleteIcon from '@material-ui/icons/Delete';
-import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 import CloseIcon from '@material-ui/icons/Close';
 import CircularProgressIcon from '@material-ui/core/CircularProgress';
-import { ShareIcon } from '../svg-icons';
+import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
+import { ContentCopyIcon, ShareIcon } from '../svg-icons';
 
 
 const DEF_NETWORK_NAME = 'Untitled Network';
@@ -123,6 +124,39 @@ const useStyles = theme => ({
     background: theme.palette.primary.main,
     border: `1px solid ${theme.palette.text.disabled}`,
   },
+  confirmInfoBox: {
+    width: '100%',
+    paddingTop: theme.spacing(0.5),
+    paddingBottom: theme.spacing(0.5),
+    paddingLeft: 0,
+    paddingRight: 0,
+    border: 'unset',
+  },
+  confirmInfoItem: {
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  confirmInfoItemIcon: {
+    minWidth: 'unset',
+    alignSelf: 'self-start',
+    marginTop: theme.spacing(0.5),
+  },
+  confirmInfoIcon: {
+    transform: 'scaleX(-1)',
+    fontSize: '1em',
+    marginRight: theme.spacing(1),
+    color: theme.palette.text.disabled,
+    opacity: 0.5,
+  },
+  confirmInfoItemText: {
+    margin: 0,
+    color: theme.palette.text.disabled,
+  },
+  code: {
+    backgroundColor: theme.palette.background.default,
+    padding: theme.spacing(0.5),
+    borderRadius: '2px',
+  }
 });
 
 
@@ -141,7 +175,7 @@ export class RecentNetworksList extends Component {
       anchorEl: null,
       confirm: false,  // Whether or not to show the confirmation dialog
       confirmTitle: null, // Dialog title
-      confirmText: null, // Dialog text
+      confirmContent: null, // Dialog text
       confirmLabel: null, // OK button's label
       confirmFn: null, // Function to be executed after the action is confirmed through the confirmation dialog
       snackBarState: {
@@ -154,7 +188,6 @@ export class RecentNetworksList extends Component {
     };
 
     this.clearRecentNetworks = this.clearRecentNetworks.bind(this);
-    this.deleteCurrentNetwork = this.deleteCurrentNetwork.bind(this);
 
     this.snack = this.snackBarOps();
   }
@@ -203,12 +236,6 @@ export class RecentNetworksList extends Component {
       this.controller.clearRecentNetworks(() => this.refresh());
   }
 
-  async deleteCurrentNetwork() {
-    const { currentItem } = this.state;
-    if (currentItem)
-      await this.deleteNetwork(currentItem.id, true);
-  }
-
   async deleteNetwork(id, refresh) {
     // await fetch(`/api/document/${id}`, {
     //   method: 'DELETE',
@@ -222,11 +249,11 @@ export class RecentNetworksList extends Component {
     // });
   }
 
-  showPopover(event, currentItem) {
+  showPopover(event) {
     event.stopPropagation();
     this.setState({
       anchorEl: event.currentTarget,
-      currentItem
+      currentItem: null,
     });
   }
 
@@ -326,13 +353,52 @@ export class RecentNetworksList extends Component {
     const imgSrc = `data:image/png;base64,${png}`;
     const enabled = id != null;
 
+    const handleCopyLink = async () => {
+      navigator.clipboard.writeText(`${networkURL(id)}`);
+      this.snack.showMessage("Link copied to clipboard");
+    };
+
     const onClick = () => this.openNetwork(id, secret);
+    const onDelete = (event) => {
+      event.stopPropagation();
+      this.setState({
+        confirm: true,
+        confirmTitle: 'Remove Network?',
+        confirmContent:
+          <>
+            <p>The network <span style={{overflowWrap: 'break-word'}}><code className={classes.code}>{ name }</code></span> will be removed from the list.</p>
+            <Paper variant="outlined" className={classes.confirmInfoBox}>
+              <List dense>
+                <ListItem className={classes.confirmInfoItem}>
+                  <ListItemIcon className={classes.confirmInfoItemIcon}>
+                    <KeyboardReturnIcon className={classes.confirmInfoIcon} />
+                  </ListItemIcon>
+                  <ListItemText
+                    className={classes.confirmInfoItemText}
+                    primary={
+                      <>
+                        You can still access this network with its <b>permanent link</b>&nbsp;
+                        <Tooltip title="Copy link">
+                          <IconButton color="primary" size="small" onClick={handleCopyLink}>
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </>
+                    }
+                  />
+                </ListItem>
+              </List>
+            </Paper>
+          </>,
+        confirmLabel: 'Remove Network',
+        confirmFn: () => this.deleteNetwork(id, true),
+        anchorEl: null,
+        snackBarState: { open: false },
+      });
+    };
 
     const tooltipText = () => {
-      return <>
-        <code>Last opened: { new Date(obj.opened).toLocaleString('en-US') }</code><br />
-        <code>Created:&nbsp;&nbsp;&nbsp;&nbsp; { new Date(obj.created).toLocaleString('en-US') }</code>
-      </>;
+      return <>Last opened: { new Date(obj.opened).toLocaleString('en-US') }</>;
     };
     const lastOpenedText = () => {
       const date = new Date(obj.opened);
@@ -388,8 +454,8 @@ export class RecentNetworksList extends Component {
                       </Tooltip>
                     </Grid>
                     <Grid item>
-                      <IconButton size="small" onClick={e => this.showPopover(e, obj)}>
-                        <MoreVertIcon />
+                      <IconButton size="small" onClick={e => onDelete(e)}>
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Grid>
                   </Grid>
@@ -405,14 +471,14 @@ export class RecentNetworksList extends Component {
   }
 
   renderPopover() {
-    const { recentNetworks, currentItem, anchorEl } = this.state;
+    const { recentNetworks, anchorEl } = this.state;
 
-    const handleCopyLink = async () => {
+    const handleCopyLinks = async () => {
       if (recentNetworks && recentNetworks.length > 0) {
         // Copy the links of all networks to the clipboard
         let text = '';
         recentNetworks.forEach((obj, idx) => {
-          text += `${obj.name}\t${window.location.origin}/document/${obj.id}`;
+          text += `${obj.name}\t${networkURL(obj.id)}`;
           if (idx < recentNetworks.length - 1) {
             text += '\n';
           }
@@ -424,22 +490,12 @@ export class RecentNetworksList extends Component {
         this.snack.showMessage("Links copied to clipboard");
       }
     };
-    const deleteIfConfirmed = (currentItem) => {
-      this.setState({
-        confirm: true,
-        confirmTitle: 'Remove Network?',
-        confirmText: `The network &quot;<b>${currentItem.name ? currentItem.name : DEF_NETWORK_NAME}</b>&quot; will be removed from the list.`,
-        confirmLabel: 'Remove Network',
-        confirmFn: this.deleteCurrentNetwork,
-        anchorEl: null,
-        snackBarState: { open: false },
-      });
-    };
+    
     const clearListIfConfirmed = () => {
       this.setState({
         confirm: true,
         confirmTitle: 'Clear Recent Network List?',
-        confirmText: `The list of recent networks will be cleared.`,
+        confirmContent: <>The list of recent networks will be cleared.</>,
         confirmLabel: 'Clear List',
         confirmFn: this.clearRecentNetworks,
         anchorEl: null,
@@ -453,13 +509,12 @@ export class RecentNetworksList extends Component {
         open={Boolean(anchorEl)}
         onClose={() => this.hidePopover()}
       >
-      {currentItem == null && (
         <MenuList>
-          <MenuItem onClick={() => handleCopyLink()}>
+          <MenuItem onClick={() => handleCopyLinks()}>
             <ListItemIcon>
               <ShareIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText primary="Share..." />
+            <ListItemText primary="Share" />
           </MenuItem>
           <MenuItem onClick={() => clearListIfConfirmed()}>
             <ListItemIcon>
@@ -468,35 +523,19 @@ export class RecentNetworksList extends Component {
             <ListItemText primary="Clear List..." />
           </MenuItem>
         </MenuList>
-      )}
-      {currentItem && (
-        <MenuList>
-          <MenuItem onClick={() => deleteIfConfirmed(currentItem)}>
-            <ListItemIcon>
-              <DeleteIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="Remove..." />
-          </MenuItem>
-          <MenuItem onClick={() => this.openNetwork(currentItem.id, currentItem.secret, true)}>
-            <ListItemIcon>
-              <OpenInNewIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText primary="Open in New Tab" />
-          </MenuItem>
-        </MenuList>
-      )}
       </Popover>
     );
   }
 
   renderConfirmationDialog() {
-    const { confirm, confirmTitle, confirmText, confirmLabel, confirmFn } = this.state;
+    const { confirm, confirmTitle, confirmContent, confirmLabel, confirmFn } = this.state;
+    const { isMobile } = this.props;
 
     const handleClose = () => {
       this.setState({
         confirm: false,
         confirmTitle: null,
-        confirmText: null,
+        confirmContent: null,
         confirmLabel: null,
         confirmFn: null,
         currentItem: null
@@ -510,11 +549,12 @@ export class RecentNetworksList extends Component {
     return (
       <Dialog
         open={confirm}
+        fullScreen={isMobile}
         onClose={handleClose}
       >
         <DialogTitle>{ confirmTitle }</DialogTitle>
-        <DialogContent>
-          <DialogContentText>{ confirmText }</DialogContentText>
+        <DialogContent dividers>
+          { confirmContent }
         </DialogContent>
         <DialogActions>
           <Button variant="outlined" color="primary" onClick={handleClose} >
@@ -531,6 +571,7 @@ export class RecentNetworksList extends Component {
 
 RecentNetworksList.propTypes = {
   recentNetworksController: PropTypes.instanceOf(RecentNetworksController).isRequired,
+  isMobile: PropTypes.bool,
   classes: PropTypes.object.isRequired,
 };
 

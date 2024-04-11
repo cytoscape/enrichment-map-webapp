@@ -364,7 +364,7 @@ export function Content({ recentNetworksController }) {
           <Grid container direction="column" justifyContent="center" alignItems="center">
           {showRecentNetworks && (
             <Grid item className={classes.section} xs={12}>
-              <RecentNetworksList isMobile={mobile} onToggle={() => {}} recentNetworksController={recentNetworksController} />
+              <RecentNetworksList isMobile={mobile} recentNetworksController={recentNetworksController} />
             </Grid>
           )}
             <Grid item>
