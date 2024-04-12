@@ -4,7 +4,6 @@ import _ from 'lodash';
 
 import { NETWORK_BACKGROUND } from '../defaults';
 import { networkURL } from '../util';
-import theme from '../../theme';
 import { RecentNetworksController } from '../recent-networks-controller';
 
 import { withStyles } from '@material-ui/core/styles';
@@ -12,7 +11,7 @@ import { withStyles } from '@material-ui/core/styles';
 import { Box, Paper, Grid } from '@material-ui/core';
 import { Typography, Tooltip } from '@material-ui/core';
 import { Popover, MenuList, MenuItem, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@material-ui/core';
+import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
 import { Button, IconButton } from '@material-ui/core';
 import { Skeleton } from '@material-ui/lab';
 import { Snackbar, SnackbarContent } from '@material-ui/core';
@@ -45,7 +44,7 @@ const useStyles = theme => ({
   },
   title: {
     fontWeight: 'bold',
-    textAlign: 'center',
+    textAlign: 'left',
   },
   container: {
     display: 'grid',
@@ -212,7 +211,7 @@ export class RecentNetworksList extends Component {
             recentNetworks,
             currentItem: null,
             anchorEl: null,
-          });
+          }, () => this.props.onRefresh());
         });
       });
     });
@@ -572,6 +571,7 @@ export class RecentNetworksList extends Component {
 RecentNetworksList.propTypes = {
   recentNetworksController: PropTypes.instanceOf(RecentNetworksController).isRequired,
   isMobile: PropTypes.bool,
+  onRefresh: PropTypes.func.isRequired,
   classes: PropTypes.object.isRequired,
 };
 
