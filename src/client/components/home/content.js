@@ -170,9 +170,6 @@ const useContentStyles = makeStyles(theme => ({
       alignItems: 'center',
     },
   },
-  hiddenSection: {
-    height: 0,
-  },
 }));
 
 export function Content({ recentNetworksController }) {
@@ -368,7 +365,7 @@ export function Content({ recentNetworksController }) {
           onDragEnd={onDragEndUpload}
         >
           <Grid container direction="column" justifyContent="center" alignItems="center">
-            <Grid item className={clsx(classes.section, { [classes.hiddenSection]: !showRecentNetworks })} xs={12}>
+            <Grid item className={classes.section} xs={12}>
               <RecentNetworksList isMobile={mobile} recentNetworksController={recentNetworksController} onRefresh={onRecentNetworksRefresh} />
             </Grid>
             <Grid item>
