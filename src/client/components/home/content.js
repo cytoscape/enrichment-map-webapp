@@ -142,7 +142,7 @@ const useContentStyles = makeStyles(theme => ({
   },
   tagline: {
     fontWeight: 800,
-    fontSize: 'clamp(1.5rem, 0.75rem + 2.5vw, 3.5rem)',
+    fontSize: 'clamp(1.5rem, 0.75rem + 2.5vw, 2.5rem)',
     marginTop: theme.spacing(2),
     [theme.breakpoints.down('sm')]: {
       marginTop: theme.spacing(1),
@@ -453,8 +453,10 @@ Content.propTypes = {
 const useFigureStyles = makeStyles(theme => ({
   figure: {
     maxWidth: '100%',
-    maxHeight: 520,
+    maxHeight: 398,
     objectFit: 'contain',
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: '16px',
     [theme.breakpoints.down('xs')]: {
       maxWidth: '80%',
       maxHeight: 300,
@@ -689,7 +691,15 @@ Debug.propTypes = {
 
 //==[ GetStartedSection ]=============================================================================================
 
+const useGetStartedSectionStyles = makeStyles(() => ({
+  button: {
+    minHeight: 40,
+  },
+}));
+
 function GetStartedSection({ mobile, tablet, onClickGetStarted, onClickCreateDemo }) {
+  const classes = useGetStartedSectionStyles();
+
   return (
     <Grid
       container
@@ -702,6 +712,7 @@ function GetStartedSection({ mobile, tablet, onClickGetStarted, onClickCreateDem
           variant="contained"
           color="primary"
           endIcon={<NavigateNextIcon />}
+          className={classes.button}
           onClick={onClickGetStarted}
         >
           Get Started
