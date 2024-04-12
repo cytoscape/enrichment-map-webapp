@@ -9,13 +9,14 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { BOTTOM_DRAWER_OPEN } from '../defaults';
 import theme from '../../theme';
-import { isMobile, isTablet } from './util';
+import { isMobile, isTablet } from '../util';
 import { NetworkEditorController } from './controller';
 import Main from './main';
 
 import createNetworkStyle from './network-style';
 import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
+import { RecentNetworksController } from '../recent-networks-controller';
 
 
 const useStyles = makeStyles(() => ({
@@ -54,7 +55,7 @@ function createCy(id) {
 /**
  * @param { NetworkEditorController } controller
  */
-async function loadNetwork(cy, controller, id) {
+async function loadNetwork(id, cy, controller, recentNetworksController) {
   console.log('Loading...');
 
   const networkPromise = fetch(`/api/${id}`);
@@ -103,11 +104,16 @@ async function loadNetwork(cy, controller, id) {
   // Make sure to call cy.fit() after the network is ready
   cy.ready(() => {
     controller.fitAndSetZoomMinMax();
+    recentNetworksController.saveRecentNetwork(cy);
   });
 
   cy.on('position remove', 'node', _.debounce(() => {
     controller.savePositions();
+    recentNetworksController.updateRecentNetwork(cy);
   }, 4000));
+  cy.on('data', _.debounce(() => {
+    recentNetworksController.updateRecentNetwork(cy);
+  }, 1000));
 
   // Selecting an edge should select its nodes, but the edge itself must never be selected
   // (this makes it easier to keep the Pathways table selection consistent)
@@ -130,7 +136,7 @@ async function loadNetwork(cy, controller, id) {
 }
 
 
-export function NetworkEditor({ id }) {
+export function NetworkEditor({ id, recentNetworksController }) {
   const [ cy ] = useState(() => createCy(id));
   const [ controller ] = useState(() => new NetworkEditorController(cy));
   const [ mobile, setMobile ] = useState(() => isMobile());
@@ -158,7 +164,7 @@ export function NetworkEditor({ id }) {
   const debouncedHandleResize = _.debounce(() => handleResize(), 100);
 
   useEffect(() => {
-    loadNetwork(cy, controller, id);
+    loadNetwork(id, cy, controller, recentNetworksController);
     return () => cy.destroy();
   }, []);
 
@@ -247,6 +253,7 @@ export function Demo() {
 
 NetworkEditor.propTypes = {
   id: PropTypes.string,
+  recentNetworksController: PropTypes.instanceOf(RecentNetworksController).isRequired,
 };
 
 export default NetworkEditor;

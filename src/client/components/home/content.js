@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import EventEmitter from 'eventemitter3';
+import clsx from 'clsx';
 import _ from 'lodash';
+
 import { makeStyles } from '@material-ui/core/styles';
 
+import { RecentNetworksController } from '../recent-networks-controller.js';
 import { UploadController, RNA_SEQ, PRE_RANKED } from './upload-controller';
 import EasyCitation from './citation.js';
 import { DebugMenu } from '../../debug-menu';
@@ -19,6 +22,7 @@ import { AppLogoIcon } from '../svg-icons';
 
 import classNames from 'classnames';
 import uuid from 'uuid';
+import RecentNetworksList from './recent-networks-list.js';
 
 
 export const STEP = {
@@ -117,8 +121,8 @@ const useContentStyles = makeStyles(theme => ({
   },
   content: {
     maxHeight: 700,
-    marginTop: 0,
-    marginBottom: 0,
+    marginTop: theme.spacing(8),
+    marginBottom: theme.spacing(8),
     padding: theme.spacing(4),
     paddingTop: 0,
     paddingBottom: 0,
@@ -133,6 +137,9 @@ const useContentStyles = makeStyles(theme => ({
       padding: theme.spacing(2),
     },
   },
+  contentWithRecentNetworks: {
+    marginTop: 0,
+  },
   tagline: {
     fontWeight: 800,
     fontSize: 'clamp(1.5rem, 0.75rem + 2.5vw, 3.5rem)',
@@ -141,14 +148,14 @@ const useContentStyles = makeStyles(theme => ({
       marginTop: theme.spacing(1),
     },
     [theme.breakpoints.down('xs')]: {
-      marginTop: theme.spacing(0.5),
+      marginTop: 0,
       textAlign: 'center',
     },
   },
   description : {
     fontSize: '1rem',
     color: theme.palette.secondary.main,
-    marginTop: theme.spacing(2.5),
+    marginTop: theme.spacing(5),
     marginBottom: theme.spacing(5),
     [theme.breakpoints.down('xs')]: {
       fontSize: 'unset',
@@ -161,12 +168,11 @@ const useContentStyles = makeStyles(theme => ({
     [theme.breakpoints.down('xs')]: {
       textAlign: 'center',
       alignItems: 'center',
-      marginTop: theme.spacing(1),
     },
   },
 }));
 
-export function Content() {
+export function Content({ recentNetworksController }) {
   const classes = useContentStyles();
 
   /** State */
@@ -180,6 +186,7 @@ export function Content() {
   const [ mobile, setMobile ] = useState(() => isMobileWidth());
   const [ tablet, setTablet ] = useState(() => isTabletWidth());
   const [ droppingFile, setDroppingFile ] = useState(false);
+  const [ showRecentNetworks, setShowRecentNetworks ] = useState(false);
 
   // This state must be kept as a single object because the eventbus callbacks run asyncronously, 
   // so this state must be updated atomically to avoid extra re-renders (which also cause errors).
@@ -341,10 +348,14 @@ export function Content() {
     showNetwork(networkID);
   };
 
+  const onRecentNetworksRefresh = () => {
+    recentNetworksController.getRecentNetworksLength(length => setShowRecentNetworks(length > 0));
+  };
+
   /** Render Components */
   return (
     <div className={classNames({ [classes.root]: true, [classes.rootDropping]: droppingFile })}>
-      <Header />
+      <Header showRecentNetworks={showRecentNetworks} mobile={mobile} onClickGetStarted={onClickGetStarted} />
       <Container maxWidth="lg" disableGutters>
         <div
           className={classes.drop} 
@@ -354,10 +365,13 @@ export function Content() {
           onDragEnd={onDragEndUpload}
         >
           <Grid container direction="column" justifyContent="center" alignItems="center">
+            <Grid item className={classes.section} xs={12}>
+              <RecentNetworksList isMobile={mobile} recentNetworksController={recentNetworksController} onRefresh={onRecentNetworksRefresh} />
+            </Grid>
             <Grid item>
               <Grid
                 container
-                className={classes.content}
+                className={clsx(classes.content, { [classes.contentWithRecentNetworks]: showRecentNetworks })}
                 direction={mobile ? 'column' : 'row'}
                 justifyContent="center"
                 alignItems="center"
@@ -396,31 +410,29 @@ export function Content() {
             <Grid item xs={mobile ? 10 : 8}>
               <EasyCitation />
             </Grid>
-          {uploadState.step !== STEP.WAITING && (
-            <Grid item>
-              <StartDialog
-                step={uploadState.step}
-                isMobile={mobile}
-                isDemo={uploadState.demo}
-                errorMessages={uploadState.errorMessages}
-                fileInfo={uploadState.fileInfo}
-
-                geneCol={uploadState.geneCol}
-                rankCol={uploadState.rankCol}
-                rnaseqClasses={uploadState.rnaseqClasses}
-                
-                onClassesChanged={(rnaseqClasses) => updateUploadState({ rnaseqClasses })}
-                onRankColChanged={(rankCol) => updateUploadState({ rankCol })}
-                onGeneColChanged={(geneCol) => updateUploadState({ geneCol })}
-
-                onUpload={onUpload}
-                onSubmit={onSubmit}
-                onCancelled={onCancel}
-                onBack={onBack}
-              />
-            </Grid>
-          )}
           </Grid>
+        {uploadState.step !== STEP.WAITING && (
+          <StartDialog
+            step={uploadState.step}
+            isMobile={mobile}
+            isDemo={uploadState.demo}
+            errorMessages={uploadState.errorMessages}
+            fileInfo={uploadState.fileInfo}
+
+            geneCol={uploadState.geneCol}
+            rankCol={uploadState.rankCol}
+            rnaseqClasses={uploadState.rnaseqClasses}
+            
+            onClassesChanged={(rnaseqClasses) => updateUploadState({ rnaseqClasses })}
+            onRankColChanged={(rankCol) => updateUploadState({ rankCol })}
+            onGeneColChanged={(geneCol) => updateUploadState({ geneCol })}
+
+            onUpload={onUpload}
+            onSubmit={onSubmit}
+            onCancelled={onCancel}
+            onBack={onBack}
+          />
+        )}
         </div>
         {/* <MobileMenu /> */}
         <Debug 
@@ -432,6 +444,9 @@ export function Content() {
     </div>
   );
 }
+Content.propTypes = {
+  recentNetworksController: PropTypes.instanceOf(RecentNetworksController).isRequired,
+};
 
 //==[ Figure ]========================================================================================================
 
@@ -528,7 +543,7 @@ const useHeaderStyles = makeStyles(theme => ({
   },
 }));
 
-function Header() {
+function Header({ showRecentNetworks, mobile, onClickGetStarted }) {
   const classes = useHeaderStyles();
 
   return (
@@ -546,6 +561,19 @@ function Header() {
                 </Grid>
               </Grid>
             </Grid>
+          {showRecentNetworks && !mobile && (
+            <Grid item>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                endIcon={<NavigateNextIcon />}
+                onClick={onClickGetStarted}
+              >
+                Get Started
+              </Button>
+            </Grid>
+          )}
           </Grid>
           <div className={classes.grow} />
         </Toolbar>
@@ -553,6 +581,11 @@ function Header() {
     </AppBar>
   );
 }
+Header.propTypes = {
+  showRecentNetworks: PropTypes.bool,
+  mobile: PropTypes.bool,
+  onClickGetStarted: PropTypes.func,
+};
 
 //==[ Footer ]========================================================================================================
 

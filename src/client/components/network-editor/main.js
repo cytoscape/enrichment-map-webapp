@@ -6,7 +6,7 @@ import chroma from 'chroma-js';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { DEFAULT_PADDING, HEADER_HEIGHT, LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT, bottomDrawerHeight } from '../defaults';
+import { DEFAULT_PADDING, HEADER_HEIGHT, LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT, NETWORK_BACKGROUND, bottomDrawerHeight } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import { Header } from './header';
@@ -46,7 +46,7 @@ const useStyles = makeStyles((theme) => ({
     right: 0,
     top: 0,
     bottom: 0,
-    background: '#fff',
+    background: NETWORK_BACKGROUND,
   },
   cy: {
     position: 'absolute',
@@ -82,7 +82,7 @@ const useStyles = makeStyles((theme) => ({
 
 
 const NetworkBackground = ({ controller }) => {
-  const [ bgColor, setBgColor ] = useState('white');
+  const [ bgColor, setBgColor ] = useState(NETWORK_BACKGROUND);
 
   const busProxy = new EventEmitterProxy(controller.bus);
 
