@@ -146,10 +146,10 @@ const useContentStyles = makeStyles(theme => ({
     marginTop: theme.spacing(2),
     [theme.breakpoints.down('sm')]: {
       marginTop: theme.spacing(1),
+      textAlign: 'center',
     },
     [theme.breakpoints.down('xs')]: {
       marginTop: 0,
-      textAlign: 'center',
     },
   },
   description : {
@@ -160,12 +160,13 @@ const useContentStyles = makeStyles(theme => ({
     [theme.breakpoints.down('xs')]: {
       fontSize: 'unset',
       textAlign: 'center',
+      marginTop: theme.spacing(2.5),
       marginBottom: theme.spacing(2.5),
     },
   },
   section: {
     width: '100%',
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       textAlign: 'center',
       alignItems: 'center',
     },
@@ -372,12 +373,12 @@ export function Content({ recentNetworksController }) {
               <Grid
                 container
                 className={clsx(classes.content, { [classes.contentWithRecentNetworks]: showRecentNetworks })}
-                direction={mobile ? 'column' : 'row'}
+                direction={mobile || tablet ? 'column' : 'row'}
                 justifyContent="center"
                 alignItems="center"
                 spacing={2}
               >
-                <Grid item xs={mobile ? 12 : 6}>
+                <Grid item xs={mobile || tablet ? 12 : 6}>
                   <Grid container direction="column" justifyContent="center" alignItems="center">
                     <Grid item>
                       <Typography variant="h1" className={classes.tagline}>Enrichment analysis for your RNA&#8209;Seq</Typography>
@@ -388,26 +389,26 @@ export function Content({ recentNetworksController }) {
                       </p>
                     </Grid>
                     <Grid item className={classes.section}>
-                      {mobile 
+                      {mobile || tablet 
                         ? <Figure /> 
                         : <GetStartedSection mobile={mobile} tablet={tablet} onClickGetStarted={onClickGetStarted} onClickCreateDemo={onClickCreateDemo} />
                       }
                     </Grid>
-                  {mobile && (
+                  {(mobile || tablet) && (
                     <Grid item className={classes.section}>
                       <GetStartedSection mobile={mobile} tablet={tablet} onClickGetStarted={onClickGetStarted} onClickCreateDemo={onClickCreateDemo} />
                     </Grid>
                   )}
                   </Grid>
                 </Grid>
-              {!mobile && (
+              {!mobile && !tablet && (
                 <Grid item className={classes.section} xs={6}>
                   <Figure />
                 </Grid>
               )}
               </Grid>
             </Grid>
-            <Grid item xs={mobile ? 10 : 8}>
+            <Grid item xs={mobile || tablet ? 10 : 8}>
               <EasyCitation />
             </Grid>
           </Grid>
@@ -457,10 +458,12 @@ const useFigureStyles = makeStyles(theme => ({
     objectFit: 'contain',
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: '16px',
+    [theme.breakpoints.down('sm')]: {
+      marginBottom: theme.spacing(4),
+    },
     [theme.breakpoints.down('xs')]: {
       maxWidth: '80%',
       maxHeight: 300,
-      marginBottom: theme.spacing(4),
     },
   },
 }));
