@@ -617,7 +617,7 @@ export class NetworkEditorController {
     const setButtonHTML = (elem, parent) => {
       const collapsed = parent.data('collapsed');
       const text = collapsed ? '+ Expand' : '- Collapse';
-      const className = `cluster_toggle_button ${collapsed ? 'expand' : 'collapse'}`;
+      const className = `cluster-toggle-button ${collapsed ? 'expand' : 'collapse'}`;
       const jsx = <button className={className}>{text}</button>;
       const html = ReactDOMServer.renderToStaticMarkup(jsx);
       elem.innerHTML = html;
