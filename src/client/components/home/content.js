@@ -3,26 +3,30 @@ import PropTypes from 'prop-types';
 import EventEmitter from 'eventemitter3';
 import clsx from 'clsx';
 import _ from 'lodash';
+import chroma from 'chroma-js';
+import classNames from 'classnames';
+import uuid from 'uuid';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { RecentNetworksController } from '../recent-networks-controller.js';
+import { RecentNetworksController } from '../recent-networks-controller';
 import { UploadController, RNA_SEQ, PRE_RANKED } from './upload-controller';
-import EasyCitation from './citation.js';
+import RecentNetworksList from './recent-networks-list.js';
+import Header from './header';
+import PrimaryFeatures from './primary-features';
+import Citation from './citation';
+import About from './about.js';
 import { DebugMenu } from '../../debug-menu';
 import StartDialog from './start-dialog';
 import theme from '../../theme';
 
-import { AppBar, Toolbar, Menu, MenuList, MenuItem } from '@material-ui/core';
-import { Container, Grid, Divider, } from '@material-ui/core';
+import { Toolbar, Drawer, MenuItem } from '@material-ui/core';
+import { Container, Grid, Divider } from '@material-ui/core';
 import { Button, Typography, Link } from '@material-ui/core';
 
+import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import NavigateNextIcon from '@material-ui/icons/NavigateNext';
-import { AppLogoIcon } from '../svg-icons';
-
-import classNames from 'classnames';
-import uuid from 'uuid';
-import RecentNetworksList from './recent-networks-list.js';
+import { AppLogoIcon } from '../svg-icons.js';
 
 
 export const STEP = {
@@ -33,12 +37,12 @@ export const STEP = {
   ERROR:   'ERROR',
 };
 
-const menusDef = [
-  { label: "About" },
-  { label: "Contact" },
-  { label: "Help" },
+const menuDef = [
+  { label: "Features", href: '/#features' },
+  { label: "FAQ",      href: '/#faq' },
+  { label: "Citation", href: '/#citation' },
+  { label: "About",    href: '/#about' },
 ];
-const mobileMenuId = 'primary-menu-mobile';
 
 const logosDef = [
   { src: "/images/bader-lab-logo.svg", alt: "Bader Lab logo", href: "https://baderlab.org/" },
@@ -104,16 +108,7 @@ const useContentStyles = makeStyles(theme => ({
     borderColor: 'rgb(54, 102, 209)'
   },
   main: {
-    padding: theme.spacing(1),
-    flexGrow: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignContent: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  grow: {
-    flexGrow: 1,
+    marginBottom: theme.spacing(6),
   },
   menu: {
     marginLeft: theme.spacing(5),
@@ -122,10 +117,8 @@ const useContentStyles = makeStyles(theme => ({
   content: {
     maxHeight: 700,
     marginTop: theme.spacing(8),
-    marginBottom: theme.spacing(8),
-    padding: theme.spacing(4),
-    paddingTop: 0,
-    paddingBottom: 0,
+    marginBottom: theme.spacing(2),
+    padding: theme.spacing(0, 4, 0, 4),
     textAlign: 'left',
     [theme.breakpoints.down('sm')]: {
       marginTop: 0,
@@ -164,12 +157,30 @@ const useContentStyles = makeStyles(theme => ({
       marginBottom: theme.spacing(2.5),
     },
   },
-  section: {
+  heroSection: {
     width: '100%',
     [theme.breakpoints.down('sm')]: {
       textAlign: 'center',
       alignItems: 'center',
     },
+  },
+  section: {
+    width: '100%',
+    marginTop: theme.spacing(0.25),
+    marginBottom: theme.spacing(0.25),
+    padding: theme.spacing(8, 0, 8, 0),
+  },
+  sectionContainer: {
+    textAlign: 'left',
+  },
+  sectionTitle: {
+    fontSize: '1.85rem',
+    fontWeight: 'bold',
+    marginBottom: theme.spacing(2),
+  },
+  sectionDescription: {
+    maxWidth: 768,
+    marginBottom: theme.spacing(6),
   },
 }));
 
@@ -186,6 +197,7 @@ export function Content({ recentNetworksController }) {
   // state for component interaction
   const [ mobile, setMobile ] = useState(() => isMobileWidth());
   const [ tablet, setTablet ] = useState(() => isTabletWidth());
+  const [ openMobileMenu, setOpenMobileMenu ] = useState(false);
   const [ droppingFile, setDroppingFile ] = useState(false);
   const [ showRecentNetworks, setShowRecentNetworks ] = useState(false);
 
@@ -213,6 +225,9 @@ export function Content({ recentNetworksController }) {
     const handleResize = () => {
       setMobile(isMobileWidth());
       setTablet(isTabletWidth());
+      if (!isMobileWidth() && !isTabletWidth()) {
+        setOpenMobileMenu(false);
+      }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -228,6 +243,9 @@ export function Content({ recentNetworksController }) {
 
 
   /** Callbacks and utility functions */
+
+  const onOpenMobileMenu = () => setOpenMobileMenu(true);
+  const onCloseMobileMenu = () => setOpenMobileMenu(false);
 
   const loadSampleNetwork = async (fileName, format) => {
     if (uploadState.step == STEP.LOADING)
@@ -356,8 +374,15 @@ export function Content({ recentNetworksController }) {
   /** Render Components */
   return (
     <div className={classNames({ [classes.root]: true, [classes.rootDropping]: droppingFile })}>
-      <Header showRecentNetworks={showRecentNetworks} mobile={mobile} onClickGetStarted={onClickGetStarted} />
-      <Container maxWidth="lg" disableGutters>
+      <Header
+        menuDef={menuDef}
+        showRecentNetworks={showRecentNetworks}
+        mobile={mobile}
+        tablet={tablet}
+        onClickGetStarted={onClickGetStarted}
+        onOpenMobileMenu={onOpenMobileMenu}
+      />
+      <Container maxWidth="lg" disableGutters className={classes.main}>
         <div
           className={classes.drop} 
           onDrop={onDropUpload} 
@@ -366,8 +391,12 @@ export function Content({ recentNetworksController }) {
           onDragEnd={onDragEndUpload}
         >
           <Grid container direction="column" justifyContent="center" alignItems="center">
-            <Grid item className={classes.section} xs={12}>
-              <RecentNetworksList isMobile={mobile} recentNetworksController={recentNetworksController} onRefresh={onRecentNetworksRefresh} />
+            <Grid item className={classes.heroSection} xs={12}>
+              <RecentNetworksList
+                isMobile={mobile}
+                recentNetworksController={recentNetworksController}
+                onRefresh={onRecentNetworksRefresh}
+              />
             </Grid>
             <Grid item>
               <Grid
@@ -388,60 +417,78 @@ export function Content({ recentNetworksController }) {
                         Get a quick-and-easy, publication-ready enrichment figure for your two-case RNA&#8209;Seq experiment.
                       </p>
                     </Grid>
-                    <Grid item className={classes.section}>
+                    <Grid item className={classes.heroSection}>
                       {mobile || tablet 
                         ? <Figure /> 
                         : <GetStartedSection mobile={mobile} tablet={tablet} onClickGetStarted={onClickGetStarted} onClickCreateDemo={onClickCreateDemo} />
                       }
                     </Grid>
                   {(mobile || tablet) && (
-                    <Grid item className={classes.section}>
+                    <Grid item className={classes.heroSection}>
                       <GetStartedSection mobile={mobile} tablet={tablet} onClickGetStarted={onClickGetStarted} onClickCreateDemo={onClickCreateDemo} />
                     </Grid>
                   )}
                   </Grid>
                 </Grid>
               {!mobile && !tablet && (
-                <Grid item className={classes.section} xs={6}>
+                <Grid item className={classes.heroSection} xs={6}>
                   <Figure />
                 </Grid>
               )}
               </Grid>
             </Grid>
-            <Grid item xs={mobile || tablet ? 10 : 8}>
-              <EasyCitation />
-            </Grid>
           </Grid>
-        {uploadState.step !== STEP.WAITING && (
-          <StartDialog
-            step={uploadState.step}
-            isMobile={mobile}
-            isDemo={uploadState.demo}
-            errorMessages={uploadState.errorMessages}
-            fileInfo={uploadState.fileInfo}
-
-            geneCol={uploadState.geneCol}
-            rankCol={uploadState.rankCol}
-            rnaseqClasses={uploadState.rnaseqClasses}
-            
-            onClassesChanged={(rnaseqClasses) => updateUploadState({ rnaseqClasses })}
-            onRankColChanged={(rankCol) => updateUploadState({ rankCol })}
-            onGeneColChanged={(geneCol) => updateUploadState({ geneCol })}
-
-            onUpload={onUpload}
-            onSubmit={onSubmit}
-            onCancelled={onCancel}
-            onBack={onBack}
-          />
-        )}
+          <LogoBar mobile={mobile} />
         </div>
-        {/* <MobileMenu /> */}
-        <Debug 
-          sampleFiles={sampleFiles} 
-          onLoadSampleNetwork={loadSampleNetwork} 
-        />
-        <Footer mobile={mobile} tablet={tablet} />
       </Container>
+      <section id="features" className={classes.section} style={{backgroundColor: theme.palette.background.paper}}>
+        <Container maxWidth="lg" className={classes.sectionContainer}>
+          <Typography variant="h2" className={classes.sectionTitle}>Enrichment analysis made easy</Typography>
+          <Typography className={classes.sectionDescription}>
+            EnrichmentMap converts the lengthy, potentially redundant list of enriched gene-sets from typical enrichment analysis into a network, 
+            simplifying interpretation.
+          </Typography>
+          <PrimaryFeatures mobile={mobile} tablet={tablet} />
+        </Container>
+      </section>
+      <section id="citation" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
+        <Container maxWidth="md" className={classes.sectionContainer}>
+          <Citation />
+        </Container>
+      </section>
+      <section id="about" className={classes.section} style={{backgroundColor: theme.palette.background.paper}}>
+        <Container maxWidth="md" className={classes.sectionContainer}>
+          <About />
+        </Container>
+      </section>
+      <Footer mobile={mobile} tablet={tablet} />
+      <MobileMenu open={openMobileMenu} onClose={onCloseMobileMenu} />
+      {uploadState.step !== STEP.WAITING && (
+        <StartDialog
+          step={uploadState.step}
+          isMobile={mobile}
+          isDemo={uploadState.demo}
+          errorMessages={uploadState.errorMessages}
+          fileInfo={uploadState.fileInfo}
+
+          geneCol={uploadState.geneCol}
+          rankCol={uploadState.rankCol}
+          rnaseqClasses={uploadState.rnaseqClasses}
+          
+          onClassesChanged={(rnaseqClasses) => updateUploadState({ rnaseqClasses })}
+          onRankColChanged={(rankCol) => updateUploadState({ rankCol })}
+          onGeneColChanged={(geneCol) => updateUploadState({ geneCol })}
+
+          onUpload={onUpload}
+          onSubmit={onSubmit}
+          onCancelled={onCancel}
+          onBack={onBack}
+        />
+      )}
+      <Debug 
+        sampleFiles={sampleFiles} 
+        onLoadSampleNetwork={loadSampleNetwork} 
+      />
     </div>
   );
 }
@@ -474,10 +521,47 @@ function Figure() {
   return <img src="/images/home-figure.png" alt="figure" className={classes.figure} />;
 }
 
+//==[ LogoBar ]=======================================================================================================
+
+const useLogoBarStyles = makeStyles(theme => ({
+  root: {
+    marginTop: theme.spacing(8),
+    marginBottom: theme.spacing(2),
+  },
+}));
+
+function LogoBar({ mobile }) {
+  const classes = useLogoBarStyles();
+
+  return (
+    <Container variant="regular" className={classes.root}>
+      <Grid>
+        <Grid
+          container
+          direction={mobile ? 'column' : 'row'}
+          alignItems="center"
+          justifyContent="center"
+          spacing={mobile ? 2 : 10}
+          className={classes.logoBar}
+        >
+        {logosDef.map((logo, idx) =>
+          <Grid item key={idx}>
+            <Logo src={logo.src} alt={logo.alt} href={logo.href} />
+          </Grid>
+        )}
+        </Grid>
+      </Grid>
+    </Container>
+  );
+}
+LogoBar.propTypes = {
+  mobile: PropTypes.bool,
+};
+
 //==[ Logo ]==========================================================================================================
 
 const useLogoStyles = makeStyles(() => ({
-  footerLogo: {
+  logo: {
     maxHeight: 48,
     filter: 'grayscale(1) opacity(50%)',
   },
@@ -488,7 +572,7 @@ function Logo({ src, alt, href }) {
   
   return (
     <Link href={href} target="_blank" rel="noreferrer" underline="none">
-      <img src={src} alt={alt} className={classes.footerLogo} />  
+      <img src={src} alt={alt} className={classes.logo} />  
     </Link>
   );
 }
@@ -500,96 +584,85 @@ Logo.propTypes = {
 
 //==[ MobileMenu ]====================================================================================================
 
-function MobileMenu() {
-  const [ mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState(null);
-  
-  const openMobileMenu = (event) => setMobileMoreAnchorEl(event.currentTarget);
-  const closeMobileMenu = () => setMobileMoreAnchorEl(null);
-
-  return (
-    <Menu
-      anchorEl={mobileMoreAnchorEl}
-      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      id={mobileMenuId}
-      keepMounted
-      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      open={Boolean(mobileMoreAnchorEl)}
-      onClose={closeMobileMenu}
-    >
-      <MenuList>
-      {menusDef.map((menu, idx) => (
-        <MenuItem key={idx}>
-          { menu.label }
-        </MenuItem>
-      ))}
-      </MenuList>
-    </Menu>
-  );
-}
-
-//==[ Header ]========================================================================================================
-
-const useHeaderStyles = makeStyles(theme => ({
-  appBar: {
-    boxShadow: 'none',
+const useMobileMenuStyles = makeStyles((theme) => ({
+  paper: {
+    padding: theme.spacing(0.5, 2.5, 2, 2.5),
+    borderRadius: '0 0 16px 16px',
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    background: chroma(theme.palette.background.default).alpha(0.66).hex(),
+    backdropFilter: 'blur(8px)',
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: theme.spacing(1),
+      paddingRight: theme.spacing(1),
+    },
   },
   toolbar: {
-    borderBottom: `1px solid ${theme.palette.divider}`,
+    marginBottom: theme.spacing(2),
   },
   logo: {
+    marginLeft: theme.spacing(1.25),
+    marginRight: theme.spacing(2),
     fontSize: 48,
+    [theme.breakpoints.down('xs')]: {
+      marginRight: theme.spacing(1),
+      fontSize: 36,
+    },
   },
-  logoText: {
+  title: {
     fontSize: '1.5em',
     fontWeight: 'bold',
-  },
-  grow: {
     flexGrow: 1,
+    [theme.breakpoints.down('xs')]: {
+      fontSize: '1.25em',
+    },
+  },
+  button: {
+    minWidth: 36,
+    width: 36,
+    height: 36,
+    marginRight: theme.spacing(1),
+  },
+  menuItem: {
+    paddingLeft: theme.spacing(1.25),
+    paddingRight: theme.spacing(1.25),
+    borderRadius: '8px',
   },
 }));
 
-function Header({ showRecentNetworks, mobile, onClickGetStarted }) {
-  const classes = useHeaderStyles();
+function MobileMenu({ open, onClose }) {
+  const classes = useMobileMenuStyles();
+
+  const handleClick = (href) => {
+    setTimeout(() => window.location.href = href, 100);
+    onClose();
+  };
 
   return (
-    <AppBar position="static" color="transparent" className={classes.appBar}>
-      <Container maxWidth="lg" disableGutters>
-        <Toolbar variant="regular" className={classes.toolbar}>
-          <Grid container alignItems="center" justifyContent="space-between">
-            <Grid item>
-              <Grid container alignItems="center" spacing={2}>
-                <Grid item>
-                  <AppLogoIcon className={classes.logo} />
-                </Grid>
-                <Grid item>
-                  <Typography variant="inherit" className={classes.logoText}>EnrichmentMap:RNA-Seq</Typography>
-                </Grid>
-              </Grid>
-            </Grid>
-          {showRecentNetworks && !mobile && (
-            <Grid item>
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                endIcon={<NavigateNextIcon />}
-                onClick={onClickGetStarted}
-              >
-                Get Started
-              </Button>
-            </Grid>
-          )}
-          </Grid>
-          <div className={classes.grow} />
-        </Toolbar>
-      </Container>
-    </AppBar>
+    <Drawer
+      variant="temporary"
+      anchor="top"
+      open={open}
+      onClose={onClose}
+      classes={{ paper: classes.paper }}
+    >
+      <Toolbar variant="regular" className={classes.toolbar} disableGutters>
+        <AppLogoIcon className={classes.logo} />
+        <Typography variant="span" className={classes.title}>EnrichmentMap</Typography>
+        <Button className={classes.button} onClick={onClose}>
+          <KeyboardArrowUpIcon fontSize="large" />
+        </Button>
+      </Toolbar>
+    {menuDef.map((menu, idx) => (
+      <MenuItem key={idx} onClick={() => handleClick(menu.href)} className={classes.menuItem}>
+        { menu.label }
+      </MenuItem>
+    ))}
+    </Drawer>
   );
 }
-Header.propTypes = {
-  showRecentNetworks: PropTypes.bool,
-  mobile: PropTypes.bool,
-  onClickGetStarted: PropTypes.func,
+MobileMenu.propTypes = {
+  open: PropTypes.bool,
+  onClose: PropTypes.func.isRequired,
 };
 
 //==[ Footer ]========================================================================================================
@@ -633,7 +706,7 @@ function Footer({ mobile, tablet }) {
             &copy; {new Date().getFullYear()} University of Toronto
           </Grid>
           <Grid item md={8} sm={12}>
-            <Grid
+            {/* <Grid
               container
               direction={mobile ? 'column' : 'row'}
               alignItems={mobile ? 'center' : 'flex-start'}
@@ -641,12 +714,8 @@ function Footer({ mobile, tablet }) {
               spacing={mobile ? 2 : 10}
               className={classes.logoBar}
             >
-            {logosDef.map((logo, idx) =>
-              <Grid item key={idx}>
-                <Logo src={logo.src} alt={logo.alt} href={logo.href} />
-              </Grid>
-            )}
-            </Grid>
+            
+            </Grid> */}
           </Grid>
         </Grid>
       </Toolbar>

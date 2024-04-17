@@ -39,25 +39,15 @@ const useStyles =  makeStyles((theme) => ({
     color: theme.palette.text.secondary,
     filter: 'opacity(80%)',
   },
-  citeTextAuthors: {
-    marginTop: theme.spacing(2),
-    fontSize: '0.85rem',
-    color: theme.palette.text.secondary,
-    textAlign: 'center',
-    width: '100%'
-  },
   citeLink: {
-    color: theme.palette.text.secondary,
-  },
-  citeLinkAuthor: {
     color: theme.palette.text.secondary,
   },
 }));
 
-function EasyCitation() {
+function Citation() {
   const classes = useStyles();
 
-  // Note: This text is also included in the README.md file that's part of the data export.
+  // IMPORTANT: This text is also included in the README.md file that's part of the data export.
   // If you change the text here it needs to be changed there as well.
   return (
     <Grid container direction="column" alignItems="center">
@@ -73,18 +63,8 @@ function EasyCitation() {
           </Link>&nbsp;
         </Typography>
       </Container>
-      <Container>
-        <Typography className={classes.citeTextAuthors}>
-          <span>App authored by: </span>
-          <Link href="https://github.com/maxkfranz" className={classes.citeLinkAuthor}>Max Franz</Link><span>, </span>
-          <Link href="https://github.com/mikekucera" className={classes.citeLinkAuthor}>Mike Kucera</Link><span>, </span>
-          <Link href="https://github.com/chrtannus"className={classes.citeLinkAuthor} >Christian Lopes</Link><span>, </span>
-          <span>..., </span>
-          <Link href="https://baderlab.org" className={classes.citeLinkAuthor}>Gary Bader</Link>
-        </Typography>
-      </Container>
     </Grid>
   );
 }
 
-export default EasyCitation;
+export default Citation;

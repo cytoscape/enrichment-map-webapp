@@ -83,10 +83,12 @@ const theme = createTheme({
         border: '1px solid rgba(116, 116, 116, 0.3)',
       },
     },
-    MuiDialog: {
+    MuiBackdrop: {
       root: {
-        backdropFilter: 'blur(0.5px)',
+        backdropFilter: 'blur(1px)',
       },
+    },
+    MuiDialog: {
       paper: {
         border: '1px solid rgba(116, 116, 116, 0.1)',
       },
