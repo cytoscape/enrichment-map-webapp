@@ -8,16 +8,16 @@ import FormatQuoteIcon from '@material-ui/icons/FormatQuote';
 
 
 const useStyles =  makeStyles((theme) => ({
-  cite: {
+  container: {
     marginTop: 0,
     padding: theme.spacing(1, 4, 2, 6),
-    maxWidth: 660,
+    maxWidth: 800,
     textAlign: 'left',
-    fontFamily: 'Monaco,Courier New,Monospace',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    backgroundColor: theme.palette.background.accent,
-    borderRadius: 18,
+    backgroundColor: theme.palette.background.paper,
+    border: `1px solid ${theme.palette.text.accent}`,
+    borderRadius: 16,
     [theme.breakpoints.down('sm')]: {
       marginTop: theme.spacing(2),
     },
@@ -25,7 +25,7 @@ const useStyles =  makeStyles((theme) => ({
       marginTop: theme.spacing(4),
     },
   },
-  citeLogo: {
+  logo: {
     position: 'absolute',
     color: theme.palette.text.accent,
     marginTop: theme.spacing(-0.5),
@@ -33,13 +33,11 @@ const useStyles =  makeStyles((theme) => ({
     width: 30,
     height: 30,
   },
-  citeText: {
+  text: {
     marginTop: theme.spacing(2),
-    fontSize: '0.85rem',
     color: theme.palette.text.secondary,
-    filter: 'opacity(80%)',
   },
-  citeLink: {
+  link: {
     color: theme.palette.text.secondary,
   },
 }));
@@ -51,12 +49,10 @@ function Citation() {
   // If you change the text here it needs to be changed there as well.
   return (
     <Grid container direction="column" alignItems="center">
-      <Container className={classes.cite}>
-        <FormatQuoteIcon className={classes.citeLogo} />
-        <Typography className={classes.citeText}>
-          To cite this app in a paper, for now, please cite this Nature Protocols article (an article specific to this app will be published shortly):
-          &nbsp;&nbsp;
-          <Link className={classes.citeLink} href="https://doi.org/10.1038/s41596-018-0103-9" {...linkoutProps}>
+      <Container className={classes.container}>
+        <FormatQuoteIcon className={classes.logo} />
+        <Typography className={classes.text}>
+          <Link className={classes.link} href="https://doi.org/10.1038/s41596-018-0103-9" {...linkoutProps}>
             Reimand, J., Isserlin, R., ..., Bader, G. &nbsp;
             Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, Cytoscape and EnrichmentMap.&nbsp;
             Nat Protoc 14, 482–517 (2019).

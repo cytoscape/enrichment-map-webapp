@@ -177,6 +177,7 @@ const useContentStyles = makeStyles(theme => ({
   sectionDescription: {
     maxWidth: 768,
     marginBottom: theme.spacing(6),
+    color: theme.palette.secondary.main,
   },
 }));
 
@@ -448,6 +449,10 @@ export function Content({ recentNetworksController }) {
       </section>
       <section id="citation" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
         <Container maxWidth="md" className={classes.sectionContainer}>
+          <Typography variant="h2" className={classes.sectionTitle}>Citing</Typography>
+          <Typography className={classes.sectionDescription}>
+            To cite this app in a paper, for now, please cite this Nature Protocols article &#40;an article specific to this app will be published shortly&#41;:
+          </Typography>
           <Citation />
         </Container>
       </section>
@@ -499,7 +504,7 @@ const useFigureStyles = makeStyles(theme => ({
     maxHeight: 398,
     objectFit: 'contain',
     border: `1px solid ${theme.palette.divider}`,
-    borderRadius: '16px',
+    borderRadius: 16,
     [theme.breakpoints.down('sm')]: {
       marginBottom: theme.spacing(4),
     },

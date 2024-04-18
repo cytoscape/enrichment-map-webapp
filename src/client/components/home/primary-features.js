@@ -14,7 +14,7 @@ import { SvgIcon } from '@material-ui/core';
 
 const features = [
   {
-    title: 'Get the Enrichment Analysis automatically',
+    title: 'Get the enrichment analysis automatically',
     description: <>
       Just provide your RNA-Seq expression data or your pre-ranked gene list, and we run the&nbsp;
       <Link href="https://www.biorxiv.org/content/10.1101/060012v3" {...linkoutProps}>gene set enrichment analysis</Link> for you.
@@ -62,19 +62,19 @@ const useFeaturesDesktopStyles = makeStyles(theme => ({
   screenFrame: {
     backgroundColor: theme.palette.secondary.main,
     padding: theme.spacing(2),
-    borderRadius: '16px',
+    borderRadius: 16,
   },
   screenContent: {
     backgroundColor: theme.palette.primary.main,
     padding: theme.spacing(6),
-    borderRadius: '16px',
+    borderRadius: 16,
   },
   item: {
     display: 'flex',
     flexDirection: 'column',
     margin: theme.spacing(2, 0, 2, 0),
     padding: theme.spacing(2, 4, 2, 4),
-    borderRadius: '16px',
+    borderRadius: 16,
   },
   itemSelected: {
     backgroundColor: `${theme.palette.background.default} !important`,
@@ -229,7 +229,7 @@ const useImportScreenStyles = makeStyles(theme => ({
   root: {
     backgroundColor: theme.palette.background.default,
     padding: theme.spacing(2),
-    borderRadius: '8px',
+    borderRadius: 8,
   },
 }));
 
@@ -282,7 +282,7 @@ const useNetworkScreenStyles = makeStyles(theme => ({
   root: {
     backgroundColor: theme.palette.secondary.main,
     padding: theme.spacing(2),
-    borderRadius: '8px',
+    borderRadius: 8,
   },
 }));
 
