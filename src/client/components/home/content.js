@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import EventEmitter from 'eventemitter3';
 import clsx from 'clsx';
 import _ from 'lodash';
-import chroma from 'chroma-js';
 import classNames from 'classnames';
 import uuid from 'uuid';
 
@@ -11,22 +10,21 @@ import { makeStyles } from '@material-ui/core/styles';
 
 import { RecentNetworksController } from '../recent-networks-controller';
 import { UploadController, RNA_SEQ, PRE_RANKED } from './upload-controller';
-import RecentNetworksList from './recent-networks-list.js';
+import RecentNetworksList from './recent-networks-list';
 import Header from './header';
+import Footer from './footer';
+import MobileMenu from './mobile-menu';
 import PrimaryFeatures from './primary-features';
 import Citation from './citation';
-import About from './about.js';
+import About from './about';
 import { DebugMenu } from '../../debug-menu';
 import StartDialog from './start-dialog';
 import theme from '../../theme';
 
-import { Toolbar, Drawer, MenuItem } from '@material-ui/core';
-import { Container, Grid, Divider } from '@material-ui/core';
+import { Container, Grid } from '@material-ui/core';
 import { Button, Typography, Link } from '@material-ui/core';
 
-import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import NavigateNextIcon from '@material-ui/icons/NavigateNext';
-import { AppLogoIcon } from '../svg-icons.js';
 
 
 export const STEP = {
@@ -53,6 +51,9 @@ const logosDef = [
 
 const isMobileWidth = () => window.innerWidth <= theme.breakpoints.values.sm;
 const isTabletWidth = () => !isMobileWidth() && window.innerWidth <= theme.breakpoints.values.md;
+
+let requestID = null;
+let cancelledRequests = [];
 
 function showNetwork(id) {
   location.href = `/document/${id}`;
@@ -86,11 +87,6 @@ function guessRnaseqClasses(columns) {
   const mid = columns.length / 2;
   return columns.map((c,i) => i < mid ? 'A' : 'B');
 }
-
-
-let requestID = null;
-let cancelledRequests = [];
-
 
 //==[ Content ]=======================================================================================================
 
@@ -240,7 +236,6 @@ export function Content({ recentNetworksController }) {
     bus.on('error', onError);
     return () => bus.removeAllListeners();
   }, []);
-
 
   /** Callbacks and utility functions */
 
@@ -445,7 +440,7 @@ export function Content({ recentNetworksController }) {
         <Container maxWidth="lg" className={classes.sectionContainer}>
           <Typography variant="h2" className={classes.sectionTitle}>Enrichment analysis made easy</Typography>
           <Typography className={classes.sectionDescription}>
-            EnrichmentMap converts the lengthy, potentially redundant list of enriched gene-sets from typical enrichment analysis into a network, 
+            EnrichmentMap converts the lengthy, potentially redundant list of enriched gene sets from typical enrichment analysis into a network, 
             simplifying interpretation.
           </Typography>
           <PrimaryFeatures mobile={mobile} tablet={tablet} />
@@ -462,29 +457,29 @@ export function Content({ recentNetworksController }) {
         </Container>
       </section>
       <Footer mobile={mobile} tablet={tablet} />
-      <MobileMenu open={openMobileMenu} onClose={onCloseMobileMenu} />
-      {uploadState.step !== STEP.WAITING && (
-        <StartDialog
-          step={uploadState.step}
-          isMobile={mobile}
-          isDemo={uploadState.demo}
-          errorMessages={uploadState.errorMessages}
-          fileInfo={uploadState.fileInfo}
+      <MobileMenu menuDef={menuDef} open={openMobileMenu} onClose={onCloseMobileMenu} />
+    {uploadState.step !== STEP.WAITING && (
+      <StartDialog
+        step={uploadState.step}
+        isMobile={mobile}
+        isDemo={uploadState.demo}
+        errorMessages={uploadState.errorMessages}
+        fileInfo={uploadState.fileInfo}
 
-          geneCol={uploadState.geneCol}
-          rankCol={uploadState.rankCol}
-          rnaseqClasses={uploadState.rnaseqClasses}
-          
-          onClassesChanged={(rnaseqClasses) => updateUploadState({ rnaseqClasses })}
-          onRankColChanged={(rankCol) => updateUploadState({ rankCol })}
-          onGeneColChanged={(geneCol) => updateUploadState({ geneCol })}
+        geneCol={uploadState.geneCol}
+        rankCol={uploadState.rankCol}
+        rnaseqClasses={uploadState.rnaseqClasses}
+        
+        onClassesChanged={(rnaseqClasses) => updateUploadState({ rnaseqClasses })}
+        onRankColChanged={(rankCol) => updateUploadState({ rankCol })}
+        onGeneColChanged={(geneCol) => updateUploadState({ geneCol })}
 
-          onUpload={onUpload}
-          onSubmit={onSubmit}
-          onCancelled={onCancel}
-          onBack={onBack}
-        />
-      )}
+        onUpload={onUpload}
+        onSubmit={onSubmit}
+        onCancelled={onCancel}
+        onBack={onBack}
+      />
+    )}
       <Debug 
         sampleFiles={sampleFiles} 
         onLoadSampleNetwork={loadSampleNetwork} 
@@ -582,185 +577,6 @@ Logo.propTypes = {
   href: PropTypes.string,
 };
 
-//==[ MobileMenu ]====================================================================================================
-
-const useMobileMenuStyles = makeStyles((theme) => ({
-  paper: {
-    padding: theme.spacing(0.5, 2.5, 2, 2.5),
-    borderRadius: '0 0 16px 16px',
-    borderBottom: `1px solid ${theme.palette.divider}`,
-    background: chroma(theme.palette.background.default).alpha(0.66).hex(),
-    backdropFilter: 'blur(8px)',
-    [theme.breakpoints.down('sm')]: {
-      paddingLeft: theme.spacing(1),
-      paddingRight: theme.spacing(1),
-    },
-  },
-  toolbar: {
-    marginBottom: theme.spacing(2),
-  },
-  logo: {
-    marginLeft: theme.spacing(1.25),
-    marginRight: theme.spacing(2),
-    fontSize: 48,
-    [theme.breakpoints.down('xs')]: {
-      marginRight: theme.spacing(1),
-      fontSize: 36,
-    },
-  },
-  title: {
-    fontSize: '1.5em',
-    fontWeight: 'bold',
-    flexGrow: 1,
-    [theme.breakpoints.down('xs')]: {
-      fontSize: '1.25em',
-    },
-  },
-  button: {
-    minWidth: 36,
-    width: 36,
-    height: 36,
-    marginRight: theme.spacing(1),
-  },
-  menuItem: {
-    paddingLeft: theme.spacing(1.25),
-    paddingRight: theme.spacing(1.25),
-    borderRadius: '8px',
-  },
-}));
-
-function MobileMenu({ open, onClose }) {
-  const classes = useMobileMenuStyles();
-
-  const handleClick = (href) => {
-    setTimeout(() => window.location.href = href, 100);
-    onClose();
-  };
-
-  return (
-    <Drawer
-      variant="temporary"
-      anchor="top"
-      open={open}
-      onClose={onClose}
-      classes={{ paper: classes.paper }}
-    >
-      <Toolbar variant="regular" className={classes.toolbar} disableGutters>
-        <AppLogoIcon className={classes.logo} />
-        <Typography variant="span" className={classes.title}>EnrichmentMap</Typography>
-        <Button className={classes.button} onClick={onClose}>
-          <KeyboardArrowUpIcon fontSize="large" />
-        </Button>
-      </Toolbar>
-    {menuDef.map((menu, idx) => (
-      <MenuItem key={idx} onClick={() => handleClick(menu.href)} className={classes.menuItem}>
-        { menu.label }
-      </MenuItem>
-    ))}
-    </Drawer>
-  );
-}
-MobileMenu.propTypes = {
-  open: PropTypes.bool,
-  onClose: PropTypes.func.isRequired,
-};
-
-//==[ Footer ]========================================================================================================
-
-const useFooterStyles = makeStyles(theme => ({
-  footer: {
-    marginTop: theme.spacing(4),
-  },
-  toolbar: {
-    marginTop: theme.spacing(2),
-    color: theme.palette.secondary.main,
-  },
-  copyright: {
-    [theme.breakpoints.down('sm')]: {
-      textAlign: 'center',
-      marginBottom: theme.spacing(8),
-    },
-  },
-  logoBar: {
-    paddingLeft: theme.spacing(15),
-    [theme.breakpoints.down('sm')]: {
-      paddingLeft: 0,
-    },
-  },
-}));
-
-function Footer({ mobile, tablet }) {
-  const classes = useFooterStyles();
-
-  return (
-    <Container maxWidth="lg" disableGutters className={classes.footer}>
-      <Divider />
-      <Toolbar variant="regular" className={classes.toolbar}>
-        <Grid
-          container
-          direction={mobile || tablet ? 'column' : 'row'}
-          alignItems={mobile || tablet ? 'center' : 'flex-start'}
-          justifyContent={mobile || tablet ? 'space-around' : 'center'}
-        >
-          <Grid item md={4} sm={12} className={classes.copyright}>
-            &copy; {new Date().getFullYear()} University of Toronto
-          </Grid>
-          <Grid item md={8} sm={12}>
-            {/* <Grid
-              container
-              direction={mobile ? 'column' : 'row'}
-              alignItems={mobile ? 'center' : 'flex-start'}
-              justifyContent={mobile || tablet ? 'space-between' : 'flex-end'}
-              spacing={mobile ? 2 : 10}
-              className={classes.logoBar}
-            >
-            
-            </Grid> */}
-          </Grid>
-        </Grid>
-      </Toolbar>
-    </Container>
-  );
-}
-Footer.propTypes = {
-  mobile: PropTypes.bool,
-  tablet: PropTypes.bool,
-};
-
-//==[ Debug ]=========================================================================================================
-
-function Debug({ sampleFiles, onLoadSampleNetwork }) {
-  const { sampleRankFiles, sampleExprFiles } = sampleFiles;
-  return (
-    <DebugMenu>
-      <h3>Example rank input files</h3>
-      <ul>
-      {
-        sampleRankFiles.length > 0 ?
-        sampleRankFiles.map(file => (
-          <li key={file}><Link onClick={() => onLoadSampleNetwork(file, PRE_RANKED)}>{file}</Link></li>
-        )) :
-        <li>Loading...</li>
-      }
-      </ul>
-      <h3>Example expression input files</h3>
-      <ul>
-      {
-        sampleExprFiles.length > 0 ?
-        sampleExprFiles.map(file => (
-          <li key={file}><Link onClick={() => onLoadSampleNetwork(file, RNA_SEQ)}>{file}</Link></li>
-        )) :
-        <li>Loading...</li>
-      }
-      </ul>
-    </DebugMenu>
-  );
-}
-Debug.propTypes = {
-  sampleFiles: PropTypes.object,
-  onLoadSampleNetwork: PropTypes.func,
-};
-
 //==[ GetStartedSection ]=============================================================================================
 
 const useGetStartedSectionStyles = makeStyles(() => ({
@@ -810,6 +626,40 @@ GetStartedSection.propTypes = {
   tablet: PropTypes.bool,
   onClickGetStarted: PropTypes.func,
   onClickCreateDemo: PropTypes.any
+};
+
+//==[ Debug ]=========================================================================================================
+
+function Debug({ sampleFiles, onLoadSampleNetwork }) {
+  const { sampleRankFiles, sampleExprFiles } = sampleFiles;
+  return (
+    <DebugMenu>
+      <h3>Example rank input files</h3>
+      <ul>
+      {
+        sampleRankFiles.length > 0 ?
+        sampleRankFiles.map(file => (
+          <li key={file}><Link onClick={() => onLoadSampleNetwork(file, PRE_RANKED)}>{file}</Link></li>
+        )) :
+        <li>Loading...</li>
+      }
+      </ul>
+      <h3>Example expression input files</h3>
+      <ul>
+      {
+        sampleExprFiles.length > 0 ?
+        sampleExprFiles.map(file => (
+          <li key={file}><Link onClick={() => onLoadSampleNetwork(file, RNA_SEQ)}>{file}</Link></li>
+        )) :
+        <li>Loading...</li>
+      }
+      </ul>
+    </DebugMenu>
+  );
+}
+Debug.propTypes = {
+  sampleFiles: PropTypes.object,
+  onLoadSampleNetwork: PropTypes.func,
 };
 
 export default Content;
