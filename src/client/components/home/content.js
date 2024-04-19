@@ -15,10 +15,12 @@ import Header from './header';
 import Footer from './footer';
 import MobileMenu from './mobile-menu';
 import PrimaryFeatures from './primary-features';
+import Faq from './faq';
 import Citation from './citation';
 import About from './about';
-import { DebugMenu } from '../../debug-menu';
+import { DebugMenu } from './debug-menu';
 import StartDialog from './start-dialog';
+import LinkOut from './link-out';
 import theme from '../../theme';
 
 import { Container, Grid } from '@material-ui/core';
@@ -447,7 +449,16 @@ export function Content({ recentNetworksController }) {
           <PrimaryFeatures mobile={mobile} tablet={tablet} />
         </Container>
       </section>
-      <section id="citation" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
+      <section id="faq" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
+        <Container maxWidth="lg" className={classes.sectionContainer}>
+          <Typography variant="h2" className={classes.sectionTitle}>Frequently asked questions</Typography>
+          <Typography className={classes.sectionDescription}>
+            If you have anything else you want to ask, <LinkOut href="mailto:info@example.com">reach out to us</LinkOut>.
+          </Typography>
+          <Faq />
+        </Container>
+      </section>
+      <section id="citation" className={classes.section} style={{backgroundColor: theme.palette.background.paper}}>
         <Container maxWidth="md" className={classes.sectionContainer}>
           <Typography variant="h2" className={classes.sectionTitle}>Citing</Typography>
           <Typography className={classes.sectionDescription}>
@@ -456,7 +467,7 @@ export function Content({ recentNetworksController }) {
           <Citation />
         </Container>
       </section>
-      <section id="about" className={classes.section} style={{backgroundColor: theme.palette.background.paper}}>
+      <section id="about" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
         <Container maxWidth="md" className={classes.sectionContainer}>
           <About />
         </Container>
@@ -571,9 +582,9 @@ function Logo({ src, alt, href }) {
   const classes = useLogoStyles();
   
   return (
-    <Link href={href} target="_blank" rel="noreferrer" underline="none">
+    <LinkOut href={href} underline="none">
       <img src={src} alt={alt} className={classes.logo} />  
-    </Link>
+    </LinkOut>
   );
 }
 Logo.propTypes = {

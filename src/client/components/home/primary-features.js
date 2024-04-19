@@ -4,9 +4,9 @@ import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
 
 import theme from '../../theme';
-import { linkoutProps } from '../defaults';
+import LinkOut from './link-out';
 
-import { Container, Grid, Link, Typography } from '@material-ui/core';
+import { Container, Grid, Typography } from '@material-ui/core';
 import { ListItem, ListItemText, ListItemIcon } from '@material-ui/core';
 import { Slide } from '@material-ui/core';
 import { SvgIcon } from '@material-ui/core';
@@ -17,7 +17,7 @@ const features = [
     title: 'Get the enrichment analysis automatically',
     description: <>
       Just provide your RNA-Seq expression data or your pre-ranked gene list, and we run the&nbsp;
-      <Link href="https://www.biorxiv.org/content/10.1101/060012v3" {...linkoutProps}>gene set enrichment analysis</Link> for you.
+      <LinkOut href="https://www.biorxiv.org/content/10.1101/060012v3">gene set enrichment analysis</LinkOut> for you.
     </>,
     icon: DataIcon,
     screen: ImportScreen,

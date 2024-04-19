@@ -2,8 +2,9 @@ import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 
 import { linkoutProps } from '../defaults';
+import LinkOut from './link-out';
 
-import { Container, Divider, Link, Typography } from '@material-ui/core';
+import { Divider, Link, Typography } from '@material-ui/core';
 
 import WebIcon from '@material-ui/icons/Web';
 import { AppLogoIcon, Cy3LogoIcon } from '../svg-icons';
@@ -57,8 +58,8 @@ export function About() {
       </Typography>
       <Typography variant="subtitle2" className={classes.subtitle}><Cy3LogoIcon className={classes.subtitleLogo} />The Desktop App</Typography>
       <Typography className={classes.p}>
-        EnrichmentMap is also available as an <Link href="https://apps.cytoscape.org/apps/enrichmentmap" {...linkoutProps}>App</Link> for the&nbsp;
-        <Link href="https://cytoscape.org/" {...linkoutProps}>Cytoscape</Link> software&mdash;<Link href="https://enrichmentmap.readthedocs.io/" {...linkoutProps}>more info.</Link>
+        EnrichmentMap is also available as an <LinkOut href="https://apps.cytoscape.org/apps/enrichmentmap">App</LinkOut> for the&nbsp;
+        <LinkOut href="https://cytoscape.org/">Cytoscape</LinkOut> software&mdash;<LinkOut href="https://enrichmentmap.readthedocs.io/">more info.</LinkOut>
       </Typography>
       <Divider />
       <Typography variant="body2" color="textSecondary" className={classes.authors}>
