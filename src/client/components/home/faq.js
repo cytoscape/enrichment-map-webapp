@@ -145,7 +145,7 @@ function Faq() {
             <Typography component="h3" variant="subtitle1" color="textPrimary" className={classes.question}>
               { faq.question }
             </Typography>
-            <Typography component="p" variant="body2" color="textSecondary">
+            <Typography component="div" variant="body2" color="textSecondary">
               { faq.answer }
             </Typography>
           </li>
