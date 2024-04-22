@@ -74,7 +74,7 @@ export function MobileMenu({ menuDef, open, onClose }) {
     >
       <Toolbar variant="regular" className={classes.toolbar} disableGutters>
         <AppLogoIcon className={classes.logo} />
-        <Typography variant="span" className={classes.title}>EnrichmentMap</Typography>
+        <Typography variant="inherit" className={classes.title}>EnrichmentMap</Typography>
         <Button className={classes.button} onClick={onClose}>
           <KeyboardArrowUpIcon fontSize="large" />
         </Button>

@@ -14,7 +14,6 @@ import RecentNetworksList from './recent-networks-list';
 import Header from './header';
 import Footer from './footer';
 import MobileMenu from './mobile-menu';
-import PrimaryFeatures from './primary-features';
 import Faq from './faq';
 import Citation from './citation';
 import About from './about';
@@ -38,7 +37,6 @@ export const STEP = {
 };
 
 const menuDef = [
-  { label: "Features", href: '/#features' },
   { label: "FAQ",      href: '/#faq' },
   { label: "Citation", href: '/#citation' },
   { label: "About",    href: '/#about' },
@@ -439,16 +437,6 @@ export function Content({ recentNetworksController }) {
           <LogoBar mobile={mobile} />
         </div>
       </Container>
-      <section id="features" className={classes.section} style={{backgroundColor: theme.palette.background.paper}}>
-        <Container maxWidth="lg" className={classes.sectionContainer}>
-          <Typography variant="h2" className={classes.sectionTitle}>Enrichment analysis made easy</Typography>
-          <Typography className={classes.sectionDescription}>
-            EnrichmentMap converts the lengthy, potentially redundant list of enriched gene sets from typical enrichment analysis into a network, 
-            simplifying interpretation.
-          </Typography>
-          <PrimaryFeatures mobile={mobile} tablet={tablet} />
-        </Container>
-      </section>
       <section id="faq" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
         <Container maxWidth="lg" className={classes.sectionContainer}>
           <Typography variant="h2" className={classes.sectionTitle}>Frequently asked questions</Typography>
