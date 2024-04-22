@@ -34,6 +34,9 @@ const useHeaderStyles = makeStyles(theme => ({
     flexGrow: 1,
     [theme.breakpoints.down('xs')]: {
       fontSize: '1.25em',
+      textOverflow: 'ellipsis',
+      overflow: 'hidden',
+      textWrap: 'nowrap',
     },
   },
   menuButton: {
