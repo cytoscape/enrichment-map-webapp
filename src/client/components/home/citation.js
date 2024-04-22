@@ -19,19 +19,20 @@ const useStyles =  makeStyles((theme) => ({
     border: `1px solid ${theme.palette.text.accent}`,
     borderRadius: 16,
     [theme.breakpoints.down('sm')]: {
-      marginTop: theme.spacing(2),
-    },
-    [theme.breakpoints.down('xs')]: {
-      marginTop: theme.spacing(4),
+      padding: theme.spacing(0.5, 1, 1, 4),
+      maxWidth: '90%',
     },
   },
-  logo: {
+  icon: {
     position: 'absolute',
     color: theme.palette.text.accent,
     marginTop: theme.spacing(-0.5),
     marginLeft: theme.spacing(-5),
     width: 30,
     height: 30,
+    [theme.breakpoints.down('sm')]: {
+      marginLeft: theme.spacing(-3.5),
+    },
   },
   text: {
     marginTop: theme.spacing(2),
@@ -50,8 +51,8 @@ function Citation() {
   return (
     <Grid container direction="column" alignItems="center">
       <Container className={classes.container}>
-        <FormatQuoteIcon className={classes.logo} />
-        <Typography className={classes.text}>
+        <FormatQuoteIcon className={classes.icon} />
+        <Typography variant="body2" className={classes.text}>
           <Link className={classes.link} href="https://doi.org/10.1038/s41596-018-0103-9" {...linkoutProps}>
             Reimand, J., Isserlin, R., ..., Bader, G. &nbsp;
             Pathway enrichment analysis and visualization of omics data using g:Profiler, GSEA, Cytoscape and EnrichmentMap.&nbsp;

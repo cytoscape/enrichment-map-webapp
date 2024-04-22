@@ -9,7 +9,7 @@ import { Container, Grid, Divider, Toolbar } from '@material-ui/core';
 
 const useStyles = makeStyles(theme => ({
   root: {
-    marginTop: theme.spacing(4),
+    marginTop: 0,
   },
   toolbar: {
     marginTop: theme.spacing(2),

@@ -15,7 +15,6 @@ import Header from './header';
 import Footer from './footer';
 import MobileMenu from './mobile-menu';
 import Faq from './faq';
-import Citation from './citation';
 import About from './about';
 import { DebugMenu } from './debug-menu';
 import StartDialog from './start-dialog';
@@ -38,7 +37,6 @@ export const STEP = {
 
 const menuDef = [
   { label: "FAQ",      href: '/#faq' },
-  { label: "Citation", href: '/#citation' },
   { label: "About",    href: '/#about' },
 ];
 
@@ -162,9 +160,10 @@ const useContentStyles = makeStyles(theme => ({
   },
   section: {
     width: '100%',
-    marginTop: theme.spacing(0.25),
-    marginBottom: theme.spacing(0.25),
-    padding: theme.spacing(8, 0, 8, 0),
+    padding: theme.spacing(10, 0, 10, 0),
+    [theme.breakpoints.down('xs')]: {
+      padding: theme.spacing(6, 0, 6, 0),
+    },
   },
   sectionContainer: {
     textAlign: 'left',
@@ -173,11 +172,17 @@ const useContentStyles = makeStyles(theme => ({
     fontSize: '1.85rem',
     fontWeight: 'bold',
     marginBottom: theme.spacing(2),
+    [theme.breakpoints.down('xs')]: {
+      fontSize: '1.5rem',
+    },
   },
   sectionDescription: {
     maxWidth: 768,
     marginBottom: theme.spacing(6),
     color: theme.palette.secondary.main,
+    [theme.breakpoints.down('xs')]: {
+      fontSize: 'unset',
+    },
   },
 }));
 
@@ -437,22 +442,13 @@ export function Content({ recentNetworksController }) {
           <LogoBar mobile={mobile} />
         </div>
       </Container>
-      <section id="faq" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
+      <section id="faq" className={classes.section} style={{backgroundColor: theme.palette.background.paper}}>
         <Container maxWidth="lg" className={classes.sectionContainer}>
           <Typography variant="h2" className={classes.sectionTitle}>Frequently asked questions</Typography>
           <Typography className={classes.sectionDescription}>
             If you have anything else you want to ask, <LinkOut href="mailto:info@example.com">reach out to us</LinkOut>.
           </Typography>
           <Faq />
-        </Container>
-      </section>
-      <section id="citation" className={classes.section} style={{backgroundColor: theme.palette.background.paper}}>
-        <Container maxWidth="md" className={classes.sectionContainer}>
-          <Typography variant="h2" className={classes.sectionTitle}>Citing</Typography>
-          <Typography className={classes.sectionDescription}>
-            To cite this app in a paper, for now, please cite this Nature Protocols article &#40;an article specific to this app will be published shortly&#41;:
-          </Typography>
-          <Citation />
         </Container>
       </section>
       <section id="about" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
@@ -524,8 +520,7 @@ function Figure() {
 
 const useLogoBarStyles = makeStyles(theme => ({
   root: {
-    marginTop: theme.spacing(8),
-    marginBottom: theme.spacing(2),
+    marginTop: theme.spacing(12),
   },
 }));
 

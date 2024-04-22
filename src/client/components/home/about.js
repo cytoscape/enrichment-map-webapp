@@ -2,12 +2,11 @@ import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 
 import { linkoutProps } from '../defaults';
-import LinkOut from './link-out';
+import Citation from './citation';
 
-import { Divider, Link, Typography } from '@material-ui/core';
+import { Container, Divider, Link, Typography } from '@material-ui/core';
 
-import WebIcon from '@material-ui/icons/Web';
-import { AppLogoIcon, Cy3LogoIcon } from '../svg-icons';
+import { AppLogoIcon } from '../svg-icons';
 
 
 const useStyles = makeStyles(theme => ({
@@ -17,25 +16,45 @@ const useStyles = makeStyles(theme => ({
     marginBottom: theme.spacing(4),
     [theme.breakpoints.down('xs')]: {
       width: 96,
+      marginBottom: theme.spacing(2),
     },
   },
   subtitle: {
-    marginBottom: theme.spacing(1.5),
-    textAlign: 'left',
-    textTransform: 'uppercase',
-    color: theme.palette.text.disabled,
+    fontSize: '1.85rem',
+    fontWeight: 'bold',
+    marginBottom: theme.spacing(2),
+    [theme.breakpoints.down('xs')]: {
+      fontSize: '1.5rem',
+    },
   },
-  p: {
+  citeContainer: {
+    paddingLeft: 0,
+    paddingRight: 0,
+    marginTop: theme.spacing(6),
     marginBottom: theme.spacing(6),
-    textAlign: 'left',
+    [theme.breakpoints.down('xs')]: {
+      marginTop: theme.spacing(2),
+      marginBottom: theme.spacing(2),
+    },
   },
-  subtitleLogo: {
-    marginRight: theme.spacing(1),
-    verticalAlign: 'middle',
-    color: theme.palette.text.default,
+  authorsContainer: {
+    paddingLeft: 0,
+    paddingRight: 0,
+    marginTop: theme.spacing(12),
+    marginBottom: 0,
+    [theme.breakpoints.down('xs')]: {
+      marginTop: theme.spacing(6),
+    },
+  },
+  description: {
+    marginBottom: theme.spacing(4),
+    textAlign: 'left',
+    [theme.breakpoints.down('xs')]: {
+      marginBottom: theme.spacing(2),
+      fontSize: 'unset',
+    },
   },
   authors: {
-    marginTop: theme.spacing(1),
     textAlign: 'center',
   },
   linkAuthor: {
@@ -51,24 +70,22 @@ export function About() {
       <div style={{textAlign: 'center'}}>
         <AppLogoIcon className={classes.logo} />
       </div>
-      <Typography variant="subtitle2" className={classes.subtitle}><WebIcon className={classes.subtitleLogo} style={{transform: 'scaleX(-1)'}} /> The Web App</Typography>
-      <Typography className={classes.p}>
-        EnrichmentMap is a web app that allows you to perform functional enrichment analysis on gene lists derived from 
-        RNA-seq experiments and visualise the results as a network.
-      </Typography>
-      <Typography variant="subtitle2" className={classes.subtitle}><Cy3LogoIcon className={classes.subtitleLogo} />The Desktop App</Typography>
-      <Typography className={classes.p}>
-        EnrichmentMap is also available as an <LinkOut href="https://apps.cytoscape.org/apps/enrichmentmap">App</LinkOut> for the&nbsp;
-        <LinkOut href="https://cytoscape.org/">Cytoscape</LinkOut> software&mdash;<LinkOut href="https://enrichmentmap.readthedocs.io/">more info.</LinkOut>
-      </Typography>
-      <Divider />
-      <Typography variant="body2" color="textSecondary" className={classes.authors}>
-        EnrichmentMap is authored by:&nbsp;&nbsp;
-        <Link href="https://github.com/maxkfranz" className={classes.linkAuthor} {...linkoutProps}>Max Franz</Link>,&nbsp;&nbsp;
-        <Link href="https://github.com/mikekucera" className={classes.linkAuthor} {...linkoutProps}>Mike Kucera</Link>,&nbsp;&nbsp;
-        <Link href="https://github.com/chrtannus"className={classes.linkAuthor} {...linkoutProps}>Christian Lopes</Link>,&nbsp;&nbsp;
-        <Link href="https://baderlab.org" className={classes.linkAuthor} {...linkoutProps}>Gary Bader</Link>.
-      </Typography>
+      <Container maxWidth="md" className={classes.citeContainer}>
+        <Typography variant="h3" className={classes.subtitle}>Cite EnrichmentMap</Typography>
+        <Typography variant="body1" color="textSecondary" className={classes.description}>
+          To cite this app in a paper, for now, please cite this Nature Protocols article &#40;an article specific to this app will be published shortly&#41;:
+        </Typography>
+        <Citation />
+      </Container>
+      <Container maxWidth="md" className={classes.authorsContainer}>
+        <Typography variant="body2" color="textSecondary" className={classes.authors}>
+          EnrichmentMap is authored by:&nbsp;&nbsp;
+          <Link href="https://github.com/maxkfranz" className={classes.linkAuthor} {...linkoutProps}>Max Franz</Link>,&nbsp;&nbsp;
+          <Link href="https://github.com/mikekucera" className={classes.linkAuthor} {...linkoutProps}>Mike Kucera</Link>,&nbsp;&nbsp;
+          <Link href="https://github.com/chrtannus"className={classes.linkAuthor} {...linkoutProps}>Christian Lopes</Link>,&nbsp;&nbsp;
+          <Link href="https://baderlab.org" className={classes.linkAuthor} {...linkoutProps}>Gary Bader</Link>.
+        </Typography>
+      </Container>
     </>
   );
 }
