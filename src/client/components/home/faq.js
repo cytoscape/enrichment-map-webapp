@@ -92,13 +92,6 @@ const faqs = [
       </ul>,
     },
     {
-      question: <>What are the analysis parameters?</>,
-      answer: <>
-        The gene set filtering parameters are cutoff parameters used to filter the results of an enrichment analysis.<br />
-        Please download the network images and data and then check the <code>README</code> file for the applied parameters.
-      </>,
-    },
-    {
       question: <>What does NES mean?</>,
       answer: <>
         NES is the Normalised Enrichment Score of a pathway. It may be:
@@ -106,6 +99,13 @@ const faqs = [
           <li>Positive: when the pathway is up-regulated &#40;i.e. the pathway is more enriched in the experiment vs the control&#41;.</li> 
           <li>Negative: when the pathway is down-regulated &#40;i.e. the pathway is less enriched in the experiment vs the control&#41;.</li> 
         </ul>
+      </>,
+    },
+    {
+      question: <>What are the analysis parameters?</>,
+      answer: <>
+        The gene set filtering parameters are cutoff parameters used to filter the results of an enrichment analysis.<br />
+        Please download the network images and data and then check the <code>README</code> file for the applied parameters.
       </>,
     },
     {
