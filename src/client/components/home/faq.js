@@ -45,7 +45,7 @@ const faqs = [
         You can upload either a gene list that already has ranks or an RNA-seq expression file that contains read counts.<br />
         The file type must be <code>Excel</code>, <LinkOut href="https://en.wikipedia.org/wiki/Comma-separated_values"><code>CSV</code></LinkOut>&nbsp;
         or <LinkOut href="https://en.wikipedia.org/wiki/Tab-separated_values"><code>TSV</code></LinkOut>.<br />
-        The gene names must be the the identifiers from&nbsp;
+        The gene names must be the identifiers from&nbsp;
         <LinkOut href="https://www.ensembl.org/Homo_sapiens/Info/Index">Ensembl</LinkOut> or&nbsp;
         <LinkOut href="https://www.genenames.org/">HGNC</LinkOut> for human only.
       </>,
@@ -103,8 +103,8 @@ const faqs = [
       answer: <>
         NES is the Normalised Enrichment Score of a pathway. It may be:
         <ul style={ulStyle}>
-          <li>positive: when the pathway is up-regulated &#40;i.e. the pathway is more enriched in the experiment vs the control&#41;.</li> 
-          <li>negative: when the pathway is down-regulated &#40;i.e. the pathway is less enriched in the experiment vs the control&#41;.</li> 
+          <li>Positive: when the pathway is up-regulated &#40;i.e. the pathway is more enriched in the experiment vs the control&#41;.</li> 
+          <li>Negative: when the pathway is down-regulated &#40;i.e. the pathway is less enriched in the experiment vs the control&#41;.</li> 
         </ul>
       </>,
     },
