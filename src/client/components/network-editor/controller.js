@@ -685,6 +685,8 @@ export class NetworkEditorController {
     let prevParent = null;
 
     const showButton = parent => {
+      if(parent === null || parent === undefined)
+        return;
       clearTimeout(timeoutID);
       for(const cn of cy.clusterNodes()) {
         const elem = cn.scratch(Scratch.TOGGLE_BUTTON_ELEM);
