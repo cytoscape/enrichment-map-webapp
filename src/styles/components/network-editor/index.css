@@ -1,6 +1,0 @@
-html,
-body {
-  /* fixes scroll bar colour in safari */
-  background: rgb(24 24 24);
-  color-scheme: dark;
-}

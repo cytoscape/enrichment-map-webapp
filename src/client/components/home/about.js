@@ -4,7 +4,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { linkoutProps } from '../defaults';
 import Citation from './citation';
 
-import { Container, Divider, Link, Typography } from '@material-ui/core';
+import { Container, Link, Typography } from '@material-ui/core';
 
 import { AppLogoIcon } from '../svg-icons';
 
