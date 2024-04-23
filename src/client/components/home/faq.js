@@ -56,7 +56,7 @@ const faqs = [
         No, but even if you have already performed enrichment analysis using a package such as&nbsp;
         <LinkOut href="https://www.gsea-msigdb.org/gsea/index.jsp">GSEA</LinkOut> or&nbsp;
         <LinkOut href="https://biit.cs.ut.ee/gprofiler">g:Profiler</LinkOut>, you can use the original gene list file, assuming you still have it.<br />
-        However, if you still want to use the GSEA or g:Profiler results, they can be visualised using 
+        However, if you still want to use the GSEA or g:Profiler results, they can be visualized using 
         the <LinkOut href="https://apps.cytoscape.org/apps/enrichmentmap">EnrichmentMap App</LinkOut> for&nbsp;
         <LinkOut href="https://cytoscape.org/">Cytoscape</LinkOut>&mdash;<LinkOut href="https://enrichmentmap.readthedocs.io/en/latest/Gsea.html">more info</LinkOut>.
       </>,
