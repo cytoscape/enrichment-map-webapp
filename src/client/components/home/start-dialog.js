@@ -169,7 +169,8 @@ const StartDialog = ({
       </Button>
       {step === 'UPLOAD' && (
         <Button variant="contained" color="primary" 
-          startIcon={<DescriptionOutlinedIcon />} 
+          startIcon={isDemo ? null : <DescriptionOutlinedIcon />} 
+          endIcon={isDemo ? <NavigateNextIcon /> : null} 
           onClick={() => isDemo ? onSubmit('demo') : onUpload()}
         >
           { isDemo ? 'Create Network' : 'Upload File' }
