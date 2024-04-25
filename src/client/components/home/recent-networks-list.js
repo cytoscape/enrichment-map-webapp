@@ -66,7 +66,7 @@ const useStyles = theme => ({
     padding: theme.spacing(0.5),
     cursor: 'pointer',
     border: `2px solid ${theme.palette.background.default}`,
-    borderRadius: '8px',
+    borderRadius: 8,
     backgroundColor: theme.palette.background.default,
     "&:hover": {
       backgroundColor: theme.palette.action.hover,
@@ -78,7 +78,7 @@ const useStyles = theme => ({
     padding: theme.spacing(0.5),
     cursor: 'default',
     border: `2px solid ${theme.palette.background.default}`,
-    borderRadius: '8px',
+    borderRadius: 8,
     backgroundColor: theme.palette.background.default,
   },
   thumbnail: {
@@ -154,7 +154,7 @@ const useStyles = theme => ({
   code: {
     backgroundColor: theme.palette.background.default,
     padding: theme.spacing(0.5),
-    borderRadius: '2px',
+    borderRadius: 2,
   }
 });
 

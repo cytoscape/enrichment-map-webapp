@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import _ from 'lodash';
-import { BrowserRouter, Route, Switch } from 'react-router-dom';
+import { Route, Switch, useLocation } from 'react-router-dom';
 import PageNotFound from './components/page-not-found';
 import { RecentNetworksController } from './components/recent-networks-controller';
 import { Home } from './components/home';
@@ -8,8 +8,28 @@ import { NetworkEditor } from './components/network-editor';
 
 const recentNetworksController = new RecentNetworksController();
 
-export const Router = () => (
-  <BrowserRouter>
+export function Router() {
+  const { pathname, hash, key } = useLocation();
+  
+  useEffect(() => {
+    // If the URL has an anchor link (e.g. .../#about), we need to
+    // scroll to the element here to make sure the element is rendered
+    if (hash === '') {
+      // If not a hash link, scroll to top
+      window.scrollTo(0, 0);
+    } else {
+      // Scroll to id
+      setTimeout(() => {
+        const id = hash.replace('#', '');
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView();
+        }
+      }, 200);
+    }
+  }, [pathname, hash, key]);
+
+  return  (
     <Switch>
       <Route
         path='/'
@@ -36,8 +56,8 @@ export const Router = () => (
       />
       <Route status={404} exact component={PageNotFound} />
     </Switch>
-  </BrowserRouter>
-);
+  );
+}
 
 function parseQueryParams(props) {
   const queryParamString = _.get(props, ['location', 'search'], '');

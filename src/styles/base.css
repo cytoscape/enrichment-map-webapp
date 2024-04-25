@@ -2,6 +2,9 @@ html,
 body {
   height: 100%;
   width: 100%;
+  /* fixes scroll bar colour in safari */
+  background: #121212;
+  color-scheme: dark;
 }
 
 body {
