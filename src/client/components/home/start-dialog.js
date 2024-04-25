@@ -130,7 +130,7 @@ const StartDialog = ({
   };
 
   return (
-    <Dialog maxWidth="sm" fullScreen={isMobile} open={open}>
+    <Dialog maxWidth={isDemo ? 'xs' : 'sm'} fullScreen={isMobile} open={open}>
       <DialogTitle classes={{ root: classes.titleRoot }}>
       {
         {
@@ -169,7 +169,8 @@ const StartDialog = ({
       </Button>
       {step === 'UPLOAD' && (
         <Button variant="contained" color="primary" 
-          startIcon={<DescriptionOutlinedIcon />} 
+          startIcon={isDemo ? null : <DescriptionOutlinedIcon />} 
+          endIcon={isDemo ? <NavigateNextIcon /> : null} 
           onClick={() => isDemo ? onSubmit('demo') : onUpload()}
         >
           { isDemo ? 'Create Network' : 'Upload File' }

@@ -1,8 +1,12 @@
 import EventEmitter from 'eventemitter3';
 import LocalForage from 'localforage';
+import { NETWORK_BACKGROUND } from './defaults';
 
+
+const MAX_ITEMS = 20;
 const NETWORK_THUMBNAIL_WIDTH = 344;
 const NETWORK_THUMBNAIL_HEIGHT = 344;
+
 
 /**
  * @property {EventEmitter} bus The event bus that the controller emits on after every operation
@@ -15,25 +19,54 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
   constructor(bus) {
     /** @type {EventEmitter} */
     this.bus = bus || new EventEmitter();
-  }
 
-   saveRecentNetwork({ secret, cy }) {
-    const id = cy.data('id');
-    const now = new Date();
-    const opened = now.getTime();
-    const value = this._localStorageValue({ secret, opened: opened, cy });
-    
-    LocalForage.setItem(id, value).catch((err) => {
-      console.log(err);
+    LocalForage.config({
+      name    : 'EM-Web',
+      version : 1.0,
     });
   }
 
-  updateRecentNetwork({ secret, cy }) {
+   async saveRecentNetwork(cy) {
+    const id = cy.data('id');
+    let created;
+    const item = await LocalForage.getItem(id);
+    if (item != null) {
+      // This network already exists
+      created = item.created;
+    }
+    const keys = await LocalForage.keys();
+    const index = keys.indexOf(id);
+    if (index >= 0) {
+      // This network already exists
+      keys.splice(index, 1); // remove the current key from the list before we check the max length
+    }
+
+    const value = this._localStorageValue({ created: created, cy });
+
+    if (keys.length < MAX_ITEMS) {
+      // Just add the new item
+      LocalForage.setItem(id, value).catch((err) => {
+        console.log(err);
+      });
+    } else {
+      this.getRecentNetworks('created', (list) => {
+        // Remove the last item before adding the new one
+        const lastItem = list[list.length - 1];
+        LocalForage.removeItem(lastItem.id).then(() => {
+          LocalForage.setItem(id, value);
+        }).catch((err) => {
+          console.log(err);
+        });
+      });
+    }
+  }
+
+  updateRecentNetwork(cy) {
     const id = cy.data('id');
    
     LocalForage.getItem(id).then((val) => {
       if (val) {
-        const newValue = this._localStorageValue({ secret, opened: val.opened, cy });
+        const newValue = this._localStorageValue({ created: val.created, cy });
         
         LocalForage.setItem(id, newValue).catch((err) => {
           console.log(err);
@@ -44,13 +77,13 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
     });
   }
 
-  getRecentNetworks(callback) {
+  getRecentNetworks(sortByField, callback) {
     const nets = [];
 
     LocalForage.iterate((val, id) => {
       nets.push({ id, ...val });
     }).then(() => {
-      nets.sort((o1, o2) => o2.opened - o1.opened); // Sort by 'opened' date
+      nets.sort((o1, o2) => o2[sortByField] - o1[sortByField]); // Usually sort by 'opened' or 'created' date
       
       if (callback)
         callback(nets);
@@ -86,24 +119,22 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
     });
   }
 
-  _localStorageValue({ secret, opened, cy }) {
+  _localStorageValue({ created, cy }) {
     const name = cy.data('name');
-    const now = new Date();
-    const modified = now.getTime();
+    const now = new Date().getTime();
     const thumbnail = cy.png({
       output: 'base64',
       maxWidth: NETWORK_THUMBNAIL_WIDTH,
       maxHeight: NETWORK_THUMBNAIL_HEIGHT,
       full: true,
-      bg: '#ffffff' // TODO use network BG color
+      bg: NETWORK_BACKGROUND,
     });
 
     return {
-      secret,
       name,
       thumbnail,
-      opened: opened ? opened : modified,
-      modified,
+      created: created ? created : now,
+      opened: now,
     };
   }
 }

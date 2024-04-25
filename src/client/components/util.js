@@ -1,4 +1,4 @@
-import theme from '../../theme';
+import theme from '../theme';
 
 
 export function isMobile() {
@@ -15,4 +15,8 @@ export function delay(millis) {
 
 export function stringToBlob(str) {
   return new Blob([str], { type: 'text/plain;charset=utf-8' });
+}
+
+export function networkURL(id) {
+  return `${window.location.origin}/document/${id}`;
 }

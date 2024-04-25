@@ -6,18 +6,6 @@ import { NetworkEditorController } from './controller';
 import { Tooltip, InputBase } from '@material-ui/core';
 
 
-function renameNetwork(controller, newName) {
-  const networkName = newName != null ? newName.trim() : null;
-  controller.cy.data({ name: networkName });
-
-  fetch(`/api/${controller.networkIDStr}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ networkName })
-  });
-}
-
-
 /**
  * The network title editor. Shows and edits the attribute `cy.data('name')`.
  * - **ENTER** key or `blur()`: Commits the changes and renames the network.
@@ -55,7 +43,7 @@ export function TitleEditor({ controller, disabled }) {
   const handleNetworkNameBlur = () => {
     const newName = input.value;
     if (newName !== networkName) {
-      renameNetwork(controller, newName);
+      controller.renameNetwork(newName);
     }
   };
 
