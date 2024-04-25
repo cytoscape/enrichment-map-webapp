@@ -96,7 +96,6 @@ export const createNetworkStyle = (cy) => {
       {
         selector: 'node',
         style: {
-          'min-zoomed-font-size': 10,
           'opacity': NODE_OPACITY,
           'border-width': 12,
           'border-opacity': 0,
@@ -135,10 +134,34 @@ export const createNetworkStyle = (cy) => {
         }
       },
       {
+        selector: 'node:active',
+        style: {
+          'overlay-opacity': 0.25
+        }
+      },
+      {
+        selector: 'node[NES]:childless',
+        style: {
+          'background-color':   getNodeColor
+        }
+      },
+      {
         selector: 'node[parent][?collapsed]',
         style: {
-          'label': n => '',
-          'events': 'no'
+          'label': ''
+        }
+      },
+      {
+        selector: 'node[parent][?collapsed]',
+        style: {
+          'label': '',
+          'overlay-opacity': 0
+        }
+      },
+      {
+        selector: 'node.grabbing-collapsed-child',
+        style: {
+          'overlay-opacity': 0.25
         }
       },
       {
@@ -156,6 +179,16 @@ export const createNetworkStyle = (cy) => {
           'haystack-radius': 0,
           'width': ele => ele.data('similarity_coefficient') * 15,
           'z-index': 1,
+          'z-compound-depth': 'bottom',
+          'z-index-compare': 'manual'
+        }
+      },
+      {
+        selector: 'edge[!collapsed]',
+        style: {
+          'z-index': 1,
+          'z-compound-depth': 'auto',
+          'z-index-compare': 'auto'
         }
       },
       {
@@ -186,7 +219,7 @@ export const createNetworkStyle = (cy) => {
         selector: 'node.unhighlighted',
         style: {
           'opacity': 0.1,
-          'label': () => '',
+          'label': '',
           'z-index': 1,
         }
       },

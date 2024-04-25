@@ -1,0 +1,33 @@
+.cluster-toggle-button {
+  background-color: #33a02c;
+  backdrop-filter: blur(1px);
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 16px;
+  box-shadow: 0 11px 15px -7px rgb(0 0 0 / 80%), 0 24px 38px 3px rgb(0 0 0 / 20%), 0 9px 46px 8px rgb(0 0 0 / 10%);
+  padding: 6px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: #3fae37;
+    box-shadow: 0 11px 15px -3px rgb(0 0 0 / 80%), 0 24px 38px 2px rgb(0 0 0 / 20%), 0 9px 46px 6px rgb(0 0 0 / 10%);
+  }
+
+  &:focus {
+    background-color: #2d9625;
+    box-shadow: 0 5px 7px -3px rgb(0 0 0 / 98%), 0 12px 19px 2px rgb(0 0 0 / 10%), 0 4px 23px 4px rgb(0 0 0 / 5%);
+  }
+}
+
+.expand {
+  border: 4px double #fff;
+}
+
+.collapse {
+  border: 2px solid #fff;
+}
