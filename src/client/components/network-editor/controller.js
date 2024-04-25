@@ -11,9 +11,6 @@ import { SearchController } from './search-contoller';
 import { ExportController } from './export-controller';
 import { UndoHandler } from './undo-stack';
 
-import ZoomOutMapIcon from '@material-ui/icons/ZoomOutMap';
-import { ZoomInIcon } from '../svg-icons';
-
 // Clusters that have this many nodes get optimized.
 // Note we are using number of nodes as a proxy for number of edges, assuming large clusters are mostly complete.
 const LARGE_CLUSTER_SIZE = 33; // approx 500 edges in a complete graph
@@ -26,6 +23,7 @@ export const Scratch = {
   BUBBLE: '_bubble',
   // The HTML element for the expand/collapse toggle buttons, attached to parent nodes
   TOGGLE_BUTTON_ELEM: '_buttonElem',
+  AUTOMOVE_RULE: '_automoveRule'
 };
 
 
@@ -73,6 +71,8 @@ export class NetworkEditorController {
         this.savePositions();
       }
     });
+
+    window.cy = cy; // for access in the console
   }
 
   isNetworkLoaded() {
@@ -478,12 +478,17 @@ export class NetworkEditorController {
 
     const nodes = parent.children();
     const edges = nodes.internalEdges();
+    const connectedEdges = nodes.connectedEdges();
+
+    const shouldAnimate = requestAnimate && nodes.size() < LARGE_CLUSTER_SIZE;
+
+    const automoveRule = parent.scratch(Scratch.AUTOMOVE_RULE);
 
     const layout = nodes.layout({
       name: 'preset',
       positions: n => n.position(),
       fit: false,
-      animate: requestAnimate && nodes.size() < LARGE_CLUSTER_SIZE,
+      animate: shouldAnimate,
       spacingFactor
     });
     
@@ -491,11 +496,16 @@ export class NetworkEditorController {
 
     parent.data('collapsed', !collapsed);
 
+    connectedEdges.data('collapsed', !collapsed);
+    this.cy.edges().not(connectedEdges).data('collapsed', collapsed);
+
     if(collapsed) {
       edges.style('visibility', 'visible');
       onStop.then(() => { 
         nodes.data('collapsed', !collapsed);
       });
+
+      setTimeout(() => { nodes.select(); }, 0);
     } else {
       nodes.data('collapsed', !collapsed);
       onStop.then(() => {
@@ -503,14 +513,38 @@ export class NetworkEditorController {
       });
     }
 
-    onStop.then(() => {
+    const retPromise = onStop.then(() => {
       parent.scratch(Scratch.LAYOUT_RUNNING, false);
       this.bus.emit('toggleExpandCollapse', parent, collapsed);
+
+      if (collapsed) {
+        automoveRule.disable();
+      } else {
+        automoveRule.enable();
+      }
+
+      const outOfBounds = nodes.add(parent).some(node => {  // Check if any nodes are out of bounds
+        const extent = this.cy.extent();
+        const bb = node.boundingBox();
+
+        return bb.x1 < extent.x1 || bb.x2 > extent.x2 || bb.y1 < extent.y1 || bb.y2 > extent.y2;
+      });
+
+      if (outOfBounds && collapsed) {
+        this.cy.animate({
+          fit: {
+            eles: nodes.add(parent),
+            padding: DEFAULT_PADDING
+          },
+          duration: 1200,
+          easing: 'spring(500, 37)'
+        });
+      }
     });
 
     layout.run();
 
-    return onStop;
+    return retPromise;
   }
 
 
@@ -546,7 +580,9 @@ export class NetworkEditorController {
    */
   _createOrUpdateBubblePath(parent) {
     if(!this.bubbleSets) {
-      this.bubbleSets = this.cy.bubbleSets(); // only create one instance of this plugin
+      this.bubbleSets = this.cy.bubbleSets({
+        interactive: false
+      }); // only create one instance of this plugin
     }
 
     const existingPath = parent.scratch(Scratch.BUBBLE);
@@ -591,53 +627,23 @@ export class NetworkEditorController {
 
     const setButtonHTML = (elem, parent) => {
       const collapsed = parent.data('collapsed');
-      const jsx = collapsed ? <ZoomOutMapIcon /> : <ZoomInIcon />;
+      const text = collapsed ? '+ Expand' : '- Collapse';
+      const className = `cluster-toggle-button ${collapsed ? 'expand' : 'collapse'}`;
+      const jsx = <button className={className}>{text}</button>;
       const html = ReactDOMServer.renderToStaticMarkup(jsx);
       elem.innerHTML = html;
     };
 
-    // Switch the button icon when the cluster is expanded or collapsed.
-    this.bus.on('toggleExpandCollapse', parent => {
-      const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-      setButtonHTML(elem, parent);
-    });
-
-    // Toggle expand/collapse if user clicks direclty on the bubble.
-    cy.on('click', e => {
-      if(e.target === cy) {
-        const parent = this.getBubbleSetParent(e.position);
-        if(parent) {
-          this.toggleExpandCollapse(parent, true);
-        }
-      }
-    });
-  
-    // Detect when the user hovers over the bubble and show/hide the button.
-    let prevParent = null;
-    cy.on('mousemove', _.throttle(e => {
-      const parent = this.getBubbleSetParent(e.position);
-      if(prevParent && prevParent !== parent) {
-        const elem = prevParent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-        elem.style.visibility = 'hidden';
-        prevParent = null;
-      }
-      if(parent) {
-        const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
-        elem.style.visibility = 'visible';
-        prevParent = parent;
-      }
-    }, 100));
-
-    // Create a button for each cluster
+    // Create a button for a cluster
     const createClusterToggleButton = (elem, parent) => {
-      elem.classList.add('cluster-toggle-button');
-      elem.style.visibility = 'hidden';
       parent.scratch(Scratch.TOGGLE_BUTTON_ELEM, elem);
-
       setButtonHTML(elem, parent);
-
-      // Toggle expand/collapse when user clicks on the button
+      elem.style.visibility = 'hidden';
       elem.addEventListener('click', async () => {
+        await this.toggleExpandCollapse(parent, true);
+      });
+      elem.addEventListener('touchstart', async (e) => {
+        e.preventDefault();
         await this.toggleExpandCollapse(parent, true);
       });
     };
@@ -650,9 +656,71 @@ export class NetworkEditorController {
         }
       },
       transform: 'translate(-50%,-50%)',
-      position: 'center',
+      position: 'center', // cytoscape-layers only supports 'center' and 'top-left'
       uniqueElements: true,
       checkBounds: true,
+    });
+
+    // Switch the button icon when the cluster is expanded or collapsed.
+    this.bus.on('toggleExpandCollapse', parent => {
+      const elem = parent.scratch(Scratch.TOGGLE_BUTTON_ELEM);
+      setButtonHTML(elem, parent);
+    });
+
+    const getCompoundNodeAtPosition = (x, y) => {
+      for(const parent of cy.clusterNodes()) {
+        const bb = parent.bb();
+        if(x >= bb.x1 && x <= bb.x2 && y >= bb.y1 && y <= bb.y2) {
+          return parent;
+        }
+      }
+    };
+
+    // Detect when the user hovers over the parent node and show the button.
+    // Use 'mousemove' instead of 'mouseover' because that makes the button disapear when hovering over an edge.
+    // Also detect panning a cluster to the center in order to support touch screens.
+    // Automatically hide the button after a timeout, so it doesn't always obscure the nodes under it.
+    const timeout = 3000;
+    let timeoutID = null;
+    let prevParent = null;
+
+    const showButton = parent => {
+      if(parent === null || parent === undefined)
+        return;
+      clearTimeout(timeoutID);
+      for(const cn of cy.clusterNodes()) {
+        const elem = cn.scratch(Scratch.TOGGLE_BUTTON_ELEM);
+        if(parent === cn) {
+          elem.style.visibility = 'visible'; 
+          timeoutID = setTimeout(() => elem.style.visibility = 'hidden', timeout);
+        } else {
+          elem.style.visibility = 'hidden'; 
+        }
+      }
+    };
+
+    const handleShowButton = position => {
+      const { x, y } = position;
+      const parent = getCompoundNodeAtPosition(x, y); // could use the bubble instead, not sure which is better
+      // User has to move mouse away from cluster then back over it again to make the button show again after it times out.
+      if(prevParent != parent) {
+        showButton(parent);
+      }
+      prevParent = parent;
+    };
+
+    this.bus.on('toggleExpandCollapse', parent => {
+      showButton(parent); // reset the timer
+    });
+
+    cy.on('mousemove', _.throttle((e) => {
+      handleShowButton(e.position);
+    }, 50));
+
+    cy.on('pan', () => {
+      const bb = cy.extent();
+      const center = { x: bb.x1 + bb.w/2, y: bb.y1 + bb.h/2 };
+      handleShowButton(center);
     });
   }
 
@@ -711,25 +779,75 @@ export class NetworkEditorController {
       }
 
       this._setAverageNES(parent);
-      const bubblePath = this._createOrUpdateBubblePath(parent);
+      let bubblePath = this._createOrUpdateBubblePath(parent);
+
+      let dragging = false;
 
       parent.on('position', () => {
         // When the children are ungrabified the 'position' event is not fired for them, must update the bubble path manually.
-        if(!parent.children().grabbable()) { 
+        if(!parent.children().grabbable() && !dragging) { 
           bubblePath.update();
         }
       });
-  
-      parent.on('tap', evt => {
-        const ele = evt.target;
+
+      let x0 = 0;
+      let y0 = 0;
+      let draggedBubblePathSVG;
+
+      parent.on('grab', (e) => {
+        x0 = cluster[0].position().x;
+        y0 = cluster[0].position().y;
+      }).on('drag', (e) => {
+        const dx = cluster[0].position().x - x0;
+        const dy = cluster[0].position().y - y0;
+
         const collapsed = parent.data('collapsed');
-        // Click a compound node to toggle its collapsed state
-        // or click any collapsed child node to expand the cluster
-        if (ele.isParent() || collapsed) {
-          this.toggleExpandCollapse(parent, true);
+
+        if (!collapsed && !e.target.same(parent) && !cluster.allAre(':selected')) {
+          // don't apply when expanded and dragging just some children
+        } else if (!dragging) {
+          draggedBubblePathSVG = bubblePath.node.cloneNode();
+          bubblePath.node.parentNode.appendChild(draggedBubblePathSVG);
+
+          bubblePath.remove();
+
+          dragging = true;
+        } else {
+          draggedBubblePathSVG.style.transform = `translate(${dx}px, ${dy}px)`;
+        }
+      }).on('free', () => {
+        if (dragging) {
+          dragging = false;
+
+          draggedBubblePathSVG.remove();
+
+          bubblePath = this._createOrUpdateBubblePath(parent);
         }
       });
+
+      const automoveRule = cy.automove({
+        nodesMatching: cluster,
+        reposition: 'drag',
+        dragWith: cluster
+      });
+
+      parent.scratch(Scratch.AUTOMOVE_RULE, automoveRule);
+
+      cluster.on('grab', (evt) => {
+        const ele = evt.target;
+        const collapsed = parent.data('collapsed');
+
+        if (collapsed) {
+          parent.addClass('grabbing-collapsed-child');
+        }
+      }).on('free', (evt) => {
+        parent.removeClass('grabbing-collapsed-child');
+      }).on('tap', (evt) => {
+        parent.removeClass('grabbing-collapsed-child');
+      });
     });
+
+    cy.edges().data('collapsed', true);
   }
 
 
