@@ -1,6 +1,7 @@
 import debug from './debug';
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { BrowserRouter } from 'react-router-dom';
 import { Router } from './router';
 import { registerCytoscapeExtensions } from './cy-extensions';
 import { fixOldFashionedScrollStyle } from './scroll';
@@ -29,7 +30,7 @@ if (SENTRY) {
 registerCytoscapeExtensions();
 
 ReactDOM.render(
-  <Router/>,
+  <BrowserRouter><Router/></BrowserRouter>,
   document.getElementById('root'),
   () => {
     // Remove the loading icon when the app is loaded and show the React component

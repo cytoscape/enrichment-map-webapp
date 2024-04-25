@@ -156,7 +156,7 @@ const useStyles =  makeStyles((theme) => ({
   },
 }));
 
-function Faq() {
+export function Faq() {
   const classes = useStyles();
 
   return (
