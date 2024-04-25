@@ -472,16 +472,14 @@ export class NetworkEditorController {
       return;
     parent.scratch(Scratch.LAYOUT_RUNNING, true);
 
+    const { cy } = this;
     const collapsed = parent.data('collapsed');
     const shrinkFactor = 0.2;
     const spacingFactor = collapsed ? (1.0 / shrinkFactor) : shrinkFactor;
-
     const nodes = parent.children();
     const edges = nodes.internalEdges();
     const connectedEdges = nodes.connectedEdges();
-
     const shouldAnimate = requestAnimate && nodes.size() < LARGE_CLUSTER_SIZE;
-
     const automoveRule = parent.scratch(Scratch.AUTOMOVE_RULE);
 
     const layout = nodes.layout({
@@ -492,59 +490,77 @@ export class NetworkEditorController {
       spacingFactor
     });
     
-    const onStop = layout.promiseOn('layoutstop');
+    const layoutPromise = layout.promiseOn('layoutstop');
 
     parent.data('collapsed', !collapsed);
-
     connectedEdges.data('collapsed', !collapsed);
-    this.cy.edges().not(connectedEdges).data('collapsed', collapsed);
+    cy.edges().not(connectedEdges).data('collapsed', collapsed);
 
     if(collapsed) {
       edges.style('visibility', 'visible');
-      onStop.then(() => { 
-        nodes.data('collapsed', !collapsed);
-      });
-
+      layoutPromise.then(() => nodes.data('collapsed', !collapsed));
       setTimeout(() => { nodes.select(); }, 0);
     } else {
       nodes.data('collapsed', !collapsed);
-      onStop.then(() => {
-        edges.style('visibility', 'hidden');
-      });
+      layoutPromise.then(() => edges.style('visibility', 'hidden'));
     }
 
-    const retPromise = onStop.then(() => {
+    const afterLayoutPromise = layoutPromise.then(() => {
       parent.scratch(Scratch.LAYOUT_RUNNING, false);
       this.bus.emit('toggleExpandCollapse', parent, collapsed);
 
-      if (collapsed) {
+      if(collapsed) {
         automoveRule.disable();
       } else {
         automoveRule.enable();
       }
 
-      const outOfBounds = nodes.add(parent).some(node => {  // Check if any nodes are out of bounds
-        const extent = this.cy.extent();
-        const bb = node.boundingBox();
+      if(collapsed) { // if it was collapsed, this runs after the layout so its expanded now
+        const getAnimation = () => {
+          const bb = parent.renderedBoundingBox({ includeLabels: true });
+          const extent = cy.renderedExtent();
 
-        return bb.x1 < extent.x1 || bb.x2 > extent.x2 || bb.y1 < extent.y1 || bb.y2 > extent.y2;
-      });
+          // if the expanded cluster is larger than the viewport, then fit it to the viewport
+          if(bb.h > extent.h || bb.w > extent.w) {
+            return { 
+              fit: { 
+                eles: parent, 
+                padding: DEFAULT_PADDING 
+              } 
+            };
+          }
 
-      if (outOfBounds && collapsed) {
-        this.cy.animate({
-          fit: {
-            eles: nodes.add(parent),
-            padding: DEFAULT_PADDING
-          },
-          duration: 1200,
-          easing: 'spring(500, 37)'
-        });
+          // if the expanded cluster is out of bounds, then pan it into the viewport
+          const panBy = { x: 0, y: 0 };
+          if(bb.x1 < extent.x1) {
+            panBy.x = extent.x1 - bb.x1 + DEFAULT_PADDING;
+          } else if(bb.x2 > extent.x2) {
+            panBy.x = extent.x2 - bb.x2 - DEFAULT_PADDING;
+          }
+          if(bb.y1 < extent.y1) {
+            panBy.y = extent.y1 - bb.y1 + DEFAULT_PADDING;
+          } else if(bb.y2 > extent.y2) {
+            panBy.y = extent.y2 - bb.y2 - DEFAULT_PADDING;
+          }
+          if(panBy.x != 0 || panBy.y != 0) {
+            return { panBy };
+          }
+        };
+
+        const animation = getAnimation();
+        if(animation) {
+          cy.animate({
+            ...animation,
+            duration: 1200,
+            easing: 'spring(500, 37)'
+          });
+        }
       }
     });
 
     layout.run();
 
-    return retPromise;
+    return afterLayoutPromise;
   }
 
 
