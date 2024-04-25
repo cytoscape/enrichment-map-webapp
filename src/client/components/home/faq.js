@@ -20,6 +20,32 @@ const faqs = [
       </>,
     },
     {
+      question: <>What files can I upload?</>,
+      answer: <>
+        Currently the EnrichmentMap web app only supports gene lists as input.
+        You can upload either a gene list that already has ranks or an RNA-seq expression file that contains read counts.<br />
+        The file type must be <code>Excel</code>, <LinkOut href="https://en.wikipedia.org/wiki/Comma-separated_values"><code>CSV</code></LinkOut>&nbsp;
+        or <LinkOut href="https://en.wikipedia.org/wiki/Tab-separated_values"><code>TSV</code></LinkOut>.<br />
+        The gene names must be the identifiers from&nbsp;
+        <LinkOut href="https://www.ensembl.org/Homo_sapiens/Info/Index">Ensembl</LinkOut> or&nbsp;
+        <LinkOut href="https://www.genenames.org/">HGNC</LinkOut> for human only.
+      </>,
+    },
+    {
+      question: <>Can I upload GSEA and g:Profiler files?</>,
+      answer: <>
+        No, if you want to use&nbsp;
+        <LinkOut href="https://www.gsea-msigdb.org/gsea/index.jsp">GSEA</LinkOut> or&nbsp;
+        <LinkOut href="https://biit.cs.ut.ee/gprofiler">g:Profiler</LinkOut> results to create an EnrichmentMap network,
+        you can use the <LinkOut href="https://apps.cytoscape.org/apps/enrichmentmap">EnrichmentMap App</LinkOut> for&nbsp;
+        <LinkOut href="https://cytoscape.org/">Cytoscape</LinkOut>&mdash;<LinkOut href="https://enrichmentmap.readthedocs.io/en/latest/Gsea.html">more info</LinkOut>.<br />
+        However, if you still have the original gene list file used as input to GSEA,
+        you can upload the file to EnrichmentMap web and perform a new enrichment analysis.
+        The results will be available much faster than with GSEA.<br />
+        Unranked gene list files typically used as input for g:Profiler are currently not supported by the web app.
+      </>,
+    },
+    {
       question: <>How long does the enrichment analysis take?</>,
       answer: <>
         On average it takes 1-2 minutes to create the network from an uploaded file.
@@ -39,33 +65,10 @@ const faqs = [
       </>,
     },
     {
-      question: <>What files can I upload?</>,
-      answer: <>
-        Currently the EnrichmentMap web app only supports gene lists as input.
-        You can upload either a gene list that already has ranks or an RNA-seq expression file that contains read counts.<br />
-        The file type must be <code>Excel</code>, <LinkOut href="https://en.wikipedia.org/wiki/Comma-separated_values"><code>CSV</code></LinkOut>&nbsp;
-        or <LinkOut href="https://en.wikipedia.org/wiki/Tab-separated_values"><code>TSV</code></LinkOut>.<br />
-        The gene names must be the identifiers from&nbsp;
-        <LinkOut href="https://www.ensembl.org/Homo_sapiens/Info/Index">Ensembl</LinkOut> or&nbsp;
-        <LinkOut href="https://www.genenames.org/">HGNC</LinkOut> for human only.
-      </>,
-    },
-    {
-      question: <>Can I upload GSEA and g:Profiler files?</>,
-      answer: <>
-        No, but even if you have already performed enrichment analysis using a package such as&nbsp;
-        <LinkOut href="https://www.gsea-msigdb.org/gsea/index.jsp">GSEA</LinkOut> or&nbsp;
-        <LinkOut href="https://biit.cs.ut.ee/gprofiler">g:Profiler</LinkOut>, you can use the original gene list file, assuming you still have it.<br />
-        However, if you still want to use the GSEA or g:Profiler results, they can be visualized using 
-        the <LinkOut href="https://apps.cytoscape.org/apps/enrichmentmap">EnrichmentMap App</LinkOut> for&nbsp;
-        <LinkOut href="https://cytoscape.org/">Cytoscape</LinkOut>&mdash;<LinkOut href="https://enrichmentmap.readthedocs.io/en/latest/Gsea.html">more info</LinkOut>.
-      </>,
-    },
-    {
       question: <>What data does the app use?</>,
       answer: <>
         The enrichment analysis is performed against a <LinkOut href="https://baderlab.org/GeneSets">database of known pathways</LinkOut>&nbsp;
-        for human, which has been curated from several sources by <LinkOut href="https://baderlab.org/">Bader Lab</LinkOut> at the University of Toronto.
+        for human, which has been curated from several sources by Bader Lab at the University of Toronto.
       </>,
     },
   ], [
