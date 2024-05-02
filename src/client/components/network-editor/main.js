@@ -76,7 +76,6 @@ const useStyles = makeStyles((theme) => ({
   snackBarContent: {
     color: 'inherit',
     background: chroma(theme.palette.background.default).alpha(0.75).hex(),
-    backdropFilter: 'blur(6px)',
   },
 }));
 
