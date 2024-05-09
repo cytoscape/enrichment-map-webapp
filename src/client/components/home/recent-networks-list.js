@@ -112,7 +112,7 @@ const useStyles = theme => ({
     },
   },
   caption: {
-    color: theme.palette.secondary.main,
+    color: theme.palette.text.secondary,
   },
   snackBar: {
     top: '10px',
