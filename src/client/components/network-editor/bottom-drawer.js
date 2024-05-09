@@ -394,7 +394,7 @@ export function BottomDrawer({ controller, open, leftDrawerOpen, isMobile, isTab
           {open && (
             <>
               <SelectionNavigator
-                disabled={totalSelected === 0}
+                disabled={totalSelected < 2}
                 onPrevious={() => goToNewCurrentRow(-1)}
                 onNext={() => goToNewCurrentRow(1)}
               />
