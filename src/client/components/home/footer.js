@@ -13,7 +13,7 @@ const useStyles = makeStyles(theme => ({
   },
   toolbar: {
     marginTop: theme.spacing(2),
-    color: theme.palette.secondary.main,
+    color: theme.palette.text.secondary,
   },
   copyright: {
     [theme.breakpoints.down('sm')]: {

@@ -141,7 +141,7 @@ const useContentStyles = makeStyles(theme => ({
   },
   description : {
     fontSize: '1rem',
-    color: theme.palette.secondary.main,
+    color: theme.palette.text.secondary,
     marginTop: theme.spacing(5),
     marginBottom: theme.spacing(5),
     [theme.breakpoints.down('xs')]: {
@@ -179,7 +179,7 @@ const useContentStyles = makeStyles(theme => ({
   sectionDescription: {
     maxWidth: 768,
     marginBottom: theme.spacing(6),
-    color: theme.palette.secondary.main,
+    color: theme.palette.text.secondary,
     [theme.breakpoints.down('xs')]: {
       fontSize: 'unset',
     },

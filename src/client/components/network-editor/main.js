@@ -322,6 +322,27 @@ const Main = ({
 
   const menuDef = [ 
     {
+      title: "Zoom to Fit",
+      icon: <FitScreenIcon />,
+      onClick: panner.fit,
+    }, {
+      title: "Zoom In",
+      icon: <AddIcon />,
+      onClick: panner.zoomIn,
+    }, {
+      title: "Zoom Out",
+      icon: <RemoveIcon />,
+      onClick: panner.zoomOut,
+      unrelated: true,
+    }, {
+      title: "Enable Drag-to-Select",
+      description: "(or use SHIFT-select)",
+      icon: <DragSelectIcon />,
+      onClick: ()=> cy.userPanningEnabled(!cy.userPanningEnabled()),
+      isSelected: () => !cy.userPanningEnabled(),
+      alwaysShow: true, // always show on desktop/tablet, but still hides on mobile
+      unrelated: true,
+    }, {
       title: getUndoMenuTitle(undoType),
       icon: <UndoIcon />,
       onClick: () => controller.undoHandler.undo(),
@@ -336,27 +357,6 @@ const Main = ({
       title: "Restore Network Layout",
       icon: <RestoreIcon />,
       onClick: handleNetworkRestore,
-      unrelated: true,
-    }, {
-      title: "Zoom In",
-      icon: <AddIcon />,
-      onClick: panner.zoomIn,
-    }, {
-      title: "Zoom Out",
-      icon: <RemoveIcon />,
-      onClick: panner.zoomOut,
-    }, {
-      title: "Fit Figure to Screen",
-      icon: <FitScreenIcon />,
-      onClick: panner.fit,
-      unrelated: true,
-    }, {
-      title: "Enable Drag-to-Select",
-      description: "(or use SHIFT-select)",
-      icon: <DragSelectIcon />,
-      onClick: ()=> cy.userPanningEnabled(!cy.userPanningEnabled()),
-      isSelected: () => !cy.userPanningEnabled(),
-      alwaysShow: true, // always show on desktop/tablet, but still hides on mobile
       unrelated: true,
     }, {
       title: "Download Data and Images",
