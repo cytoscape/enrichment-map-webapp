@@ -151,6 +151,9 @@ export class ExportController {
   async _createNetworkPDFBlob() {
     const { cy } = this.controller;
     const blob = await cy.pdf({
+      paperSize: 'LETTER',
+      orientation: 'LANDSCAPE',
+      full: true, // ignore zoom level
       includeSvgLayers: true, // include bubbles
     });
     return blob;
