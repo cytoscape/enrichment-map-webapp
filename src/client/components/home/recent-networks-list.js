@@ -33,6 +33,7 @@ const EMPTY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgY
 const useStyles = theme => ({
   paper: {
     whiteSpace: 'nowrap',
+    backgroundColor: theme.palette.background.default,
     boxShadow: 'none',
     border: 'none',
     borderRadius: '0 0 8px 8px',
@@ -65,9 +66,8 @@ const useStyles = theme => ({
     margin: theme.spacing(0.5),
     padding: theme.spacing(0.5),
     cursor: 'pointer',
-    border: `2px solid ${theme.palette.background.default}`,
     borderRadius: 8,
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.background.header,
     "&:hover": {
       backgroundColor: theme.palette.action.hover,
     }
@@ -77,9 +77,8 @@ const useStyles = theme => ({
     margin: theme.spacing(0.5),
     padding: theme.spacing(0.5),
     cursor: 'default',
-    border: `2px solid ${theme.palette.background.default}`,
     borderRadius: 8,
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.background.header,
   },
   thumbnail: {
     width: 172,
@@ -120,7 +119,7 @@ const useStyles = theme => ({
   },
   snackBarContent: {
     color: 'inherit',
-    background: theme.palette.primary.main,
+    background: theme.palette.background.paper,
     border: `1px solid ${theme.palette.text.disabled}`,
   },
   confirmInfoBox: {

@@ -43,7 +43,6 @@ const menuDef = [
 const logosDef = [
   { src: "/images/bader-lab-logo.svg", alt: "Bader Lab logo", href: "https://baderlab.org/" },
   { src: "/images/cytoscape-consortium-logo.svg", alt: "Cytoscape Consortium logo", href: "https://cytoscape.org/" },
-  // { src: "/images/donnelly-logo.png", alt: "The Donnelly Centre logo", href: "https://thedonnellycentre.utoronto.ca/" },
   { src: "/images/uoft-logo.svg", alt: "UofT logo", href: "https://www.utoronto.ca/" },
 ];
 
@@ -96,7 +95,7 @@ const useContentStyles = makeStyles(theme => ({
     display: 'flex',
     flexDirection: 'column',
     border: '4px solid transparent',
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.background.paper,
   },
   rootDropping: {
     borderColor: 'rgb(54, 102, 209)'
@@ -442,7 +441,7 @@ export function Content({ recentNetworksController }) {
           <LogoBar mobile={mobile} />
         </div>
       </Container>
-      <section id="faq" className={classes.section} style={{backgroundColor: theme.palette.background.paper}}>
+      <section id="faq" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
         <Container maxWidth="lg" className={classes.sectionContainer}>
           <Typography variant="h2" className={classes.sectionTitle}>Frequently asked questions</Typography>
           <Typography className={classes.sectionDescription}>
@@ -451,7 +450,7 @@ export function Content({ recentNetworksController }) {
           <Faq />
         </Container>
       </section>
-      <section id="about" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
+      <section id="about" className={classes.section}>
         <Container maxWidth="md" className={classes.sectionContainer}>
           <About />
         </Container>

@@ -24,12 +24,13 @@ import MoreIcon from '@material-ui/icons/MoreVert';
 const useHeaderStyles = makeStyles((theme) => ({
   appBar: {
     minHeight: HEADER_HEIGHT,
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.background.header,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    boxShadow: 'none',
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
-    boxShadow: 'none',
   },
   appBarShift: {
     width: `calc(100% - ${LEFT_DRAWER_WIDTH}px)`,

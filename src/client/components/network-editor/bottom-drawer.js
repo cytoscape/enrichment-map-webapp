@@ -60,10 +60,12 @@ function toTableData(nodes, sortFn) {
 
 const useBottomDrawerStyles = makeStyles((theme) => ({
   appBar: {
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.background.header,
     minHeight: BOTTOM_DRAWER_HEIGHT,
     top: 'auto',
     bottom: 0,
+    borderTop: `1px solid ${theme.palette.divider}`,
+    boxShadow: 'none',
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,

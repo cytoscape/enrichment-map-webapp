@@ -15,7 +15,7 @@ const useStyles =  makeStyles((theme) => ({
     textAlign: 'left',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    backgroundColor: theme.palette.background.paper,
+    backgroundColor: theme.palette.background.accent,
     border: `1px solid ${theme.palette.text.accent}`,
     borderRadius: 16,
     [theme.breakpoints.down('sm')]: {
