@@ -77,6 +77,9 @@ const useStyles = makeStyles((theme) => ({
     color: 'inherit',
     background: chroma(theme.palette.background.default).alpha(0.75).hex(),
   },
+  actionIcon: {
+    color: theme.palette.text.primary,
+  },
 }));
 
 
@@ -459,7 +462,7 @@ const Main = ({
             if(snackBarState.closeable) {
               return (
                 <IconButton size='small' onClick={() => setSnackBarState({ open: false })}>
-                  <CloseIcon />
+                  <CloseIcon className={classes.actionIcon} />
                 </IconButton>
               );
             } else if(snackBarState.spinner) {

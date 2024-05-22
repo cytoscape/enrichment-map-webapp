@@ -410,7 +410,8 @@ UploadPanel.propTypes = {
 
 const useDemoPanelStyles = makeStyles((theme) => ({
   thumbnail: {
-    borderRadius: '8px',
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: '16px',
     width: '100%',
     margin: theme.spacing(2.5, 0, 2.5, 0),
   },
@@ -422,7 +423,11 @@ export function DemoPanel() {
     <Typography component="p" variant="body1" className={classes.description}>
       Create a demo network from RNA-Seq data.
     </Typography>
-    <img className={classes.thumbnail} src="/images/demo_small.png" alt="thumbnail of demo network" />
+    <img
+      className={classes.thumbnail}
+      alt="thumbnail of demo network"
+      src="/images/demo_small.png"
+    />
     <Typography component="p" variant="body1">
       The data used to create this network is described in the&nbsp;
       <Link 

@@ -39,6 +39,9 @@ const useHeaderStyles = makeStyles(theme => ({
       textWrap: 'nowrap',
     },
   },
+  menuItem: {
+    borderRadius: 8,
+  },
   menuButton: {
     minWidth: 36,
     width: 36,
@@ -86,7 +89,7 @@ export function Header({ menuDef, showRecentNetworks, mobile, tablet, onClickGet
           <ToolbarDivider />
           <Typography variant="inherit" className={classes.title}>EnrichmentMap:RNA-Seq</Typography>
         {!mobile && !tablet && menuDef.map((menu, idx) => (
-          <MenuItem key={idx} onClick={() => handleClick(menu.href)}>
+          <MenuItem key={idx} className={classes.menuItem} onClick={() => handleClick(menu.href)}>
             { menu.label }
           </MenuItem>
         ))}

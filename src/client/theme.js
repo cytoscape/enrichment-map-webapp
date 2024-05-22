@@ -35,7 +35,11 @@ const theme = createTheme({
     warning: {
       main: '#ffb74d',
     },
+    table: {
+      divider: 'rgba(0, 0, 0, 0.08)',
+    },
     text: {
+      secondary: 'rgba(0, 0, 0, 0.7)',
       accent: '#33a02c',
     },
     typography: {
@@ -54,34 +58,32 @@ const theme = createTheme({
         }
       },
     },
-    overrides: {
-      MuiTouchRipple:{
-        root: {
-          display: 'none !important',
-        },
+  },
+  overrides: {
+    MuiTouchRipple:{
+      root: {
+        display: 'none !important',
       },
-      MuiTooltip: {
-        tooltip: {
-          fontSize: "0.85em",
-          maxWidth: 340,
-        },
+    },
+    MuiTooltip: {
+      tooltip: {
+        fontSize: "0.85em",
+        maxWidth: 340,
       },
-      MuiPopover: {
-        paper: {
-          background: 'rgba(255, 255, 255, 0.8)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(116, 116, 116, 0.3)',
-        },
+    },
+    MuiPopover: {
+      paper: {
+        backdropFilter: 'blur(8px)',
       },
-      MuiBackdrop: {
-        root: {
-          backdropFilter: 'blur(1px)',
-        },
+    },
+    MuiBackdrop: {
+      root: {
+        backdropFilter: 'blur(1px)',
       },
-      MuiLink: {
-        root: {
-          color: '#6194C5',
-        },
+    },
+    MuiLink: {
+      root: {
+        color: '#1f78b4',
       },
     },
   },

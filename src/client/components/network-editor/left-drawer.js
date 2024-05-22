@@ -106,10 +106,11 @@ const useStyles = makeStyles((theme) => ({
   setOperationSelect: {
     height: 40,
     width: 77,
+    color: theme.palette.text.secondary,
   },
   setOperationIcon: {
     minWidth: 48,
-    color: theme.palette.text.primary,
+    color: theme.palette.text.secondary,
   },
   sortButton: {
     width: 77,

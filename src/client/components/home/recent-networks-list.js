@@ -52,6 +52,9 @@ const useStyles = theme => ({
     overflow: 'hidden',
     justifyContent: 'left',
   },
+  actionIcon: {
+    color: theme.palette.text.primary,
+  },
   imageList: {
     display: 'flex',
     listStyle: 'none',
@@ -148,7 +151,7 @@ const useStyles = theme => ({
   },
   confirmInfoItemText: {
     margin: 0,
-    color: theme.palette.text.disabled,
+    color: theme.palette.text.secondary,
   },
   code: {
     backgroundColor: theme.palette.background.default,
@@ -289,7 +292,7 @@ export class RecentNetworksList extends Component {
                     </Grid>
                     <Grid item>
                       <IconButton size="small" onClick={e => this.showPopover(e)}>
-                        <MoreVertIcon />
+                        <MoreVertIcon className={classes.actionIcon} />
                       </IconButton>
                     </Grid>
                   </Grid>
@@ -328,7 +331,7 @@ export class RecentNetworksList extends Component {
               if (this.state.snackBarState.closeable) {
                 return (
                   <IconButton size='small' onClick={() => this.setState({ snackBarState: { open: false }})}>
-                    <CloseIcon />
+                    <CloseIcon className={classes.actionIcon} />
                   </IconButton>
                 );
               } else if(this.state.snackBarState.spinner) {
@@ -377,7 +380,7 @@ export class RecentNetworksList extends Component {
                       <>
                         You can still access this network with its <b>permanent link</b>&nbsp;
                         <Tooltip title="Copy link">
-                          <IconButton color="primary" size="small" onClick={handleCopyLink}>
+                          <IconButton size="small" onClick={handleCopyLink}>
                             <ContentCopyIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -453,7 +456,7 @@ export class RecentNetworksList extends Component {
                     </Grid>
                     <Grid item>
                       <IconButton size="small" onClick={e => onDelete(e)}>
-                        <DeleteIcon fontSize="small" />
+                        <DeleteIcon fontSize="small" className={classes.actionIcon} />
                       </IconButton>
                     </Grid>
                   </Grid>
@@ -470,6 +473,8 @@ export class RecentNetworksList extends Component {
 
   renderPopover() {
     const { recentNetworks, anchorEl } = this.state;
+
+    const { classes } = this.props;
 
     const handleCopyLinks = async () => {
       if (recentNetworks && recentNetworks.length > 0) {
@@ -510,13 +515,13 @@ export class RecentNetworksList extends Component {
         <MenuList>
           <MenuItem onClick={() => handleCopyLinks()}>
             <ListItemIcon>
-              <ShareIcon fontSize="small" />
+              <ShareIcon fontSize="small" className={classes.actionIcon} />
             </ListItemIcon>
             <ListItemText primary="Share" />
           </MenuItem>
           <MenuItem onClick={() => clearListIfConfirmed()}>
             <ListItemIcon>
-              <DeleteIcon fontSize="small" />
+              <DeleteIcon fontSize="small" className={classes.actionIcon} />
             </ListItemIcon>
             <ListItemText primary="Clear List..." />
           </MenuItem>

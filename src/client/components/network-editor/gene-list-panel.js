@@ -187,7 +187,6 @@ GeneMetadataPanel.propTypes = {
 const useNoResultsBoxStyles = makeStyles((theme) => ({
   mainIcon: {
     fontSize: '4em',
-    opacity: 0.4,
   },
   noResultsBox: {
     display: 'flex',
@@ -198,6 +197,7 @@ const useNoResultsBoxStyles = makeStyles((theme) => ({
     height: '100%',
     padding: theme.spacing(2),
     textAlign: 'center',
+    color: theme.palette.text.disabled,
   },
   noResultsInfoBox: {
     width: '100%',
@@ -205,6 +205,7 @@ const useNoResultsBoxStyles = makeStyles((theme) => ({
     marginTop: theme.spacing(2),
     padding: theme.spacing(2),
     borderRadius: 16,
+    color: theme.palette.text.disabled,
   },
   noResultsLine: {
     marginTop: theme.spacing(1),
@@ -226,12 +227,10 @@ const useNoResultsBoxStyles = makeStyles((theme) => ({
     transform: 'scaleX(-1)',
     fontSize: '1em',
     marginRight: theme.spacing(1),
-    color: theme.palette.text.disabled,
     opacity: 0.5,
   },
   noResultsItemText: {
     margin: 0,
-    color: theme.palette.text.disabled,
   },
 }));
 
@@ -240,15 +239,14 @@ const NoResultsBox = ({ isSearch }) => {
 
   return (
     <Paper className={classes.noResultsBox}>
-      <Typography component="p" color="textSecondary" className={classes.noResultsLine}>
+      <Typography component="p" className={classes.noResultsLine}>
         { isSearch ? <SadFaceIcon className={classes.mainIcon} /> : <InfoIcon className={classes.mainIcon} /> }
       </Typography>
       <Typography
         component="p"
         variant="subtitle1"
-        color="textSecondary"
         className={classes.noResultsLine}
-        style={{fontSize: '1.5em', opacity: 0.4}}
+        style={{fontSize: '1.5em'}}
       >
         { isSearch ? 'No genes found' : 'No common genes for the selected pathways' }
       </Typography>
@@ -271,8 +269,8 @@ const NoResultsBox = ({ isSearch }) => {
               primary={
                 <Grid container>
                   <span>select the&nbsp;&nbsp;&nbsp;</span>
-                  <VennUnionIcon style={{fontSize: '1.5em', color: theme.palette.text.secondary}} />
-                  <span style={{color: theme.palette.text.secondary}}>&nbsp;Union</span>
+                  <VennUnionIcon style={{fontSize: '1.5em'}} />
+                  <span>&nbsp;Union</span>
                   <span>&nbsp;&nbsp;&nbsp;option</span>
                 </Grid>
               }
