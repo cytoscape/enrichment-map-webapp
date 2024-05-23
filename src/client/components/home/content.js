@@ -109,7 +109,7 @@ const useContentStyles = makeStyles(theme => ({
   },
   content: {
     maxHeight: 700,
-    marginTop: theme.spacing(8),
+    marginTop: theme.spacing(12),
     marginBottom: theme.spacing(2),
     padding: theme.spacing(0, 4, 0, 4),
     textAlign: 'left',
@@ -498,7 +498,7 @@ const useFigureStyles = makeStyles(theme => ({
     maxHeight: 398,
     objectFit: 'contain',
     border: `1px solid ${theme.palette.text.secondary}`,
-    borderRadius: 16,
+    borderRadius: 8,
     [theme.breakpoints.down('sm')]: {
       marginBottom: theme.spacing(4),
     },
@@ -520,6 +520,9 @@ function Figure() {
 const useLogoBarStyles = makeStyles(theme => ({
   root: {
     marginTop: theme.spacing(12),
+    [theme.breakpoints.down('xs')]: {
+      marginTop: theme.spacing(4),
+    },
   },
 }));
 
