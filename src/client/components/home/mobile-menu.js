@@ -15,7 +15,6 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(0.5, 2.5, 2, 2.5),
     borderRadius: '0 0 16px 16px',
     borderBottom: `1px solid ${theme.palette.divider}`,
-    background: theme.palette.background.paper,
     [theme.breakpoints.down('sm')]: {
       paddingLeft: theme.spacing(1),
       paddingRight: theme.spacing(1),
@@ -23,7 +22,6 @@ const useStyles = makeStyles((theme) => ({
   },
   toolbar: {
     marginBottom: theme.spacing(2),
-    backgroundColor: theme.palette.background.header,
   },
   logo: {
     marginLeft: theme.spacing(1.25),

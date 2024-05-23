@@ -94,7 +94,7 @@ const useContentStyles = makeStyles(theme => ({
     position: 'absolute',
     display: 'flex',
     flexDirection: 'column',
-    border: '4px solid transparent',
+    border: '4px solid transparent', // necessary for the drop area border
     backgroundColor: theme.palette.background.paper,
   },
   rootDropping: {
@@ -497,7 +497,7 @@ const useFigureStyles = makeStyles(theme => ({
     maxWidth: '100%',
     maxHeight: 398,
     objectFit: 'contain',
-    border: `1px solid ${theme.palette.divider}`,
+    border: `1px solid ${theme.palette.text.secondary}`,
     borderRadius: 16,
     [theme.breakpoints.down('sm')]: {
       marginBottom: theme.spacing(4),

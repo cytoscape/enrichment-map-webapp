@@ -16,7 +16,7 @@ const theme = createTheme({
       default: '#f5f5f5',
       paper: '#ffffff',
       field: '#ffffff',
-      header: '#eaeaea',
+      header: '#e6eaed',
       accent: '#f6faf5',
     },
     action: {
