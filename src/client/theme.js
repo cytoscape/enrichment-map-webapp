@@ -6,34 +6,42 @@ const theme = createTheme({
     type: 'light',
     primary: {
       main: '#1f78b4',
-      default: '#00ffff',
-      light: '#a7c1de',
+      light: '#e9f2f8',
     },
     secondary: {
       main: '#1f78b4',
+      light: '#e9f2f8',
     },
     background: {
       default: '#f5f5f5',
       paper: '#ffffff',
       field: '#ffffff',
       header: '#eaeaea',
-      accent: 'rgba(214, 236, 213, 0.25)',
+      accent: '#f6faf5',
     },
     action: {
-      hover: 'rgba(167, 193, 222, 0.2)',
-      selected: 'rgba(167, 193, 222, 0.3)',
+      hover: 'rgba(31, 120, 180, 0.1)',
+      selected: 'rgba(31, 120, 180, 0.2)',
     },
     error: {
-      main: '#ef5350',
+      main: '#d23434',
+      light: '#fbebeb',
+      dark: '#932424',
     },
     info: {
-      main: '#42a5f5',
+      main: '#358cbf',
+      light: '#ebf4f9',
+      dark: '#256286',
     },
     success: {
-      main: '#66bb6a',
+      main: '#47aa41',
+      light: '#edf7ec',
+      dark: '#32772e',
     },
     warning: {
-      main: '#ffb74d',
+      main: '#e9a735',
+      light: '#fdf6eb',
+      dark: '#a37525',
     },
     table: {
       divider: 'rgba(0, 0, 0, 0.08)',
@@ -42,21 +50,21 @@ const theme = createTheme({
       secondary: 'rgba(0, 0, 0, 0.7)',
       accent: '#33a02c',
     },
-    typography: {
-      fontFamily: 'Open Sans, Helvetica Neue, Helvetica, sans-serif'
+  },
+  typography: {
+    fontFamily: 'Open Sans, Helvetica Neue, Helvetica, sans-serif'
+  },
+  props: {
+    MuiAppBar: {
+      color: 'transparent',
+    },
+    MuiSlider: {
+      color: 'secondary',
     },
     props: {
-      MuiAppBar: {
-        color: 'transparent',
-      },
-      MuiSlider: {
-        color: 'secondary',
-      },
-      props: {
-        MuiButtonBase: {
-          disableRipple: true // no more ripple, on the whole application
-        }
-      },
+      MuiButtonBase: {
+        disableRipple: true // no more ripple, on the whole application
+      }
     },
   },
   overrides: {
