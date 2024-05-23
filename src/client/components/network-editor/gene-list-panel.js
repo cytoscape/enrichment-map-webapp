@@ -347,6 +347,9 @@ const useGeneListPanelStyles = makeStyles((theme) => ({
     width: CHART_WIDTH,
     padding: '0 8px',
   },
+  upDownBar: {
+    border: `1px solid ${theme.palette.divider}`,
+  },
 }));
 
 const GeneListPanel = ({ 
@@ -478,9 +481,10 @@ const GeneListPanel = ({
                           minValue={minRank}
                           maxValue={maxRank}
                           color={rankColor}
-                          bgColor={theme.palette.background.default}
+                          bgColor={theme.palette.grey[200]}
                           height={CHART_HEIGHT}
                           text={roundedRank.toFixed(GENE_RANK_ROUND_DIGITS)}
+                          className={classes.upDownBar}
                         />
                       )
                     }

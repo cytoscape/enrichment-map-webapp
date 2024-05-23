@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import clsx from 'clsx';
 
 import theme from '../../theme';
 
@@ -35,7 +36,7 @@ const useUpDownHBarStyles = makeStyles((theme) => ({
   },
 }));
 
-export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, text }) => {
+export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, text, className }) => {
   const classes = useUpDownHBarStyles();
 
   let textStyle;
@@ -87,7 +88,7 @@ export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, 
   }
 
   return (
-    <div className={classes.parent}>
+    <div className={clsx(classes.parent, className)}>
       <HSBar data={data} height={height} />
     {text && (
       <span className={classes.text} style={textStyle}>{ text }</span>
@@ -103,6 +104,7 @@ UpDownHBar.propTypes = {
   bgColor: PropTypes.string.isRequired,
   height: PropTypes.number.isRequired,
   text: PropTypes.string,
+  className: PropTypes.object,
 };
 
 // ==[ Up-Down Gradient LEGEND ]=============================================================================================================

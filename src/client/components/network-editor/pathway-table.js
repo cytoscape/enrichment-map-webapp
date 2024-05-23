@@ -127,6 +127,9 @@ const useStyles = makeStyles((theme) => ({
     marginRight: 2,
     cursor: 'pointer',
   },
+  upDownBar: {
+    border: `1px solid ${theme.palette.divider}`,
+  },
   link: {
     marginLeft: theme.spacing(0.5),
     "&[disabled]": {
@@ -198,9 +201,10 @@ const COLUMNS = [
           minValue={-controller.style.magNES}
           maxValue={controller.style.magNES}
           color={nesColor}
-          bgColor={theme.palette.background.default}
+          bgColor={theme.palette.grey[200]}
           height={CHART_HEIGHT}
           text={roundNES(row[col.id]).toFixed(2)}
+          className={classes.upDownBar}
         />
       );
     }
