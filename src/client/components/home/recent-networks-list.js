@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
+import clsx from 'clsx';
 
 import { NETWORK_BACKGROUND } from '../defaults';
 import { networkURL } from '../util';
@@ -122,8 +123,12 @@ const useStyles = theme => ({
   },
   snackBarContent: {
     color: 'inherit',
-    background: theme.palette.background.paper,
-    border: `1px solid ${theme.palette.text.disabled}`,
+    background: theme.palette.info.light,
+    border: `1px solid ${theme.palette.info.main}`,
+  },
+  snackBarContentSuccess: {
+    background: theme.palette.success.light,
+    border: `1px solid ${theme.palette.success.main}`,
   },
   confirmInfoBox: {
     width: '100%',
@@ -268,8 +273,8 @@ export class RecentNetworksList extends Component {
   snackBarOps() {
     return {
       close: () => this.setState({ snackBarState: { open: false }}),
-      showMessage: message => this.setState({ snackBarState: { open: true, closeable: true, autoHideDelay: 3000, message }}),
-      showSpinner: message => this.setState({ snackBarState: { open: true, closeable: false, spinner: true, message }}),
+      showMessage: message => this.setState({ snackBarState: { open: true, closeable: true, autoHideDelay: 3000, type: 'success', message }}),
+      showSpinner: message => this.setState({ snackBarState: { open: true, closeable: false, spinner: true, type: 'info', message }}),
     };
   }
 
@@ -325,7 +330,7 @@ export class RecentNetworksList extends Component {
           onClose={() => this.setState({ snackBarState: { open: false }})} 
         >
           <SnackbarContent 
-            className={classes.snackBarContent}
+            className={clsx(classes.snackBarContent, { [classes.snackBarContentSuccess]: this.state.snackBarState.type === 'success' })}
             message={<span>{this.state.snackBarState.message || ""}</span>}
             action={(() => {
               if (this.state.snackBarState.closeable) {
@@ -334,7 +339,7 @@ export class RecentNetworksList extends Component {
                     <CloseIcon className={classes.actionIcon} />
                   </IconButton>
                 );
-              } else if(this.state.snackBarState.spinner) {
+              } else if (this.state.snackBarState.spinner) {
                 return <CircularProgressIcon size={20}/>;
               }
             })()}
