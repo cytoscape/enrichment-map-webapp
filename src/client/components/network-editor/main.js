@@ -2,7 +2,6 @@ import React, { useEffect, useState, forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import Mousetrap from 'mousetrap';
-import chroma from 'chroma-js';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -75,7 +74,15 @@ const useStyles = makeStyles((theme) => ({
   },
   snackBarContent: {
     color: 'inherit',
-    background: chroma(theme.palette.background.default).alpha(0.75).hex(),
+    background: theme.palette.info.light,
+    border: `1px solid ${theme.palette.info.main}`,
+  },
+  snackBarContentSuccess: {
+    background: theme.palette.success.light,
+    border: `1px solid ${theme.palette.success.main}`,
+  },
+  actionIcon: {
+    color: theme.palette.text.primary,
   },
 }));
 
@@ -256,8 +263,8 @@ function handleCopyToClipboard() {
 function snackBarOps(setSnackBarState) {
   return {
     close: () => setSnackBarState({ open: false }),
-    showMessage: message => setSnackBarState({ open: true, closeable: true, autoHideDelay: 3000, message }),
-    showSpinner: message => setSnackBarState({ open: true, closeable: false, spinner: true, message }),
+    showMessage: message => setSnackBarState({ open: true, closeable: true, autoHideDelay: 3000, type: 'success', message }),
+    showSpinner: message => setSnackBarState({ open: true, closeable: false, spinner: true, type: 'info', message }),
   };
 }
 
@@ -285,7 +292,7 @@ const Main = ({
     message: "",
     autoHideDelay: 4000,
     closeable: true,
-    spinner: false
+    spinner: false,
   });
 
   const classes = useStyles();
@@ -453,16 +460,16 @@ const Main = ({
         onClose={() => setSnackBarState({ open: false })} 
       >
         <SnackbarContent 
-          className={classes.snackBarContent}
+          className={clsx(classes.snackBarContent, { [classes.snackBarContentSuccess]: snackBarState.type === 'success' })}
           message={<span>{snackBarState.message || ""}</span>}
           action={(() => {
-            if(snackBarState.closeable) {
+            if (snackBarState.closeable) {
               return (
                 <IconButton size='small' onClick={() => setSnackBarState({ open: false })}>
-                  <CloseIcon />
+                  <CloseIcon className={classes.actionIcon} />
                 </IconButton>
               );
-            } else if(snackBarState.spinner) {
+            } else if (snackBarState.spinner) {
               return <CircularProgressIcon size={20}/>;
             }
           })()}

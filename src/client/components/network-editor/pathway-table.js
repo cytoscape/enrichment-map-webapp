@@ -30,6 +30,7 @@ const useStyles = makeStyles((theme) => ({
     overflowY: 'scroll',
     paddingLeft: theme.spacing(2),
     paddingRight: theme.spacing(2),
+    color: theme.palette.text.disabled,
   },
   noResultsInfoBox: {
     width: '100%',
@@ -37,6 +38,7 @@ const useStyles = makeStyles((theme) => ({
     marginTop: theme.spacing(2),
     padding: theme.spacing(2),
     borderRadius: 16,
+    color: theme.palette.text.disabled,
   },
   noResultsLine: {
     marginTop: theme.spacing(1),
@@ -58,12 +60,10 @@ const useStyles = makeStyles((theme) => ({
     transform: 'scaleX(-1)',
     fontSize: '1em',
     marginRight: theme.spacing(1),
-    color: theme.palette.text.disabled,
     opacity: 0.5,
   },
   noResultsItemText: {
     margin: 0,
-    color: theme.palette.text.disabled,
   },
   headerRow: {
     height: 40,
@@ -83,7 +83,7 @@ const useStyles = makeStyles((theme) => ({
     paddingLeft: `${theme.spacing(0.5)}px !important`,
     paddingRight: theme.spacing(0.5),
     // <------------------------------------------------------------
-    borderBottom: `1px solid ${theme.palette.background.default}`,
+    borderBottom: `1px solid ${theme.palette.table.divider}`,
     cursor: 'pointer',
   },
   currentCell: {
@@ -126,6 +126,9 @@ const useStyles = makeStyles((theme) => ({
     textWrap: 'pretty',
     marginRight: 2,
     cursor: 'pointer',
+  },
+  upDownBar: {
+    border: `1px solid ${theme.palette.divider}`,
   },
   link: {
     marginLeft: theme.spacing(0.5),
@@ -198,9 +201,10 @@ const COLUMNS = [
           minValue={-controller.style.magNES}
           maxValue={controller.style.magNES}
           color={nesColor}
-          bgColor={theme.palette.background.default}
+          bgColor={theme.palette.grey[200]}
           height={CHART_HEIGHT}
           text={roundNES(row[col.id]).toFixed(2)}
+          className={classes.upDownBar}
         />
       );
     }
@@ -416,15 +420,14 @@ const PathwayTable = (
   if (data.length === 0 && searchTerms && searchTerms.length > 0) {
     return (
       <Paper className={classes.noResultsBox} style={{height: pathwayTableHeight()}}>
-        <Typography component="p" color="textSecondary" className={classes.noResultsLine}>
-          <SadFaceIcon style={{fontSize: '4em', opacity: 0.4}} />
+        <Typography component="p" className={classes.noResultsLine}>
+          <SadFaceIcon style={{fontSize: '4em'}} />
         </Typography>
         <Typography
           component="p"
           variant="subtitle1"
-          color="textSecondary"
           className={classes.noResultsLine}
-          style={{fontSize: '1.5em', opacity: 0.4}}
+          style={{fontSize: '1.5em'}}
         >
            No pathways found
         </Typography>

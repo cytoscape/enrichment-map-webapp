@@ -91,6 +91,7 @@ const useStyles = makeStyles((theme) => ({
     paddingLeft: theme.spacing(1),
     paddingRight: theme.spacing(0.5),
     minHeight: HEADER_HEIGHT,
+    backgroundColor: theme.palette.background.header,
   },
   title: {
     paddingLeft: theme.spacing(0.5),
@@ -105,9 +106,11 @@ const useStyles = makeStyles((theme) => ({
   setOperationSelect: {
     height: 40,
     width: 77,
+    color: theme.palette.text.secondary,
   },
   setOperationIcon: {
     minWidth: 48,
+    color: theme.palette.text.secondary,
   },
   sortButton: {
     width: 77,
@@ -429,7 +432,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
                   ({ totalGenes })
                 </Typography> &nbsp;&nbsp;
                 <Tooltip title="Download Current Gene List">
-                  <IconButton size="small" onClick={handleGeneListExport}>
+                  <IconButton size="small" color="inherit" onClick={handleGeneListExport}>
                     <DownloadIcon />
                   </IconButton>
                 </Tooltip>
@@ -437,7 +440,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
             )}
             </Typography>
             <div className={classes.grow} />
-            <IconButton className={classes.closeButton} onClick={onClose}>
+            <IconButton className={classes.closeButton} color="inherit" onClick={onClose}>
               { drawerVariant === 'temporary' ? <CloseIcon /> : <KeyboardArrowLeftIcon fontSize="large" /> }
             </IconButton>
           </Toolbar>

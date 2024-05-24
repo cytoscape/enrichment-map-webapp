@@ -43,7 +43,6 @@ const menuDef = [
 const logosDef = [
   { src: "/images/bader-lab-logo.svg", alt: "Bader Lab logo", href: "https://baderlab.org/" },
   { src: "/images/cytoscape-consortium-logo.svg", alt: "Cytoscape Consortium logo", href: "https://cytoscape.org/" },
-  // { src: "/images/donnelly-logo.png", alt: "The Donnelly Centre logo", href: "https://thedonnellycentre.utoronto.ca/" },
   { src: "/images/uoft-logo.svg", alt: "UofT logo", href: "https://www.utoronto.ca/" },
 ];
 
@@ -95,8 +94,8 @@ const useContentStyles = makeStyles(theme => ({
     position: 'absolute',
     display: 'flex',
     flexDirection: 'column',
-    border: '4px solid transparent',
-    backgroundColor: theme.palette.background.default,
+    border: '4px solid transparent', // necessary for the drop area border
+    backgroundColor: theme.palette.background.paper,
   },
   rootDropping: {
     borderColor: 'rgb(54, 102, 209)'
@@ -110,7 +109,7 @@ const useContentStyles = makeStyles(theme => ({
   },
   content: {
     maxHeight: 700,
-    marginTop: theme.spacing(8),
+    marginTop: theme.spacing(12),
     marginBottom: theme.spacing(2),
     padding: theme.spacing(0, 4, 0, 4),
     textAlign: 'left',
@@ -442,7 +441,7 @@ export function Content({ recentNetworksController }) {
           <LogoBar mobile={mobile} />
         </div>
       </Container>
-      <section id="faq" className={classes.section} style={{backgroundColor: theme.palette.background.paper}}>
+      <section id="faq" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
         <Container maxWidth="lg" className={classes.sectionContainer}>
           <Typography variant="h2" className={classes.sectionTitle}>Frequently asked questions</Typography>
           <Typography className={classes.sectionDescription}>
@@ -451,7 +450,7 @@ export function Content({ recentNetworksController }) {
           <Faq />
         </Container>
       </section>
-      <section id="about" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
+      <section id="about" className={classes.section}>
         <Container maxWidth="md" className={classes.sectionContainer}>
           <About />
         </Container>
@@ -498,8 +497,8 @@ const useFigureStyles = makeStyles(theme => ({
     maxWidth: '100%',
     maxHeight: 398,
     objectFit: 'contain',
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: 16,
+    border: `1px solid ${theme.palette.text.secondary}`,
+    borderRadius: 8,
     [theme.breakpoints.down('sm')]: {
       marginBottom: theme.spacing(4),
     },
@@ -521,6 +520,9 @@ function Figure() {
 const useLogoBarStyles = makeStyles(theme => ({
   root: {
     marginTop: theme.spacing(12),
+    [theme.breakpoints.down('xs')]: {
+      marginTop: theme.spacing(4),
+    },
   },
 }));
 
