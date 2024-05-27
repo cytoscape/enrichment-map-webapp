@@ -15,7 +15,7 @@ const theme = createTheme({
       light: '#A7C1DE',
     },
     secondary: {
-      main: 'rgba(255, 255, 255, 0.7)',
+      main: 'rgba(255, 255, 255, 0.75)',
     },
     background: {
       default: '#121212',
@@ -42,8 +42,8 @@ const theme = createTheme({
       main: '#ffb74d',
     },
     text: {
-      primary: '#E3E3E3',
-      secondary: 'rgba(255, 255, 255, 0.7)',
+      primary: '#ffffff',
+      secondary: 'rgba(255, 255, 255, 0.8)',
       disabled: 'rgba(255, 255, 255, 0.5)',
       accent: '#ACD5A1',
     },
