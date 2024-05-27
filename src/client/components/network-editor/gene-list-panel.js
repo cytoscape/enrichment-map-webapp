@@ -6,12 +6,11 @@ import _ from 'lodash';
 import { useQuery } from "react-query";
 import chroma from 'chroma-js';
 import { linkoutProps } from '../defaults';
-import theme from '../../theme';
 import { REG_COLOR_RANGE } from './network-style';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar } from './charts';
 
-import { makeStyles, withStyles } from '@material-ui/core/styles';
+import { makeStyles, withStyles, useTheme } from '@material-ui/core/styles';
 
 import { Virtuoso } from 'react-virtuoso';
 import { List, ListItem, ListItemText, ListItemIcon, ListSubheader } from '@material-ui/core';
@@ -30,12 +29,6 @@ import { VennUnionIcon } from '../svg-icons';
 const CHART_WIDTH = 160;
 const CHART_HEIGHT = 16;
 const GENE_RANK_ROUND_DIGITS = 2;
-
-/** Background color for hovering over selected elements */
-const HOVER_SELECTION_BG =
-  chroma(theme.palette.action.selected)
-  .alpha(chroma(theme.palette.action.hover).alpha() + chroma(theme.palette.action.selected).alpha())
-  .css();
 
 const useGeneMetadataPanelStyles = makeStyles((theme) => ({
   geneName: {
@@ -330,7 +323,7 @@ const useGeneListPanelStyles = makeStyles((theme) => ({
   listItemHeaderSelected: {
     backgroundColor: theme.palette.action.selected,
     '&:hover': {
-      backgroundColor: HOVER_SELECTION_BG,
+      backgroundColor: chroma(theme.palette.action.selected).alpha(chroma(theme.palette.action.hover).alpha() + chroma(theme.palette.action.selected).alpha()).css(),
     },
   },
   bulletIconContainer: {
@@ -363,6 +356,8 @@ const GeneListPanel = ({
   onGeneClick,
 }) => {
   const classes = useGeneListPanelStyles();
+  const theme = useTheme();
+
   const virtuosoRef = useRef();
 
   useEffect(() => {
@@ -481,7 +476,7 @@ const GeneListPanel = ({
                           minValue={minRank}
                           maxValue={maxRank}
                           color={rankColor}
-                          bgColor={theme.palette.grey[200]}
+                          bgColor={theme.palette.background.default}
                           height={CHART_HEIGHT}
                           text={roundedRank.toFixed(GENE_RANK_ROUND_DIGITS)}
                           className={classes.upDownBar}

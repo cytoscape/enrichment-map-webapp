@@ -1,11 +1,8 @@
-import theme from '../theme';
-
-
-export function isMobile() {
+export function isMobile(theme) {
   return window.innerWidth < theme.breakpoints.values.sm;
 }
 
-export function isTablet() {
+export function isTablet(theme) {
   return window.innerWidth < theme.breakpoints.values.md;
 }
 

@@ -74,7 +74,7 @@ const useStyles = theme => ({
     borderRadius: 8,
     backgroundColor: theme.palette.background.header,
     "&:hover": {
-      backgroundColor: theme.palette.action.hover,
+      backgroundColor: theme.palette.action.selected,
     }
   },
   paperItemSkeleton: {
@@ -89,6 +89,7 @@ const useStyles = theme => ({
     width: 172,
     height: 148,
     objectFit: 'contain',
+    border: `1px solid ${theme.palette.divider}`,
     borderRadius: 4,
     [theme.breakpoints.down('xs')]: {
       width: 148,

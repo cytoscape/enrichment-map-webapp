@@ -1,3 +1,4 @@
+/* Default light theme */
 html,
 body {
   height: 100%;
@@ -5,6 +6,18 @@ body {
   /* fixes scroll bar colour in safari */
   background: #fff;
   color-scheme: light;
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+  html,
+  body {
+    height: 100%;
+    width: 100%;
+    /* fixes scroll bar colour in safari */
+    background-color: #242424;
+    color-scheme: dark;
+  }
 }
 
 body {

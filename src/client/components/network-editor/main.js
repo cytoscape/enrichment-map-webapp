@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import Mousetrap from 'mousetrap';
 
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 import { DEFAULT_PADDING, HEADER_HEIGHT, LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT, NETWORK_BACKGROUND, bottomDrawerHeight } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
@@ -296,6 +296,7 @@ const Main = ({
   });
 
   const classes = useStyles();
+  const theme = useTheme();
 
   const cy = controller.cy;
   const snack = snackBarOps(setSnackBarState);
@@ -426,7 +427,7 @@ const Main = ({
         <div className={classes.background}>
           <div
             className={clsx(classes.cy, { [classes.cyShiftX]: shiftXCy })}
-            style={shiftYCy ? {height: `calc(100% - ${bottomDrawerHeight()}px)`,} : {}}
+            style={shiftYCy ? {height: `calc(100% - ${bottomDrawerHeight(theme)}px)`,} : {}}
           >
             <div id="cy" className={classes.cy} style={{ zIndex: 1, width: '100%', height: '100%' }} />
             <NetworkBackground controller={controller} />

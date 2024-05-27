@@ -6,7 +6,7 @@ import _ from 'lodash';
 import classNames from 'classnames';
 import uuid from 'uuid';
 
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 import { RecentNetworksController } from '../recent-networks-controller';
 import { UploadController, RNA_SEQ, PRE_RANKED } from './upload-controller';
@@ -19,7 +19,6 @@ import About from './about';
 import { DebugMenu } from './debug-menu';
 import StartDialog from './start-dialog';
 import LinkOut from './link-out';
-import theme from '../../theme';
 
 import { Container, Grid } from '@material-ui/core';
 import { Button, Typography, Link } from '@material-ui/core';
@@ -46,8 +45,8 @@ const logosDef = [
   { src: "/images/uoft-logo.svg", alt: "UofT logo", href: "https://www.utoronto.ca/" },
 ];
 
-const isMobileWidth = () => window.innerWidth <= theme.breakpoints.values.sm;
-const isTabletWidth = () => !isMobileWidth() && window.innerWidth <= theme.breakpoints.values.md;
+const isMobileWidth = (theme) => window.innerWidth <= theme.breakpoints.values.sm;
+const isTabletWidth = (theme) => !isMobileWidth(theme) && window.innerWidth <= theme.breakpoints.values.md;
 
 let requestID = null;
 let cancelledRequests = [];
@@ -164,6 +163,9 @@ const useContentStyles = makeStyles(theme => ({
       padding: theme.spacing(6, 0, 6, 0),
     },
   },
+  alternateSection: {
+    backgroundColor: theme.palette.background.default,
+  },
   sectionContainer: {
     textAlign: 'left',
   },
@@ -187,6 +189,7 @@ const useContentStyles = makeStyles(theme => ({
 
 export function Content({ recentNetworksController }) {
   const classes = useContentStyles();
+  const theme = useTheme();
 
   /** State */
 
@@ -194,10 +197,9 @@ export function Content({ recentNetworksController }) {
   const [ bus ] = useState(() => new EventEmitter());
   const [ uploadController ] = useState(() => new UploadController(bus));
   const [ sampleFiles, setSampleFiles ] = useState({ sampleRankFiles: [], sampleExprFiles: [] });
-
   // state for component interaction
-  const [ mobile, setMobile ] = useState(() => isMobileWidth());
-  const [ tablet, setTablet ] = useState(() => isTabletWidth());
+  const [ mobile, setMobile ] = useState(() => isMobileWidth(theme));
+  const [ tablet, setTablet ] = useState(() => isTabletWidth(theme));
   const [ openMobileMenu, setOpenMobileMenu ] = useState(false);
   const [ droppingFile, setDroppingFile ] = useState(false);
   const [ showRecentNetworks, setShowRecentNetworks ] = useState(false);
@@ -224,9 +226,9 @@ export function Content({ recentNetworksController }) {
 
   useEffect(() => {
     const handleResize = () => {
-      setMobile(isMobileWidth());
-      setTablet(isTabletWidth());
-      if (!isMobileWidth() && !isTabletWidth()) {
+      setMobile(isMobileWidth(theme));
+      setTablet(isTabletWidth(theme));
+      if (!isMobileWidth(theme) && !isTabletWidth(theme)) {
         setOpenMobileMenu(false);
       }
     };
@@ -441,7 +443,7 @@ export function Content({ recentNetworksController }) {
           <LogoBar mobile={mobile} />
         </div>
       </Container>
-      <section id="faq" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
+      <section id="faq" className={clsx(classes.section, classes.alternateSection)} >
         <Container maxWidth="lg" className={classes.sectionContainer}>
           <Typography variant="h2" className={classes.sectionTitle}>Frequently asked questions</Typography>
           <Typography className={classes.sectionDescription}>
@@ -560,7 +562,6 @@ LogoBar.propTypes = {
 const useLogoStyles = makeStyles(() => ({
   logo: {
     maxHeight: 48,
-    filter: 'grayscale(1) opacity(50%)',
   },
 }));
 

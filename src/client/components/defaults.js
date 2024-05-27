@@ -1,6 +1,3 @@
-import theme from '../theme';
-
-
 export const DEFAULT_PADDING = 10;
 export const HEADER_HEIGHT = 50;
 export const LEFT_DRAWER_WIDTH = 320;
@@ -23,7 +20,7 @@ export const MIN_DESKTOP_TOOLBAR_WIDTH = 1080 - LEFT_DRAWER_WIDTH;
 export const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "hover" };
 
 
-export function bottomDrawerHeight() {
+export function bottomDrawerHeight(theme) {
   // The preferred height is 1/3 of the height of the content area (excludes the header),
   // or 1/2 if the screen is too narrow--otherwise, the table would only be able to display
   // a couple of rows on small mobile devices, since all pathway names will probably show multiple lines.
@@ -35,8 +32,8 @@ export function bottomDrawerHeight() {
   return Math.max(min, h);
 }
 
-export function pathwayTableHeight() {
-  const dh = bottomDrawerHeight() - BOTTOM_DRAWER_HEIGHT;
+export function pathwayTableHeight(theme) {
+  const dh = bottomDrawerHeight(theme) - BOTTOM_DRAWER_HEIGHT;
   
   return dh;
 }
