@@ -497,8 +497,9 @@ const useFigureStyles = makeStyles(theme => ({
     maxWidth: '100%',
     maxHeight: 398,
     objectFit: 'contain',
-    border: `1px solid ${theme.palette.text.secondary}`,
+    border: `4px solid ${theme.palette.divider}`,
     borderRadius: 8,
+    boxShadow: '0 20px 25px -5px rgb(0, 0, 0, 0.1), 0 8px 10px -36px rgb(0, 0, 0, 0.1)',
     [theme.breakpoints.down('sm')]: {
       marginBottom: theme.spacing(4),
     },

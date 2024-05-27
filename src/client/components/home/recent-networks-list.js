@@ -35,8 +35,9 @@ const useStyles = theme => ({
   paper: {
     whiteSpace: 'nowrap',
     backgroundColor: theme.palette.background.default,
-    boxShadow: 'none',
-    border: 'none',
+    borderStyle: 'hidden solid solid solid',
+    borderWidth: 1,
+    borderColor: theme.palette.divider,
     borderRadius: '0 0 8px 8px',
     marginBottom: theme.spacing(2),
     padding: theme.spacing(1, 2.75, 0, 2.75),

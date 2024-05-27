@@ -410,8 +410,8 @@ UploadPanel.propTypes = {
 
 const useDemoPanelStyles = makeStyles((theme) => ({
   thumbnail: {
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: '16px',
+    border: `4px solid ${theme.palette.divider}`,
+    borderRadius: '8px',
     width: '100%',
     margin: theme.spacing(2.5, 0, 2.5, 0),
   },
