@@ -24,26 +24,6 @@ export const lightTheme = createTheme({
       hover: 'rgba(31, 120, 180, 0.1)',
       selected: 'rgba(31, 120, 180, 0.2)',
     },
-    error: {
-      main: '#d23434',
-      light: '#fbebeb',
-      dark: '#932424',
-    },
-    info: {
-      main: '#358cbf',
-      light: '#ebf4f9',
-      dark: '#256286',
-    },
-    success: {
-      main: '#47aa41',
-      light: '#edf7ec',
-      dark: '#32772e',
-    },
-    warning: {
-      main: '#e9a735',
-      light: '#fdf6eb',
-      dark: '#a37525',
-    },
     table: {
       divider: 'rgba(0, 0, 0, 0.08)',
     },
@@ -128,18 +108,6 @@ export const darkTheme = createTheme({
       selected: 'rgba(167, 193, 222, 0.2)',
     },
     divider: 'rgba(116, 116, 116, 0.4)',
-    error: {
-      main: '#ef5350',
-    },
-    info: {
-      main: '#42a5f5',
-    },
-    success: {
-      main: '#66bb6a',
-    },
-    warning: {
-      main: '#ffb74d',
-    },
     table: {
       divider: 'rgba(255, 255, 255, 0.08)',
     },
@@ -203,6 +171,11 @@ export const darkTheme = createTheme({
     MuiSlider: {
       valueLabel: {
         color: 'rgba(102, 102, 102, 0.9)',
+      },
+    },
+    MuiSnackbarContent: {
+      root: {
+        backgroundColor: '#e5e5e5',
       },
     },
     MuiToggleButton: {

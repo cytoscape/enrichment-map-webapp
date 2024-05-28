@@ -71,18 +71,6 @@ const useStyles = makeStyles((theme) => ({
     top: '70px',
     zOrder: 1000,
   },
-  snackBarContent: {
-    color: 'inherit',
-    background: theme.palette.info.light,
-    border: `1px solid ${theme.palette.info.main}`,
-  },
-  snackBarContentSuccess: {
-    background: theme.palette.success.light,
-    border: `1px solid ${theme.palette.success.main}`,
-  },
-  actionIcon: {
-    color: theme.palette.text.primary,
-  },
 }));
 
 
@@ -241,8 +229,8 @@ function handleCopyToClipboard() {
 function snackBarOps(setSnackBarState) {
   return {
     close: () => setSnackBarState({ open: false }),
-    showMessage: message => setSnackBarState({ open: true, closeable: true, autoHideDelay: 3000, type: 'success', message }),
-    showSpinner: message => setSnackBarState({ open: true, closeable: false, spinner: true, type: 'info', message }),
+    showMessage: message => setSnackBarState({ open: true, closeable: true, autoHideDelay: 3000, severity: 'success', message }),
+    showSpinner: message => setSnackBarState({ open: true, closeable: false, spinner: true, severity: 'info', message }),
   };
 }
 
@@ -438,17 +426,16 @@ const Main = ({
         onClose={() => setSnackBarState({ open: false })} 
       >
         <SnackbarContent 
-          className={clsx(classes.snackBarContent, { [classes.snackBarContentSuccess]: snackBarState.type === 'success' })}
           message={<span>{snackBarState.message || ""}</span>}
           action={(() => {
             if (snackBarState.closeable) {
               return (
-                <IconButton size='small' onClick={() => setSnackBarState({ open: false })}>
-                  <CloseIcon className={classes.actionIcon} />
+                <IconButton size='small' color="inherit" onClick={() => setSnackBarState({ open: false })}>
+                  <CloseIcon />
                 </IconButton>
               );
             } else if (snackBarState.spinner) {
-              return <CircularProgressIcon size={20}/>;
+              return <CircularProgressIcon color="inherit" size={20}/>;
             }
           })()}
         />

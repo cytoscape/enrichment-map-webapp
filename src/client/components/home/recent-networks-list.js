@@ -123,15 +123,6 @@ const useStyles = theme => ({
     top: '10px',
     zOrder: 1000,
   },
-  snackBarContent: {
-    color: 'inherit',
-    background: theme.palette.info.light,
-    border: `1px solid ${theme.palette.info.main}`,
-  },
-  snackBarContentSuccess: {
-    background: theme.palette.success.light,
-    border: `1px solid ${theme.palette.success.main}`,
-  },
   confirmInfoBox: {
     width: '100%',
     paddingTop: theme.spacing(0.5),
@@ -275,8 +266,8 @@ export class RecentNetworksList extends Component {
   snackBarOps() {
     return {
       close: () => this.setState({ snackBarState: { open: false }}),
-      showMessage: message => this.setState({ snackBarState: { open: true, closeable: true, autoHideDelay: 3000, type: 'success', message }}),
-      showSpinner: message => this.setState({ snackBarState: { open: true, closeable: false, spinner: true, type: 'info', message }}),
+      showMessage: message => this.setState({ snackBarState: { open: true, closeable: true, autoHideDelay: 3000, severity: 'success', message }}),
+      showSpinner: message => this.setState({ snackBarState: { open: true, closeable: false, spinner: true, severity: 'info', message }}),
     };
   }
 
@@ -332,17 +323,16 @@ export class RecentNetworksList extends Component {
           onClose={() => this.setState({ snackBarState: { open: false }})} 
         >
           <SnackbarContent 
-            className={clsx(classes.snackBarContent, { [classes.snackBarContentSuccess]: this.state.snackBarState.type === 'success' })}
             message={<span>{this.state.snackBarState.message || ""}</span>}
             action={(() => {
               if (this.state.snackBarState.closeable) {
                 return (
-                  <IconButton size='small' onClick={() => this.setState({ snackBarState: { open: false }})}>
-                    <CloseIcon className={classes.actionIcon} />
+                  <IconButton size='small' color="inherit" onClick={() => this.setState({ snackBarState: { open: false }})}>
+                    <CloseIcon />
                   </IconButton>
                 );
               } else if (this.state.snackBarState.spinner) {
-                return <CircularProgressIcon size={20}/>;
+                return <CircularProgressIcon color="inherit" size={20}/>;
               }
             })()}
           />
