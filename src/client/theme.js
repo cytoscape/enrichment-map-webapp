@@ -101,7 +101,7 @@ export const darkTheme = createTheme({
       field: '#464646',
       header: '#242424',
       accent: 'rgba(45, 52, 43, 0.25)',
-      network: '#121212',
+      network: '#ffffff',
     },
     action: {
       hover: 'rgba(167, 193, 222, 0.1)',
