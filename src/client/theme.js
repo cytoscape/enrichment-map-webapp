@@ -176,6 +176,7 @@ export const darkTheme = createTheme({
     MuiSnackbarContent: {
       root: {
         backgroundColor: '#e5e5e5',
+        border: '1px solid rgba(116, 116, 116, 0.4)',
       },
     },
     MuiToggleButton: {
