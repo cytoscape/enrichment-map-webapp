@@ -8,8 +8,6 @@ export const BOTTOM_DRAWER_HEIGHT = 48;
 /** Whether the bottom drawer must be open (expanded) by default */
 export const BOTTOM_DRAWER_OPEN = true;
 
-export const NETWORK_BACKGROUND = '#ffffff';
-
 /**
  * The minimum width the header toolbar must have to show its buttons.
  * If the toolbar gets smaller than this, the buttons must be moved to 

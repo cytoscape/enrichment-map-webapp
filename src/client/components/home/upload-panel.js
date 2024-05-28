@@ -410,6 +410,7 @@ UploadPanel.propTypes = {
 
 const useDemoPanelStyles = makeStyles((theme) => ({
   thumbnail: {
+    backgroundColor: theme.palette.background.network,
     border: `4px solid ${theme.palette.divider}`,
     borderRadius: '8px',
     width: '100%',

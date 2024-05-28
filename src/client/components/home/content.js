@@ -514,8 +514,10 @@ const useFigureStyles = makeStyles(theme => ({
 
 function Figure() {
   const classes = useFigureStyles();
+  const theme = useTheme();
+  const img = theme?.palette?.type === 'dark' ? 'hero-figure-dark.png' : 'hero-figure-light.png';
 
-  return <img src="/images/home-figure.png" alt="figure" className={classes.figure} />;
+  return <img src={`/images/${img}`} alt="figure" className={classes.figure} />;
 }
 
 //==[ LogoBar ]=======================================================================================================

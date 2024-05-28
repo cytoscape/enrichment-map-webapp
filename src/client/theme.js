@@ -18,6 +18,7 @@ export const lightTheme = createTheme({
       field: '#ffffff',
       header: '#e6eaed',
       accent: '#f6faf5',
+      network: '#ffffff',
     },
     action: {
       hover: 'rgba(31, 120, 180, 0.1)',
@@ -120,6 +121,7 @@ export const darkTheme = createTheme({
       field: '#464646',
       header: '#242424',
       accent: 'rgba(45, 52, 43, 0.25)',
+      network: '#121212',
     },
     action: {
       hover: 'rgba(167, 193, 222, 0.1)',

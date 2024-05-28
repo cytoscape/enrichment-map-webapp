@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 import clsx from 'clsx';
 
-import { NETWORK_BACKGROUND } from '../defaults';
 import { networkURL } from '../util';
 import { RecentNetworksController } from '../recent-networks-controller';
 
@@ -91,6 +90,7 @@ const useStyles = theme => ({
     objectFit: 'contain',
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: 4,
+    backgroundColor: theme.palette.background.network,
     [theme.breakpoints.down('xs')]: {
       width: 148,
       height: 128,
@@ -427,7 +427,7 @@ export class RecentNetworksList extends Component {
         <Grid container direction="column" alignItems="stretch" justifyContent="center">
           <Grid item>
             { enabled ? (
-              <img src={imgSrc} className={classes.thumbnail} style={{ background: NETWORK_BACKGROUND }} />
+              <img src={imgSrc} className={classes.thumbnail} />
             ) : (
               <Skeleton variant="rect" className={classes.thumbnail} />
             )}
