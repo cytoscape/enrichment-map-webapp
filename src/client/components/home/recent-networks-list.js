@@ -57,19 +57,14 @@ const useStyles = theme => ({
     color: theme.palette.text.primary,
   },
   imageList: {
-    display: 'flex',
     listStyle: 'none',
     overflowX: 'scroll',
     overflowY: 'auto',
-    flexWrap: 'nowrap',
     webkitOverflowScrolling: 'touch',
-    padding: theme.spacing(0, 0, 1.5, 0),
     transform: 'translateZ(0)', // Promote the list into his own layer on Chrome. This cost memory but helps keeping high FPS.
     minHeight: 238, // fixes height bug in Safari
-    maxHeight: 240, // fixes height bug in Safari
     [theme.breakpoints.down('xs')]: {
       minHeight: 218, // fixes height bug in Safari
-      maxHeight: 220, // fixes height bug in Safari
     },
   },
   paperItem: {
