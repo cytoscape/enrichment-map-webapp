@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
-import theme from '../../theme';
 import { RNA_SEQ, PRE_RANKED } from './upload-controller';
 
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 import { ArcherContainer, ArcherElement } from 'react-archer';
 import { Paper, Typography, Link } from '@material-ui/core';
@@ -282,6 +281,7 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
   const [ spotlight, setSpotlight ] = useState();
 
   const classes = useUploadPanelStyles();
+  const theme = useTheme();
   
   const handleChange = (value) => (event, select) => {
     if (select) { // clicking an expanded accordion should not collapse it
@@ -410,8 +410,9 @@ UploadPanel.propTypes = {
 
 const useDemoPanelStyles = makeStyles((theme) => ({
   thumbnail: {
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: '16px',
+    backgroundColor: theme.palette.background.network,
+    border: `4px solid ${theme.palette.divider}`,
+    borderRadius: '8px',
     width: '100%',
     margin: theme.spacing(2.5, 0, 2.5, 0),
   },

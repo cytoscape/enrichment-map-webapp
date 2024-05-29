@@ -25,6 +25,7 @@ const useHeaderStyles = makeStyles((theme) => ({
   appBar: {
     minHeight: HEADER_HEIGHT,
     backgroundColor: theme.palette.background.header,
+    borderBottom: `1px solid ${theme.palette.divider}`,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,

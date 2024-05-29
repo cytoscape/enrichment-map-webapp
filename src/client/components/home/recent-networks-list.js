@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 import clsx from 'clsx';
 
-import { NETWORK_BACKGROUND } from '../defaults';
 import { networkURL } from '../util';
 import { RecentNetworksController } from '../recent-networks-controller';
 
@@ -35,7 +34,6 @@ const useStyles = theme => ({
   paper: {
     whiteSpace: 'nowrap',
     backgroundColor: theme.palette.background.default,
-    boxShadow: 'none',
     border: 'none',
     borderRadius: '0 0 8px 8px',
     marginBottom: theme.spacing(2),
@@ -57,13 +55,15 @@ const useStyles = theme => ({
     color: theme.palette.text.primary,
   },
   imageList: {
-    display: 'flex',
     listStyle: 'none',
+    overflowX: 'scroll',
     overflowY: 'auto',
-    flexWrap: 'nowrap',
     webkitOverflowScrolling: 'touch',
-    padding: theme.spacing(0, 0, 1.5, 0),
     transform: 'translateZ(0)', // Promote the list into his own layer on Chrome. This cost memory but helps keeping high FPS.
+    minHeight: 238, // fixes height bug in Safari
+    [theme.breakpoints.down('xs')]: {
+      minHeight: 218, // fixes height bug in Safari
+    },
   },
   paperItem: {
     display: 'inline-block',
@@ -73,7 +73,7 @@ const useStyles = theme => ({
     borderRadius: 8,
     backgroundColor: theme.palette.background.header,
     "&:hover": {
-      backgroundColor: theme.palette.action.hover,
+      backgroundColor: theme.palette.action.selected,
     }
   },
   paperItemSkeleton: {
@@ -88,7 +88,9 @@ const useStyles = theme => ({
     width: 172,
     height: 148,
     objectFit: 'contain',
+    border: `1px solid ${theme.palette.divider}`,
     borderRadius: 4,
+    backgroundColor: theme.palette.background.network,
     [theme.breakpoints.down('xs')]: {
       width: 148,
       height: 128,
@@ -120,15 +122,6 @@ const useStyles = theme => ({
   snackBar: {
     top: '10px',
     zOrder: 1000,
-  },
-  snackBarContent: {
-    color: 'inherit',
-    background: theme.palette.info.light,
-    border: `1px solid ${theme.palette.info.main}`,
-  },
-  snackBarContentSuccess: {
-    background: theme.palette.success.light,
-    border: `1px solid ${theme.palette.success.main}`,
   },
   confirmInfoBox: {
     width: '100%',
@@ -273,8 +266,8 @@ export class RecentNetworksList extends Component {
   snackBarOps() {
     return {
       close: () => this.setState({ snackBarState: { open: false }}),
-      showMessage: message => this.setState({ snackBarState: { open: true, closeable: true, autoHideDelay: 3000, type: 'success', message }}),
-      showSpinner: message => this.setState({ snackBarState: { open: true, closeable: false, spinner: true, type: 'info', message }}),
+      showMessage: message => this.setState({ snackBarState: { open: true, closeable: true, autoHideDelay: 3000, severity: 'success', message }}),
+      showSpinner: message => this.setState({ snackBarState: { open: true, closeable: false, spinner: true, severity: 'info', message }}),
     };
   }
 
@@ -330,17 +323,16 @@ export class RecentNetworksList extends Component {
           onClose={() => this.setState({ snackBarState: { open: false }})} 
         >
           <SnackbarContent 
-            className={clsx(classes.snackBarContent, { [classes.snackBarContentSuccess]: this.state.snackBarState.type === 'success' })}
             message={<span>{this.state.snackBarState.message || ""}</span>}
             action={(() => {
               if (this.state.snackBarState.closeable) {
                 return (
-                  <IconButton size='small' onClick={() => this.setState({ snackBarState: { open: false }})}>
-                    <CloseIcon className={classes.actionIcon} />
+                  <IconButton size='small' color="inherit" onClick={() => this.setState({ snackBarState: { open: false }})}>
+                    <CloseIcon />
                   </IconButton>
                 );
               } else if (this.state.snackBarState.spinner) {
-                return <CircularProgressIcon size={20}/>;
+                return <CircularProgressIcon color="inherit" size={20}/>;
               }
             })()}
           />
@@ -425,7 +417,7 @@ export class RecentNetworksList extends Component {
         <Grid container direction="column" alignItems="stretch" justifyContent="center">
           <Grid item>
             { enabled ? (
-              <img src={imgSrc} className={classes.thumbnail} style={{ background: NETWORK_BACKGROUND }} />
+              <img src={imgSrc} className={classes.thumbnail} />
             ) : (
               <Skeleton variant="rect" className={classes.thumbnail} />
             )}

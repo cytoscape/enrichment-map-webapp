@@ -1,6 +1,5 @@
 import EventEmitter from 'eventemitter3';
 import LocalForage from 'localforage';
-import { NETWORK_BACKGROUND } from './defaults';
 
 
 const MAX_ITEMS = 20;
@@ -127,7 +126,6 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
       maxWidth: NETWORK_THUMBNAIL_WIDTH,
       maxHeight: NETWORK_THUMBNAIL_HEIGHT,
       full: true,
-      bg: NETWORK_BACKGROUND,
     });
 
     return {

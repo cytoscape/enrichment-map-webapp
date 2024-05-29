@@ -2,12 +2,11 @@ import React, { forwardRef, useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
-import theme from '../../theme';
 import { DEFAULT_PADDING, pathwayTableHeight } from '../defaults';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar, PValueStarRating } from './charts';
 
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 import { TableVirtuoso } from 'react-virtuoso';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
@@ -201,7 +200,7 @@ const COLUMNS = [
           minValue={-controller.style.magNES}
           maxValue={controller.style.magNES}
           color={nesColor}
-          bgColor={theme.palette.grey[200]}
+          bgColor={useTheme().palette.background.default}
           height={CHART_HEIGHT}
           text={roundNES(row[col.id]).toFixed(2)}
           className={classes.upDownBar}
@@ -353,6 +352,8 @@ const PathwayTable = (
   const [orderBy, setOrderBy] = useState(DEF_ORDER_BY);
 
   const classes = useStyles();
+  const theme = useTheme();
+  
   const cy = controller.cy;
   
   const virtuosoRef = useRef();
@@ -385,7 +386,7 @@ const PathwayTable = (
   if (!visible) {
     // Returns an empty div with the same height as the table just so the open/close animation works properly,
     // but we don't want to spend resources to build an invisible table
-    return <div style={{height: pathwayTableHeight()}} />;
+    return <div style={{height: pathwayTableHeight(theme)}} />;
   }
 
   const handleRequestSort = (event, property) => {
@@ -419,7 +420,7 @@ const PathwayTable = (
 
   if (data.length === 0 && searchTerms && searchTerms.length > 0) {
     return (
-      <Paper className={classes.noResultsBox} style={{height: pathwayTableHeight()}}>
+      <Paper className={classes.noResultsBox} style={{height: pathwayTableHeight(theme)}}>
         <Typography component="p" className={classes.noResultsLine}>
           <SadFaceIcon style={{fontSize: '4em'}} />
         </Typography>
@@ -461,8 +462,6 @@ const PathwayTable = (
   const totalRows = sortedDataRef.current.length;
   const totalSelectedRows = selectedRows.length;
   const allSelected = totalSelectedRows > 0 && totalSelectedRows === totalRows;
-  const noneSelected = totalSelectedRows === 0;
-  const someSelected = !noneSelected > 0 && !allSelected;
 
   // Find the "current" id
   let currentId = currentRow ? currentRow.id : null;
@@ -487,7 +486,7 @@ const PathwayTable = (
       ref={virtuosoRef}
       data={sortedDataRef.current}
       initialTopMostItemIndex={initialTopMostItemIndex}
-      style={{height: pathwayTableHeight(), border: `1px solid ${theme.palette.divider}`, background: theme.palette.background.paper}}
+      style={{height: pathwayTableHeight(theme), border: `1px solid ${theme.palette.divider}`, background: theme.palette.background.paper}}
       components={TableComponents}
       fixedHeaderContent={() => (
         <TableRow className={classes.headerRow}>
