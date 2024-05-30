@@ -17,7 +17,6 @@ import CheckIcon from '@material-ui/icons/Check';
 const useStyles = makeStyles((theme) => ({
   paper: {
     width: RIGHT_DRAWER_WIDTH,
-    background: theme.palette.background.paper,
     borderLeft: `1px solid ${theme.palette.divider}`,
   },
   header: {

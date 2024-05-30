@@ -67,6 +67,7 @@ export const lightTheme = createTheme({
     },
     MuiBackdrop: {
       root: {
+        backgroundColor: 'rgba(0, 0, 0, 0.25)',
         backdropFilter: 'blur(1px)',
       },
     },
@@ -90,7 +91,7 @@ export const darkTheme = createTheme({
     type: 'dark',
     primary: {
       main: '#1f78b4',
-      light: '#A7c1de',
+      light: '#a7c1de',
     },
     secondary: {
       main: '#1f78b4',
@@ -101,7 +102,7 @@ export const darkTheme = createTheme({
       field: '#464646',
       header: '#242424',
       accent: 'rgba(45, 52, 43, 0.25)',
-      network: '#ffffff',
+      network: '#e8e8e8',
     },
     action: {
       hover: 'rgba(167, 193, 222, 0.1)',
@@ -115,7 +116,7 @@ export const darkTheme = createTheme({
       primary: '#f5f5f5',
       secondary: 'rgba(255, 255, 255, 0.8)',
       disabled: 'rgba(255, 255, 255, 0.5)',
-      accent: '#Acd5a1',
+      accent: '#acd5a1',
     },
   },
   typography: {
@@ -161,6 +162,16 @@ export const darkTheme = createTheme({
     MuiDialog: {
       paper: {
         border: '1px solid rgba(116, 116, 116, 0.1)',
+      },
+    },
+    MuiDrawer: {
+      paperAnchorTop: {
+        background: 'rgba(18, 18, 18, 0.66)',
+        backdropFilter: 'blur(8px)',
+      },
+      paperAnchorRight: {
+        background: 'rgba(18, 18, 18, 0.66)',
+        backdropFilter: 'blur(8px)',
       },
     },
     MuiLink: {
