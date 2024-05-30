@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import { styled } from '@material-ui/core/styles';
@@ -6,78 +6,86 @@ import { NetworkEditorController } from './controller';
 import { Tooltip, InputBase } from '@material-ui/core';
 
 
+const CssInputBase = styled(InputBase)(({ theme }) => ({
+  '& .MuiInputBase-input': {
+    position: 'relative',
+    border: '1px solid transparent',
+    borderRadius: 5,
+    width: '100%',
+    minWidth: 240,
+    maxWidth: 640,
+    padding: 2,
+    fontWeight: 'bold',
+    [theme.breakpoints.down('sm')]: {
+      textAlign: 'center',
+      minWidth: 140,
+    },
+    [theme.breakpoints.up('sm')]: {
+      textAlign: 'left',
+    },
+    '&:hover': {
+      border: `1px solid ${theme.palette.divider}`,
+      backgroundColor: theme.palette.background.field,
+      '&[disabled]': {
+        border: '1px solid transparent !important',
+      },
+    },
+    '&:focus': {
+      outline: `2px solid ${theme.palette.primary.main} !important`,
+      backgroundColor: theme.palette.background.field,
+      fontWeight: 'normal',
+    },
+  },
+}));
+
 /**
  * The network title editor. Shows and edits the attribute `cy.data('name')`.
  * - **ENTER** key or `blur()`: Commits the changes and renames the network.
  * - **ESCAPE** key: Cancels the changes and shows the previous network name again.
  */
 export function TitleEditor({ controller, disabled }) {
-  const [ networkName, setNetworkName ] = useState(() => controller.cy.data('name'));
+  const [ value, setValue ] = useState(() => controller.cy.data('name'));
+
+  const inputRef = useRef();
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
-    const onDataChanged = event => setNetworkName(event.cy.data('name')); 
+    const onDataChanged = event => setValue(event.cy.data('name')); 
     controller.cy.on('data', onDataChanged);
     return () => controller.cy.removeListener('data', onDataChanged);
   }, []);
 
-  let input;
-
-  const handleNetworkNameKeyDown = (event) => {
+  const handleKeyDown = (event) => {
     if (event.key === 'Enter') {
+      cancelledRef.current = false;
       event.preventDefault();
-      input.blur();
+      inputRef.current.blur();
     } else if (event.key === 'Escape') {
-      setNetworkName(controller.cy.data('name'));
+      cancelledRef.current = true;
       event.preventDefault();
+      inputRef.current.blur();
     }
   };
 
-  const handleNetworkNameFocus = () => {
-    // Using the uncontrolled input approach here
-    if (!networkName)
-      input.value = '';
-    else
-      input.select();
+  const handleChange = (event) => {
+    const val = event.currentTarget.value;
+    setValue(val);
   };
 
-  const handleNetworkNameBlur = () => {
-    const newName = input.value;
-    if (newName !== networkName) {
+  const handleFocus = () => {
+    if (value)
+      inputRef.current.select();
+  };
+
+  const handleBlur = (event) => {
+    const oldName = controller.cy.data('name');
+    const newName = event.currentTarget.value.trim();
+    if (!cancelledRef.current && newName.length > 0 && newName !== oldName) {
       controller.renameNetwork(newName);
+    } else {
+      setValue(controller.cy.data('name'));
     }
   };
-
-  const CssInputBase = styled(InputBase)(({ theme }) => ({
-    '& .MuiInputBase-input': {
-      position: 'relative',
-      border: '1px solid transparent',
-      borderRadius: 5,
-      width: '100%',
-      minWidth: 240,
-      maxWidth: 640,
-      padding: 2,
-      fontWeight: 'bold',
-      [theme.breakpoints.down('sm')]: {
-        textAlign: 'center',
-        minWidth: 140,
-      },
-      [theme.breakpoints.up('sm')]: {
-        textAlign: 'left',
-      },
-      '&:hover': {
-        border: `1px solid ${theme.palette.divider}`,
-        backgroundColor: theme.palette.background.field,
-        '&[disabled]': {
-          border: '1px solid transparent !important',
-        },
-      },
-      '&:focus': {
-        outline: `2px solid ${theme.palette.primary.main} !important`,
-        backgroundColor: theme.palette.background.field,
-        fontWeight: 'normal',
-      },
-    },
-  }));
 
   return (
     <Tooltip
@@ -87,13 +95,15 @@ export function TitleEditor({ controller, disabled }) {
       disableTouchListener={disabled}
     >
       <CssInputBase
+        inputRef={inputRef}
         fullWidth={true}
-        defaultValue={networkName || 'Untitled Network'}
+        value={value || ''}
+        placeholder="Untitled Network"
         disabled={disabled}
-        onFocus={handleNetworkNameFocus}
-        onBlur={handleNetworkNameBlur}
-        onKeyDown={handleNetworkNameKeyDown}
-        inputRef={ref => (input = ref)}
+        onKeyDown={handleKeyDown}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
       />
     </Tooltip>
   );
