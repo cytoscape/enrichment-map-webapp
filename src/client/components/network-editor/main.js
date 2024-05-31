@@ -2,12 +2,10 @@ import React, { useEffect, useState, forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import Mousetrap from 'mousetrap';
-import chroma from 'chroma-js';
 
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 
-import { DEFAULT_PADDING, HEADER_HEIGHT, LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT, NETWORK_BACKGROUND, bottomDrawerHeight } from '../defaults';
-import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
+import { DEFAULT_PADDING, HEADER_HEIGHT, LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT, bottomDrawerHeight } from '../defaults';
 import { NetworkEditorController } from './controller';
 import { Header } from './header';
 import LeftDrawer from './left-drawer';
@@ -46,7 +44,7 @@ const useStyles = makeStyles((theme) => ({
     right: 0,
     top: 0,
     bottom: 0,
-    background: NETWORK_BACKGROUND,
+    background: theme.palette.background.network,
   },
   cy: {
     position: 'absolute',
@@ -73,33 +71,8 @@ const useStyles = makeStyles((theme) => ({
     top: '70px',
     zOrder: 1000,
   },
-  snackBarContent: {
-    color: 'inherit',
-    background: chroma(theme.palette.background.default).alpha(0.75).hex(),
-  },
 }));
 
-
-const NetworkBackground = ({ controller }) => {
-  const [ bgColor, setBgColor ] = useState(NETWORK_BACKGROUND);
-
-  const busProxy = new EventEmitterProxy(controller.bus);
-
-  useEffect(() => {
-    busProxy.on('setNetworkBackgroundColor', (color) => setBgColor(color));
-
-    return function cleanup() {
-      busProxy.removeAllListeners();
-    };
-  }, []);
-  
-  return (
-    <div style={{ position: 'absolute', zIndex: -1, width: '100%', height: '100%', backgroundColor: bgColor }} />
-  );
-};
-NetworkBackground.propTypes = {
-  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
-};
 
 const useRestoreConfirmDialogStyles = makeStyles((theme) => ({
   root: {
@@ -256,8 +229,8 @@ function handleCopyToClipboard() {
 function snackBarOps(setSnackBarState) {
   return {
     close: () => setSnackBarState({ open: false }),
-    showMessage: message => setSnackBarState({ open: true, closeable: true, autoHideDelay: 3000, message }),
-    showSpinner: message => setSnackBarState({ open: true, closeable: false, spinner: true, message }),
+    showMessage: message => setSnackBarState({ open: true, closeable: true, autoHideDelay: 3000, severity: 'success', message }),
+    showSpinner: message => setSnackBarState({ open: true, closeable: false, spinner: true, severity: 'info', message }),
   };
 }
 
@@ -285,10 +258,11 @@ const Main = ({
     message: "",
     autoHideDelay: 4000,
     closeable: true,
-    spinner: false
+    spinner: false,
   });
 
   const classes = useStyles();
+  const theme = useTheme();
 
   const cy = controller.cy;
   const snack = snackBarOps(setSnackBarState);
@@ -419,10 +393,9 @@ const Main = ({
         <div className={classes.background}>
           <div
             className={clsx(classes.cy, { [classes.cyShiftX]: shiftXCy })}
-            style={shiftYCy ? {height: `calc(100% - ${bottomDrawerHeight()}px)`,} : {}}
+            style={shiftYCy ? {height: `calc(100% - ${bottomDrawerHeight(theme)}px)`,} : {}}
           >
             <div id="cy" className={classes.cy} style={{ zIndex: 1, width: '100%', height: '100%' }} />
-            <NetworkBackground controller={controller} />
           </div>
           <RightDrawer
             open={openRightDrawer}
@@ -453,17 +426,16 @@ const Main = ({
         onClose={() => setSnackBarState({ open: false })} 
       >
         <SnackbarContent 
-          className={classes.snackBarContent}
           message={<span>{snackBarState.message || ""}</span>}
           action={(() => {
-            if(snackBarState.closeable) {
+            if (snackBarState.closeable) {
               return (
-                <IconButton size='small' onClick={() => setSnackBarState({ open: false })}>
+                <IconButton size='small' color="inherit" onClick={() => setSnackBarState({ open: false })}>
                   <CloseIcon />
                 </IconButton>
               );
-            } else if(snackBarState.spinner) {
-              return <CircularProgressIcon size={20}/>;
+            } else if (snackBarState.spinner) {
+              return <CircularProgressIcon color="inherit" size={20}/>;
             }
           })()}
         />

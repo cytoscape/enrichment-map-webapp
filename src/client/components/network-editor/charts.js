@@ -1,9 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import clsx from 'clsx';
 
-import theme from '../../theme';
-
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 import { Typography, Tooltip } from '@material-ui/core';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
@@ -35,7 +34,7 @@ const useUpDownHBarStyles = makeStyles((theme) => ({
   },
 }));
 
-export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, text }) => {
+export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, text, className }) => {
   const classes = useUpDownHBarStyles();
 
   let textStyle;
@@ -87,7 +86,7 @@ export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, 
   }
 
   return (
-    <div className={classes.parent}>
+    <div className={clsx(classes.parent, className)}>
       <HSBar data={data} height={height} />
     {text && (
       <span className={classes.text} style={textStyle}>{ text }</span>
@@ -103,6 +102,7 @@ UpDownHBar.propTypes = {
   bgColor: PropTypes.string.isRequired,
   height: PropTypes.number.isRequired,
   text: PropTypes.string,
+  className: PropTypes.string,
 };
 
 // ==[ Up-Down Gradient LEGEND ]=============================================================================================================
@@ -124,6 +124,8 @@ const _mainValue = (values) => {
 };
 
 export const UpDownLegend = ({ values = [], minValue, maxValue, downColor, zeroColor, upColor, height, tooltip, style }) => {
+  const theme = useTheme();
+
   const mainVal = _mainValue(values);
   const total  = values.length;
 

@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
+import clsx from 'clsx';
 
-import { NETWORK_BACKGROUND } from '../defaults';
 import { networkURL } from '../util';
 import { RecentNetworksController } from '../recent-networks-controller';
 
@@ -33,7 +33,7 @@ const EMPTY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgY
 const useStyles = theme => ({
   paper: {
     whiteSpace: 'nowrap',
-    boxShadow: 'none',
+    backgroundColor: theme.palette.background.default,
     border: 'none',
     borderRadius: '0 0 8px 8px',
     marginBottom: theme.spacing(2),
@@ -51,6 +51,9 @@ const useStyles = theme => ({
     overflow: 'hidden',
     justifyContent: 'left',
   },
+  actionIcon: {
+    color: theme.palette.text.primary,
+  },
   imageList: {
     listStyle: 'none',
     overflowX: 'scroll',
@@ -67,11 +70,10 @@ const useStyles = theme => ({
     margin: theme.spacing(0.5),
     padding: theme.spacing(0.5),
     cursor: 'pointer',
-    border: `2px solid ${theme.palette.background.default}`,
     borderRadius: 8,
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.background.header,
     "&:hover": {
-      backgroundColor: theme.palette.action.hover,
+      backgroundColor: theme.palette.action.selected,
     }
   },
   paperItemSkeleton: {
@@ -79,15 +81,16 @@ const useStyles = theme => ({
     margin: theme.spacing(0.5),
     padding: theme.spacing(0.5),
     cursor: 'default',
-    border: `2px solid ${theme.palette.background.default}`,
     borderRadius: 8,
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.background.header,
   },
   thumbnail: {
     width: 172,
     height: 148,
     objectFit: 'contain',
+    border: `1px solid ${theme.palette.divider}`,
     borderRadius: 4,
+    backgroundColor: theme.palette.background.network,
     [theme.breakpoints.down('xs')]: {
       width: 148,
       height: 128,
@@ -120,11 +123,6 @@ const useStyles = theme => ({
     top: '10px',
     zOrder: 1000,
   },
-  snackBarContent: {
-    color: 'inherit',
-    background: theme.palette.primary.main,
-    border: `1px solid ${theme.palette.text.disabled}`,
-  },
   confirmInfoBox: {
     width: '100%',
     paddingTop: theme.spacing(0.5),
@@ -151,7 +149,7 @@ const useStyles = theme => ({
   },
   confirmInfoItemText: {
     margin: 0,
-    color: theme.palette.text.disabled,
+    color: theme.palette.text.secondary,
   },
   code: {
     backgroundColor: theme.palette.background.default,
@@ -268,8 +266,8 @@ export class RecentNetworksList extends Component {
   snackBarOps() {
     return {
       close: () => this.setState({ snackBarState: { open: false }}),
-      showMessage: message => this.setState({ snackBarState: { open: true, closeable: true, autoHideDelay: 3000, message }}),
-      showSpinner: message => this.setState({ snackBarState: { open: true, closeable: false, spinner: true, message }}),
+      showMessage: message => this.setState({ snackBarState: { open: true, closeable: true, autoHideDelay: 3000, severity: 'success', message }}),
+      showSpinner: message => this.setState({ snackBarState: { open: true, closeable: false, spinner: true, severity: 'info', message }}),
     };
   }
 
@@ -292,7 +290,7 @@ export class RecentNetworksList extends Component {
                     </Grid>
                     <Grid item>
                       <IconButton size="small" onClick={e => this.showPopover(e)}>
-                        <MoreVertIcon />
+                        <MoreVertIcon className={classes.actionIcon} />
                       </IconButton>
                     </Grid>
                   </Grid>
@@ -325,17 +323,16 @@ export class RecentNetworksList extends Component {
           onClose={() => this.setState({ snackBarState: { open: false }})} 
         >
           <SnackbarContent 
-            className={classes.snackBarContent}
             message={<span>{this.state.snackBarState.message || ""}</span>}
             action={(() => {
               if (this.state.snackBarState.closeable) {
                 return (
-                  <IconButton size='small' onClick={() => this.setState({ snackBarState: { open: false }})}>
+                  <IconButton size='small' color="inherit" onClick={() => this.setState({ snackBarState: { open: false }})}>
                     <CloseIcon />
                   </IconButton>
                 );
-              } else if(this.state.snackBarState.spinner) {
-                return <CircularProgressIcon size={20}/>;
+              } else if (this.state.snackBarState.spinner) {
+                return <CircularProgressIcon color="inherit" size={20}/>;
               }
             })()}
           />
@@ -380,7 +377,7 @@ export class RecentNetworksList extends Component {
                       <>
                         You can still access this network with its <b>permanent link</b>&nbsp;
                         <Tooltip title="Copy link">
-                          <IconButton color="primary" size="small" onClick={handleCopyLink}>
+                          <IconButton size="small" onClick={handleCopyLink}>
                             <ContentCopyIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -420,7 +417,7 @@ export class RecentNetworksList extends Component {
         <Grid container direction="column" alignItems="stretch" justifyContent="center">
           <Grid item>
             { enabled ? (
-              <img src={imgSrc} className={classes.thumbnail} style={{ background: NETWORK_BACKGROUND }} />
+              <img src={imgSrc} className={classes.thumbnail} />
             ) : (
               <Skeleton variant="rect" className={classes.thumbnail} />
             )}
@@ -456,7 +453,7 @@ export class RecentNetworksList extends Component {
                     </Grid>
                     <Grid item>
                       <IconButton size="small" onClick={e => onDelete(e)}>
-                        <DeleteIcon fontSize="small" />
+                        <DeleteIcon fontSize="small" className={classes.actionIcon} />
                       </IconButton>
                     </Grid>
                   </Grid>
@@ -473,6 +470,8 @@ export class RecentNetworksList extends Component {
 
   renderPopover() {
     const { recentNetworks, anchorEl } = this.state;
+
+    const { classes } = this.props;
 
     const handleCopyLinks = async () => {
       if (recentNetworks && recentNetworks.length > 0) {
@@ -513,13 +512,13 @@ export class RecentNetworksList extends Component {
         <MenuList>
           <MenuItem onClick={() => handleCopyLinks()}>
             <ListItemIcon>
-              <ShareIcon fontSize="small" />
+              <ShareIcon fontSize="small" className={classes.actionIcon} />
             </ListItemIcon>
             <ListItemText primary="Share" />
           </MenuItem>
           <MenuItem onClick={() => clearListIfConfirmed()}>
             <ListItemIcon>
-              <DeleteIcon fontSize="small" />
+              <DeleteIcon fontSize="small" className={classes.actionIcon} />
             </ListItemIcon>
             <ListItemText primary="Clear List..." />
           </MenuItem>

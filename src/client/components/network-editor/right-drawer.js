@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import chroma from 'chroma-js';
 
 import { HEADER_HEIGHT, RIGHT_DRAWER_WIDTH } from '../defaults';
 
@@ -18,8 +17,6 @@ import CheckIcon from '@material-ui/icons/Check';
 const useStyles = makeStyles((theme) => ({
   paper: {
     width: RIGHT_DRAWER_WIDTH,
-    background: chroma(theme.palette.background.default).alpha(0.66).hex(),
-    backdropFilter: 'blur(8px)',
     borderLeft: `1px solid ${theme.palette.divider}`,
   },
   header: {
@@ -153,7 +150,7 @@ const RightDrawer = ({ menu, open, onClose }) => {
     >
       <div className={classes.header}>
         <Toolbar variant="dense" className={classes.toolbar}>
-          <IconButton className={classes.closeButton} onClick={onClose}>
+          <IconButton color="inherit" className={classes.closeButton} onClick={onClose}>
             <CloseIcon />
           </IconButton>
           <div className={classes.grow} />
@@ -190,7 +187,7 @@ const RightDrawer = ({ menu, open, onClose }) => {
           {animatedSelect.title !== title && hasToggle && (
             isSelected?.() ? <CheckIcon className={classes.checkIcon} /> : <span style={{width: 24}} />
           )}
-            <IconButton>{ icon }</IconButton>
+            <IconButton color="inherit">{ icon }</IconButton>
             <p>{ title }</p>
           </MenuItem>
         )}

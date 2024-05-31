@@ -6,7 +6,7 @@ import _ from 'lodash';
 import classNames from 'classnames';
 import uuid from 'uuid';
 
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 import { RecentNetworksController } from '../recent-networks-controller';
 import { UploadController, RNA_SEQ, PRE_RANKED } from './upload-controller';
@@ -19,7 +19,6 @@ import About from './about';
 import { DebugMenu } from './debug-menu';
 import StartDialog from './start-dialog';
 import LinkOut from './link-out';
-import theme from '../../theme';
 
 import { Container, Grid } from '@material-ui/core';
 import { Button, Typography, Link } from '@material-ui/core';
@@ -43,12 +42,11 @@ const menuDef = [
 const logosDef = [
   { src: "/images/bader-lab-logo.svg", alt: "Bader Lab logo", href: "https://baderlab.org/" },
   { src: "/images/cytoscape-consortium-logo.svg", alt: "Cytoscape Consortium logo", href: "https://cytoscape.org/" },
-  // { src: "/images/donnelly-logo.png", alt: "The Donnelly Centre logo", href: "https://thedonnellycentre.utoronto.ca/" },
   { src: "/images/uoft-logo.svg", alt: "UofT logo", href: "https://www.utoronto.ca/" },
 ];
 
-const isMobileWidth = () => window.innerWidth <= theme.breakpoints.values.sm;
-const isTabletWidth = () => !isMobileWidth() && window.innerWidth <= theme.breakpoints.values.md;
+const isMobileWidth = (theme) => window.innerWidth <= theme.breakpoints.values.sm;
+const isTabletWidth = (theme) => !isMobileWidth(theme) && window.innerWidth <= theme.breakpoints.values.md;
 
 let requestID = null;
 let cancelledRequests = [];
@@ -95,8 +93,8 @@ const useContentStyles = makeStyles(theme => ({
     position: 'absolute',
     display: 'flex',
     flexDirection: 'column',
-    border: '4px solid transparent',
-    backgroundColor: theme.palette.background.default,
+    border: '4px solid transparent', // necessary for the drop area border
+    backgroundColor: theme.palette.background.paper,
   },
   rootDropping: {
     borderColor: 'rgb(54, 102, 209)'
@@ -110,7 +108,7 @@ const useContentStyles = makeStyles(theme => ({
   },
   content: {
     maxHeight: 700,
-    marginTop: theme.spacing(8),
+    marginTop: theme.spacing(12),
     marginBottom: theme.spacing(2),
     padding: theme.spacing(0, 4, 0, 4),
     textAlign: 'left',
@@ -165,6 +163,9 @@ const useContentStyles = makeStyles(theme => ({
       padding: theme.spacing(6, 0, 6, 0),
     },
   },
+  alternateSection: {
+    backgroundColor: theme.palette.background.default,
+  },
   sectionContainer: {
     textAlign: 'left',
   },
@@ -188,6 +189,7 @@ const useContentStyles = makeStyles(theme => ({
 
 export function Content({ recentNetworksController }) {
   const classes = useContentStyles();
+  const theme = useTheme();
 
   /** State */
 
@@ -195,10 +197,9 @@ export function Content({ recentNetworksController }) {
   const [ bus ] = useState(() => new EventEmitter());
   const [ uploadController ] = useState(() => new UploadController(bus));
   const [ sampleFiles, setSampleFiles ] = useState({ sampleRankFiles: [], sampleExprFiles: [] });
-
   // state for component interaction
-  const [ mobile, setMobile ] = useState(() => isMobileWidth());
-  const [ tablet, setTablet ] = useState(() => isTabletWidth());
+  const [ mobile, setMobile ] = useState(() => isMobileWidth(theme));
+  const [ tablet, setTablet ] = useState(() => isTabletWidth(theme));
   const [ openMobileMenu, setOpenMobileMenu ] = useState(false);
   const [ droppingFile, setDroppingFile ] = useState(false);
   const [ showRecentNetworks, setShowRecentNetworks ] = useState(false);
@@ -225,9 +226,9 @@ export function Content({ recentNetworksController }) {
 
   useEffect(() => {
     const handleResize = () => {
-      setMobile(isMobileWidth());
-      setTablet(isTabletWidth());
-      if (!isMobileWidth() && !isTabletWidth()) {
+      setMobile(isMobileWidth(theme));
+      setTablet(isTabletWidth(theme));
+      if (!isMobileWidth(theme) && !isTabletWidth(theme)) {
         setOpenMobileMenu(false);
       }
     };
@@ -442,7 +443,7 @@ export function Content({ recentNetworksController }) {
           <LogoBar mobile={mobile} />
         </div>
       </Container>
-      <section id="faq" className={classes.section} style={{backgroundColor: theme.palette.background.paper}}>
+      <section id="faq" className={clsx(classes.section, classes.alternateSection)} >
         <Container maxWidth="lg" className={classes.sectionContainer}>
           <Typography variant="h2" className={classes.sectionTitle}>Frequently asked questions</Typography>
           <Typography className={classes.sectionDescription}>
@@ -451,7 +452,7 @@ export function Content({ recentNetworksController }) {
           <Faq />
         </Container>
       </section>
-      <section id="about" className={classes.section} style={{backgroundColor: theme.palette.background.default}}>
+      <section id="about" className={classes.section}>
         <Container maxWidth="md" className={classes.sectionContainer}>
           <About />
         </Container>
@@ -498,8 +499,9 @@ const useFigureStyles = makeStyles(theme => ({
     maxWidth: '100%',
     maxHeight: 398,
     objectFit: 'contain',
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: 16,
+    border: `4px solid ${theme.palette.divider}`,
+    borderRadius: 8,
+    boxShadow: '0 20px 25px -5px rgb(0, 0, 0, 0.1), 0 8px 10px -36px rgb(0, 0, 0, 0.1)',
     [theme.breakpoints.down('sm')]: {
       marginBottom: theme.spacing(4),
     },
@@ -512,8 +514,10 @@ const useFigureStyles = makeStyles(theme => ({
 
 function Figure() {
   const classes = useFigureStyles();
+  const theme = useTheme();
+  const img = theme?.palette?.type === 'dark' ? 'hero-figure-dark.png' : 'hero-figure-light.png';
 
-  return <img src="/images/home-figure.png" alt="figure" className={classes.figure} />;
+  return <img src={`/images/${img}`} alt="figure" className={classes.figure} />;
 }
 
 //==[ LogoBar ]=======================================================================================================
@@ -521,6 +525,9 @@ function Figure() {
 const useLogoBarStyles = makeStyles(theme => ({
   root: {
     marginTop: theme.spacing(12),
+    [theme.breakpoints.down('xs')]: {
+      marginTop: theme.spacing(4),
+    },
   },
 }));
 
@@ -557,7 +564,6 @@ LogoBar.propTypes = {
 const useLogoStyles = makeStyles(() => ({
   logo: {
     maxHeight: 48,
-    filter: 'grayscale(1) opacity(50%)',
   },
 }));
 

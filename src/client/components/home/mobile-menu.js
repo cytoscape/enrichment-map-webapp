@@ -1,6 +1,5 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import chroma from 'chroma-js';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -16,8 +15,6 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(0.5, 2.5, 2, 2.5),
     borderRadius: '0 0 16px 16px',
     borderBottom: `1px solid ${theme.palette.divider}`,
-    background: chroma(theme.palette.background.default).alpha(0.66).hex(),
-    backdropFilter: 'blur(8px)',
     [theme.breakpoints.down('sm')]: {
       paddingLeft: theme.spacing(1),
       paddingRight: theme.spacing(1),

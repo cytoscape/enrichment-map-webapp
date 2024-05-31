@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import { makeStyles } from '@material-ui/core/styles';
 
 import { BOTTOM_DRAWER_OPEN } from '../defaults';
-import theme from '../../theme';
+import { currentTheme } from '../../theme';
 import { isMobile, isTablet } from '../util';
 import { NetworkEditorController } from './controller';
 import Main from './main';
@@ -137,11 +137,12 @@ async function loadNetwork(id, cy, controller, recentNetworksController) {
 
 
 export function NetworkEditor({ id, recentNetworksController }) {
+  const [ theme, setTheme ] = useState(currentTheme);
   const [ cy ] = useState(() => createCy(id));
   const [ controller ] = useState(() => new NetworkEditorController(cy));
-  const [ mobile, setMobile ] = useState(() => isMobile());
-  const [ tablet, setTablet ] = useState(() => isTablet());
-  const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile() && !isTablet());
+  const [ mobile, setMobile ] = useState(() => isMobile(theme));
+  const [ tablet, setTablet ] = useState(() => isTablet(theme));
+  const [ openLeftDrawer, setOpenLeftDrawer ] = useState(() => !isMobile(theme) && !isTablet(theme));
   const [ openRightDrawer, setOpenRightDrawer ] = useState(false);
   const [ openBottomDrawer, setOpenBottomDrawer ] = useState(BOTTOM_DRAWER_OPEN);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
@@ -152,9 +153,9 @@ export function NetworkEditor({ id, recentNetworksController }) {
   bottomDrawerOpenRef.current = openBottomDrawer;
 
   const handleResize = () => {
-    setMobile(isMobile());
-    setTablet(isTablet());
-    if (!isMobile()) { // Close the mobile menu
+    setMobile(isMobile(theme));
+    setTablet(isTablet(theme));
+    if (!isMobile(theme)) { // Close the mobile menu
       setOpenRightDrawer(false);
     }
     if (bottomDrawerOpenRef.current) { // Prevents unnecessary re-rendering!
@@ -162,6 +163,16 @@ export function NetworkEditor({ id, recentNetworksController }) {
     }
   };
   const debouncedHandleResize = _.debounce(() => handleResize(), 100);
+
+  useEffect(() => {
+    // Listen for changes in the user's theme preference
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleThemeChange = () => setTheme(currentTheme());
+    mediaQuery.addEventListener('change', handleThemeChange);
+    return () => {
+      mediaQuery.removeEventListener('change', handleThemeChange);
+    };
+  }, []);
 
   useEffect(() => {
     loadNetwork(id, cy, controller, recentNetworksController);
@@ -187,7 +198,7 @@ export function NetworkEditor({ id, recentNetworksController }) {
   }, []);
 
   useEffect(() => {
-    const onSelect = () => setOpenLeftDrawer(!isMobile() && !isTablet());
+    const onSelect = () => setOpenLeftDrawer(!isMobile(theme) && !isTablet(theme));
     cy.on('select', onSelect);
     return () => cy.removeListener('select', onSelect);
   }, []);
