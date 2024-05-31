@@ -113,7 +113,7 @@ export const darkTheme = createTheme({
       divider: 'rgba(255, 255, 255, 0.08)',
     },
     text: {
-      primary: '#f5f5f5',
+      primary: '#ffffff',
       secondary: 'rgba(255, 255, 255, 0.8)',
       disabled: 'rgba(255, 255, 255, 0.5)',
       accent: '#acd5a1',
