@@ -1,5 +1,5 @@
 import Express from 'express';
-import Datastore, { DB_1 } from '../../datastore.js';
+import Datastore, { DB } from '../../datastore.js';
 
 const http = Express.Router();
 
@@ -41,7 +41,7 @@ http.get('/ranks/:netid', async function(req, res, next) {
 http.get('/gmt/:netid', async function(req, res, next) {
   try {
     const { netid } = req.params;
-    const cursor = await Datastore.getGMTCursor(DB_1, netid);
+    const cursor = await Datastore.getGMTCursor(DB, netid);
 
     sendDataLines(cursor, res, {
       header: 'name\tdescription\tgenes',

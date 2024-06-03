@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import * as Sentry from "@sentry/node";
 import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
-import Datastore, { DB_1 } from '../../datastore.js';
+import Datastore, { DB } from '../../datastore.js';
 import { rankedGeneListToDocument, fgseaServiceGeneRanksToDocument } from '../../datastore.js';
 import { performance } from 'perf_hooks';
 import { saveUserUploadFileToS3 } from './s3.js';
@@ -153,8 +153,8 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
   let networkID;
   try {
     perf.mark('mongo');
-    networkID = await Datastore.createNetwork(networkJson, networkName, type, DB_1, demo);
-    await Datastore.initializeGeneRanks(DB_1, networkID, rankedGeneList);
+    networkID = await Datastore.createNetwork(networkJson, networkName, type, DB, demo);
+    await Datastore.initializeGeneRanks(DB, networkID, rankedGeneList);
     res?.send(networkID);
   } catch(e) {
     throw new CreateError({ step: 'mongo', cause: e });

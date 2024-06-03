@@ -2,7 +2,7 @@ import Express from 'express';
 import fs from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import Datastore, { DB_1 } from '../../datastore.js';
+import Datastore, { DB } from '../../datastore.js';
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -96,7 +96,7 @@ http.post('/genesets', async function(req, res, next) {
       return;
     }
 
-    const geneInfo = await Datastore.getGeneSets(DB_1, geneSets);
+    const geneInfo = await Datastore.getGeneSets(DB, geneSets);
     if(!geneInfo) {
       res.sendStatus(404);
     } else {
@@ -142,7 +142,7 @@ http.post('/:netid/genesets', async function(req, res, next) {
       return;
     }
 
-    const geneInfo = await Datastore.getGenesWithRanks(DB_1, netid, geneSets, intersection === 'true');
+    const geneInfo = await Datastore.getGenesWithRanks(DB, netid, geneSets, intersection === 'true');
     if(!geneInfo) {
       res.sendStatus(404);
     } else {
@@ -194,7 +194,7 @@ http.get('/:netid/pathwaysforsearch', async function(req, res, next) {
   try {
     const { netid } = req.params;
 
-    const cursor = await Datastore.getPathwaysForSearchCursor(DB_1, netid);
+    const cursor = await Datastore.getPathwaysForSearchCursor(DB, netid);
     await writeCursorToResult(cursor, res);
     cursor.close();
 

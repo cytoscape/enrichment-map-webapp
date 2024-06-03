@@ -5,7 +5,8 @@ import _ from 'lodash';
 import { fileForEachLine } from './util.js';
 
 
-export const DB_1 = 'Human_GOBP_AllPathways_no_GO_iea_June_01_2022_symbol.gmt';
+// export const DB = 'Human_GOBP_AllPathways_no_GO_iea_June_01_2022_symbol.gmt';
+export const DB = 'Human_GOBP_AllPathways_noPFOCR_no_GO_iea_May_01_2024_symbol.gmt';
 
 const GENE_RANKS_COLLECTION = 'geneRanks';
 const GENE_LISTS_COLLECTION = 'geneLists';
@@ -96,7 +97,6 @@ class Datastore {
 
   async initializeGeneSetDB(dbFilePath, dbFileName) {
     console.info('Initializing MongoDB...');
-    // await this.loadGenesetDB('./public/geneset-db/', DB_1);
     await this.loadGenesetDB(dbFilePath, dbFileName);
     console.info('Pathway Database Loaded: ' + dbFileName);
     await this.createIndexes();
@@ -335,7 +335,7 @@ class Datastore {
       
         // Lookup the genes contained in each node
         { $lookup: {
-            from: DB_1,
+            from: DB,
             localField: "splitNames",
             foreignField: "name",
             as: "geneSet"
@@ -636,7 +636,6 @@ class Datastore {
 
     if(geneSetNames === undefined || geneSetNames.length == 0) {
       geneSetNames = await this.getNodeDataSetNames(networkID);
-      console.log("geneSetNames", geneSetNames);
     }
     
     const geneListWithRanks = await this.db

@@ -22,12 +22,12 @@ import apiRouter from './routes/api/index.js';
 import createRouter, { createRouterErrorHandler } from './routes/api/create.js';
 import exportRouter from './routes/api/export.js';
 
-import Datastore, { DB_1 } from './datastore.js';
+import Datastore, { DB } from './datastore.js';
 
 console.info('Starting Express');
 
 await Datastore.connect();
-await Datastore.initializeGeneSetDB('./public/geneset-db/', DB_1);
+await Datastore.initializeGeneSetDB('./public/geneset-db/', DB);
 
 
 const debugLog = debug('enrichment-map');
