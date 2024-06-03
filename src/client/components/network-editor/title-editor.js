@@ -10,19 +10,11 @@ const CssInputBase = styled(InputBase)(({ theme }) => ({
   '& .MuiInputBase-input': {
     position: 'relative',
     border: '1px solid transparent',
-    borderRadius: 5,
+    borderRadius: 8,
     width: '100%',
-    minWidth: 240,
     maxWidth: 640,
-    padding: 2,
+    padding: theme.spacing(1),
     fontWeight: 'bold',
-    [theme.breakpoints.down('sm')]: {
-      textAlign: 'center',
-      minWidth: 140,
-    },
-    [theme.breakpoints.up('sm')]: {
-      textAlign: 'left',
-    },
     '&:hover': {
       border: `1px solid ${theme.palette.divider}`,
       backgroundColor: theme.palette.background.field,
