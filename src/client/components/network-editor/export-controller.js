@@ -188,8 +188,9 @@ export class ExportController {
 function createREADME(controller) {
   const { cy } = controller;
   const name = cy.data('name');
-  const link = window.location.href;
   const parameters = cy.data('parameters');
+  const db = cy.data('geneSetCollection');
+  const link = window.location.href;
 
   return dedent`
     EnrichmentMap::RNA-Seq - ${name}
@@ -249,13 +250,15 @@ function createREADME(controller) {
     
     Gene-set filtering parameters
     -----------------------------
-    The following cutoff parameters were used to filter the results of enrichment analysis.
-    * Gene-sets with q-value (padj) greater than ${parameters.qvalue} are removed from the network.
-    * Edges represent similarity between gene-sets. 
-      * Similarity is calculated using the ${parameters.similarityMetric} method and must have a 
-        value of at least ${parameters.similarityCutoff}.
-      ${parameters.similarityMetric === 'JACCARD' ? 
-      '* JACCARD coefficient is computed as the size of the intersection divided by the size of the union.' : ''
-      }
+    * The Baderlab gene set database used for this network was:
+      * ${db}
+    * The following cutoff parameters were used to filter the results of enrichment analysis.
+      * Gene-sets with q-value (padj) greater than ${parameters.qvalue} are removed from the network.
+      * Edges represent similarity between gene-sets. 
+        * Similarity is calculated using the ${parameters.similarityMetric} method and must have a 
+          value of at least ${parameters.similarityCutoff}.
+        ${parameters.similarityMetric === 'JACCARD' ? 
+        '* JACCARD coefficient is computed as the size of the intersection divided by the size of the union.' : ''
+        }
   `;
 }
