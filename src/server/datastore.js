@@ -564,7 +564,7 @@ class Datastore {
       .aggregate([
         // Get the node data in the network
         { $match: { _id: networkID.bson } },
-        { $replaceWith: { path: "$summaryNetwork.elements.nodes.data" } },
+        { $replaceWith: { path: "$network.elements.nodes.data" } },
         { $unwind: { path: "$path" } },
         { $replaceRoot: { newRoot: "$path" } },
         // Get the names
@@ -636,6 +636,7 @@ class Datastore {
 
     if(geneSetNames === undefined || geneSetNames.length == 0) {
       geneSetNames = await this.getNodeDataSetNames(networkID);
+      console.log("geneSetNames", geneSetNames);
     }
     
     const geneListWithRanks = await this.db
