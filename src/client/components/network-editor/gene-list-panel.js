@@ -88,16 +88,8 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
     }
   );
 
-  const queryNodes = useQuery(
-    ['related-node-ids', symbol],
-    () => fetch(`/api/${controller.cy.data('id')}/${symbol}/nodes`)
-          .then(res => res.json())
-          .then(res => res.nodeIDs),
-    { retry: false }
-  );
-
   const data = queryGeneData.data;
-  const isLoading = queryGeneData.isLoading || queryNodes.isLoading;
+  const isLoading = queryGeneData.isLoading;
 
   let error = queryGeneData.error;
   let description, ncbiId;

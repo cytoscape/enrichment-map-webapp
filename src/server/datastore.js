@@ -208,6 +208,8 @@ class Datastore {
     networkJson['_id'] = networkID.bson;
     networkJson['networkIDStr'] = networkID.string;
     networkJson['creationTime'] = new Date();
+
+    delete networkJson['summaryNetwork'];
     
     if(networkName)
       networkJson['networkName'] = networkName;
@@ -283,7 +285,6 @@ class Datastore {
 
     // Create an initialize the documents in the GENE_RANKS_COLLECTION, used for quick lookups.
     await this.createGeneRanksDocuments(networkID);
-    await this.mergeSummaryNodeIDsIntoGeneRanks(geneSetCollection, networkID);
     await this.mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID);
 
     return geneListID.string;
@@ -310,51 +311,6 @@ class Datastore {
       ]).toArray();
   }
 
-
-  /**
-   * Update the documents in the geneRanks collection to add the 'summaryNodeIDs' field.
-   */
-  async mergeSummaryNodeIDsIntoGeneRanks(geneSetCollection, networkID) {
-    await this.db
-      .collection(NETWORKS_COLLECTION)
-      .aggregate([
-        // Get the nodeIDs and the names of the Pathways they represent
-        { $match: { _id: networkID.bson } },
-        { $replaceWith: { path: "$summaryNetwork.elements.nodes.data" } },
-        { $unwind: { path: "$path" } },
-        { $replaceRoot: { newRoot: "$path" } },
-        { $addFields: { splitNames: { 
-            $cond: {
-              if: { $isArray: "$name" },
-              then: { $getField: "name" },
-              else: { $split: [ "$name", "," ] }
-            }
-        } } },
-        { $unwind: { path: "$splitNames" } },
-      
-        // Lookup the genes contained in each node
-        { $lookup: {
-            from: geneSetCollection,
-            localField: "splitNames",
-            foreignField: "name",
-            as: "geneSet"
-        }},
-        { $replaceRoot: { newRoot: { $mergeObjects: [ { $arrayElemAt: [ "$geneSet", 0 ] }, "$$ROOT" ] } } },
-        { $unwind: { path: "$genes" } },
-        { $group: { _id: "$genes", nodeIDs: { $addToSet: "$id" } }},
-        { $project: { _id: 0, gene: "$_id", nodeIDs: 1, networkID: networkID.bson } },
-      
-        // Update the geneRanks collection
-        { $merge: {
-            into: GENE_RANKS_COLLECTION,
-            on: [ "networkID", "gene" ],
-            whenNotMatched: "discard",
-            let: { nodeIDs: "$nodeIDs" },
-            whenMatched: [{ $addFields: { summaryNodeIDs: "$$nodeIDs" } }],
-          }
-        }
-      ]).toArray(); 
-  }
 
   /**
    * Update the documents in the geneRanks collection to add the 'pathways' field.
@@ -650,19 +606,6 @@ class Datastore {
       .toArray();
   }
 
-
-  /**
-   * Returns the IDs of nodes that contain the given gene.
-   */
-  async getNodesContainingGene(networkIDString, geneName) {
-    const networkID = makeID(networkIDString);
-    return await this.db
-      .collection(GENE_RANKS_COLLECTION)
-      .findOne(
-        { networkID: networkID.bson, gene: geneName },
-        { projection: { _id: 0, nodeIDs: "$summaryNodeIDs" } }
-      );
-  }
 
   /**
    * Returns the values of the min and max ranks in the network.
