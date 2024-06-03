@@ -112,7 +112,7 @@ export function Header({
             onClick={() => onOpenLeftDrawer(!leftDrawerOpen)}
           />
         )}
-          <Box component="div" sx={{ display: { xs: 'none', sm: 'inline-block' }}}>
+          <Box component="div">
             <Tooltip placement="bottom" title="Home">
               <IconButton 
                 aria-label='home' 
