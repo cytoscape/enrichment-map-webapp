@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import * as Sentry from "@sentry/node";
 import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
-import Datastore, { DB } from '../../datastore.js';
+import Datastore, { GMT_2 } from '../../datastore.js';
 import { rankedGeneListToDocument, fgseaServiceGeneRanksToDocument } from '../../datastore.js';
 import { performance } from 'perf_hooks';
 import { saveUserUploadFileToS3 } from './s3.js';
@@ -18,7 +18,7 @@ import {
 const NETWORK_CREATE_ERROR_CODE = 450;
 
 const http = Express.Router();
-
+const GMT_FILE = GMT_2;
 
 // Endpoints accept TSV or CSV
 const dataParser = bodyParser.text({ 
@@ -132,13 +132,21 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
   let rankedGeneList;
   let pathwaysForEM;
   if(preranked) {
-    const { pathways } = await runFGSEApreranked(body, contentType);
+    const fgseaRes = await runFGSEApreranked(body, contentType);
+    const { pathways, gmtFile } = fgseaRes;
+    if(gmtFile !== GMT_FILE) {
+      throw new CreateError({ step: 'fgsea', detail: 'gmt', message: `FGSEA: wrong GMT. Expected '${GMT_FILE}', got '${gmtFile}'.` });
+    }
     const delim = contentType === 'text/csv' ? ',' : '\t';
     rankedGeneList = rankedGeneListToDocument(body, delim);
     pathwaysForEM = pathways;
   } else {
     // Messages from FGSEA are basically just warning about non-finite ranks
-    const { ranks, pathways, messages } = await runFGSEArnaseq(body, classes, contentType);
+    const fgseaRes = await runFGSEArnaseq(body, classes, contentType);
+    const { ranks, pathways, messages, gmtFile } = fgseaRes;
+    if(gmtFile !== GMT_FILE) {
+      throw new CreateError({ step: 'fgsea', detail: 'gmt', message: `FGSEA: wrong GMT. Expected '${GMT_FILE}', got '${gmtFile}'.` });
+    }
     sendMessagesToSentry('fgsea', messages);
     rankedGeneList = fgseaServiceGeneRanksToDocument(ranks);
     pathwaysForEM = pathways;
@@ -149,12 +157,15 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
   if(isEmptyNetwork(networkJson)) {
     throw new CreateError({ step: 'em', detail: 'empty' });
   }
+  if(networkJson.gmtFile !== GMT_FILE) {
+    throw new CreateError({ step: 'em', detail: 'gmt', message: `EM-Service: wrong GMT. Expected '${GMT_FILE}', got '${networkJson.gmtFile}'.` });
+  }
 
   let networkID;
   try {
     perf.mark('mongo');
-    networkID = await Datastore.createNetwork(networkJson, networkName, type, DB, demo);
-    await Datastore.initializeGeneRanks(DB, networkID, rankedGeneList);
+    networkID = await Datastore.createNetwork(networkJson, networkName, type, GMT_FILE, demo);
+    await Datastore.initializeGeneRanks(GMT_FILE, networkID, rankedGeneList);
     res?.send(networkID);
   } catch(e) {
     throw new CreateError({ step: 'mongo', cause: e });

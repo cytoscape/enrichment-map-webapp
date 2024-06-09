@@ -4,9 +4,9 @@ import MUUID from 'uuid-mongodb';
 import _ from 'lodash';
 import { fileForEachLine } from './util.js';
 
-
-// export const DB = 'Human_GOBP_AllPathways_no_GO_iea_June_01_2022_symbol.gmt';
-export const DB = 'Human_GOBP_AllPathways_noPFOCR_no_GO_iea_May_01_2024_symbol.gmt';
+// These GMT files are loaded into collections with the same name as the file.
+// export const GMT_1 = 'Human_GOBP_AllPathways_no_GO_iea_June_01_2022_symbol.gmt';
+export const GMT_2 = 'Human_GOBP_AllPathways_noPFOCR_no_GO_iea_May_01_2024_symbol.gmt';
 
 const GENE_RANKS_COLLECTION = 'geneRanks';
 const GENE_LISTS_COLLECTION = 'geneLists';
@@ -114,6 +114,9 @@ class Datastore {
   }
 
 
+  /**
+   * @param dbFileName Name of the GMT file. Use one of the constants at the top of this file.
+   */
   async loadGenesetDB(path, dbFileName) {
     const isLoaded = async () => {
       const collections = await this.db.listCollections().toArray();
@@ -335,7 +338,7 @@ class Datastore {
       
         // Lookup the genes contained in each node
         { $lookup: {
-            from: DB,
+            from: geneSetCollection,
             localField: "splitNames",
             foreignField: "name",
             as: "geneSet"
@@ -524,12 +527,25 @@ class Datastore {
     return cursor;
   }
 
+  async getGeneSetCollectionUsedByNetwork(networkIDString) {
+    const networkID = makeID(networkIDString);
+    const network = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .findOne(
+        { _id: networkID.bson },
+        { _id: 0, geneSetCollection: 1 }
+      );
+
+    return network.geneSetCollection;
+  }
+
   /**
    * Returns an cursor of objects of the form:
    * [ { "name": "My Gene Set", "description": "blah blah", "genes": ["ABC", "DEF"] }, ... ]
    */
-  async getGMTCursor(geneSetCollection, networkIDString) {
+  async getGMTUsedByNetworkCursor(networkIDString) {
     const networkID = makeID(networkIDString);
+    const geneSetCollection = await this.getGeneSetCollectionUsedByNetwork(networkIDString);
 
     const cursor = await this.db
       .collection(NETWORKS_COLLECTION)
@@ -631,8 +647,9 @@ class Datastore {
    * The returned array is sorted so that the genes with ranks are first (sorted by rank),
    * then the genes without rankes are after (sorted alphabetically).
    */
-  async getGenesWithRanks(geneSetCollection, networkIDStr, geneSetNames, intersection) {
+  async getGenesWithRanks(networkIDStr, geneSetNames, intersection) {
     const networkID = makeID(networkIDStr);
+    const geneSetCollection = await this.getGeneSetCollectionUsedByNetwork(networkIDStr);
 
     if(geneSetNames === undefined || geneSetNames.length == 0) {
       geneSetNames = await this.getNodeDataSetNames(networkID);
@@ -697,8 +714,9 @@ class Datastore {
   }
 
 
-  async getPathwaysForSearchCursor(geneSetCollection, networkIDStr) {
+  async getPathwaysForSearchCursor(networkIDStr) {
     const networkID = makeID(networkIDStr);
+    const geneSetCollection = await this.getGeneSetCollectionUsedByNetwork(networkIDStr);
 
     const cursor = await this.db
       .collection(NETWORKS_COLLECTION)

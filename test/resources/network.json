@@ -1,5 +1,6 @@
 {
-	"parameters": {
+	"geneSetCollection": "geneset_database.gmt",
+  "parameters": {
 		"pvalue": 1.0,
 		"qvalue": 0.1,
 		"filterByExpressions": true,

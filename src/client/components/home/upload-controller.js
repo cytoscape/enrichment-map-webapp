@@ -56,6 +56,11 @@ export class UploadController {
       const networkID = await res.text();
       this.bus.emit('finished', { networkID, requestID });
       return networkID;
+    } else if (res.status == 450) {
+      // custom status code, error while running create data pipeline
+      const body = await res.json();
+      const errors = this.errorMessagesForCreateError(body.details);
+      this.bus.emit('error', { errors, requestID });
     } else {
       this.bus.emit('error', { errors: ['could not create demo network'], requestID });
     }

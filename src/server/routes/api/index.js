@@ -2,7 +2,7 @@ import Express from 'express';
 import fs from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import Datastore, { DB } from '../../datastore.js';
+import Datastore from '../../datastore.js';
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -85,28 +85,6 @@ http.put('/:netid', async function(req, res, next) {
   }
 });
 
-/*
- * Returns the contents of multiple gene sets, not including ranks.
- */
-http.post('/genesets', async function(req, res, next) {
-  try {
-    const { geneSets } = req.body;
-    if(!Array.isArray(geneSets)) {
-      res.sendStatus(404);
-      return;
-    }
-
-    const geneInfo = await Datastore.getGeneSets(DB, geneSets);
-    if(!geneInfo) {
-      res.sendStatus(404);
-    } else {
-      res.send(JSON.stringify(geneInfo));
-    }
-  } catch (err) {
-    next(err);
-  }
-});
-
 
 /*
  * Returns a ranked gene list.
@@ -142,7 +120,7 @@ http.post('/:netid/genesets', async function(req, res, next) {
       return;
     }
 
-    const geneInfo = await Datastore.getGenesWithRanks(DB, netid, geneSets, intersection === 'true');
+    const geneInfo = await Datastore.getGenesWithRanks(netid, geneSets, intersection === 'true');
     if(!geneInfo) {
       res.sendStatus(404);
     } else {
@@ -194,7 +172,7 @@ http.get('/:netid/pathwaysforsearch', async function(req, res, next) {
   try {
     const { netid } = req.params;
 
-    const cursor = await Datastore.getPathwaysForSearchCursor(DB, netid);
+    const cursor = await Datastore.getPathwaysForSearchCursor(netid);
     await writeCursorToResult(cursor, res);
     cursor.close();
 
