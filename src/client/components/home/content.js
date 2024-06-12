@@ -447,7 +447,7 @@ export function Content({ recentNetworksController }) {
         <Container maxWidth="lg" className={classes.sectionContainer}>
           <Typography variant="h2" className={classes.sectionTitle}>Frequently asked questions</Typography>
           <Typography className={classes.sectionDescription}>
-            If you have anything else you want to ask, <LinkOut href="https://baderlab.org/">reach out to us</LinkOut>.
+            If you have anything else you would like to ask, please <LinkOut href="https://baderlab.org/">reach out to us</LinkOut>.
           </Typography>
           <Faq />
         </Container>

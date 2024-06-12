@@ -42,13 +42,13 @@ const faqs = [
         However, if you still have the original gene list file used as input to GSEA,
         you can upload the file to EnrichmentMap web and perform a new enrichment analysis.
         The results will be available much faster than with GSEA.<br />
-        Unranked gene list files typically used as input for g:Profiler are currently not supported by the web app.
+        Unranked gene list files typically used as input for g:Profiler are currently not supported by this web app.
       </>,
     },
     {
       question: <>How long does the enrichment analysis take?</>,
       answer: <>
-        On average it takes 1-2 minutes to create the network from an uploaded file.
+        On average it takes 1-2 minutes to create a network from an uploaded file.
       </>,
     },
     {
@@ -62,6 +62,13 @@ const faqs = [
         The read counts per gene are tested for differential expression and a rank is calculated for each gene.
         The resulting ranked gene list is then given to FGSEA.
         EnrichmentMap will provide the results of the gene rank calculations as well as the enrichment pathways.
+      </>,
+    },
+    {
+      question: <>What are the analysis parameters?</>,
+      answer: <>
+        The gene set filtering parameters are cutoff parameters used to filter the results of an enrichment analysis.<br />
+        Please download the network images and data and then check the <code>README</code> file for the applied parameters.
       </>,
     },
     {
@@ -85,6 +92,29 @@ const faqs = [
       </>,
     },
     {
+      question: <>How do I share my network?</>,
+      answer: <>
+        <ul style={ulStyle}>
+          <li>To share your results with others, copy the URL in the browser address bar and send it via email or text.</li>
+          <li>The network URL contains a unique code that allows access to your results. There is no way to access your results without its URL.</li>
+          <li>Anyone with the URL will be able to see your results and make changes to the network layout.</li>
+        </ul>
+      </>,
+    },
+    {
+      question: <>How is my data stored?</>,
+      answer: <>
+        <ul style={ulStyle}>
+          <li>Your uploaded data file and the resulting enrichment analysis data is stored on our servers. We will not share this data with anyone, 
+            and there is nothing connecting the data with your personal information. The data will be shared over time to make it conveniently accessible 
+            to you, but older results may be deleted if we need to free space for new analyses.
+          </li>
+          <li>We use industry-standard technology to protect the security of the app and user data.</li>
+          <li>Your data is private by default. Others can access your data or results only if you share the URL with them.</li>
+        </ul>
+      </>,
+    },
+    {
       question: <>How do I interpret the EnrichmentMap network?</>,
       answer: <ul style={ulStyle}>
         <li>Nodes &#40;circles&#41; represent highly enriched gene sets &#40;pathways&#41;.</li>
@@ -102,13 +132,6 @@ const faqs = [
           <li>Positive: when the pathway is up-regulated &#40;i.e. the pathway is more enriched in the experiment vs the control&#41;.</li> 
           <li>Negative: when the pathway is down-regulated &#40;i.e. the pathway is less enriched in the experiment vs the control&#41;.</li> 
         </ul>
-      </>,
-    },
-    {
-      question: <>What are the analysis parameters?</>,
-      answer: <>
-        The gene set filtering parameters are cutoff parameters used to filter the results of an enrichment analysis.<br />
-        Please download the network images and data and then check the <code>README</code> file for the applied parameters.
       </>,
     },
     {
