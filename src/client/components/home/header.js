@@ -9,6 +9,7 @@ import { Button, Typography } from '@material-ui/core';
 
 import MenuIcon from '@material-ui/icons/Menu';
 import { AppLogoIcon } from '../svg-icons';
+import { openPageLink } from '../util';
 
 
 const useHeaderStyles = makeStyles(theme => ({
@@ -70,8 +71,8 @@ const useHeaderStyles = makeStyles(theme => ({
 export function Header({ menuDef, showRecentNetworks, mobile, tablet, onClickGetStarted, onOpenMobileMenu }) {
   const classes = useHeaderStyles();
 
-  const handleClick = (href) => {
-    window.location.href = href;
+  const handleClick = (href, target) => {
+    openPageLink(href, target);
   };
 
   const ToolbarDivider = ({ unrelated }) => {
@@ -89,7 +90,7 @@ export function Header({ menuDef, showRecentNetworks, mobile, tablet, onClickGet
           <ToolbarDivider />
           <Typography variant="inherit" className={classes.title}>EnrichmentMap:RNA-Seq</Typography>
         {!mobile && !tablet && menuDef.map((menu, idx) => (
-          <MenuItem key={idx} className={classes.menuItem} onClick={() => handleClick(menu.href)}>
+          <MenuItem key={idx} className={classes.menuItem} onClick={() => handleClick(menu.href, menu.target)}>
             { menu.label }
           </MenuItem>
         ))}

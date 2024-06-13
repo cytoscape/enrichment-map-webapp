@@ -34,9 +34,10 @@ export const STEP = {
   ERROR:   'ERROR',
 };
 
-const menuDef = [
+export const menuDef = [
   { label: "FAQ",      href: '/#faq' },
   { label: "About",    href: '/#about' },
+  { label: "Contact",  href: 'https://baderlab.org/', target: '_blank' }
 ];
 
 const logosDef = [
