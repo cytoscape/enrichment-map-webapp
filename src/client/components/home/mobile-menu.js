@@ -8,6 +8,7 @@ import { Button, Typography } from '@material-ui/core';
 
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import { AppLogoIcon } from '../svg-icons.js';
+import { openPageLink } from '../util.js';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -56,8 +57,10 @@ const useStyles = makeStyles((theme) => ({
 export function MobileMenu({ menuDef, open, onClose }) {
   const classes = useStyles();
 
-  const handleClick = (href) => {
-    setTimeout(() => window.location.href = href, 100);
+  const handleClick = (href, target) => {
+    openPageLink(href, target);
+
+    // setTimeout(() => window.location.href = href, 100);
     onClose();
   };
 
@@ -77,7 +80,7 @@ export function MobileMenu({ menuDef, open, onClose }) {
         </Button>
       </Toolbar>
     {menuDef.map((menu, idx) => (
-      <MenuItem key={idx} onClick={() => handleClick(menu.href)} className={classes.menuItem}>
+      <MenuItem key={idx} onClick={() => handleClick(menu.href, menu.target)} className={classes.menuItem}>
         { menu.label }
       </MenuItem>
     ))}
