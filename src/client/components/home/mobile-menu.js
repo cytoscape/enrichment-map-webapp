@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import { Toolbar, Drawer, MenuItem } from '@material-ui/core';
+import { Toolbar, Divider, Drawer, MenuItem } from '@material-ui/core';
 import { Button, Typography } from '@material-ui/core';
 
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
@@ -39,6 +39,9 @@ const useStyles = makeStyles((theme) => ({
     flexGrow: 1,
     [theme.breakpoints.down('xs')]: {
       fontSize: '1.25em',
+      textOverflow: 'ellipsis',
+      overflow: 'hidden',
+      textWrap: 'nowrap',
     },
   },
   button: {
@@ -51,6 +54,15 @@ const useStyles = makeStyles((theme) => ({
     paddingLeft: theme.spacing(1.25),
     paddingRight: theme.spacing(1.25),
     borderRadius: '8px',
+  },
+  divider: {
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(1),
+    width: 0,
+    [theme.breakpoints.down('xs')]: {
+      marginLeft: theme.spacing(0.5),
+      marginRight: theme.spacing(0.5),
+    },
   },
 }));
 
@@ -74,7 +86,8 @@ export function MobileMenu({ menuDef, open, onClose }) {
     >
       <Toolbar variant="regular" className={classes.toolbar} disableGutters>
         <AppLogoIcon className={classes.logo} />
-        <Typography variant="inherit" className={classes.title}>EnrichmentMap</Typography>
+        <Typography variant="inherit" className={classes.title}>EnrichmentMap:RNA-Seq</Typography>
+        <Divider orientation="vertical" flexItem variant="middle" className={classes.divider} />
         <Button className={classes.button} onClick={onClose}>
           <KeyboardArrowUpIcon fontSize="large" />
         </Button>
