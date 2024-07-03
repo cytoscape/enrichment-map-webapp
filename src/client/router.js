@@ -5,6 +5,7 @@ import PageNotFound from './components/page-not-found';
 import { RecentNetworksController } from './components/recent-networks-controller';
 import { Home } from './components/home';
 import { NetworkEditor } from './components/network-editor';
+import { ReportHome } from './components/report';
 
 const recentNetworksController = new RecentNetworksController();
 
@@ -36,6 +37,12 @@ export function Router() {
         exact
         render={(props) => (
           <Home {...props} recentNetworksController={recentNetworksController} />
+        )}
+      />
+      <Route
+        path='/report'
+        render={(props) => (
+          <ReportHome {...props} />
         )}
       />
       <Route

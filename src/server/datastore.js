@@ -752,6 +752,51 @@ class Datastore {
     return cursor;
   }
 
+
+  async getNetworkCounts() {
+    const result = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .aggregate([
+        { $facet: {
+          'user': [
+            { $match: { demo: { $ne: true } }},
+            { $count: 'total' }
+          ],
+          'demo': [
+            { $match: { demo: true }},
+            { $count: 'total' }
+          ],
+        }},
+        { $project: {
+          "user": { $arrayElemAt: ["$user.total", 0] },
+          "demo": { $arrayElemAt: ["$demo.total", 0] },
+        }}
+      ]).toArray();
+    
+    return result[0];
+  }
+
+
+  async getNetworkStatsCursor() {
+    const cursor = await this.db
+      .collection(NETWORKS_COLLECTION)
+      .aggregate([
+        { $match: { demo: { $ne: true } }},
+        { $project: { 
+          networkName: 1,
+          creationTime: 1,
+          lastAccessTime: 1,
+          geneSetCollection: 1,
+          inputType: 1,
+          nodeCount: { $size: '$network.elements.nodes' },
+          edgeCount: { $size: '$network.elements.edges' }
+        }}
+    ]);
+    
+    return cursor;
+  }
+
+
 }
 
 const ds = new Datastore(); // singleton

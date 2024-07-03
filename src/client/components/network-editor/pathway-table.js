@@ -244,7 +244,7 @@ const linkoutProps = { target: "_blank",  rel: "noreferrer", underline: "hover" 
 const DEF_ORDER = 'desc';
 const DEF_ORDER_BY = 'nes';
 
-const descendingComparator = (a, b, orderBy) => {
+export const descendingComparator = (a, b, orderBy) => {
   // null values come last in ascending!
   if (a[orderBy] == null) {
     return -1;
@@ -261,7 +261,7 @@ const descendingComparator = (a, b, orderBy) => {
   return 0;
 };
 
-const getComparator = (order, orderBy) => {
+export const getComparator = (order, orderBy) => {
   return order === 'desc'
     ? (a, b) => descendingComparator(a, b, orderBy)
     : (a, b) => -descendingComparator(a, b, orderBy);

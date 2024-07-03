@@ -231,7 +231,7 @@ http.delete('/:netid/positions', async function(req, res, next) {
 });
 
 
-async function writeCursorToResult(cursor, res) {
+export async function writeCursorToResult(cursor, res) {
   res.write('[');
   if(await cursor.hasNext()) {
     const obj = await cursor.next();
