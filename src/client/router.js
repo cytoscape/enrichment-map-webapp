@@ -40,10 +40,11 @@ export function Router() {
         )}
       />
       <Route
-        path='/report'
-        render={(props) => (
-          <ReportHome {...props} />
-        )}
+        path='/report/:secret'
+        render={(props) => {
+          const secret = _.get(props, ['match', 'params', 'secret'], _.get(props, 'secret'));
+          return <ReportHome secret={secret} />;
+        }}
       />
       <Route
         path='/document/:id/:secret'

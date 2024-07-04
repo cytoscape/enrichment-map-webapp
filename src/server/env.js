@@ -14,6 +14,7 @@ export const LOG_LEVEL = process.env.LOG_LEVEL;
 export const BASE_URL = process.env.BASE_URL;
 export const UPLOAD_LIMIT = process.env.UPLOAD_LIMIT;
 export const TESTING = ('' + process.env.TESTING).toLowerCase() === 'true';
+export const REPORT_SECRET = process.env.REPORT_SECRET;
 
 // Service config
 export const FGSEA_PRERANKED_SERVICE_URL = process.env.FGSEA_PRERANKED_SERVICE_URL;

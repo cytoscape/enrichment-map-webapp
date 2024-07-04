@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { getComparator } from '../network-editor/pathway-table';
 import { Select, MenuItem } from '@material-ui/core';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@material-ui/core';
@@ -17,34 +18,49 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 
-export function Report() {
+async function fetchReport(secret) {
+  try {
+    const countRes = await fetch(`/api/report/count/${secret}`);
+    if(!countRes.ok) {
+      return 'error';
+    }
+    const networkRes = await fetch(`/api/report/networks/${secret}`);
+    if(!networkRes.ok) {
+      return 'error';
+    }
+
+    const counts = await countRes.json();
+    const networks = await networkRes.json();
+
+    return { counts, networks };
+  } catch(err) {
+    console.log(err);
+    return 'error';
+  }
+}
+
+
+export function Report({ secret }) {
   const classes = useStyles();
+
   const [ report, setReport ] = useState(null);
   const [ order, setOrder] = useState('desc');
   const [ orderBy, setOrderBy ] = useState('creationTime');
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/report/count').then(res => res.json()),
-      fetch('/api/report/networks').then(res => res.json())
-    ])
-    .then(([ counts, networks ]) => {
-      const report = { counts, networks };
-      console.log('report', report);
-      setReport(report);
-    })
-    .catch((error) => console.log(error));
+    fetchReport(secret).then(setReport);
   }, []);
-
 
   if(!report) {
     return <div> Loading... </div>;
+  } else if(report === 'error') {
+    return <div> Error fetching report. </div>;
   }
 
   const comparator = getComparator(order, orderBy);
   const sortedNetworks = report.networks.sort(comparator);
 
-  return <div>
+  return <div style={{padding: '10px'}}>
     <h1>EnrichmentMap:RNA-Seq - Usage Report</h1>
     <h3>Demo Networks: {report.counts.demo}</h3>
     <h3>User Created Networks ({report.counts.user}):</h3>
@@ -73,7 +89,7 @@ export function Report() {
             <TableCell align="right"><b>Type</b></TableCell>
             <TableCell align="right"><b>Creation Time</b></TableCell>
             <TableCell align="right"><b>Last Access Time</b></TableCell>
-            <TableCell align="right"><b>Open</b></TableCell>
+            <TableCell align="right"> </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -100,5 +116,9 @@ export function Report() {
     </TableContainer>
   </div>;
 }
+
+Report.propTypes = {
+  secret: PropTypes.string,
+};
 
 export default Report;

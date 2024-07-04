@@ -6,7 +6,7 @@ import { currentTheme } from '../../theme';
 import Report from './report';
 
 
-export function ReportHome() {
+export function ReportHome({ secret }) {
   const [ theme, setTheme ] = useState(currentTheme);
 
   useEffect(() => {
@@ -22,12 +22,13 @@ export function ReportHome() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Report />
+      <Report secret={secret} />
     </ThemeProvider>
   );
 }
 
 ReportHome.propTypes = {
+  secret: PropTypes.string,
 };
 
 export default ReportHome;
