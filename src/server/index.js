@@ -21,6 +21,7 @@ import indexRouter from './routes/index.js';
 import apiRouter from './routes/api/index.js';
 import createRouter, { createRouterErrorHandler } from './routes/api/create.js';
 import exportRouter from './routes/api/export.js';
+import reportRouter from './routes/api/report.js';
 
 import Datastore, { GMT_2 } from './datastore.js';
 
@@ -108,6 +109,7 @@ app.use('/', indexRouter);
 app.use('/api', apiRouter);
 app.use('/api/create', createRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/report', reportRouter);
 
 // The error handler must be before any other error middleware and after all controllers
 if (SENTRY) {
