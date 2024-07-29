@@ -10,19 +10,22 @@ import { REG_COLOR_RANGE } from './network-style';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar } from './charts';
 
-import { makeStyles, withStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+
+import makeStyles from '@mui/styles/makeStyles';
+import withStyles from '@mui/styles/withStyles';
 
 import { Virtuoso } from 'react-virtuoso';
-import { List, ListItem, ListItemText, ListItemIcon, ListSubheader } from '@material-ui/core';
-import { Grid, Paper, Typography, Link, Tooltip } from '@material-ui/core';
-import Skeleton from '@material-ui/lab/Skeleton';
+import { List, ListItem, ListItemText, ListItemIcon, ListSubheader } from '@mui/material';
+import { Grid, Paper, Typography, Link, Tooltip } from '@mui/material';
+import Skeleton from '@mui/material/Skeleton';
 
-import InfoIcon from '@material-ui/icons/Info';
-import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
-import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
-import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
-import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
-import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
+import InfoIcon from '@mui/icons-material/Info';
+import SadFaceIcon from '@mui/icons-material/SentimentVeryDissatisfied';
+import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { VennUnionIcon } from '../svg-icons';
 
 
@@ -460,7 +463,7 @@ const GeneListPanel = ({
                 <RankTooltip arrow title={tooltip} enterDelay={750} placement={isMobile ? 'top' : 'right'}>
                   <Grid item className={classes.chartContainer}>
                     {loading ?
-                      <Skeleton variant="rect" height={CHART_HEIGHT} />
+                      <Skeleton variant="rectangular" height={CHART_HEIGHT} />
                       :
                       !isNaN(roundedRank) && (
                         <UpDownHBar

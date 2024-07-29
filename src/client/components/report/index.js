@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { ThemeProvider } from '@material-ui/core/styles';
-import CssBaseline from '@material-ui/core/CssBaseline';
+import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { currentTheme } from '../../theme';
 import Report from './report';
 
@@ -20,10 +20,12 @@ export function ReportHome({ secret }) {
   }, []);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Report secret={secret} />
-    </ThemeProvider>
+    <StyledEngineProvider injectFirst>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Report secret={secret} />
+      </ThemeProvider>
+    </StyledEngineProvider>
   );
 }
 

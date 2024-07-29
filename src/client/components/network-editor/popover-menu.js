@@ -1,8 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { makeStyles } from '@material-ui/core/styles';
-import { MenuList, MenuItem, ListItemIcon, ListItemText, Popover } from '@material-ui/core';
+import makeStyles from '@mui/styles/makeStyles';
+import { MenuList, MenuItem, ListItemIcon, ListItemText, Popover } from '@mui/material';
 
 
 const useStyles = makeStyles(() => ({

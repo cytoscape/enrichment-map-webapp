@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
-import { styled } from '@material-ui/core/styles';
+import { styled } from '@mui/material/styles';
 import { NetworkEditorController } from './controller';
-import { Tooltip, InputBase } from '@material-ui/core';
+import { Tooltip, InputBase } from '@mui/material';
 
 
 const CssInputBase = styled(InputBase)(({ theme }) => ({

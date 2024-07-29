@@ -9,22 +9,22 @@ import { NetworkEditorController } from './controller';
 import TitleEditor from './title-editor';
 import PopoverMenu from './popover-menu';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import { AppBar, Box, IconButton, Divider, Tooltip,  Toolbar } from '@material-ui/core';
-import { ToggleButton } from '@material-ui/lab';
+import { AppBar, Box, IconButton, Divider, Tooltip,  Toolbar } from '@mui/material';
+import { ToggleButton } from '@mui/material';
 
 import { AppLogoIcon } from '../svg-icons';
-import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
-import MenuIcon from '@material-ui/icons/Menu';
-import MoreIcon from '@material-ui/icons/MoreVert';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import MenuIcon from '@mui/icons-material/Menu';
+import MoreIcon from '@mui/icons-material/MoreVert';
 
 //==[ Header ]========================================================================================================
 
 const useHeaderStyles = makeStyles((theme) => ({
   appBar: {
     minHeight: HEADER_HEIGHT,
-    backgroundColor: theme.palette.background.header,
+    zIndex: theme.zIndex.drawer - 100,
     borderBottom: `1px solid ${theme.palette.divider}`,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
@@ -42,7 +42,7 @@ const useHeaderStyles = makeStyles((theme) => ({
   toolbar: {
     paddingLeft: theme.spacing(1),
     paddingRight: theme.spacing(1),
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: theme.spacing(0.5),
       paddingRight: theme.spacing(0.5),
     },
@@ -114,10 +114,7 @@ export function Header({
         )}
           <Box component="div">
             <Tooltip placement="bottom" title="Home">
-              <IconButton 
-                aria-label='home' 
-                onClick={() => location.href = '/'}
-              >
+              <IconButton aria-label='home' size="large" onClick={() => location.href = '/'}>
                 <AppLogoIcon style={{ fontSize: 26 }} />
               </IconButton>
             </Tooltip>
@@ -183,7 +180,7 @@ Header.propTypes = {
 
 const useToolbarButtonStyles = makeStyles((theme) => ({
   toggle: {
-    border: 'none',
+    border: 'none !important',
     color: 'inherit',
   },
 }));
@@ -230,7 +227,7 @@ function ToolbarButton({ title, icon, description, color, className, disabled, s
           disabled={disabled}
           selected={selected}
           size="small"
-          color={color || 'inherit'}
+          color={color || 'standard'}
           className={clsx(classes.toggle, className)}
           onClick={handleClick}
         >
@@ -270,12 +267,12 @@ const useToolbarDividerStyles = makeStyles((theme) => ({
   divider: {
     marginLeft: theme.spacing(0.5),
     marginRight: theme.spacing(0.5),
-    width: 0,
+    border: 'none',
   },
   unrelatedDivider: {
     marginLeft: theme.spacing(2),
     marginRight: theme.spacing(2),
-    width: 0,
+    border: 'none',
   },
 }));
 

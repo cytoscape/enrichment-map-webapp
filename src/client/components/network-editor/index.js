@@ -5,7 +5,7 @@ import _ from 'lodash';
 import Cytoscape from 'cytoscape';
 import { QueryClient, QueryClientProvider } from "react-query";
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
 import { BOTTOM_DRAWER_OPEN } from '../defaults';
 import { currentTheme } from '../../theme';
@@ -14,8 +14,8 @@ import { NetworkEditorController } from './controller';
 import Main from './main';
 
 import createNetworkStyle from './network-style';
-import { ThemeProvider } from '@material-ui/core/styles';
-import CssBaseline from '@material-ui/core/CssBaseline';
+import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { RecentNetworksController } from '../recent-networks-controller';
 
 
@@ -137,8 +137,7 @@ async function loadNetwork(id, cy, controller, recentNetworksController) {
 }
 
 
-export function NetworkEditor({ id, recentNetworksController }) {
-  const [ theme, setTheme ] = useState(currentTheme);
+function Root({ id, theme, recentNetworksController }) {
   const [ cy ] = useState(() => createCy(id));
   const [ controller ] = useState(() => new NetworkEditorController(cy));
   const [ mobile, setMobile ] = useState(() => isMobile(theme));
@@ -147,11 +146,11 @@ export function NetworkEditor({ id, recentNetworksController }) {
   const [ openRightDrawer, setOpenRightDrawer ] = useState(false);
   const [ openBottomDrawer, setOpenBottomDrawer ] = useState(BOTTOM_DRAWER_OPEN);
   const [, forceUpdate] = useReducer(x => x + 1, 0);
-
-  const classes = useStyles();
-
+  
   const bottomDrawerOpenRef = useRef(BOTTOM_DRAWER_OPEN);
   bottomDrawerOpenRef.current = openBottomDrawer;
+
+  const classes = useStyles();
 
   const handleResize = () => {
     setMobile(isMobile(theme));
@@ -165,15 +164,28 @@ export function NetworkEditor({ id, recentNetworksController }) {
   };
   const debouncedHandleResize = _.debounce(() => handleResize(), 100);
 
-  useEffect(() => {
-    // Listen for changes in the user's theme preference
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleThemeChange = () => setTheme(currentTheme());
-    mediaQuery.addEventListener('change', handleThemeChange);
-    return () => {
-      mediaQuery.removeEventListener('change', handleThemeChange);
-    };
-  }, []);
+  const onCloseLeftDrawer = () => {
+    setOpenLeftDrawer(false);
+  };
+  const onCloseRightDrawer = () => {
+    setOpenRightDrawer(false);
+  };
+  const onOpenLeftDrawer = () => {
+    setOpenLeftDrawer(true);
+  };
+  const onOpenRightDrawer = () => {
+    setOpenRightDrawer(true);
+  };
+  const onToggleBottomDrawer = (open) => {
+    setOpenBottomDrawer(open);
+  };
+
+  const maybeCloseDrawers = () => {
+    setOpenRightDrawer(false);
+    if (mobile || tablet) {
+      setOpenLeftDrawer(false);
+    }
+  };
 
   useEffect(() => {
     loadNetwork(id, cy, controller, recentNetworksController);
@@ -204,68 +216,64 @@ export function NetworkEditor({ id, recentNetworksController }) {
     return () => cy.removeListener('select', onSelect);
   }, []);
 
-  const maybeCloseDrawers = () => {
-    setOpenRightDrawer(false);
-    if (mobile || tablet) {
-      setOpenLeftDrawer(false);
-    }
-  };
+  return (
+    <div className={classes.root}>
+      <svg id="svg_point_factory" style={{ position:'absolute', pointerEvents:'none'}}/>
+      <Main
+        controller={controller}
+        openLeftDrawer={openLeftDrawer}
+        openRightDrawer={openRightDrawer}
+        openBottomDrawer={openBottomDrawer}
+        isMobile={mobile}
+        isTablet={tablet}
+        onCloseLeftDrawer={onCloseLeftDrawer}
+        onCloseRightDrawer={onCloseRightDrawer}
+        onOpenLeftDrawer={onOpenLeftDrawer}
+        onOpenRightDrawer={onOpenRightDrawer}
+        onToggleBottomDrawer={onToggleBottomDrawer}
+      />
+    </div>
+  );
+}
+Root.propTypes = {
+  id: PropTypes.string,
+  theme: PropTypes.object.isRequired,
+  recentNetworksController: PropTypes.instanceOf(RecentNetworksController).isRequired,
+};
 
-  const onContentClick = event => {
-    if ((openLeftDrawer || openRightDrawer) && event.target.className === 'MuiBackdrop-root') {
-      maybeCloseDrawers();
-    }
-  };
-  const onCloseLeftDrawer = () => {
-    setOpenLeftDrawer(false);
-  };
-  const onCloseRightDrawer = () => {
-    setOpenRightDrawer(false);
-  };
-  const onOpenLeftDrawer = () => {
-    setOpenLeftDrawer(true);
-  };
-  const onOpenRightDrawer = () => {
-    setOpenRightDrawer(true);
-  };
-  const onToggleBottomDrawer = (open) => {
-    setOpenBottomDrawer(open);
-  };
+export function NetworkEditor({ id, recentNetworksController }) {
+  const [ theme, setTheme ] = useState(currentTheme);
+
+  useEffect(() => {
+    // Listen for changes in the user's theme preference
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleThemeChange = () => setTheme(currentTheme());
+    mediaQuery.addEventListener('change', handleThemeChange);
+    return () => {
+      mediaQuery.removeEventListener('change', handleThemeChange);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <div className={classes.root}>
-          <svg id="svg_point_factory" style={{ position:'absolute', pointerEvents:'none'}}/>
-          <Main
-            controller={controller}
-            openLeftDrawer={openLeftDrawer}
-            openRightDrawer={openRightDrawer}
-            openBottomDrawer={openBottomDrawer}
-            isMobile={mobile}
-            isTablet={tablet}
-            onContentClick={onContentClick}
-            onCloseLeftDrawer={onCloseLeftDrawer}
-            onCloseRightDrawer={onCloseRightDrawer}
-            onOpenLeftDrawer={onOpenLeftDrawer}
-            onOpenRightDrawer={onOpenRightDrawer}
-            onToggleBottomDrawer={onToggleBottomDrawer}
-          />
-        </div>
-      </ThemeProvider>
+      <StyledEngineProvider injectFirst>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Root id={id} theme={theme} recentNetworksController={recentNetworksController} />
+        </ThemeProvider>
+      </StyledEngineProvider>
     </QueryClientProvider>
   );
 }
+NetworkEditor.propTypes = {
+  id: PropTypes.string,
+  recentNetworksController: PropTypes.instanceOf(RecentNetworksController).isRequired,
+};
 
 
 export function Demo() {
   return <NetworkEditor id="demo" secret="demo" />;
 }
 
-NetworkEditor.propTypes = {
-  id: PropTypes.string,
-  recentNetworksController: PropTypes.instanceOf(RecentNetworksController).isRequired,
-};
 
 export default NetworkEditor;

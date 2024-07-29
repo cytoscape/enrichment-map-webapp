@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { getComparator } from '../network-editor/pathway-table';
-import { Select, MenuItem } from '@material-ui/core';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
+import { Select, MenuItem } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import makeStyles from '@mui/styles/makeStyles';
 
 
 const useStyles = makeStyles((theme) => ({

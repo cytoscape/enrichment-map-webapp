@@ -12,17 +12,17 @@ import PathwayTable, { DEF_SORT_FN } from './pathway-table';
 import SearchBar from './search-bar';
 import { UpDownLegend, numToText } from './charts';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import Collapse from '@material-ui/core/Collapse';
-import { AppBar, Toolbar, Divider, Grid } from '@material-ui/core';
-import { Drawer, Tooltip, Typography } from '@material-ui/core';
-import { Button, IconButton } from '@material-ui/core';
+import Collapse from '@mui/material/Collapse';
+import { AppBar, Toolbar, Divider, Grid } from '@mui/material';
+import { Drawer, Tooltip, Typography } from '@mui/material';
+import { Button, IconButton } from '@mui/material';
 
-import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
-import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
-import ExpandIcon from '@material-ui/icons/ExpandLess';
-import CollapseIcon from '@material-ui/icons/ExpandMore';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import ExpandIcon from '@mui/icons-material/ExpandLess';
+import CollapseIcon from '@mui/icons-material/ExpandMore';
 
 
 export const NODE_COLOR_SVG_ID = 'node-color-legend-svg';
@@ -81,7 +81,7 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
   toolbar: {
     paddingLeft: theme.spacing(2),
     paddingRight: theme.spacing(1),
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingRight: theme.spacing(0.5),
     },
   },
@@ -95,6 +95,7 @@ const useBottomDrawerStyles = makeStyles((theme) => ({
     position: 'absolute',
     top: 'auto',
     bottom: 0,
+    zIndex: theme.zIndex.drawer - 10,
     background: theme.palette.background.default,
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
@@ -511,12 +512,12 @@ const useToolbarDividerStyles = makeStyles((theme) => ({
   divider: {
     marginLeft: theme.spacing(0.5),
     marginRight: theme.spacing(0.5),
-    width: 0,
+    border: 'none',
   },
   unrelatedDivider: {
     marginLeft: theme.spacing(2),
     marginRight: theme.spacing(2),
-    width: 0,
+    border: 'none',
   },
 }));
 
@@ -550,14 +551,25 @@ const SelectionNavigator = ({ disabled, onPrevious, onNext }) => {
     <div className={classes.root}>
       <Tooltip title="Previous Selection" placement="right">
         <span>
-          <Button disabled={disabled} variant="text" className={classes.button} onClick={() => onPrevious && onPrevious()}>
+          <Button
+            disabled={disabled}
+            variant="text"
+            color="inherit"
+            className={classes.button}
+            onClick={() => onPrevious && onPrevious()}
+          >
             <KeyboardArrowUpIcon size="small" />
           </Button>
         </span>
       </Tooltip>
       <Tooltip title="Next Selection" placement="right">
         <span>
-          <Button disabled={disabled} className={classes.button} onClick={() => onNext && onNext()}>
+          <Button
+            disabled={disabled}
+            color="inherit"
+            className={classes.button}
+            onClick={() => onNext && onNext()}
+          >
             <KeyboardArrowDownIcon size="small" />
           </Button>
         </span>

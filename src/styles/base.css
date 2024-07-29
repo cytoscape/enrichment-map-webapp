@@ -22,7 +22,7 @@ body {
 
 body {
   font-family: "Open Sans", "Helvetica Neue", Helvetica, sans-serif;
-  font-size: 12pt;
+  font-size: 0.875rem;
 
   &.content-page {
     margin: 0.5em;

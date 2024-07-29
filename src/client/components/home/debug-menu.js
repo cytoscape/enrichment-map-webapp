@@ -1,5 +1,5 @@
 import React, { useReducer, useEffect } from 'react';
-import { Dialog, DialogActions, DialogContent, DialogTitle, Button } from '@material-ui/core';
+import { Dialog, DialogActions, DialogContent, DialogTitle, Button } from '@mui/material';
 import Mousetrap from 'mousetrap';
 import PropTypes from 'prop-types';
 

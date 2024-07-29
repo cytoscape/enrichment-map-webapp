@@ -4,14 +4,16 @@ import clsx from 'clsx';
 
 import { RNA_SEQ, PRE_RANKED } from './upload-controller';
 
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+
+import makeStyles from '@mui/styles/makeStyles';
 
 import { ArcherContainer, ArcherElement } from 'react-archer';
-import { Paper, Typography, Link } from '@material-ui/core';
-import { Accordion, AccordionDetails, AccordionSummary, Radio } from '@material-ui/core';
-import { Table, TableHead, TableRow, TableCell, TableBody } from '@material-ui/core';
+import { Paper, Typography, Link } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Radio } from '@mui/material';
+import { Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 
 const createRankedRow = (gene, rank) => {
@@ -77,7 +79,7 @@ const useSampleTableStyles = makeStyles((theme) => ({
     background: theme.palette.background.default,
     marginLeft: 20,
     marginRight: 20,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       marginLeft: 0,
       marginRight: 0,
     },
@@ -90,7 +92,7 @@ const useSampleTableStyles = makeStyles((theme) => ({
     paddingLeft: theme.spacing(1),
     paddingRight: theme.spacing(1),
     color: theme.palette.text.secondary,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       paddingTop: theme.spacing(0.25),
       paddingBottom: theme.spacing(0.25),
     },
@@ -100,7 +102,7 @@ const useSampleTableStyles = makeStyles((theme) => ({
     paddingBottom: theme.spacing(1.25),
     borderBottom: `4px double ${theme.palette.divider}`,
     verticalAlign: 'top',
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       paddingTop: 'inherit',
       paddingBottom: 'inherit',
     },
@@ -182,7 +184,7 @@ const useFormatAccordionStyles = makeStyles((theme) => ({
   summaryRoot: {
     minHeight: `48px !important`,
     padding: theme.spacing(0, 2, 0, 1),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       padding: theme.spacing(0, 1, 0, 0),
     },
   },
@@ -198,7 +200,7 @@ const useFormatAccordionStyles = makeStyles((theme) => ({
     width: '100%',
     justifyContent: 'center',
     padding: theme.spacing(0.5, 2, 1, 2),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       padding: theme.spacing(0.5, 1, 1, 1),
     },
   },
@@ -240,14 +242,14 @@ FormatAccordion.propTypes = {
 const useUploadPanelStyles = makeStyles((theme) => ({
   description: {
     marginBottom: theme.spacing(2.5),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       marginBottom: theme.spacing(1),
       fontSize: '0.85rem',
     },
   },
   details: {
     marginTop: 0,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       marginBlockStart: 0,
       marginBlockEnd: theme.spacing(1),
       fontSize: '0.85rem',

@@ -30,6 +30,12 @@ let conf = {
     filename: '[name].js'
   },
 
+  resolve: {
+    alias: {
+      '@mui/styled-engine': '@mui/styled-engine-sc'
+    },
+  },
+
   module: {
     rules: [
       { test: /\.(js|jsx)$/, exclude: /node_modules/, loader: 'babel-loader' }

@@ -2,11 +2,11 @@ import React, { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
-import { makeStyles } from '@material-ui/core/styles';
-import { InputBase, InputAdornment, IconButton } from '@material-ui/core';
+import makeStyles from '@mui/styles/makeStyles';
+import { InputBase, InputAdornment, IconButton } from '@mui/material';
 
-import SearchIcon from '@material-ui/icons/Search';
-import CloseIcon from '@material-ui/icons/Close';
+import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -79,6 +79,7 @@ const SearchBar = ({ value, placeholder, disabled, onChange, onCancelSearch, sty
         endAdornment={
           <InputAdornment position="end">
             <IconButton
+              size="large"
               classes={{root: classes.iconButtonRoot}}
               disabled={Boolean(disabled)}
               onClick={ value ? handleCancel : focus }

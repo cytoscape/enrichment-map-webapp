@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import Content from './content';
-import { ThemeProvider } from '@material-ui/core/styles';
-import CssBaseline from '@material-ui/core/CssBaseline';
+import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { currentTheme } from '../../theme';
 import { RecentNetworksController } from '../recent-networks-controller';
 
@@ -21,10 +21,12 @@ export function Home({ recentNetworksController }) {
   }, []);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Content recentNetworksController={recentNetworksController} />
-    </ThemeProvider>
+    <StyledEngineProvider injectFirst>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Content recentNetworksController={recentNetworksController} />
+      </ThemeProvider>
+    </StyledEngineProvider>
   );
 }
 

@@ -1,10 +1,10 @@
 import React from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
 import { linkoutProps } from '../defaults';
 import Citation from './citation';
 
-import { Container, Link, Typography } from '@material-ui/core';
+import { Container, Link, Typography } from '@mui/material';
 
 import { AppLogoIcon } from '../svg-icons';
 
@@ -14,7 +14,7 @@ const useStyles = makeStyles(theme => ({
     width: 128,
     height: 'auto',
     marginBottom: theme.spacing(4),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       width: 96,
       marginBottom: theme.spacing(2),
     },
@@ -23,7 +23,7 @@ const useStyles = makeStyles(theme => ({
     fontSize: '1.85rem',
     fontWeight: 'bold',
     marginBottom: theme.spacing(2),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       fontSize: '1.5rem',
     },
   },
@@ -32,7 +32,7 @@ const useStyles = makeStyles(theme => ({
     paddingRight: 0,
     marginTop: theme.spacing(6),
     marginBottom: theme.spacing(6),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       marginTop: theme.spacing(2),
       marginBottom: theme.spacing(2),
     },
@@ -42,14 +42,14 @@ const useStyles = makeStyles(theme => ({
     paddingRight: 0,
     marginTop: theme.spacing(12),
     marginBottom: 0,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       marginTop: theme.spacing(6),
     },
   },
   description: {
     marginBottom: theme.spacing(4),
     textAlign: 'left',
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       marginBottom: theme.spacing(2),
       fontSize: 'unset',
     },

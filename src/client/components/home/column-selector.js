@@ -1,11 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { makeStyles } from '@material-ui/core/styles';
-import { Grid, Link, Typography } from '@material-ui/core';
-import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@material-ui/core';
-import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
+import makeStyles from '@mui/styles/makeStyles';
+import { Grid, Link, Typography } from '@mui/material';
+import { FormControl, FormHelperText, InputLabel, MenuItem, Select } from '@mui/material';
+import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { ExperimentGroupIcon, ControlGroupIcon } from '../svg-icons';
-import BlockIcon from '@material-ui/icons/Block';
+import BlockIcon from '@mui/icons-material/Block';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -43,7 +43,7 @@ const useStyles = makeStyles((theme) => ({
   formControl: {
     margin: theme.spacing(1, 0, 1, 0),
     minWidth: 375,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       minWidth: 0,
       width: '100%',
     },

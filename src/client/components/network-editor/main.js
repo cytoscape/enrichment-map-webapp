@@ -3,7 +3,9 @@ import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import Mousetrap from 'mousetrap';
 
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+
+import makeStyles from '@mui/styles/makeStyles';
 
 import { DEFAULT_PADDING, HEADER_HEIGHT, LEFT_DRAWER_WIDTH, BOTTOM_DRAWER_HEIGHT, bottomDrawerHeight } from '../defaults';
 import { NetworkEditorController } from './controller';
@@ -13,20 +15,20 @@ import RightDrawer from './right-drawer';
 import BottomDrawer from './bottom-drawer';
 import { TYPE as UNDO_TYPE } from './undo-stack';
 
-import { Button, IconButton, Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
-import { Paper, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
-import { Snackbar, SnackbarContent } from '@material-ui/core';
-import Slide from '@material-ui/core/Slide';
+import { Button, IconButton, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Paper, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Snackbar, SnackbarContent } from '@mui/material';
+import Slide from '@mui/material/Slide';
 
-import CloseIcon from '@material-ui/icons/Close';
-import DoneIcon from '@material-ui/icons/Done';
-import CircularProgressIcon from '@material-ui/core/CircularProgress';
-import FitScreenIcon from '@material-ui/icons/SettingsOverscan';
-import AddIcon from '@material-ui/icons/Add';
-import RemoveIcon from '@material-ui/icons/Remove';
-import UndoIcon from '@material-ui/icons/Undo';
-import RestoreIcon from '@material-ui/icons/SettingsBackupRestore';
-import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
+import CloseIcon from '@mui/icons-material/Close';
+import DoneIcon from '@mui/icons-material/Done';
+import CircularProgressIcon from '@mui/material/CircularProgress';
+import FitScreenIcon from '@mui/icons-material/SettingsOverscan';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
+import UndoIcon from '@mui/icons-material/Undo';
+import RestoreIcon from '@mui/icons-material/SettingsBackupRestore';
+import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 import { DragSelectIcon, DownloadIcon, ShareIcon } from '../svg-icons';
 
 
@@ -241,7 +243,6 @@ const Main = ({
   openBottomDrawer,
   isMobile,
   isTablet,
-  onContentClick,
   onCloseLeftDrawer,
   onCloseRightDrawer,
   onOpenLeftDrawer,
@@ -382,7 +383,7 @@ const Main = ({
         onOpenLeftDrawer={onOpenLeftDrawer}
         onOpenRightDrawer={onOpenRightDrawer}
       />
-      <div className={classes.root} onClick={onContentClick}>
+      <div className={classes.root}>
         <LeftDrawer
           open={openLeftDrawer}
           isMobile={isMobile}
@@ -450,7 +451,6 @@ Main.propTypes = {
   openBottomDrawer: PropTypes.bool.isRequired,
   isMobile: PropTypes.bool.isRequired,
   isTablet: PropTypes.bool.isRequired,
-  onContentClick: PropTypes.func.isRequired,
   onCloseLeftDrawer: PropTypes.func.isRequired,
   onCloseRightDrawer: PropTypes.func.isRequired,
   onOpenLeftDrawer: PropTypes.func.isRequired,
