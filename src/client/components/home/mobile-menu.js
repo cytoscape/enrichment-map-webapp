@@ -1,12 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import { Toolbar, Divider, Drawer, MenuItem } from '@material-ui/core';
-import { Button, Typography } from '@material-ui/core';
+import { Toolbar, Divider, Drawer, MenuItem } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 
-import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { AppLogoIcon } from '../svg-icons.js';
 import { openPageLink } from '../util.js';
 
@@ -16,7 +16,7 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(0.5, 2.5, 2, 2.5),
     borderRadius: '0 0 16px 16px',
     borderBottom: `1px solid ${theme.palette.divider}`,
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: theme.spacing(1),
       paddingRight: theme.spacing(1),
     },
@@ -28,7 +28,7 @@ const useStyles = makeStyles((theme) => ({
     marginLeft: theme.spacing(1.25),
     marginRight: theme.spacing(2),
     fontSize: 48,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       marginRight: theme.spacing(1),
       fontSize: 36,
     },
@@ -37,7 +37,7 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '1.5em',
     fontWeight: 'bold',
     flexGrow: 1,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       fontSize: '1.25em',
       textOverflow: 'ellipsis',
       overflow: 'hidden',
@@ -58,8 +58,8 @@ const useStyles = makeStyles((theme) => ({
   divider: {
     marginLeft: theme.spacing(1),
     marginRight: theme.spacing(1),
-    width: 0,
-    [theme.breakpoints.down('xs')]: {
+    border: 'none',
+    [theme.breakpoints.down('sm')]: {
       marginLeft: theme.spacing(0.5),
       marginRight: theme.spacing(0.5),
     },
@@ -88,7 +88,7 @@ export function MobileMenu({ menuDef, open, onClose }) {
         <AppLogoIcon className={classes.logo} />
         <Typography variant="inherit" className={classes.title}>EnrichmentMap:RNA-Seq</Typography>
         <Divider orientation="vertical" flexItem variant="middle" className={classes.divider} />
-        <Button className={classes.button} onClick={onClose}>
+        <Button color="inherit" className={classes.button} onClick={onClose}>
           <KeyboardArrowUpIcon fontSize="large" />
         </Button>
       </Toolbar>

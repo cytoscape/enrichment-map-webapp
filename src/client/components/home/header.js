@@ -1,31 +1,32 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import { AppBar, Toolbar, MenuItem } from '@material-ui/core';
-import { Container, Divider } from '@material-ui/core';
-import { Button, Typography } from '@material-ui/core';
+import { AppBar, Toolbar, MenuItem } from '@mui/material';
+import { Container, Divider } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 
-import MenuIcon from '@material-ui/icons/Menu';
+import MenuIcon from '@mui/icons-material/Menu';
 import { AppLogoIcon } from '../svg-icons';
 import { openPageLink } from '../util';
 
 
 const useHeaderStyles = makeStyles(theme => ({
   appBar: {
+    backgroundColor: 'transparent',
     boxShadow: 'none',
   },
   toolbar: {
     borderBottom: `1px solid ${theme.palette.divider}`,
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: theme.spacing(1.5),
       paddingRight: theme.spacing(1.5),
     },
   },
   logo: {
     fontSize: 48,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       fontSize: 36,
     },
   },
@@ -33,7 +34,7 @@ const useHeaderStyles = makeStyles(theme => ({
     fontSize: '1.5em',
     fontWeight: 'bold',
     flexGrow: 1,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       fontSize: '1.25em',
       textOverflow: 'ellipsis',
       overflow: 'hidden',
@@ -51,8 +52,8 @@ const useHeaderStyles = makeStyles(theme => ({
   divider: {
     marginLeft: theme.spacing(1),
     marginRight: theme.spacing(1),
-    width: 0,
-    [theme.breakpoints.down('xs')]: {
+    border: 'none',
+    [theme.breakpoints.down('sm')]: {
       marginLeft: theme.spacing(0.5),
       marginRight: theme.spacing(0.5),
     },
@@ -60,8 +61,8 @@ const useHeaderStyles = makeStyles(theme => ({
   unrelatedDivider: {
     marginLeft: theme.spacing(4),
     marginRight: theme.spacing(4),
-    width: 0,
-    [theme.breakpoints.down('xs')]: {
+    border: 'none',
+    [theme.breakpoints.down('sm')]: {
       marginLeft: theme.spacing(2),
       marginRight: theme.spacing(2),
     },
@@ -110,7 +111,7 @@ export function Header({ menuDef, showRecentNetworks, mobile, tablet, onClickGet
         {(mobile || tablet) && (
           <>
             <ToolbarDivider />
-            <Button className={classes.menuButton} onClick={onOpenMobileMenu}>
+            <Button color="inherit" className={classes.menuButton} onClick={onOpenMobileMenu}>
               <MenuIcon />
             </Button>
           </>

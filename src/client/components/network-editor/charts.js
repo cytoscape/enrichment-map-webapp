@@ -2,8 +2,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 
-import { makeStyles, useTheme } from '@material-ui/core/styles';
-import { Typography, Tooltip } from '@material-ui/core';
+import { useTheme } from '@mui/material/styles';
+import makeStyles from '@mui/styles/makeStyles';
+import { Typography, Tooltip } from '@mui/material';
 import HSBar from "react-horizontal-stacked-bar-chart";
 
 import { AsteriskIcon } from '../svg-icons';

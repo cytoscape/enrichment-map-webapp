@@ -3,15 +3,15 @@ import PropTypes from 'prop-types';
 
 import { HEADER_HEIGHT, RIGHT_DRAWER_WIDTH } from '../defaults';
 
-import { makeStyles } from '@material-ui/core/styles';
-import Grow from '@material-ui/core/Grow';
-import Slide from '@material-ui/core/Slide';
+import makeStyles from '@mui/styles/makeStyles';
+import Grow from '@mui/material/Grow';
+import Slide from '@mui/material/Slide';
 
-import { Drawer, Button, IconButton, MenuItem, Toolbar, Tooltip, Typography } from '@material-ui/core';
+import { Drawer, Button, IconButton, MenuItem, Toolbar, Tooltip, Typography } from '@mui/material';
 
-import CloseIcon from '@material-ui/icons/Close';
-import ArrowBackIcon from '@material-ui/icons/ArrowBack';
-import CheckIcon from '@material-ui/icons/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CheckIcon from '@mui/icons-material/Check';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -144,13 +144,19 @@ const RightDrawer = ({ menu, open, onClose }) => {
       variant="temporary"
       anchor="right"
       open={open}
+      onClose={onClose}
       classes={{
         paper: classes.paper,
       }}
     >
       <div className={classes.header}>
         <Toolbar variant="dense" className={classes.toolbar}>
-          <IconButton color="inherit" className={classes.closeButton} onClick={onClose}>
+          <IconButton
+            color="inherit"
+            size="large"
+            className={classes.closeButton}
+            onClick={onClose}
+          >
             <CloseIcon />
           </IconButton>
           <div className={classes.grow} />
@@ -187,7 +193,7 @@ const RightDrawer = ({ menu, open, onClose }) => {
           {animatedSelect.title !== title && hasToggle && (
             isSelected?.() ? <CheckIcon className={classes.checkIcon} /> : <span style={{width: 24}} />
           )}
-            <IconButton color="inherit">{ icon }</IconButton>
+            <IconButton color="inherit" size="large">{ icon }</IconButton>
             <p>{ title }</p>
           </MenuItem>
         )}

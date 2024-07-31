@@ -6,16 +6,18 @@ import { DEFAULT_PADDING, pathwayTableHeight } from '../defaults';
 import { NetworkEditorController } from './controller';
 import { UpDownHBar, PValueStarRating } from './charts';
 
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+
+import makeStyles from '@mui/styles/makeStyles';
 
 import { TableVirtuoso } from 'react-virtuoso';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@material-ui/core';
-import { Paper, Typography, Link, Tooltip } from '@material-ui/core';
-import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel } from '@mui/material';
+import { Paper, Typography, Link, Tooltip } from '@mui/material';
+import { List, ListSubheader, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 
-import OpenInNewIcon from '@material-ui/icons/OpenInNew';
-import SadFaceIcon from '@material-ui/icons/SentimentVeryDissatisfied';
-import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import SadFaceIcon from '@mui/icons-material/SentimentVeryDissatisfied';
+import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -79,7 +81,7 @@ const useStyles = makeStyles((theme) => ({
     //     TableVirtuoso's initialTopMostItemIndex prop doesn't work
     paddingTop: 2,
     paddingBottom: 2,
-    paddingLeft: `${theme.spacing(0.5)}px !important`,
+    paddingLeft: `${theme.spacing(0.5)} !important`,
     paddingRight: theme.spacing(0.5),
     // <------------------------------------------------------------
     borderBottom: `1px solid ${theme.palette.table.divider}`,
@@ -111,7 +113,7 @@ const useStyles = makeStyles((theme) => ({
   pvalueCell: {
     minWidth: 84,
     maxWidth: 86,
-    paddingRight: `${theme.spacing(0.5)}px !important`,
+    paddingRight: `${theme.spacing(0.5)} !important`,
   },
   selectedCell: {
     backgroundColor: theme.palette.action.selected,

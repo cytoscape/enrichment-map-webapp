@@ -6,22 +6,22 @@ import clsx from 'clsx';
 import { networkURL } from '../util';
 import { RecentNetworksController } from '../recent-networks-controller';
 
-import { withStyles } from '@material-ui/core/styles';
+import withStyles from '@mui/styles/withStyles';
 
-import { Box, Paper, Grid } from '@material-ui/core';
-import { Typography, Tooltip } from '@material-ui/core';
-import { Popover, MenuList, MenuItem, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
-import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/core';
-import { Button, IconButton } from '@material-ui/core';
-import { Skeleton } from '@material-ui/lab';
-import { Snackbar, SnackbarContent } from '@material-ui/core';
-import Collapse from '@material-ui/core/Collapse';
+import { Box, Paper, Grid } from '@mui/material';
+import { Typography, Tooltip } from '@mui/material';
+import { Popover, MenuList, MenuItem, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Button, IconButton } from '@mui/material';
+import { Skeleton } from '@mui/material';
+import { Snackbar, SnackbarContent } from '@mui/material';
+import Collapse from '@mui/material/Collapse';
 
-import MoreVertIcon from '@material-ui/icons/MoreVert';
-import DeleteIcon from '@material-ui/icons/Delete';
-import CloseIcon from '@material-ui/icons/Close';
-import CircularProgressIcon from '@material-ui/core/CircularProgress';
-import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import CircularProgressIcon from '@mui/material/CircularProgress';
+import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 import { ContentCopyIcon, ShareIcon } from '../svg-icons';
 
 
@@ -38,7 +38,7 @@ const useStyles = theme => ({
     borderRadius: '0 0 8px 8px',
     marginBottom: theme.spacing(2),
     padding: theme.spacing(1, 2.75, 0, 2.75),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       padding: theme.spacing(0.5, 0.75, 0, 0.75),
     },
   },
@@ -61,7 +61,7 @@ const useStyles = theme => ({
     webkitOverflowScrolling: 'touch',
     transform: 'translateZ(0)', // Promote the list into his own layer on Chrome. This cost memory but helps keeping high FPS.
     minHeight: 238, // fixes height bug in Safari
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       minHeight: 218, // fixes height bug in Safari
     },
   },
@@ -91,7 +91,7 @@ const useStyles = theme => ({
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: 4,
     backgroundColor: theme.palette.background.network,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       width: 148,
       height: 128,
     },
@@ -112,7 +112,7 @@ const useStyles = theme => ({
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       maxWidth: 132,
     },
   },
@@ -419,7 +419,7 @@ export class RecentNetworksList extends Component {
             { enabled ? (
               <img src={imgSrc} className={classes.thumbnail} />
             ) : (
-              <Skeleton variant="rect" className={classes.thumbnail} />
+              <Skeleton variant="rectangular" className={classes.thumbnail} />
             )}
           </Grid>
           <Grid item>

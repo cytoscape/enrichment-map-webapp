@@ -7,15 +7,15 @@ import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
 import { NetworkEditorController } from './controller';
 import GeneListPanel from './gene-list-panel';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import { Box, Drawer, Grid, Typography, Toolbar, Tooltip } from '@material-ui/core';
-import { FormControl, IconButton, Select, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
-import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
+import { Box, Drawer, Grid, Typography, Toolbar, Tooltip } from '@mui/material';
+import { FormControl, IconButton, Select, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import SearchBar from './search-bar';
 
-import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
-import CloseIcon from '@material-ui/icons/Close';
+import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
+import CloseIcon from '@mui/icons-material/Close';
 import { DownloadIcon, VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
 
 
@@ -72,12 +72,11 @@ const useStyles = makeStyles((theme) => ({
     flex: '0 1 auto',
   },
   controls: {
-    borderTop: `1px solid ${theme.palette.divider}`,
-    marginTop: 0,
-    marginBottom: 0,
-    paddingTop: theme.spacing(1),
-    paddingLeft: theme.spacing(2.5),
-    paddingRight: theme.spacing(2.5),
+    padding: theme.spacing(1),
+  },
+  controlsRow2: {
+    paddingLeft: theme.spacing(1.5),
+    paddingRight: theme.spacing(1.5),
   },
   content: {
     flex: '1 1 auto',
@@ -90,8 +89,9 @@ const useStyles = makeStyles((theme) => ({
   toolbar: {
     paddingLeft: theme.spacing(1),
     paddingRight: theme.spacing(0.5),
-    minHeight: HEADER_HEIGHT,
+    minHeight: HEADER_HEIGHT + 1,
     backgroundColor: theme.palette.background.header,
+    borderBottom: `1px solid ${theme.palette.divider}`,
   },
   title: {
     paddingLeft: theme.spacing(0.5),
@@ -412,6 +412,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
       variant={drawerVariant}
       anchor="left"
       open={open}
+      onClose={onClose}
       {...drawerProps}
       PaperProps={{
         style: {
@@ -440,12 +441,17 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
             )}
             </Typography>
             <div className={classes.grow} />
-            <IconButton className={classes.closeButton} color="inherit" onClick={onClose}>
+            <IconButton
+              color="inherit"
+              size="large"
+              className={classes.closeButton}
+              onClick={onClose}
+            >
               { drawerVariant === 'temporary' ? <CloseIcon /> : <KeyboardArrowLeftIcon fontSize="large" /> }
             </IconButton>
           </Toolbar>
-          <Grid container direction="column" spacing={2} className={classes.controls}>
-            <Grid item style={{padding: 0}}>
+          <Grid container direction="column" spacing={1} className={classes.controls}>
+            <Grid item>
               <SearchBar
                 disabled={!networkLoaded || !geneListIndexed}
                 style={{
@@ -461,7 +467,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
               />
             </Grid>
             <Grid item>
-              <Grid container direction="row" justifyContent="space-between" alignItems="center">
+              <Grid container direction="row" justifyContent="space-between" className={classes.controlsRow2}>
                 <Grid item>
                   <FormControl variant="filled" size="small" disabled={setOperationsDisabled}>
                     <Select

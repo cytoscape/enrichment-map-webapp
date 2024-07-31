@@ -6,7 +6,9 @@ import _ from 'lodash';
 import classNames from 'classnames';
 import uuid from 'uuid';
 
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { useTheme } from '@mui/material/styles';
+
+import makeStyles from '@mui/styles/makeStyles';
 
 import { RecentNetworksController } from '../recent-networks-controller';
 import { UploadController, RNA_SEQ, PRE_RANKED } from './upload-controller';
@@ -20,10 +22,10 @@ import { DebugMenu } from './debug-menu';
 import StartDialog from './start-dialog';
 import LinkOut from './link-out';
 
-import { Container, Grid } from '@material-ui/core';
-import { Button, Typography, Link } from '@material-ui/core';
+import { Container, Grid } from '@mui/material';
+import { Button, Typography, Link } from '@mui/material';
 
-import NavigateNextIcon from '@material-ui/icons/NavigateNext';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
 
 export const STEP = {
@@ -113,13 +115,13 @@ const useContentStyles = makeStyles(theme => ({
     marginBottom: theme.spacing(2),
     padding: theme.spacing(0, 4, 0, 4),
     textAlign: 'left',
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       marginTop: 0,
       marginBottom: 0,
       paddingTop: theme.spacing(1),
       paddingBottom: theme.spacing(1),
     },
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       padding: theme.spacing(2),
     },
   },
@@ -130,11 +132,11 @@ const useContentStyles = makeStyles(theme => ({
     fontWeight: 800,
     fontSize: 'clamp(1.5rem, 0.75rem + 2.5vw, 2.5rem)',
     marginTop: theme.spacing(2),
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       marginTop: theme.spacing(1),
       textAlign: 'center',
     },
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       marginTop: 0,
     },
   },
@@ -143,7 +145,7 @@ const useContentStyles = makeStyles(theme => ({
     color: theme.palette.text.secondary,
     marginTop: theme.spacing(5),
     marginBottom: theme.spacing(5),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       fontSize: 'unset',
       textAlign: 'center',
       marginTop: theme.spacing(2.5),
@@ -152,7 +154,7 @@ const useContentStyles = makeStyles(theme => ({
   },
   heroSection: {
     width: '100%',
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       textAlign: 'center',
       alignItems: 'center',
     },
@@ -160,7 +162,7 @@ const useContentStyles = makeStyles(theme => ({
   section: {
     width: '100%',
     padding: theme.spacing(10, 0, 10, 0),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       padding: theme.spacing(6, 0, 6, 0),
     },
   },
@@ -174,7 +176,7 @@ const useContentStyles = makeStyles(theme => ({
     fontSize: '1.85rem',
     fontWeight: 'bold',
     marginBottom: theme.spacing(2),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       fontSize: '1.5rem',
     },
   },
@@ -182,7 +184,7 @@ const useContentStyles = makeStyles(theme => ({
     maxWidth: 768,
     marginBottom: theme.spacing(6),
     color: theme.palette.text.secondary,
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       fontSize: 'unset',
     },
   },
@@ -408,7 +410,6 @@ export function Content({ recentNetworksController }) {
                 direction={mobile || tablet ? 'column' : 'row'}
                 justifyContent="center"
                 alignItems="center"
-                spacing={2}
               >
                 <Grid item xs={mobile || tablet ? 12 : 6}>
                   <Grid container direction="column" justifyContent="center" alignItems="center">
@@ -503,10 +504,10 @@ const useFigureStyles = makeStyles(theme => ({
     border: `4px solid ${theme.palette.divider}`,
     borderRadius: 8,
     boxShadow: '0 20px 25px -5px rgb(0, 0, 0, 0.1), 0 8px 10px -36px rgb(0, 0, 0, 0.1)',
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       marginBottom: theme.spacing(4),
     },
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       maxWidth: '80%',
       maxHeight: 300,
     },
@@ -516,7 +517,7 @@ const useFigureStyles = makeStyles(theme => ({
 function Figure() {
   const classes = useFigureStyles();
   const theme = useTheme();
-  const img = theme?.palette?.type === 'dark' ? 'hero-figure-dark.png' : 'hero-figure-light.png';
+  const img = theme?.palette?.mode === 'dark' ? 'hero-figure-dark.png' : 'hero-figure-light.png';
 
   return <img src={`/images/${img}`} alt="figure" className={classes.figure} />;
 }
@@ -526,7 +527,7 @@ function Figure() {
 const useLogoBarStyles = makeStyles(theme => ({
   root: {
     marginTop: theme.spacing(12),
-    [theme.breakpoints.down('xs')]: {
+    [theme.breakpoints.down('sm')]: {
       marginTop: theme.spacing(4),
     },
   },

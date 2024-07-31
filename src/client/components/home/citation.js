@@ -1,10 +1,10 @@
 import React from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
 import { linkoutProps } from '../defaults';
 
-import { Container, Grid, Link, Typography } from '@material-ui/core';
-import FormatQuoteIcon from '@material-ui/icons/FormatQuote';
+import { Container, Grid, Link, Typography } from '@mui/material';
+import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 
 
 const useStyles =  makeStyles((theme) => ({
@@ -18,7 +18,7 @@ const useStyles =  makeStyles((theme) => ({
     backgroundColor: theme.palette.background.accent,
     border: `1px solid ${theme.palette.text.accent}`,
     borderRadius: 16,
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       padding: theme.spacing(0.5, 1, 1, 4),
       maxWidth: '90%',
     },
@@ -30,7 +30,7 @@ const useStyles =  makeStyles((theme) => ({
     marginLeft: theme.spacing(-5),
     width: 30,
     height: 30,
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       marginLeft: theme.spacing(-3.5),
     },
   },

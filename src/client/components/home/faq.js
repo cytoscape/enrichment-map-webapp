@@ -1,9 +1,9 @@
 import React from 'react';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
 import LinkOut from './link-out';
-import { Typography } from '@material-ui/core';
+import { Typography } from '@mui/material';
 
 
 const ulStyle = { marginTop: '0.5rem' };
@@ -157,7 +157,7 @@ const useStyles =  makeStyles((theme) => ({
     maxWidth: 'none',
     margin: 0,
     padding: 0,
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
       gap: 0,
     },
@@ -169,7 +169,7 @@ const useStyles =  makeStyles((theme) => ({
   entry: {
     marginTop: theme.spacing(4),
     marginBottom: theme.spacing(4),
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       marginBottom: 0,
     },
   },

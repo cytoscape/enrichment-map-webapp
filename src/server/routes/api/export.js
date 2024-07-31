@@ -59,7 +59,7 @@ http.get('/gmt/:netid', async function(req, res, next) {
 
 async function sendDataLines(cursor, res, { type='tsv', header, objToStr } ) {
   try {
-    if(!await cursor.hasNext()) {
+    if(!(await cursor.hasNext())) {
       res.sendStatus(404);
       return;
     }

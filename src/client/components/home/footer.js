@@ -1,9 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { makeStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import { Container, Grid, Divider, Toolbar } from '@material-ui/core';
+import { Container, Grid, Divider, Toolbar } from '@mui/material';
 
 
 
@@ -16,14 +16,14 @@ const useStyles = makeStyles(theme => ({
     color: theme.palette.text.secondary,
   },
   copyright: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       textAlign: 'center',
       marginBottom: theme.spacing(8),
     },
   },
   logoBar: {
     paddingLeft: theme.spacing(15),
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 0,
     },
   },
