@@ -81,17 +81,15 @@ export function fgseaServiceGeneRanksToDocument(rankedGeneListObject) {
 class Datastore {
   // mongo; // mongo connection obj
   // db; // app db
-  // queries; // queries collection (i.e. query results)
 
   constructor() { }
 
   async connect() {
     console.info('Connecting to MongoDB');
-    const { MONGO_URL, MONGO_ROOT_NAME, MONGO_COLLECTION_QUERIES } = process.env;
+    const { MONGO_URL, MONGO_ROOT_NAME } = process.env;
 
-    const mongo = this.mongo = await MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true });
-    const db = this.db = mongo.db(MONGO_ROOT_NAME);
-    this.queries = db.collection(MONGO_COLLECTION_QUERIES);
+    this.mongo = await MongoClient.connect(MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true });
+    this.db = this.mongo.db(MONGO_ROOT_NAME);
     console.info('Connected to MongoDB');
   }
 
