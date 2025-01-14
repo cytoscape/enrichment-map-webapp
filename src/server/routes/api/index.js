@@ -3,6 +3,7 @@ import fs from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import Datastore from '../../datastore.js';
+import { cyJsonToCx2 } from './cx2.js';
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -53,7 +54,7 @@ http.get('/demos', async function(req, res, next) {
 });
 
 /* 
- * Returns a network given its ID.
+ * Returns a network in cy.js format given its ID.
  */
 http.get('/:netid', async function(req, res, next) {
   try {
@@ -64,6 +65,28 @@ http.get('/:netid', async function(req, res, next) {
       res.sendStatus(404);
     } else {
       res.send(JSON.stringify(network));
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+/* 
+ * Returns a network in CX2 format given its ID.
+ */
+http.get('/:netid/cx2', async function(req, res, next) {
+  try {
+    const { netid } = req.params;
+
+    const network = await Datastore.getNetwork(netid);
+    const positions = await Datastore.getPositions(netid);
+
+    if(!network || !positions) {
+      res.sendStatus(404);
+    } else {
+      const cx2 = cyJsonToCx2(network, positions);
+      res.send(JSON.stringify(cx2));
     }
   } catch (err) {
     next(err);
@@ -244,5 +267,6 @@ export async function writeCursorToResult(cursor, res) {
   }
   res.write(']');
 }
+
 
 export default http;
