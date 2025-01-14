@@ -27,7 +27,7 @@ import RemoveIcon from '@material-ui/icons/Remove';
 import UndoIcon from '@material-ui/icons/Undo';
 import RestoreIcon from '@material-ui/icons/SettingsBackupRestore';
 import KeyboardReturnIcon from '@material-ui/icons/KeyboardReturn';
-import { DragSelectIcon, DownloadIcon, ShareIcon } from '../svg-icons';
+import { DragSelectIcon, DownloadIcon, ShareIcon, Cy3LogoIcon } from '../svg-icons';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -286,6 +286,14 @@ const Main = ({
     snack.showMessage("Link copied to clipboard");
   };
 
+  const handleCyWeb = () => {
+    const netID = cy.data('id');
+    const cywebUrl = 'http://localhost:5500';
+    const currentOrigin = window.location.origin;
+    window.open(`${cywebUrl}/?import=${currentOrigin}/api/${netID}/cx2`);
+    snack.showMessage("Cytoscape Web has been opened in a new tab");
+  };
+
   const handleExport = async () => {
     setExportEnabled(false);
     snack.showSpinner("Preparing enrichment data and network images...");
@@ -342,6 +350,10 @@ const Main = ({
       title: "Share",
       icon: <ShareIcon />,
       onClick: handleCopyLink,
+    }, {
+      title: "Send to Cytoscape Web",
+      icon: <Cy3LogoIcon />,
+      onClick: handleCyWeb,
     },
   ];
 
