@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 import Datastore, { GMT_2 } from '../../datastore.js';
 import { rankedGeneListToDocument, fgseaServiceGeneRanksToDocument } from '../../datastore.js';
 import { performance } from 'perf_hooks';
-import { saveUserUploadFileToS3 } from './s3.js';
+import { saveUserUploadFileToS3 } from './util/s3.js';
 import { 
   EM_SERVICE_URL, 
   FGSEA_PRERANKED_SERVICE_URL, 
