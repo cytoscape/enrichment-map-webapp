@@ -81,8 +81,10 @@ export function About() {
         <Typography variant="body2" color="textSecondary" className={classes.authors}>
           EnrichmentMap is authored by:&nbsp;&nbsp;
           <Link href="https://github.com/maxkfranz" className={classes.linkAuthor} {...linkoutProps}>Max Franz</Link>,&nbsp;&nbsp;
-          <Link href="https://github.com/mikekucera" className={classes.linkAuthor} {...linkoutProps}>Mike Kucera</Link>,&nbsp;&nbsp;
           <Link href="https://github.com/chrtannus"className={classes.linkAuthor} {...linkoutProps}>Christian Lopes</Link>,&nbsp;&nbsp;
+          <Link href="https://github.com/mikekucera" className={classes.linkAuthor} {...linkoutProps}>Mike Kucera</Link>,&nbsp;&nbsp;
+          <Link href="https://github.com/veroniquevoisin"className={classes.linkAuthor} {...linkoutProps}>Veronique Voisin</Link>,&nbsp;&nbsp;
+          <Link href="https://github.com/risserlin"className={classes.linkAuthor} {...linkoutProps}>Ruth Isserlin</Link>,&nbsp;&nbsp;
           <Link href="https://baderlab.org" className={classes.linkAuthor} {...linkoutProps}>Gary Bader</Link>.
         </Typography>
       </Container>
