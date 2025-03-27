@@ -86,6 +86,7 @@ http.get('/:netid/cx2', async function(req, res, next) {
       res.sendStatus(404);
     } else {
       const cx2 = cyJsonToCx2(network, positions);
+      res.set('Access-Control-Allow-Origin', '*'); // To prevent CORS policy errors
       res.send(JSON.stringify(cx2));
     }
   } catch (err) {
