@@ -76,16 +76,12 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   const queryGeneData = useQuery(
     ['gene-metadata', symbol],
     () =>
-      fetch(`https://api.ncbi.nlm.nih.gov/datasets/v1/gene/symbol/${symbol}/taxon/9606`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      })
-    .then(res => res.json()),
-    {
-      retry: 2,
-      retryDelay: 3000,
-      staleTime: 24 * 3600000, // After 24 hours, the cached data becomes stale and a refetch can happen
-    }
+      fetch(`/api/gene/${symbol}/taxon/9606`)
+      .then(res => res.json()), {
+        retry: 2,
+        retryDelay: 3000,
+        staleTime: 24 * 3600000, // After 24 hours, the cached data becomes stale and a refetch can happen
+      }
   );
 
   const data = queryGeneData.data;
@@ -95,7 +91,7 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   let description, ncbiId;
   
   if (!isLoading && !error && data) {
-    const entry = data.genes && data.genes.length > 0 ? data.genes[0] : {};
+    const entry = data.reports && data.reports.length > 0 ? data.reports[0] : {};
 
     if (entry.warnings && entry.warnings.length > 0) {
       error = { message: entry.warnings[0].reason };
