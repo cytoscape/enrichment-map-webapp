@@ -15,6 +15,7 @@ const PERFORMANCE_COLLECTION = 'performance';
 const POSITIONS_COLLECTION = 'positions';
 const POSITIONS_RESTORE_COLLECTION = "positionsRestore";
 
+const DEMO_EXPIRATION_TIME = 30 * 24 * 60 * 60; // 30 days in seconds
 
 /**
  * When called with no args will returns a new unique mongo ID.
@@ -194,6 +195,27 @@ class Datastore {
     await this.db
       .collection(NETWORKS_COLLECTION)
       .createIndex({ demo: 1 });
+
+    const createDemoExpiryIndex = async (collection) => {
+      await this.db
+        .collection(collection)
+        .createIndex(
+          { creationTimeForExpiry: 1 }, // only expire if this field exists in a doc
+          { expireAfterSeconds: DEMO_EXPIRATION_TIME }
+        );
+    };
+
+    // expiry of demo networks (automatically deleted after DEMO_EXPIRATION_TIME)
+    for(const collection of [
+      NETWORKS_COLLECTION, // ok
+      GENE_LISTS_COLLECTION, // ok
+      GENE_RANKS_COLLECTION, // ok
+      POSITIONS_COLLECTION, // ok
+      POSITIONS_RESTORE_COLLECTION, // ok
+      PERFORMANCE_COLLECTION // ok
+    ]) {
+      await createDemoExpiryIndex(collection);
+    }
   }
 
 
@@ -223,6 +245,10 @@ class Datastore {
     if(demo)
       networkJson['demo'] = true;
 
+    if (demo) {
+      networkJson['creationTimeForExpiry'] = new Date();
+    }
+
     await this.db
       .collection(NETWORKS_COLLECTION)
       .insertOne(networkJson);
@@ -250,13 +276,18 @@ class Datastore {
   /**
    * Inserts the given document into the 'performance' collection.
    */
-  async createPerfDocument(networkIDString, document) {
+  async createPerfDocument(networkIDString, document, demo) {
     if(networkIDString) {
       document = { 
         networkID: makeID(networkIDString).bson, 
         ...document
       };
     }
+
+    if (demo) {
+      document.creationTimeForExpiry = new Date();
+    }
+
     await this.db
       .collection(PERFORMANCE_COLLECTION)
       .insertOne(document);
@@ -268,7 +299,7 @@ class Datastore {
    * Inserts gene documents into the "geneRanks" collection.
    * @returns The id of the created document in the geneLists collection.
    */
-  async initializeGeneRanks(geneSetCollection, networkIDString, rankedGeneListDocument) {
+  async initializeGeneRanks(geneSetCollection, networkIDString, rankedGeneListDocument, demo) {
     const networkID  = makeID(networkIDString);
     const geneListID = makeID();
 
@@ -281,14 +312,18 @@ class Datastore {
       min, max, genes
     };
 
+    if (demo) {
+      geneListDocument.creationTimeForExpiry = new Date();
+    }
+
     // Insert the gene list as a single document into GENE_LISTS_COLLECTION
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .insertOne(geneListDocument);
 
     // Create an initialize the documents in the GENE_RANKS_COLLECTION, used for quick lookups.
-    await this.createGeneRanksDocuments(networkID);
-    await this.mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID);
+    await this.createGeneRanksDocuments(networkID, demo);
+    await this.mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID, demo);
 
     return geneListID.string;
   }
@@ -297,7 +332,7 @@ class Datastore {
    * Creates individual documents in the gene ranks collection.
    * This must be called before the mergeXXX functions.
    */
-  async createGeneRanksDocuments(networkID) {
+  async createGeneRanksDocuments(networkID, demo) {
     // Create a collection with { networkID, gene } as the key, for quick lookup of gene ranks.
     await this.db
       .collection(GENE_LISTS_COLLECTION)
@@ -305,7 +340,12 @@ class Datastore {
         { $match: { networkID: networkID.bson } },
         { $project: { _id: 0, networkID: 1, genes: 1 } },
         { $unwind: "$genes" },
-        { $project: { networkID: 1, gene: "$genes.gene", rank: "$genes.rank" } },
+        { $project: {
+          networkID: 1, 
+          gene: "$genes.gene",
+          rank: "$genes.rank",
+          ...(demo ? { creationTimeForExpiry: new Date() } : {})
+        } },
         { $merge: { 
             into: GENE_RANKS_COLLECTION, 
             on: [ "networkID", "gene" ] 
@@ -318,7 +358,7 @@ class Datastore {
   /**
    * Update the documents in the geneRanks collection to add the 'pathways' field.
    */
-  async mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID) {
+  async mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID, demo) {
     await this.db
       .collection(NETWORKS_COLLECTION)
       .aggregate([
@@ -426,6 +466,17 @@ class Datastore {
       networkID: networkID.bson,
       positions
     };
+
+    // Check if the document is a demo
+    // Must do separate query since the set positions call orginates from the client,
+    // not the original create network call
+    const demo = (await this.db
+      .collection(NETWORKS_COLLECTION)
+      .findOne({ _id: networkID.bson }, { projection: { demo: 1 } }));
+
+    if (demo) {
+      document.creationTimeForExpiry = new Date();
+    }
 
     // Save the document twice, the one in POSITIONS_RESTORE_COLLECTION never changes
     await this.db
