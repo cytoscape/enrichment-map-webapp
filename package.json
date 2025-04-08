@@ -59,6 +59,7 @@
     "cytoscape-fcose": "^2.2.0",
     "cytoscape-layers": "^2.4.1",
     "cytoscape-pdf-export": "0.0.2",
+    "date-fns": "^4.1.0",
     "dedent": "^1.5.1",
     "dotenv": "^6.2.0",
     "dotenv-defaults": "^5.0.0",

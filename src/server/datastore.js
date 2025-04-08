@@ -3,6 +3,7 @@ import uuid from 'uuid';
 import MUUID from 'uuid-mongodb';
 import _ from 'lodash';
 import { fileForEachLine } from './util.js';
+import { addSeconds } from 'date-fns';
 
 // These GMT files are loaded into collections with the same name as the file.
 // export const GMT_1 = 'Human_GOBP_AllPathways_no_GO_iea_June_01_2022_symbol.gmt';
@@ -16,6 +17,8 @@ const POSITIONS_COLLECTION = 'positions';
 const POSITIONS_RESTORE_COLLECTION = "positionsRestore";
 
 const DEMO_EXPIRATION_TIME = 30 * 24 * 60 * 60; // 30 days in seconds
+
+const getExpirationDate = (t = new Date()) => addSeconds(t, DEMO_EXPIRATION_TIME);
 
 /**
  * When called with no args will returns a new unique mongo ID.
@@ -196,12 +199,12 @@ class Datastore {
       .collection(NETWORKS_COLLECTION)
       .createIndex({ demo: 1 });
 
-    const createDemoExpiryIndex = async (collection) => {
+    const createExpirationIndex = async (collection) => {
       await this.db
         .collection(collection)
         .createIndex(
-          { creationTimeForExpiry: 1 }, // only expire if this field exists in a doc
-          { expireAfterSeconds: DEMO_EXPIRATION_TIME }
+          { expirationDate: 1 }, // only expire if this field exists in a doc
+          { expireAfterSeconds: 0 }
         );
     };
 
@@ -214,7 +217,7 @@ class Datastore {
       POSITIONS_RESTORE_COLLECTION, // ok
       PERFORMANCE_COLLECTION // ok
     ]) {
-      await createDemoExpiryIndex(collection);
+      await createExpirationIndex(collection);
     }
   }
 
@@ -246,7 +249,7 @@ class Datastore {
       networkJson['demo'] = true;
 
     if (demo) {
-      networkJson['creationTimeForExpiry'] = new Date();
+      networkJson['expirationDate'] = getExpirationDate();
     }
 
     await this.db
@@ -285,7 +288,7 @@ class Datastore {
     }
 
     if (demo) {
-      document.creationTimeForExpiry = new Date();
+      document.expirationDate = getExpirationDate();
     }
 
     await this.db
@@ -313,7 +316,7 @@ class Datastore {
     };
 
     if (demo) {
-      geneListDocument.creationTimeForExpiry = new Date();
+      geneListDocument.expirationDate = getExpirationDate();
     }
 
     // Insert the gene list as a single document into GENE_LISTS_COLLECTION
@@ -344,7 +347,7 @@ class Datastore {
           networkID: 1, 
           gene: "$genes.gene",
           rank: "$genes.rank",
-          ...(demo ? { creationTimeForExpiry: new Date() } : {})
+          ...(demo ? { expirationDate: getExpirationDate() } : {})
         } },
         { $merge: { 
             into: GENE_RANKS_COLLECTION, 
@@ -470,12 +473,20 @@ class Datastore {
     // Check if the document is a demo
     // Must do separate query since the set positions call orginates from the client,
     // not the original create network call
-    const demo = (await this.db
+    const existingDoc = (await this.db
       .collection(NETWORKS_COLLECTION)
       .findOne({ _id: networkID.bson }, { projection: { demo: 1 } }));
 
-    if (demo) {
-      document.creationTimeForExpiry = new Date();
+    const docExists = existingDoc != null;
+
+    if (!docExists) {
+      return; // don't create positions for a non-existent network
+    }
+
+    const isDemo = existingDoc.demo;
+
+    if (isDemo) {
+      document.expirationDate = getExpirationDate();
     }
 
     // Save the document twice, the one in POSITIONS_RESTORE_COLLECTION never changes
