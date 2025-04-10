@@ -42,6 +42,8 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
 
     const value = this._localStorageValue({ created: created, cy });
 
+    if (value.demo) { return; } // Don't save demo networks
+
     if (keys.length < MAX_ITEMS) {
       // Just add the new item
       LocalForage.setItem(id, value).catch((err) => {
@@ -86,6 +88,7 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
       
       if (callback)
         callback(nets);
+
     }).catch((err) => {
       console.log(err);
     });
@@ -127,12 +130,14 @@ const NETWORK_THUMBNAIL_HEIGHT = 344;
       maxHeight: NETWORK_THUMBNAIL_HEIGHT,
       full: true,
     });
+    const demo = cy.data('demo') ?? false;
 
     return {
       name,
       thumbnail,
       created: created ? created : now,
       opened: now,
+      demo
     };
   }
 }

@@ -3,6 +3,7 @@ import uuid from 'uuid';
 import MUUID from 'uuid-mongodb';
 import _ from 'lodash';
 import { fileForEachLine } from './util.js';
+import { addSeconds } from 'date-fns';
 
 // These GMT files are loaded into collections with the same name as the file.
 // export const GMT_1 = 'Human_GOBP_AllPathways_no_GO_iea_June_01_2022_symbol.gmt';
@@ -15,6 +16,9 @@ const PERFORMANCE_COLLECTION = 'performance';
 const POSITIONS_COLLECTION = 'positions';
 const POSITIONS_RESTORE_COLLECTION = "positionsRestore";
 
+const DEMO_EXPIRATION_TIME = 30 * 24 * 60 * 60; // 30 days in seconds
+
+const getExpirationDate = (t = new Date()) => addSeconds(t, DEMO_EXPIRATION_TIME);
 
 /**
  * When called with no args will returns a new unique mongo ID.
@@ -194,6 +198,27 @@ class Datastore {
     await this.db
       .collection(NETWORKS_COLLECTION)
       .createIndex({ demo: 1 });
+
+    const createExpirationIndex = async (collection) => {
+      await this.db
+        .collection(collection)
+        .createIndex(
+          { expirationDate: 1 }, // only expire if this field exists in a doc
+          { expireAfterSeconds: 0 }
+        );
+    };
+
+    // expiry of demo networks (automatically deleted after DEMO_EXPIRATION_TIME)
+    for(const collection of [
+      NETWORKS_COLLECTION, // ok
+      GENE_LISTS_COLLECTION, // ok
+      GENE_RANKS_COLLECTION, // ok
+      POSITIONS_COLLECTION, // ok
+      POSITIONS_RESTORE_COLLECTION, // ok
+      PERFORMANCE_COLLECTION // ok
+    ]) {
+      await createExpirationIndex(collection);
+    }
   }
 
 
@@ -223,6 +248,10 @@ class Datastore {
     if(demo)
       networkJson['demo'] = true;
 
+    if (demo) {
+      networkJson['expirationDate'] = getExpirationDate();
+    }
+
     await this.db
       .collection(NETWORKS_COLLECTION)
       .insertOne(networkJson);
@@ -250,13 +279,18 @@ class Datastore {
   /**
    * Inserts the given document into the 'performance' collection.
    */
-  async createPerfDocument(networkIDString, document) {
+  async createPerfDocument(networkIDString, document, demo) {
     if(networkIDString) {
       document = { 
         networkID: makeID(networkIDString).bson, 
         ...document
       };
     }
+
+    if (demo) {
+      document.expirationDate = getExpirationDate();
+    }
+
     await this.db
       .collection(PERFORMANCE_COLLECTION)
       .insertOne(document);
@@ -268,7 +302,7 @@ class Datastore {
    * Inserts gene documents into the "geneRanks" collection.
    * @returns The id of the created document in the geneLists collection.
    */
-  async initializeGeneRanks(geneSetCollection, networkIDString, rankedGeneListDocument) {
+  async initializeGeneRanks(geneSetCollection, networkIDString, rankedGeneListDocument, demo) {
     const networkID  = makeID(networkIDString);
     const geneListID = makeID();
 
@@ -281,14 +315,18 @@ class Datastore {
       min, max, genes
     };
 
+    if (demo) {
+      geneListDocument.expirationDate = getExpirationDate();
+    }
+
     // Insert the gene list as a single document into GENE_LISTS_COLLECTION
     await this.db
       .collection(GENE_LISTS_COLLECTION)
       .insertOne(geneListDocument);
 
     // Create an initialize the documents in the GENE_RANKS_COLLECTION, used for quick lookups.
-    await this.createGeneRanksDocuments(networkID);
-    await this.mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID);
+    await this.createGeneRanksDocuments(networkID, demo);
+    await this.mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID, demo);
 
     return geneListID.string;
   }
@@ -297,7 +335,7 @@ class Datastore {
    * Creates individual documents in the gene ranks collection.
    * This must be called before the mergeXXX functions.
    */
-  async createGeneRanksDocuments(networkID) {
+  async createGeneRanksDocuments(networkID, demo) {
     // Create a collection with { networkID, gene } as the key, for quick lookup of gene ranks.
     await this.db
       .collection(GENE_LISTS_COLLECTION)
@@ -305,7 +343,12 @@ class Datastore {
         { $match: { networkID: networkID.bson } },
         { $project: { _id: 0, networkID: 1, genes: 1 } },
         { $unwind: "$genes" },
-        { $project: { networkID: 1, gene: "$genes.gene", rank: "$genes.rank" } },
+        { $project: {
+          networkID: 1, 
+          gene: "$genes.gene",
+          rank: "$genes.rank",
+          ...(demo ? { expirationDate: getExpirationDate() } : {})
+        } },
         { $merge: { 
             into: GENE_RANKS_COLLECTION, 
             on: [ "networkID", "gene" ] 
@@ -318,7 +361,7 @@ class Datastore {
   /**
    * Update the documents in the geneRanks collection to add the 'pathways' field.
    */
-  async mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID) {
+  async mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID, demo) {
     await this.db
       .collection(NETWORKS_COLLECTION)
       .aggregate([
@@ -426,6 +469,25 @@ class Datastore {
       networkID: networkID.bson,
       positions
     };
+
+    // Check if the document is a demo
+    // Must do separate query since the set positions call orginates from the client,
+    // not the original create network call
+    const existingDoc = (await this.db
+      .collection(NETWORKS_COLLECTION)
+      .findOne({ _id: networkID.bson }, { projection: { demo: 1 } }));
+
+    const docExists = existingDoc != null;
+
+    if (!docExists) {
+      return; // don't create positions for a non-existent network
+    }
+
+    const isDemo = existingDoc.demo;
+
+    if (isDemo) {
+      document.expirationDate = getExpirationDate();
+    }
 
     // Save the document twice, the one in POSITIONS_RESTORE_COLLECTION never changes
     await this.db

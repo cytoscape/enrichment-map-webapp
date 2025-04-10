@@ -165,7 +165,7 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
   try {
     perf.mark('mongo');
     networkID = await Datastore.createNetwork(networkJson, networkName, type, GMT_FILE, demo);
-    await Datastore.initializeGeneRanks(GMT_FILE, networkID, rankedGeneList);
+    await Datastore.initializeGeneRanks(GMT_FILE, networkID, rankedGeneList, demo);
     res?.send(networkID);
   } catch(e) {
     throw new CreateError({ step: 'mongo', cause: e });
@@ -196,7 +196,7 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
       url: MONGO_URL,
       timeTaken: perf.measure({ from:'mongo', to:'end' }),
     }]
-  });
+  }, demo);
   
   return networkID;
 }
