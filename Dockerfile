@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:20
 
 # Allow user configuration of variable at build-time using --build-arg flag
 ARG NODE_ENV
