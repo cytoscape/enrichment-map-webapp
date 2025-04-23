@@ -118,50 +118,67 @@ class Datastore {
    * @param dbFileName Name of the GMT file. Use one of the constants at the top of this file.
    */
   async loadGenesetDB(path, dbFileName) {
-    const isLoaded = async () => {
-      const collections = await this.db.listCollections().toArray();
-      return collections.some(c => c.name === dbFileName);
-    };
+    // Check if the collection already exists
+    const collections = await this.db.listCollections().toArray();
+    const isLoaded = collections.some(c => c.name === dbFileName);
+    
 
-    if(await isLoaded()) {
+    if (isLoaded) {
       console.info("Collection " + dbFileName + " already loaded");
-      return;
     } else {
-      console.info("Loading collection " + dbFileName);
+      console.info("Loading collection " + dbFileName + "...");
+      // Create indexes on dbFileName collection first
+      await this.db
+        .collection(dbFileName)
+        .createIndex({ name: 1 }, { unique: true });
+      await this.db
+        .collection(dbFileName)
+        .createIndex({ genes: 1 });
     }
-
-    // Create indexes on dbFileName collection first
-    await this.db
-      .collection(dbFileName)
-      .createIndex({ name: 1 }, { unique: true });
-
-    await this.db
-      .collection(dbFileName)
-      .createIndex({ genes: 1 });
-
 
     const filepath = path + dbFileName;
     const writeOps = [];
 
+    this.dbGeneSet = new Set();
+
     await fileForEachLine(filepath, line => {
       const [name, description, ...genes] = line.split("\t");
-      if(genes[genes.length - 1] === "") {
+      if (genes[genes.length - 1] === "") {
         genes.pop();
       }
 
-      writeOps.push({
-        updateOne: {
-          filter: { name }, // index on name already created
-          update: { $set: { name, description, genes } },
-          upsert: true
-        }
-      });
-      
-    });
+      if (!isLoaded) {
+        writeOps.push({
+          updateOne: {
+            filter: { name }, // index on name already created
+            update: { $set: { name, description, genes } },
+            upsert: true
+          }
+        });
+      }
 
-    await this.db
-      .collection(dbFileName)
-      .bulkWrite(writeOps);
+      // Add all genes to the set
+      for (const gene of genes) {
+        this.dbGeneSet.add(gene);
+      }
+    });
+    console.info("Loaded " + this.dbGeneSet.size + " gene symbols to the lookup set");
+
+    // If the collection is not loaded yet, insert the documents
+    if (!isLoaded) {
+      await this.db
+        .collection(dbFileName)
+        .bulkWrite(writeOps);
+    }
+  }
+
+
+  hasGene(symbol) {
+    if (this.dbGeneSet === undefined) {
+      console.error("dbGeneSet not initialized");
+      return false;
+    }
+    return this.dbGeneSet.has(symbol);
   }
 
 
@@ -201,7 +218,14 @@ class Datastore {
    * Inserts a network document into the 'networks' collection.
    * @returns The id of the created document.
    */
-  async createNetwork(networkJson, networkName, type, geneSetCollection, demo) {
+  async createNetwork(
+    networkJson,
+    networkName,
+    type,
+    geneSetCollection,
+    invalidGenes,
+    demo
+  ) {
     if (typeof (networkJson) == 'string') {
       networkJson = JSON.parse(networkJson);
     }
@@ -220,6 +244,8 @@ class Datastore {
       networkJson['inputType'] = type;
     if(geneSetCollection)
       networkJson['geneSetCollection'] = geneSetCollection;
+    if(invalidGenes)
+      networkJson['invalidGenes'] = invalidGenes;
     if(demo)
       networkJson['demo'] = true;
 

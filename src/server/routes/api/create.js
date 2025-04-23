@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import * as Sentry from "@sentry/node";
 import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
+import _ from 'lodash';
 import Datastore, { GMT_2 } from '../../datastore.js';
 import { rankedGeneListToDocument, fgseaServiceGeneRanksToDocument } from '../../datastore.js';
 import { performance } from 'perf_hooks';
@@ -13,7 +14,10 @@ import {
   FGSEA_RNASEQ_SERVICE_URL,
   BRIDGEDB_URL,
   MONGO_URL,
+  NCBI_API_KEY,
 } from '../../env.js';
+import { cache } from '../../cache.js';
+
 
 const NETWORK_CREATE_ERROR_CODE = 450;
 
@@ -122,11 +126,13 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
 
   const preranked = type === 'preranked';
 
+  // First we need to check if the IDs are ensembl IDs.
+  // If they are, we need to convert them to HGNC IDs using the BridgeDB service.
   perf.mark('bridgedb');
   const needIdMapping = isEnsembl(body);
-  if(needIdMapping) {
-    body = await runEnsemblToHGNCMapping(body, contentType);
-  }
+  const validation = await validateGenes(body, contentType, needIdMapping, '9606');
+  body = validation.body;
+  const invalidGenes = validation.invalidGenes;
 
   perf.mark('fgsea');
   let rankedGeneList;
@@ -164,7 +170,7 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
   let networkID;
   try {
     perf.mark('mongo');
-    networkID = await Datastore.createNetwork(networkJson, networkName, type, GMT_FILE, demo);
+    networkID = await Datastore.createNetwork(networkJson, networkName, type, GMT_FILE, invalidGenes, demo);
     await Datastore.initializeGeneRanks(GMT_FILE, networkID, rankedGeneList);
     res?.send(networkID);
   } catch(e) {
@@ -199,6 +205,154 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
   });
   
   return networkID;
+}
+
+async function validateGenes(body, contentType, needIdMapping, taxon) {
+  let invalidGenes = [];
+  // If the IDs are Ensembl IDs, we need to convert them to HGNC IDs using the BridgeDB service.
+  if (needIdMapping) {
+    const mapping = await runEnsemblToHGNCMapping(body, contentType);
+    body = mapping.body;
+    invalidGenes = mapping.invalidIDs;
+  } else {
+    // We also need to check if any of the HGNC IDs are not supported by our database (from the imported GMT file).
+    // The unrecognized gene symbols must be stored in the database.
+    const lines = body.split('\n');
+    const delim = contentType === 'text/csv' ? ',' : '\t';
+    const content = lines
+      .slice(1)
+      .filter(line => line && line.length > 0)
+      .map(line => line.split(delim));
+    const geneSymbols = content.map(row => row[0]);
+    const symbolsToValidate = [];
+
+    geneSymbols.forEach(symbol => {
+      // Check if the symbol is in the database
+      if (!Datastore.hasGene(symbol)) {
+        // Then check if it's already in the cache
+        const cacheKey = `${taxon}-${symbol}`;
+        const cachedGene = cache.get(cacheKey);
+        if (!cachedGene) {
+          symbolsToValidate.push(symbol);
+        }
+      }
+    });
+    console.log('>>>> Symbols to validate', symbolsToValidate);
+
+    if (symbolsToValidate.length > 0) {
+      invalidGenes = await validateGeneSymbols(symbolsToValidate, taxon);
+    }
+  }
+  
+  return { body, invalidGenes };
+}
+
+// async function validateGeneSymbols(symbols) {
+//   const invalidSymbols = [];
+
+//   try {
+//     const response = await fetch('https://genemania.org/json/gene_validation',
+//       {
+//         method: 'POST',
+//         body: JSON.stringify({
+//           organism: 4,
+//           genes: symbols.join('\n')
+//         }),
+//         headers: {
+//           'Content-Type': 'application/json'
+//         }
+//       }
+//     );
+//     console.log(`==> Validating symbols`, response.status);
+
+//     if (!response.ok) {
+//       console.error(`Error validating symbols`, response.statusText);
+//       // invalidSymbols.push(...chunk); // Mark all in this chunk as invalid
+//       return;
+//     }
+
+//     const data = await response.json();
+
+//     if (data?.genes) {
+//       data.genes.forEach(entry => {
+//         if (entry.type === 'INVALID') {
+//           console.log(`--- INVALID symbol: ${entry.name}`);
+//           invalidSymbols.push(entry.name);
+//         }
+//       });
+//     }
+//   } catch (error) {
+//     console.error(`Error validating or processing symbols`, error);
+//   }
+
+//   return invalidSymbols;
+// }
+
+async function validateGeneSymbols(symbols, taxon) {
+  const invalidSymbols = [];
+  const baseUrl = `https://api.ncbi.nlm.nih.gov/datasets/v2/gene/symbol/`;
+  const reportEndpoint = `/taxon/9606/dataset_report`;
+  const chunkSize = 10;
+  const delayMs = 1000; // 1 second
+
+  async function processChunk(chunk) {
+    const symbolsString = chunk.join(',');
+    const url = baseUrl + encodeURIComponent(symbolsString) + reportEndpoint;
+    const headers = { 
+      'Content-Type': 'application/json',
+      ...(NCBI_API_KEY && { 'api-key': NCBI_API_KEY }),
+    };
+
+    try {
+      const response = await fetch(url, { headers });
+
+      if (!response.ok) {
+        console.error(`Error fetching chunk for symbols: ${chunk.join(',')}`, response.statusText);
+        // invalidSymbols.push(...chunk); // Mark all in this chunk as invalid
+        return;
+      }
+
+      const data = await response.json();
+      const validatedSymbols = new Set();
+
+      if (data?.reports) {
+        data.reports.forEach(entry => {
+          if (entry.query && entry.query.length > 0) {
+            const symbol = entry.query[0];
+            validatedSymbols.add(symbol);
+            cache.set(`${taxon}-${symbol}`, entry);
+          }
+        });
+      }
+
+      console.log(`==> Validated symbols`, [...validatedSymbols].length);
+
+      chunk.forEach(originalSymbol => {
+        if (!validatedSymbols.has(originalSymbol)) {
+          invalidSymbols.push(originalSymbol);
+        }
+      });
+    } catch (error) {
+      console.error(`Error fetching or processing chunk for symbols: ${chunk.join(',')}`, error);
+      // Consider how you want to handle errors: retry, mark all as invalid, etc.
+      // invalidSymbols.push(...chunk); // Mark all in this chunk as invalid on error for simplicity
+    }
+
+    return invalidSymbols;
+  }
+
+  const chunks = _.chunk(symbols, chunkSize);
+
+  for (const chunk of chunks) {
+    console.log(`==> Processing chunk: ${chunk.join(',')}...`);
+    await processChunk(chunk);
+    // Introduce a delay between chunk processing to avoid hitting API rate limits.
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+
+  console.log(`>>>> Invalid symbols`, invalidSymbols.sort());
+
+  return invalidSymbols.sort();
 }
 
 
@@ -363,35 +517,38 @@ async function runEnsemblToHGNCMapping(body, contentType) {
   const hgncIDs = await runBridgeDB(ensemblIDs);
 
   // Replace old IDs with the new ones
+  const map = new Map();
   const newContent = [];
   const invalidIDs = [];
-  for(var i = 0; i < content.length; i++) {
+  for (var i = 0; i < content.length; i++) {
     const row = content[i];
     const newID = hgncIDs[i];
-    if(newID) {
+    if (newID) {
+      map.set(row[0], newID);
       newContent.push([newID, ...row.slice(1)]);
     } else {
       invalidIDs.push(row[0]);
     }
   }
 
-  if(invalidIDs.length > 0) {
+  if (invalidIDs.length > 0) {
     console.log("Sending id-mapping warning to Sentry. Number of invalid IDs: " + invalidIDs.length);
-    sendMessagesToSentry('bridgedb', [{
-      level: 'warning',
-      type: 'ids_not_mapped',
-      text: 'IDs not mapped',
-      data: {
-        'Total IDs Mapped': ensemblIDs.length, 
-        'Invalid ID Count': invalidIDs.length,
-        'Invalid IDs (First 100)': invalidIDs.slice(0, 100),
-       }
-    }]);
+    // TODO uncomment this
+    // sendMessagesToSentry('bridgedb', [{
+    //   level: 'warning',
+    //   type: 'ids_not_mapped',
+    //   text: 'IDs not mapped',
+    //   data: {
+    //     'Total IDs Mapped': ensemblIDs.length, 
+    //     'Invalid ID Count': invalidIDs.length,
+    //     'Invalid IDs (First 100)': invalidIDs.slice(0, 100),
+    //    }
+    // }]);
   } 
 
   // Convert back to a big string
   const newBody = header + '\n' + newContent.map(line => line.join(delim)).join('\n');
-  return newBody;
+  return { body: newBody, map, invalidIDs };
 }
 
 

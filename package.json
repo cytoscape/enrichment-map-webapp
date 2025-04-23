@@ -69,6 +69,7 @@
     "jszip": "^3.10.1",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
+    "lru-cache": "^11.1.0",
     "minisearch": "^5.0.0",
     "mongodb": "^4.5.0",
     "morgan": "^1.10.0",

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
+import chroma from 'chroma-js';
 
 import { HEADER_HEIGHT, LEFT_DRAWER_WIDTH } from '../defaults';
 import { EventEmitterProxy } from '../../../model/event-emitter-proxy';
@@ -10,13 +11,15 @@ import GeneListPanel from './gene-list-panel';
 import { makeStyles } from '@material-ui/core/styles';
 
 import { Box, Drawer, Grid, Typography, Toolbar, Tooltip } from '@material-ui/core';
-import { FormControl, IconButton, Select, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import { FormControl, Button, IconButton, Select, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import SearchBar from './search-bar';
 
 import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
 import CloseIcon from '@material-ui/icons/Close';
-import { DownloadIcon, VennIntersectionIcon, VennUnionIcon } from '../svg-icons';
+import OpenInNewIcon from '@material-ui/icons/OpenInNew';
+import { DownloadIcon, VennIntersectionIcon, VennUnionIcon, ContentCopyIcon } from '../svg-icons';
 
 
 const setOperationOptions = {
@@ -115,6 +118,15 @@ const useStyles = makeStyles((theme) => ({
   sortButton: {
     width: 77,
   },
+  invalidGenes: {
+    marginTop: theme.spacing(0.5),
+    paddingTop: theme.spacing(0.25),
+    paddingBottom: theme.spacing(0.5),
+    paddingLeft: theme.spacing(2.5),
+    paddingRight: theme.spacing(2.5),
+    backgroundColor: chroma(theme.palette.error.light).alpha(0.2).css(),
+    border: `1px solid ${chroma(theme.palette.error.light).alpha(0.5).css()}`,
+  },
   geneList: {
     overflowY: "auto",
   },
@@ -126,6 +138,8 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   const [searchValue, setSearchValue] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [genes, setGenes] = useState(null);
+  const [invalidGenes, setInvalidGenes] = useState(null);
+  const [showInvalidGenes, setShowInvalidGenes] = useState(false);
   const [setOperation, setSetOperation] = useState('union');
   const [sort, setSort] = useState('down');
   const [selectedGene, setSelectedGene] = useState(null);
@@ -249,6 +263,10 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
 
   const onNetworkLoaded = () => {
     setNetworkLoaded(true);
+    if (cy.data('invalidGenes')?.length > 0) {
+      console.warn('---> Invalid genes:', cy.data('invalidGenes'));
+      setInvalidGenes(cy.data('invalidGenes'));
+    }
   };
   const onGeneListIndexed = () => {
     setGeneListIndexed(true);
@@ -512,6 +530,21 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
               </Grid>
             </Grid>
           </Grid>
+        {invalidGenes?.length > 0 && (
+          <Grid item className={classes.invalidGenes}>
+            <Grid container direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="caption" color="textPrimary">
+                { invalidGenes.length} invalid gene{invalidGenes.length > 1 ? 's' : ''}!
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => setShowInvalidGenes(true)}
+              >
+                <OpenInNewIcon fontSize="small" color="inherit" />
+              </IconButton>
+            </Grid>
+          </Grid>
+        )}
         </div>
         <div className={classes.content}>
         {networkLoaded && geneListIndexed && (
@@ -527,6 +560,38 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
           />
         )}
       </div>
+      <Dialog open={showInvalidGenes}>
+        <DialogTitle>
+          <Grid container direction="row" justifyContent="space-between" alignItems="center">
+            <Grid item>
+              Invalid Genes &#40;{invalidGenes ? invalidGenes.length : ''}&#41;
+            </Grid>
+            <Grid item>
+              <Tooltip title="Copy to clipboard">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => navigator.clipboard.writeText(invalidGenes.join('\n'))}
+                >
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Grid>
+          </Grid>
+        </DialogTitle>
+        <DialogContent dividers>
+        {invalidGenes && invalidGenes.map((gene, i) => (
+          <Typography key={i} variant="body2" color="textPrimary">
+            { gene }
+          </Typography>
+        ))}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowInvalidGenes(false)} color="primary" variant="outlined">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Drawer>
   );
 };

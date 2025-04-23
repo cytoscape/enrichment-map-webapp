@@ -80,7 +80,9 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
       .then(res => res.json()), {
         retry: 2,
         retryDelay: 3000,
-        staleTime: 24 * 3600000, // After 24 hours, the cached data becomes stale and a refetch can happen
+        staleTime: 10000,
+        // staleTime: 24
+        //  * 60 * 60 * 1000, // After 24 hours, the data is considered stale
       }
   );
 
@@ -91,12 +93,10 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   let description, ncbiId;
   
   if (!isLoading && !error && data) {
-    const entry = data.reports && data.reports.length > 0 ? data.reports[0] : {};
-
-    if (entry.warnings && entry.warnings.length > 0) {
-      error = { message: entry.warnings[0].reason };
+    if (data.warnings && data.warnings.length > 0) {
+      error = { message: data.warnings[0].reason };
     } else {
-      const gene = entry.gene;
+      const gene = data.gene;
 
       if (gene) {
         description = gene.description;
