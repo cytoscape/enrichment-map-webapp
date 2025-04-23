@@ -274,6 +274,17 @@ const useUploadPanelStyles = makeStyles((theme) => ({
     color: 'inherit',
     borderBottom: 'dotted 1px',
   },
+  exampleLink: {
+    fontSize: theme.typography.caption.fontSize,
+    textAlign: 'right',
+    marginTop: theme.spacing(0.5),
+    marginLeft: 20,
+    marginRight: 20,
+    [theme.breakpoints.down('xs')]: {
+      marginLeft: 0,
+      marginRight: 0,
+    },
+  }
 }));
 
 export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
@@ -304,6 +315,14 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
       <Link href="https://www.genenames.org/" className={classes.linkout} {...linkoutProps}>HGNC</Link>&nbsp;
       &#40;for human&#41;
     </>
+  );
+
+  const SampleLink = ({ url }) => (
+    <div className={classes.exampleLink}>
+      <Link href={url} download target="_blank" rel="noreferrer">
+        Example
+      </Link>
+    </div>
   );
 
   return (
@@ -352,6 +371,7 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
             </ArcherElement>
           </div>
           <SampleTable tableHead={RNASEQ_HEADER} tableRows={RNASEQ_ROWS} spotlight={spotlight} isMobile={isMobile} />
+          <SampleLink url="/sample-data/GSE129943_rsem_counts_HGNC_expr.txt" />
         </ArcherContainer>
       </FormatAccordion>
       <FormatAccordion
@@ -395,6 +415,7 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
             </ArcherElement>
           </div>
           <SampleTable tableHead={RANKED_HEADER} tableRows={RANKED_ROWS} spotlight={spotlight} isMobile={isMobile} />
+          <SampleLink url="/sample-data/brca_hd_tep_ranks.rnk" />
         </ArcherContainer>
       </FormatAccordion>
     </>
