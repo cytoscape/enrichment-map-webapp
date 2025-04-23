@@ -2,7 +2,7 @@
 
 ## Required software
 
-- [Node.js](https://nodejs.org/en/) 16.x, >=16.13
+- [Node.js](https://nodejs.org/en/) 20
 - [MongoDB](https://www.mongodb.com) ^5.x
 
 ## Getting started
