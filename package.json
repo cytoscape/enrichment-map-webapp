@@ -87,12 +87,7 @@
     "xlsx": "^0.17.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.9.0",
-    "@babel/preset-env": "^7.9.0",
-    "@babel/preset-react": "^7.9.1",
     "@types/react-router-dom": "^5.3.3",
-    "babel-loader": "^8.1.0",
-    "babel-plugin-import": "^1.13.8",
     "chai": "^4.2.0",
     "cross-env": "^5.2.1",
     "cssnano": "^5.1.11",
