@@ -5,7 +5,7 @@ const { env } = require('process');
 const nodeEnv = env.NODE_ENV || 'development';
 const isProd = env.NODE_ENV === 'production';
 const isProfile = env.PROFILE === 'true';
-const minify = env.MINIFY == 'true' || isProd;
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 let plugins = [
   new DotEnvPlugin({ defaults: true })
@@ -37,6 +37,8 @@ let conf = {
   },
 
   optimization: {
+    minimize: isProd,
+    minimizer: [new UglifyJsPlugin()],
     splitChunks: {
       chunks: 'all',
       cacheGroups: {
@@ -61,7 +63,7 @@ let conf = {
         }
       }
     },
-    usedExports: minify
+    usedExports: isProd
   },
 
   plugins
