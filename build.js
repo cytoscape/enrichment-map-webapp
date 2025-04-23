@@ -14,7 +14,7 @@ const envKeys = Object.fromEntries(
 await build({
   entryPoints: ['./src/client/index.js'],
   bundle: true,
-  outdir: 'build',
+  outfile: 'build/main.js',                    
   sourcemap: process.env.NODE_ENV === 'production' ? false : 'inline',
   minify: process.env.MINIFY === 'true' || process.env.NODE_ENV === 'production',
   loader: { '.js': 'jsx' },
