@@ -23,7 +23,8 @@ const faqs = [
       question: <>What files can I upload?</>,
       answer: <>
         Currently the EnrichmentMap web app only supports gene lists as input.
-        You can upload either a gene list that already has ranks or an RNA-seq expression file that contains read counts.<br />
+        You can upload either a <LinkOut download href="/sample-data/brca_hd_tep_ranks.rnk">gene list</LinkOut> that already has ranks
+        or an <LinkOut download href="/sample-data/GSE129943_rsem_counts_HGNC_expr.txt">RNA-seq expression file</LinkOut> that contains read counts.<br />
         The file type must be <code>Excel</code>, <LinkOut href="https://en.wikipedia.org/wiki/Comma-separated_values"><code>CSV</code></LinkOut>&nbsp;
         or <LinkOut href="https://en.wikipedia.org/wiki/Tab-separated_values"><code>TSV</code></LinkOut>.<br />
         The gene names must be the identifiers from&nbsp;
