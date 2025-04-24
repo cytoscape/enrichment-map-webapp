@@ -324,6 +324,9 @@ export function UploadPanel({ isMobile, initialFormat, onFormatChanged }) {
       </Link>
     </div>
   );
+  SampleLink.propTypes = {
+    url: PropTypes.string.isRequired,
+  };
 
   return (
     <>
