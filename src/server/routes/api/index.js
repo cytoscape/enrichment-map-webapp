@@ -238,7 +238,7 @@ http.get('/gene/:symbol/taxon/:taxon', async function(req, res, next) {
     const { symbol, taxon } = req.params;
 
     // Check if the data is in the cache
-    const cacheKey = `${taxon}-${symbol}`;
+    const cacheKey = `gene-${taxon}-${symbol}`;
     const cachedData = cache.get(cacheKey);
 
     if (cachedData) {
