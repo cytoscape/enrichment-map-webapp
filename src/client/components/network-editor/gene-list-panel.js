@@ -43,6 +43,10 @@ const useGeneMetadataPanelStyles = makeStyles((theme) => ({
     borderColor: theme.palette.divider,
     borderStyle: 'hidden hidden hidden solid',
   },
+  geneSummary: {
+    marginTop: theme.spacing(1),
+    fontSize: theme.typography.caption.fontSize
+  },
   linkout: {
     fontSize: '0.75rem',
   },
@@ -80,7 +84,7 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
       .then(res => res.json()), {
         retry: 2,
         retryDelay: 3000,
-        staleTime: 24 * 3600000, // After 24 hours, the cached data becomes stale and a refetch can happen
+        staleTime: 24 * 60 * 60 * 1000, // After 24 hours, the cached data becomes stale and a refetch can happen
       }
   );
 
@@ -88,18 +92,17 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   const isLoading = queryGeneData.isLoading;
 
   let error = queryGeneData.error;
-  let description, ncbiId;
+  let description, summary, ncbiId;
   
   if (!isLoading && !error && data) {
-    const entry = data.reports && data.reports.length > 0 ? data.reports[0] : {};
-
-    if (entry.warnings && entry.warnings.length > 0) {
-      error = { message: entry.warnings[0].reason };
+    if (data.warnings && data.warnings.length > 0) {
+      error = { message: data.warnings[0].reason };
     } else {
-      const gene = entry.gene;
+      const gene = data.gene;
 
       if (gene) {
         description = gene.description;
+        summary = gene.summary && gene.summary.length > 0 ? gene.summary[0].description : null;
         ncbiId = gene['gene_id'];
       }
     }
@@ -126,6 +129,11 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
             <Typography variant="body2" color="textSecondary" className={isLoading ? classes.loadingMsg : null}>
               {isLoading ? 'Loading...' : description }
             </Typography>
+          {!isLoading && summary && (
+            <Typography variant="body2" color="textSecondary" className={classes.geneSummary}>
+              { summary }
+            </Typography>
+          )}
           </Grid>
           {!isLoading && (
             <>

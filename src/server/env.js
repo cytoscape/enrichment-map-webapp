@@ -36,3 +36,6 @@ export const S3_ENDPOINT = process.env.S3_ENDPOINT;
 export const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID;
 export const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY;
 export const S3_USER_UPLOAD_BUCKET = process.env.S3_USER_UPLOAD_BUCKET;
+
+// NCBI API config
+export const NCBI_API_KEY = process.env.NCBI_API_KEY;

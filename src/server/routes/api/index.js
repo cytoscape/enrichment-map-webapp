@@ -4,6 +4,8 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 import Datastore from '../../datastore.js';
+import { NCBI_API_KEY } from '../../env.js';
+import { cache } from '../../cache.js';
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -234,9 +236,22 @@ http.delete('/:netid/positions', async function(req, res, next) {
 http.get('/gene/:symbol/taxon/:taxon', async function(req, res, next) {
   try {
     const { symbol, taxon } = req.params;
-    const response = await fetch(`https://api.ncbi.nlm.nih.gov/datasets/v2/gene/symbol/${symbol}/taxon/${taxon}`, {
+
+    // Check if the data is in the cache
+    const cacheKey = `${taxon}-${symbol}`;
+    const cachedData = cache.get(cacheKey);
+
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
+    const response = await fetch(`https://api.ncbi.nlm.nih.gov/datasets/v2/gene/symbol/${symbol}/taxon/${taxon}/dataset_report`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...(NCBI_API_KEY && { 'api-key': NCBI_API_KEY }),
+      },
     });
 
     if (!response.ok) {
@@ -244,8 +259,12 @@ http.get('/gene/:symbol/taxon/:taxon', async function(req, res, next) {
       return;
     }
 
-    const geneData = await response.json();
-    res.send(geneData);
+    const jsonData = await response.json();
+    const report = jsonData.reports?.length > 0 ? jsonData.reports[0] : {};
+    // Store the data in the cache with the specified TTL
+    cache.set(cacheKey, report);
+    // Send the response to the client
+    res.json(report);
   } catch (err) {
     next(err);
   }
