@@ -189,17 +189,17 @@ export class UploadController {
     const errors = [];
 
     if(step === 'fgsea') {
-      errors.push('Error running FGSEA service.', 'Please try again later.');
+      errors.push('Error running FGSEA service.', 'Please verify that your input file is formatted correctly.');
     } else if(step == 'em') {
       if(detail === 'empty') {
          // Probable causes: The gene IDs don't match whats in our pathway database or none of the enriched pathways passed the filter cutoff.
         errors.push('Not able to create a network from the provided data.');
         errors.push('There are not enough significantly enriched pathways.');
       } else {
-        errors.push('Error running EnrichmentMap service.', 'Please try again later.');
+        errors.push('Error running EnrichmentMap service.', 'Please verify that your input file is formatted correctly.');
       }
     } else if(step == 'bridgedb') {
-      errors.push('Error running BridgeDB service.', 'Could not map Ensembl gene IDs to HGNC.', 'Please try again later.');
+      errors.push('Error running BridgeDB service.', 'Could not map Ensembl gene IDs to HGNC.', 'Please verify that your input file is formatted correctly.');
     }
 
     return errors;
