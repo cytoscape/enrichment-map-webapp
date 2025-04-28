@@ -85,7 +85,7 @@ const faqs = [
         <ul style={ulStyle}>
           <li>Low-count genes are filtered via edgeR, with the filterByExpr function.</li>
           <li>Batch effects are currently out of scope for the current version of the app. Please consider batch effects in your data collection in preparation for upload to the app.  You can use your own analysis with the app (e.g. R scripts) for the FGSEA/GSEA portion of the analysis to a produce a rank file that is free of batch effects.</li>
-          <li>Sample outliers are currently out of scope for the current version of the app.  You can use a MDS/PCA plot in order to detect sample outliers in the interim.  You can use your own analysis with the app (e.g. R scripts) for the FGSEA/GSEA portion of the analysis to a produce a rank file that takes sample outliers into account.</li>
+          <li>Sample outliers are currently out of scope for the current version of the app.  You can use a MDS/PCA plot in order to detect sample outliers in the interim.  You can use your own analysis with the app (e.g. R scripts) for the FGSEA/GSEA portion of the analysis to produce a rank file that takes sample outliers into account.</li>
         </ul>
       </>,
     },
