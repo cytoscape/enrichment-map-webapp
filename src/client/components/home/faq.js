@@ -143,6 +143,36 @@ const faqs = [
         You can find the instructions in the <code>README</code> file&mdash;included when you download the network images and data.
       </>,
     },
+    {
+      question: <>How are low-count genes handled?</>,
+      answer: <>
+        Low-count genes are filtered via edgeR, with the filterByExpr function.
+      </>,
+    },
+    {
+      question: <>How are batch effects handled?</>,
+      answer: <>
+        Batch effects are currently out of scope for the current version of the app. Please consider batch effects in your data collection in preparation for upload to the app.  You can use your own analysis with the app (e.g. R scripts) for the FGSEA/GSEA portion of the analysis to a produce a rank file that is free of batch effects.
+      </>,
+    },
+    {
+      question: <>How are sample outliers handled?</>,
+      answer: <>
+        Sample outliers are currently out of scope for the current version of the app.  You can use a MDS/PCA plot in order to detect sample outliers in the interim.  You can use your own analysis with the app (e.g. R scripts) for the FGSEA/GSEA portion of the analysis to a produce a rank file that takes sample outliers into account.
+      </>,
+    },
+    {
+      question: <>What gene set database is used?</>,
+      answer: <>
+        The Bader Lab gene set database for EnrichmentMap is used (Human_GOBP_AllPathways_noPFOCR_no_GO_iea_May_01_2024_symbol.gmt).  The latest (i.e. current) and past versions used by this app are available for download on <LinkOut href="https://github.com/cytoscape/enrichment-map-webapp/tree/main/public/geneset-db">GitHub</LinkOut>.
+      </>,
+    },
+    {
+      question: <>What file is used to generate the demo?</>,
+      answer: <>
+        The rank (RNK) file used to generate the demo can be downloaded from <LinkOut href="https://github.com/cytoscape/enrichment-map-webapp/blob/main/public/sample-data/brca_hd_tep_ranks.rnk">GitHub (brca_hd_tep_ranks.rnk)</LinkOut>.
+      </>,
+    },
   ],
 ];
 
