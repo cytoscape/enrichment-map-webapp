@@ -259,7 +259,11 @@ function createREADME(controller) {
     * Click the *Build* button.
     * Documentation for the EnrichmentMap Cytoscape App is available here...
       * https://enrichmentmap.readthedocs.io/
-    
+
+    Software versions
+    -----------------
+    * edgeR v4.4.1
+    * FGSEA v1.32.2
     
     Gene-set filtering parameters
     -----------------------------
