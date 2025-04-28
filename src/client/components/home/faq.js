@@ -24,9 +24,9 @@ const faqs = [
       answer: <>
         Currently the EnrichmentMap web app only supports gene lists as input.
         You can upload either a <LinkOut download href="/sample-data/brca_hd_tep_ranks.rnk">gene list</LinkOut> that already has ranks
-        or an <LinkOut download href="/sample-data/GSE129943_rsem_counts_HGNC_expr.txt">RNA-seq expression file</LinkOut> that contains read counts.<br />
+        or an <LinkOut download href="/sample-data/GSE129943_rsem_counts_HGNC_expr.txt">RNA-seq expression file</LinkOut> that contains read counts.
         The file type must be <code>Excel</code>, <LinkOut href="https://en.wikipedia.org/wiki/Comma-separated_values"><code>CSV</code></LinkOut>&nbsp;
-        or <LinkOut href="https://en.wikipedia.org/wiki/Tab-separated_values"><code>TSV</code></LinkOut>.<br />
+        or <LinkOut href="https://en.wikipedia.org/wiki/Tab-separated_values"><code>TSV</code></LinkOut>.
         The gene names must be the identifiers from&nbsp;
         <LinkOut href="https://www.ensembl.org/Homo_sapiens/Info/Index">Ensembl</LinkOut> or&nbsp;
         <LinkOut href="https://www.genenames.org/">HGNC</LinkOut> for human only.
@@ -39,10 +39,10 @@ const faqs = [
         <LinkOut href="https://www.gsea-msigdb.org/gsea/index.jsp">GSEA</LinkOut> or&nbsp;
         <LinkOut href="https://biit.cs.ut.ee/gprofiler">g:Profiler</LinkOut> results to create an EnrichmentMap network,
         you can use the <LinkOut href="https://apps.cytoscape.org/apps/enrichmentmap">EnrichmentMap App</LinkOut> for&nbsp;
-        <LinkOut href="https://cytoscape.org/">Cytoscape</LinkOut>&mdash;<LinkOut href="https://enrichmentmap.readthedocs.io/en/latest/Gsea.html">more info</LinkOut>.<br />
+        <LinkOut href="https://cytoscape.org/">Cytoscape</LinkOut>&mdash;<LinkOut href="https://enrichmentmap.readthedocs.io/en/latest/Gsea.html">more info</LinkOut>.
         However, if you still have the original gene list file used as input to GSEA,
         you can upload the file to EnrichmentMap web and perform a new enrichment analysis.
-        The results will be available much faster than with GSEA.<br />
+        The results will be available much faster than with GSEA.
         Unranked gene list files typically used as input for g:Profiler are currently not supported by this web app.
       </>,
     },
@@ -68,7 +68,7 @@ const faqs = [
     {
       question: <>What are the analysis parameters?</>,
       answer: <>
-        The gene set filtering parameters are cutoff parameters used to filter the results of an enrichment analysis.<br />
+        The gene set filtering parameters are cutoff parameters used to filter the results of an enrichment analysis.
         Please download the network images and data and then check the <code>README</code> file for the applied parameters.
       </>,
     },
@@ -76,7 +76,17 @@ const faqs = [
       question: <>What data does the app use?</>,
       answer: <>
         The enrichment analysis is performed against a <LinkOut href="https://baderlab.org/GeneSets">database of known pathways</LinkOut>&nbsp;
-        for human, which has been curated from several sources by Bader Lab at the University of Toronto.
+        for human, which has been curated from several sources by Bader Lab at the University of Toronto.  The current GMT file used is <code style={{wordBreak: "break-all", overflowWrap: "break-word"}}>Human_GOBP_AllPathways_noPFOCR_no_GO_iea_May_01_2024_symbol.gmt</code>.  The latest (i.e. current) and past versions used by this app are available for download on <LinkOut href="https://github.com/cytoscape/enrichment-map-webapp/tree/main/public/geneset-db">GitHub</LinkOut>.
+      </>,
+    },
+    {
+      question: <>How are low-count genes, batch effects, and outliers handled?</>,
+      answer: <>
+        <ul style={ulStyle}>
+          <li>Low-count genes are filtered via edgeR, with the filterByExpr function.</li>
+          <li>Batch effects are currently out of scope for the current version of the app. Please consider batch effects in your data collection in preparation for upload to the app.  You can use your own analysis with the app (e.g. R scripts) for the FGSEA/GSEA portion of the analysis to a produce a rank file that is free of batch effects.</li>
+          <li>Sample outliers are currently out of scope for the current version of the app.  You can use a MDS/PCA plot in order to detect sample outliers in the interim.  You can use your own analysis with the app (e.g. R scripts) for the FGSEA/GSEA portion of the analysis to a produce a rank file that takes sample outliers into account.</li>
+        </ul>
       </>,
     },
   ], [
@@ -139,38 +149,14 @@ const faqs = [
       question: <>Can I import my network into Cytoscape?</>,
       answer: <>
         Yes, you first need to download and install <LinkOut href="https://cytoscape.org/download.html">Cytoscape</LinkOut> and then
-        install the <LinkOut href="https://apps.cytoscape.org/apps/enrichmentmap">EnrichmentMap App</LinkOut> for Cytoscape.<br />
+        install the <LinkOut href="https://apps.cytoscape.org/apps/enrichmentmap">EnrichmentMap App</LinkOut> for Cytoscape.
         You can find the instructions in the <code>README</code> file&mdash;included when you download the network images and data.
-      </>,
-    },
-    {
-      question: <>How are low-count genes handled?</>,
-      answer: <>
-        Low-count genes are filtered via edgeR, with the filterByExpr function.
-      </>,
-    },
-    {
-      question: <>How are batch effects handled?</>,
-      answer: <>
-        Batch effects are currently out of scope for the current version of the app. Please consider batch effects in your data collection in preparation for upload to the app.  You can use your own analysis with the app (e.g. R scripts) for the FGSEA/GSEA portion of the analysis to a produce a rank file that is free of batch effects.
-      </>,
-    },
-    {
-      question: <>How are sample outliers handled?</>,
-      answer: <>
-        Sample outliers are currently out of scope for the current version of the app.  You can use a MDS/PCA plot in order to detect sample outliers in the interim.  You can use your own analysis with the app (e.g. R scripts) for the FGSEA/GSEA portion of the analysis to a produce a rank file that takes sample outliers into account.
-      </>,
-    },
-    {
-      question: <>What gene set database is used?</>,
-      answer: <>
-        The Bader Lab gene set database for EnrichmentMap is used (Human_GOBP_AllPathways_noPFOCR_no_GO_iea_May_01_2024_symbol.gmt).  The latest (i.e. current) and past versions used by this app are available for download on <LinkOut href="https://github.com/cytoscape/enrichment-map-webapp/tree/main/public/geneset-db">GitHub</LinkOut>.
       </>,
     },
     {
       question: <>What file is used to generate the demo?</>,
       answer: <>
-        The rank (RNK) file used to generate the demo can be downloaded from <LinkOut href="https://github.com/cytoscape/enrichment-map-webapp/blob/main/public/sample-data/brca_hd_tep_ranks.rnk">GitHub (brca_hd_tep_ranks.rnk)</LinkOut>.
+        The rank (RNK) file used to generate the demo can be downloaded from <LinkOut href="https://github.com/cytoscape/enrichment-map-webapp/blob/main/public/sample-data/brca_hd_tep_ranks.rnk">GitHub (<code>brca_hd_tep_ranks.rnk</code>)</LinkOut>.
       </>,
     },
   ],
