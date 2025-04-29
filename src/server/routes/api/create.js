@@ -122,11 +122,13 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
 
   const preranked = type === 'preranked';
 
+  // First we need to check if the IDs are ensembl IDs.
+  // If they are, we need to convert them to HGNC IDs using the BridgeDB service.
   perf.mark('bridgedb');
   const needIdMapping = isEnsembl(body);
-  if(needIdMapping) {
-    body = await runEnsemblToHGNCMapping(body, contentType);
-  }
+  const validation = await validateGenes(body, contentType, needIdMapping);
+  body = validation.body;
+  const unknownGenes = validation.unknownGenes;
 
   perf.mark('fgsea');
   let rankedGeneList;
@@ -164,7 +166,7 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
   let networkID;
   try {
     perf.mark('mongo');
-    networkID = await Datastore.createNetwork(networkJson, networkName, type, GMT_FILE, demo);
+    networkID = await Datastore.createNetwork(networkJson, networkName, type, GMT_FILE, unknownGenes, demo);
     await Datastore.initializeGeneRanks(GMT_FILE, networkID, rankedGeneList, demo);
     res?.send(networkID);
   } catch(e) {
@@ -199,6 +201,63 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
   }, demo);
   
   return networkID;
+}
+
+
+async function validateGenes(body, contentType, needIdMapping) {
+  // If the IDs are Ensembl IDs, we need to convert them to HGNC IDs using the BridgeDB service.
+  let invalidEnsemblIDs;
+  let ensemblToSymbolMap;
+  let symbolToEnsemblMap;
+  if (needIdMapping) {
+    const mapping = await runEnsemblToHGNCMapping(body, contentType);
+    body = mapping.body;
+    ensemblToSymbolMap = mapping.map;
+    invalidEnsemblIDs = mapping.invalidIDs;
+    // Create another map with inverted the key/value pairs so we can later look up the Ensembl ID by HGNC ID
+    if (ensemblToSymbolMap) {
+      symbolToEnsemblMap = new Map();
+      ensemblToSymbolMap.forEach((symbol, ensID) => {
+        if (symbol) {
+          symbolToEnsemblMap.set(symbol, ensID);
+        }
+      });
+    }
+  }
+
+  // We also need to check if any of the HGNC IDs are not supported by our database (from the imported GMT file).
+  // The unrecognized gene symbols must be stored in the database.
+  const lines = body.split('\n');
+  const delim = contentType === 'text/csv' ? ',' : '\t';
+  const content = lines
+    .slice(1)
+    .filter(line => line && line.length > 0)
+    .map(line => line.split(delim));
+  const geneSymbols = content.map(row => row[0]);
+  
+  const unrecognizedSymbolSet = new Set();
+  for (const symbol of geneSymbols) {
+    const recognized = Datastore.hasGene(symbol);
+    if (!recognized) {
+      unrecognizedSymbolSet.add(symbol);
+    }
+  }
+
+  // Create a list with objects containing the HGNC ID and the Ensembl ID for all invalid/unrecognized genes
+  const unknownGenes = [];
+  // Genes that were not mapped to HGNC IDs (the ensembl IDs were not recognized by BridgeDB)
+  if (invalidEnsemblIDs) {
+    for (const ensemblID of invalidEnsemblIDs) {
+      unknownGenes.push({ ensemblID });
+    }
+  }
+  // Genes that were not in our database
+  for (const symbol of unrecognizedSymbolSet) {
+    const ensemblID = symbolToEnsemblMap ? symbolToEnsemblMap.get(symbol) : undefined;
+    unknownGenes.push({ ensemblID, symbol });
+  }
+
+  return { body, unknownGenes };
 }
 
 
@@ -333,7 +392,7 @@ async function runBridgeDB(ensemblIDs, species='Human', sourceType='En') {
       const symbol = line.split(',').filter(m => m.startsWith('H:'))[0];
       return symbol && symbol.slice(2); // remove 'H:'
     });
-    
+  
   return hgncIDs;
 }
 
@@ -359,16 +418,17 @@ async function runEnsemblToHGNCMapping(body, contentType) {
 
   // Call BridgeDB
   const ensemblIDs = content.map(row => row[0]).map(removeVersionCode);
-
   const hgncIDs = await runBridgeDB(ensemblIDs);
 
   // Replace old IDs with the new ones
+  const map = new Map();
   const newContent = [];
   const invalidIDs = [];
   for(var i = 0; i < content.length; i++) {
     const row = content[i];
     const newID = hgncIDs[i];
     if(newID) {
+      map.set(row[0], newID);
       newContent.push([newID, ...row.slice(1)]);
     } else {
       invalidIDs.push(row[0]);
@@ -391,7 +451,8 @@ async function runEnsemblToHGNCMapping(body, contentType) {
 
   // Convert back to a big string
   const newBody = header + '\n' + newContent.map(line => line.join(delim)).join('\n');
-  return newBody;
+  
+  return { body: newBody, map, invalidIDs };
 }
 
 
