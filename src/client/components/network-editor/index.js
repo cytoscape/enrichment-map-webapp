@@ -73,6 +73,7 @@ async function loadNetwork(id, cy, controller, recentNetworksController) {
     name: networkJson.networkName, 
     parameters: networkJson.parameters,
     geneSetCollection: networkJson.geneSetCollection,
+    unknownGenes: networkJson.unknownGenes,
     demo: Boolean(networkJson.demo)
   });
 

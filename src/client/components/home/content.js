@@ -18,7 +18,7 @@ import Faq from './faq';
 import About from './about';
 import { DebugMenu } from './debug-menu';
 import StartDialog from './start-dialog';
-import LinkOut from './link-out';
+import LinkOut from '../link-out';
 
 import { Container, Grid } from '@material-ui/core';
 import { Button, Typography, Link } from '@material-ui/core';

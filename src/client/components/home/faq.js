@@ -2,7 +2,7 @@ import React from 'react';
 
 import { makeStyles } from '@material-ui/core/styles';
 
-import LinkOut from './link-out';
+import LinkOut from '../link-out';
 import { Typography } from '@material-ui/core';
 
 
