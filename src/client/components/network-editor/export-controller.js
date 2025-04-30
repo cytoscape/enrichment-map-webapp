@@ -26,6 +26,7 @@ const Path = {
   DATA_RANKS:    'data/ranks.txt',
   DATA_GENESETS: 'data/gene_sets.gmt',
   DATA_JSON:     'data/network.json',
+  UNKNOWN_GENES: 'unrecognized_genes.txt',
   README:        'README.md'
 };
 
@@ -54,6 +55,8 @@ export class ExportController {
       fetchExport(`/api/export/ranks/${netID}`),
       fetchExport(`/api/export/gmt/${netID}`),
     ]);
+    
+    const unknownGenes = this.cy.data('unknownGenes'); 
 
     // Let image generation run in parallel with fetching data from server
     const blob0 = await this._createNetworkImageBlob(ImageSize.SMALL);
@@ -61,7 +64,8 @@ export class ExportController {
     const blob2 = await this._createNetworkImageBlob(ImageSize.LARGE);
     const blob3 = await this._createNetworkPDFBlob();
     const blob4 = await this._createSVGLegendBlob();
-    // const blob5 = await this._createNetworkJSONBlob();
+    const blob5 = Array.isArray(unknownGenes) && unknownGenes.length > 0 ? this._createUnknownGenesBlob() : null;
+    // const blob6 = await this._createNetworkJSONBlob();
     const files = await filesPromise;
     const readme = createREADME(this.controller);
   
@@ -71,7 +75,10 @@ export class ExportController {
     zip.file(Path.IMAGE_LARGE,   blob2);
     zip.file(Path.IMAGE_PDF,     blob3);
     zip.file(Path.IMAGE_LEGEND,  blob4);
-    // zip.file(Path.DATA_JSON,     blob5);
+    if (blob5) {
+      zip.file(Path.UNKNOWN_GENES, blob5);
+    }
+    // zip.file(Path.DATA_JSON,     blob6);
     zip.file(Path.DATA_ENRICH,   files[0]);
     zip.file(Path.DATA_RANKS,    files[1]);
     zip.file(Path.DATA_GENESETS, files[2]);
@@ -176,7 +183,26 @@ export class ExportController {
     const svg = getLegendSVG(this.controller);
     return new Blob([svg], { type: 'text/plain;charset=utf-8' });
   }
-   
+
+  _createUnknownGenesBlob() {
+    const { cy } = this.controller;
+    const unknownGenes = cy.data('unknownGenes');
+    if (Array.isArray(unknownGenes) && unknownGenes.length > 0) {
+      const text = unknownGenes.map(g => {
+        if (g.ensemblID) {
+          if (g.symbol) {
+            return `${g.ensemblID}\t${g.symbol}`;
+          } else {
+            return g.ensemblID;
+          }
+        }
+        return g.symbol;
+      }).join('\n');
+      return new Blob([text], { type: 'text/plain' });
+    }
+    return new Blob([''], { type: 'text/plain' }); // Return an empty Blob if no unknown genes
+  }
+
   _getZipFileName(suffix) {
     const networkName = this.cy.data('name');
     if(networkName) {
@@ -193,9 +219,7 @@ export class ExportController {
     const archiveBlob = await zip.generateAsync({ type: 'blob' });
     await saveAs(archiveBlob, fileName);
   }
-
 }
-
 
 
 function createREADME(controller) {
@@ -227,6 +251,8 @@ function createREADME(controller) {
       * Gene ranks.
     * ${Path.DATA_GENESETS}
       * Gene sets (pathways) that correspond to nodes in the network.
+    * ${Path.UNKNOWN_GENES}
+      * List of uploaded genes that could not be identified (i.e. invalid Ensembl IDs or gene symbols that were not found in the pathway database).
 
 
     How to cite EnrichmentMap
