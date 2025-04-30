@@ -407,7 +407,7 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   const [searchValue, setSearchValue] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [genes, setGenes] = useState(null);
-  const [unrecognizedGene, setUnrecognizedGenes] = useState([]);
+  const [unrecognizedGenes, setUnrecognizedGenes] = useState([]);
   const [showUnrecognizedGenes, setShowUnrecognizedGenes] = useState(false);
   const [setOperation, setSetOperation] = useState('union');
   const [sort, setSort] = useState('down');
@@ -799,12 +799,12 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
               </Grid>
             </Grid>
           </Grid>
-        {unrecognizedGene?.length > 0 && (
+        {unrecognizedGenes?.length > 0 && (
           <AttentionBox
             level="warning"
             onOpen={() => setShowUnrecognizedGenes(true)}
           >
-            { unrecognizedGene.length} unrecognized gene{unrecognizedGene.length > 1 ? 's' : ''}
+            { unrecognizedGenes.length} unrecognized gene{unrecognizedGenes.length > 1 ? 's' : ''}
           </AttentionBox>
         )}
         </div>
@@ -825,8 +825,8 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
       <AttentionGenesDialog
         open={showUnrecognizedGenes}
         level="warning"
-        genes={unrecognizedGene}
-        title={`Unrecognized Gene${unrecognizedGene.length > 1 ? 's' : ''}`}
+        genes={unrecognizedGenes}
+        title={`Unrecognized Gene${unrecognizedGenes.length > 1 ? 's' : ''}`}
         isMobile={isMobile}
         onClose={() => setShowUnrecognizedGenes(false)}
       />
