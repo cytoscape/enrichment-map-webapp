@@ -10,7 +10,7 @@ import { NetworkEditorController } from './controller';
 import { LinkOut } from '../link-out';
 import GeneListPanel from './gene-list-panel';
 
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 
 import { Box, Drawer, Grid, Typography, Toolbar, Tooltip } from '@material-ui/core';
 import { FormControl, Button, IconButton, Select, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
@@ -106,11 +106,20 @@ AttentionBox.propTypes = {
 //==[ AttentionGenesDialog ]==========================================================================================
 
 const useAttentionGenesDialogStyles = makeStyles((theme) => ({
+  dialogContent: {
+    [theme.breakpoints.down('xs')]: {
+      paddingLeft: theme.spacing(0.5),
+      paddingRight: theme.spacing(0.5),
+    },
+  },
   infoBox: {
     marginTop: theme.spacing(-5),
     padding: theme.spacing(4, 2, 2, 2),
     borderRadius: 8,
     fontSize: theme.typography.body2.fontSize,
+    [theme.breakpoints.down('xs')]: {
+      fontSize: theme.typography.caption.fontSize,
+    },
   },
   infoBoxInfo: {
     backgroundColor: chroma(theme.palette.info.light).alpha(0.1).css(),
@@ -121,26 +130,34 @@ const useAttentionGenesDialogStyles = makeStyles((theme) => ({
   infoBoxError: {
     backgroundColor: chroma(theme.palette.error.light).alpha(0.1).css(),
   },
-  content: {
-    fontSize: theme.typography.body2.fontSize,
-    color: theme.palette.text.primary,
+  subtitle: {
+    [theme.breakpoints.down('xs')]: {
+      fontSize: theme.typography.body2.fontSize,
+    },
   },
-  ensemblIdCaption: {
+  info: {
+    marginTop: theme.spacing(1),
+    [theme.breakpoints.down('xs')]: {
+      fontSize: theme.typography.caption.fontSize,
+    },
+  },
+  geneCell: {
     fontSize: theme.typography.caption.fontSize,
-    color: theme.palette.text.disabled,
-    marginLeft: theme.spacing(1),
+    padding: theme.spacing(0.25, 1),
   },
   snackBar: {
     top: '10px',
   },
 }));
 
-const AttentionGenesDialog = ({ open, level, genes, title, info, isMobile, onClose }) => {
+const AttentionGenesDialog = ({ open, level, genes, title, isMobile, onClose }) => {
   const [copied, setCopied] = useState(false);
-  const classes = useAttentionGenesDialogStyles();
   
-  const handleCopy = () => {
-    const text = genes.map(g => {
+  const classes = useAttentionGenesDialogStyles();
+  const theme = useTheme();
+  
+  const handleCopy = (geneList) => {
+    const text = geneList.map(g => {
       if (g.ensemblID) {
         if (g.symbol) {
           return `${g.symbol}\t${g.ensemblID}`;
@@ -160,59 +177,111 @@ const AttentionGenesDialog = ({ open, level, genes, title, info, isMobile, onClo
     setCopied(false);
     onClose();
   };
+
+  const renderGeneListContent = (list, title, info) => {
+    return (
+      <DialogContent dividers className={classes.dialogContent}>
+      {info && (
+        <Box className={clsx(classes.infoBox, classes[`infoBox${_.capitalize(level)}`])}>
+          <Grid
+            container
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Grid item>
+              <Typography variant="subtitle1" color="textPrimary" className={classes.subtitle}>
+                { title }
+              </Typography>
+            </Grid>
+            <Grid item>
+              <Tooltip title="Copy to clipboard">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => handleCopy(list)}
+                >
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Grid>
+          </Grid>
+          <Typography variant="body2" color="textSecondary" className={classes.info}>
+            { info }
+          </Typography>
+        </Box>
+      )}
+      {list && (
+        <Box component="table" width="100%" border={0} cellSpacing={0} cellPadding={0}>
+          <Box component="tbody">
+          {list.map((g, i) => (
+            <Box component="tr" key={i}>
+              <Box component="td" width={50} textAlign="right" color={theme.palette.text.disabled} className={classes.geneCell}>
+                { i + 1 }
+              </Box>
+            {g.symbol && (
+              <Box component="td" width="100%" color={theme.palette.text.secondary} className={classes.geneCell}>
+                { g.symbol || '-' }
+              </Box>
+            )}
+            {g.ensemblID && (
+            <>
+              {g.symbol && (
+                <Box component="td" width={20} color={theme.palette.text.disabled}>
+                  &nbsp;&#8592;&nbsp;
+                </Box>
+              )}
+              <Box component="td" width="100%" color={g.symbol ? theme.palette.text.disabled : theme.palette.text.secondary} className={classes.geneCell}>
+                { g.ensemblID }
+              </Box>
+            </>
+            )}
+            </Box>
+          ))}
+          </Box>
+        </Box>
+      )}
+      </DialogContent>
+    );
+  };
+  
+  const invalidGenes = genes.filter(g => g.ensemblID != null && g.symbol == null);
+  const unrecognizedGenes = genes.filter(g => g.symbol != null);
   
   return (
     <Dialog open={open} fullScreen={isMobile} onClose={handleClose}>
       <DialogTitle>
-        <Grid
-          container
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          <Grid item>
-            { title }
-          </Grid>
-          <Grid item>
-            <Tooltip title="Copy to clipboard">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => handleCopy()}
-              >
-                <ContentCopyIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Grid>
-        </Grid>
+        { title }
       </DialogTitle>
-      <DialogContent dividers>
-      {info && (
-        <DialogContentText className={clsx(classes.infoBox, classes[`infoBox${_.capitalize(level)}`])}>
-          { info }
-        </DialogContentText>
-      )}
-      {genes && genes.map((gene, i) => (
-        <Typography key={i} variant="body2" color="textSecondary">
-        {gene.symbol && (
-          <>{ gene.symbol }</>
-        )}
-        {gene.ensemblID && (
-          <Typography
-            component="span"
-            variant="caption"
-            color="textSecondary"
-            className={gene.symbol ? classes.ensemblIdCaption : null}
-          >
-          {gene.symbol && (
-            <>&nbsp;&#8592;&nbsp;</>
-          )}
-            { gene.ensemblID }
-          </Typography>
-        )}
-        </Typography>
-      ))}
-      </DialogContent>
+    {invalidGenes.length > 0 && (
+      renderGeneListContent(
+        invalidGenes,
+        `Invalid Ensembl ID${invalidGenes.length > 1 ? 's' : ''} (${invalidGenes.length})`,
+        <>
+          These Ensembl IDs could not be translated to gene symbols.<br />
+          Please check the spelling or try updating your Ensembl IDs <LinkOut href="https://useast.ensembl.org/Help/View?db=core;id=560#:~:text=The%20ID%20history%20converter%20allows,Ensembl%20IDs%2C%20which%20begin%20ENS">here</LinkOut>.
+        </>
+      )
+    )}
+    {unrecognizedGenes.length > 0 && (
+      renderGeneListContent(
+        unrecognizedGenes,
+        `Symbols not Found (${unrecognizedGenes.length})`,
+        // If there are any ensemblIDs in the list, show a different message,
+        // because this just means that these symbols are not in our database (GMT file),
+        // since they have been input as EnsemblIDs and then validated when BridgeDB translated them to symbols.
+        unrecognizedGenes[0].ensemblID ?
+          <>
+            These gene symbols were translated from your Ensembl IDs, but are not
+            in our <LinkOut href="https://baderlab.org/GeneSets">database of known pathways</LinkOut>.
+          </>
+          :
+          <>
+            These gene symbols are not in our <LinkOut href="https://baderlab.org/GeneSets">database of known pathways</LinkOut>.<br />
+            In any case, please make sure that the spelling is correct.
+          </>
+      )
+    )}
       <DialogActions>
         <Button onClick={handleClose} color="primary" variant="outlined">
           Close
@@ -244,7 +313,6 @@ AttentionGenesDialog.propTypes = {
   level: PropTypes.oneOf(['info', 'warning', 'error']).isRequired,
   genes: PropTypes.array.isRequired,
   title: PropTypes.string.isRequired,
-  info: PropTypes.node,
   isMobile: PropTypes.bool,
   onClose: PropTypes.func.isRequired,
 };
@@ -319,9 +387,6 @@ const useLeftDrawerStyles = makeStyles((theme) => ({
   sortButton: {
     width: 77,
   },
-  geneList: {
-    overflowY: "auto",
-  },
 }));
 
 const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
@@ -330,11 +395,8 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
   const [searchValue, setSearchValue] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [genes, setGenes] = useState(null);
-  const [invalidIDs, setInvalidIDs] = useState([]);
-  const [showInvalidIDs, setShowInvalidIDs] = useState(false);
-  const [unsupportedSymbols, setUnsupportedSymbols] = useState([]);
-  const [unsupportedSymbolsLevel, setUnsupportedSymbolsLevel] = useState('info');
-  const [showUnsupportedSymbols, setShowUnsupportedSymbols] = useState(false);
+  const [unrecognizedGene, setUnrecognizedGenes] = useState([]);
+  const [showUnrecognizedGenes, setShowUnrecognizedGenes] = useState(false);
   const [setOperation, setSetOperation] = useState('union');
   const [sort, setSort] = useState('down');
   const [selectedGene, setSelectedGene] = useState(null);
@@ -458,21 +520,9 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
 
   const onNetworkLoaded = () => {
     setNetworkLoaded(true);
-    const unknownGenes = cy.data('unknownGenes');
-    if (unknownGenes.length > 0) {
-      // Split this list into two lists: entries with gene symbols, entries with only ensemblIDs
-      const idList = unknownGenes.filter(g => g.ensemblID != null && g.symbol == null);
-      if (idList.length > 0) {
-        setInvalidIDs(idList);
-      }
-      const symbolList = unknownGenes.filter(g => g.symbol != null);
-      if (symbolList.length > 0) {
-        setUnsupportedSymbols(symbolList);
-        // If there are any ensemblIDs in the list, show them as 'info',
-        // because this just means that these symbols are not in our database (GMT file),
-        // since they have been input as EnsembleIDs and then validated when BridgeDB translated them to symbols.
-        setUnsupportedSymbolsLevel(symbolList[0].ensemblID ? 'info' : 'warning');
-      }
+    const unrecognizedList = cy.data('unknownGenes');
+    if (unrecognizedList.length > 0) {
+      setUnrecognizedGenes(unrecognizedList);
     }
   };
   const onGeneListIndexed = () => {
@@ -737,20 +787,12 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
               </Grid>
             </Grid>
           </Grid>
-        {invalidIDs?.length > 0 && (
+        {unrecognizedGene?.length > 0 && (
           <AttentionBox
-            level="error"
-            onOpen={() => setShowInvalidIDs(true)}
+            level="warning"
+            onOpen={() => setShowUnrecognizedGenes(true)}
           >
-            { invalidIDs.length} invalid ID{invalidIDs.length > 1 ? 's' : ''}
-          </AttentionBox>
-        )}
-        {unsupportedSymbols?.length > 0 && (
-          <AttentionBox
-            level={unsupportedSymbolsLevel}
-            onOpen={() => setShowUnsupportedSymbols(true)}
-          >
-            { unsupportedSymbols.length} symbol{unsupportedSymbols.length > 1 ? 's' : ''} not found
+            { unrecognizedGene.length} unrecognized gene{unrecognizedGene.length > 1 ? 's' : ''}
           </AttentionBox>
         )}
         </div>
@@ -769,38 +811,12 @@ const LeftDrawer = ({ controller, open, isMobile, isTablet, onClose }) => {
         )}
       </div>
       <AttentionGenesDialog
-        open={showInvalidIDs}
-        level="error"
-        genes={invalidIDs}
-        title={`Invalid ID${invalidIDs.length > 1 ? 's' : ''} (${invalidIDs.length})`}
-        info={
-          <>
-            The Ensembl IDs in this list could not be translated to gene symbols.<br />
-            Please check the spelling or try updating your Ensembl IDs <LinkOut href="https://useast.ensembl.org/Help/View?db=core;id=560#:~:text=The%20ID%20history%20converter%20allows,Ensembl%20IDs%2C%20which%20begin%20ENS">here</LinkOut>.
-          </>
-        }
+        open={showUnrecognizedGenes}
+        level="warning"
+        genes={unrecognizedGene}
+        title={`Unrecognized Gene${unrecognizedGene.length > 1 ? 's' : ''}`}
         isMobile={isMobile}
-        onClose={() => setShowInvalidIDs(false)}
-      />
-      <AttentionGenesDialog
-        open={showUnsupportedSymbols}
-        level={unsupportedSymbolsLevel}
-        genes={unsupportedSymbols}
-        title={`Symbol${unsupportedSymbols.length > 1 ? 's' : ''} not Found (${unsupportedSymbols.length})`}
-        info={
-          unsupportedSymbolsLevel === 'info' ?
-            <>
-              Please note that these gene symbols &#40;translated from Ensembl IDs&#41;
-              are not in our <LinkOut href="https://baderlab.org/GeneSets">database of known pathways</LinkOut>.
-            </>
-            :
-            <>
-              These gene symbols are not in our <LinkOut href="https://baderlab.org/GeneSets">database of known pathways</LinkOut>.<br />
-              In any case, please make sure that the spelling is correct.
-            </>
-        }
-        isMobile={isMobile}
-        onClose={() => setShowUnsupportedSymbols(false)}
+        onClose={() => setShowUnrecognizedGenes(false)}
       />
     </Drawer>
   );
