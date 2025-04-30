@@ -10,11 +10,11 @@ import { NetworkEditorController } from './controller';
 import { LinkOut } from '../link-out';
 import GeneListPanel from './gene-list-panel';
 
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/core/styles';
 
 import { Box, Drawer, Grid, Typography, Toolbar, Tooltip } from '@material-ui/core';
 import { FormControl, Button, IconButton, Select, MenuItem, ListItemIcon, ListItemText } from '@material-ui/core';
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@material-ui/core';
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@material-ui/core';
 import { ToggleButton, ToggleButtonGroup } from '@material-ui/lab';
 import { Snackbar, SnackbarContent } from '@material-ui/core';
 import SearchBar from './search-bar';
@@ -141,9 +141,27 @@ const useAttentionGenesDialogStyles = makeStyles((theme) => ({
       fontSize: theme.typography.caption.fontSize,
     },
   },
-  geneCell: {
+  listItem: {
     fontSize: theme.typography.caption.fontSize,
+    color: theme.palette.text.disabled,
+  },
+  symbol: {
+    fontSize: theme.typography.caption.fontSize,
+    color: theme.palette.text.secondary,
     padding: theme.spacing(0.25, 1),
+  },
+  arrow: {
+    fontSize: theme.typography.caption.fontSize,
+    color: theme.palette.text.disabled,
+    padding: theme.spacing(0.25, 0.5, 0.25, 0.5),
+  },
+  ensemblID: {
+    fontSize: theme.typography.caption.fontSize,
+    color: theme.palette.text.secondary,
+    padding: theme.spacing(0.25, 1),
+  },
+  ensemblIDWithSymbol: {
+    color: theme.palette.text.disabled,
   },
   snackBar: {
     top: '10px',
@@ -154,7 +172,6 @@ const AttentionGenesDialog = ({ open, level, genes, title, isMobile, onClose }) 
   const [copied, setCopied] = useState(false);
   
   const classes = useAttentionGenesDialogStyles();
-  const theme = useTheme();
   
   const handleCopy = (geneList) => {
     const text = geneList.map(g => {
@@ -212,33 +229,28 @@ const AttentionGenesDialog = ({ open, level, genes, title, isMobile, onClose }) 
         </Box>
       )}
       {list && (
-        <Box component="table" width="100%" border={0} cellSpacing={0} cellPadding={0}>
-          <Box component="tbody">
-          {list.map((g, i) => (
-            <Box component="tr" key={i}>
-              <Box component="td" width={50} textAlign="right" color={theme.palette.text.disabled} className={classes.geneCell}>
-                { i + 1 }
-              </Box>
+        <Box component="ol">
+        {list.map((g, i) => (
+          <Box key={i} component="li" className={classes.listItem}>
+          {g.symbol && (
+            <Typography component="span" className={classes.symbol} width={g.ensemblID ? 400 : 'auto'}>
+              { g.symbol || '-' }
+            </Typography>
+          )}
+          {g.ensemblID && (
+          <>
             {g.symbol && (
-              <Box component="td" width="100%" color={theme.palette.text.secondary} className={classes.geneCell}>
-                { g.symbol || '-' }
-              </Box>
+              <Typography component="span" className={classes.arrow}>
+                &nbsp;&#8592;&nbsp;
+              </Typography>
             )}
-            {g.ensemblID && (
-            <>
-              {g.symbol && (
-                <Box component="td" width={20} color={theme.palette.text.disabled}>
-                  &nbsp;&#8592;&nbsp;
-                </Box>
-              )}
-              <Box component="td" width="100%" color={g.symbol ? theme.palette.text.disabled : theme.palette.text.secondary} className={classes.geneCell}>
-                { g.ensemblID }
-              </Box>
-            </>
-            )}
-            </Box>
-          ))}
+            <Typography component="span" className={clsx(classes.ensemblID, { [classes.ensemblIDWithSymbol]: g.symbol })}>
+              { g.ensemblID }
+            </Typography>
+          </>
+          )}
           </Box>
+        ))}
         </Box>
       )}
       </DialogContent>
