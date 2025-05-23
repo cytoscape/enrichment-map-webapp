@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import _ from 'lodash';
 import clsx from 'clsx';
 import chroma from 'chroma-js';
 
