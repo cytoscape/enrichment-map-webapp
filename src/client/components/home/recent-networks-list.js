@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'lodash';
-import clsx from 'clsx';
+import copy from 'copy-to-clipboard';
 
 import { networkURL } from '../util';
 import { RecentNetworksController } from '../recent-networks-controller';
@@ -352,8 +352,12 @@ export class RecentNetworksList extends Component {
     const enabled = id != null;
 
     const handleCopyLink = async () => {
-      navigator.clipboard.writeText(`${networkURL(id)}`);
-      this.snack.showMessage("Link copied to clipboard");
+      const success = copy(networkURL(id));
+      if (success) {
+        this.snack.showMessage("Link copied to clipboard");
+      } else {
+        console.error('Failed to copy link to clipboard!');
+      }
     };
 
     const onClick = () => this.openNetwork(id, secret);
@@ -483,11 +487,16 @@ export class RecentNetworksList extends Component {
             text += '\n';
           }
         });
-        navigator.clipboard.writeText(text);
+        // Copy the text to the clipboard
+        const success = copy(text);
         // Close the popup
         this.setState({ anchorEl: null });
-        // Show the snackbar
-        this.snack.showMessage("Links copied to clipboard");
+        if (success) {
+           // Show the snackbar
+          this.snack.showMessage("Links copied to clipboard");
+        } else {
+          console.error('Failed to copy links to clipboard!');
+        }
       }
     };
     

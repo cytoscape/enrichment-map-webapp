@@ -2,6 +2,7 @@ import React, { useEffect, useState, forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import Mousetrap from 'mousetrap';
+import useClipboard from "react-use-clipboard";
 
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 
@@ -221,11 +222,6 @@ function createPanner({ cy }) {
   };
 }
 
-function handleCopyToClipboard() {
-  const url = window.location.href;
-  navigator.clipboard.writeText(url);
-}
-
 function snackBarOps(setSnackBarState) {
   return {
     close: () => setSnackBarState({ open: false }),
@@ -253,6 +249,7 @@ const Main = ({
   const [ undoType, setUndoType] = useState(null);
   const [ panner ] = useState(() => createPanner(controller));
   const [ exportEnabled, setExportEnabled ] = useState(true);
+  const [ isLinkCopied, setLinkCopied ] = useClipboard(window.location.href, { successDuration: 2000 });
   const [ snackBarState, setSnackBarState ] = useState({
     open: false,
     message: "",
@@ -278,12 +275,6 @@ const Main = ({
   };
   const onConfirmOk = () => {
     controller.restoreNetwork(); // causes page reload, no need to set state
-  };
-
-  // Share/Download functions
-  const handleCopyLink = async () => {
-    handleCopyToClipboard();
-    snack.showMessage("Link copied to clipboard");
   };
 
   const handleExport = async () => {
@@ -341,7 +332,7 @@ const Main = ({
     }, {
       title: "Share",
       icon: <ShareIcon />,
-      onClick: handleCopyLink,
+      onClick: setLinkCopied,
     },
   ];
 
@@ -368,6 +359,12 @@ const Main = ({
   
     return () => Mousetrap.unbind(['-','_','=','+','up','down','left','right','f','space'/**,'backspace','del'*/]);
   }, [panner]);
+
+  useEffect(() => {
+    if (isLinkCopied) {
+      snack.showMessage("Link copied to clipboard");
+    }
+  }, [isLinkCopied]);
 
   const rightMenuDef = isMobile ? menuDef : menuDef.filter(el => !el.alwaysShow);
 

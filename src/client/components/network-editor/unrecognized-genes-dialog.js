@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import _ from 'lodash';
 import clsx from 'clsx';
 import chroma from 'chroma-js';
+import copy from 'copy-to-clipboard';
 
 import { LinkOut } from '../link-out';
 
@@ -122,7 +123,7 @@ const useStyles = makeStyles((theme) => ({
 
 export const UnrecognizedGenesDialog = ({ open, genes, title, isMobile, onClose }) => {
   const [ expandedList, setExpandedList ] = useState();
-  const [ copied, setCopied ] = useState(false);
+  const [ isCopied, setCopied ] = useState(false);
   
   const classes = useStyles();
 
@@ -135,9 +136,10 @@ export const UnrecognizedGenesDialog = ({ open, genes, title, isMobile, onClose 
       setExpandedList(defExpanded);
     }
   }, [open]);
-  
+
   const handleCopy = (evt, geneList) => {
-    evt.stopPropagation();
+    evt.stopPropagation(); // To prevent the accordion from closing
+    // Create a tab-separated string of the gene list
     const text = geneList.map(g => {
       if (g.ensemblID) {
         if (g.symbol) {
@@ -148,11 +150,14 @@ export const UnrecognizedGenesDialog = ({ open, genes, title, isMobile, onClose 
       }
       return g.symbol;
     }).join('\n');
-    navigator.clipboard.writeText(text).then(() => {
+    // Perform the copy directly, because we can't pass the text to useClipboard
+    const success = copy(text);
+    if (success) {
+      // Set the last copied text to trigger useClipboard
       setCopied(true);
-    }).catch(err => {
-      console.error('Could not copy gene list to clipboard: ', err);
-    });
+    } else {
+      console.error('Failed to copy gene list to clipboard!');
+    }
   };
   const handleClose = () => {
     setCopied(false);
@@ -313,11 +318,10 @@ export const UnrecognizedGenesDialog = ({ open, genes, title, isMobile, onClose 
           Close
         </Button>
       </DialogActions>
-    {copied && (
       <Snackbar
         className={classes.snackBar}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        open={copied} 
+        open={isCopied} 
         autoHideDuration={3000}
         onClose={() => setCopied(false)}
       >
@@ -330,7 +334,6 @@ export const UnrecognizedGenesDialog = ({ open, genes, title, isMobile, onClose 
           }
         />
       </Snackbar>
-    )}
     </Dialog>
   );
 };
