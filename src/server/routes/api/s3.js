@@ -1,11 +1,11 @@
 import { S3 } from "@aws-sdk/client-s3";
 import * as Sentry from "@sentry/node";
-import fs from 'fs';
-import path from 'path';
+import fs from 'fs'; // eslint-disable-line
+import path from 'path'; // eslint-disable-line
 import zlib from 'zlib';
 import { promisify } from "util";
 
-import { S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_USER_UPLOAD_BUCKET, NODE_ENV } from '../../env.js';
+import { S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_USER_UPLOAD_BUCKET } from '../../env.js';
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 const enabled = S3_ENDPOINT != null;

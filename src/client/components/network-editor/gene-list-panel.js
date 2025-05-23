@@ -74,7 +74,7 @@ const useGeneMetadataPanelStyles = makeStyles((theme) => ({
   },
 }));
 
-const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
+const GeneMetadataPanel = ({ symbol, showSymbol }) => {
   const classes = useGeneMetadataPanelStyles();
 
   const queryGeneData = useQuery(
@@ -167,7 +167,6 @@ const GeneMetadataPanel = ({ controller, symbol, showSymbol }) => {
   );
 };
 GeneMetadataPanel.propTypes = {
-  controller: PropTypes.instanceOf(NetworkEditorController).isRequired,
   symbol: PropTypes.string.isRequired,
   showSymbol: PropTypes.func
 };
@@ -376,7 +375,7 @@ const GeneListPanel = ({
     return rankColorScale(rank).toString();
   };
 
-  const RankTooltip = withStyles(theme => ({
+  const RankTooltip = withStyles((theme) => ({ // eslint-disable-line
     tooltipPlacementTop: {
       marginBottom: 8,
     },
@@ -483,7 +482,7 @@ const GeneListPanel = ({
                 </RankTooltip>
               </Grid>
               {isSelected && (
-                <GeneMetadataPanel symbol={symbol} controller={controller} showSymbol={() => isGeneTextOverflowing(geneTextElemId)} />
+                <GeneMetadataPanel symbol={symbol} showSymbol={() => isGeneTextOverflowing(geneTextElemId)} />
               )}
             </Grid>
           }

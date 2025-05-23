@@ -6,7 +6,7 @@ import ReactDOMServer from 'react-dom/server';
 
 import { DEFAULT_PADDING } from '../defaults';
 import { clusterColor } from './network-style';
-import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng';
+import { monkeyPatchMathRandom, restoreMathRandom } from '../../rng'; // eslint-disable-line
 import { SearchController } from './search-contoller';
 import { ExportController } from './export-controller';
 import { UndoHandler } from './undo-stack';
@@ -810,7 +810,7 @@ export class NetworkEditorController {
       let y0 = 0;
       let draggedBubblePathSVG;
 
-      parent.on('grab', (e) => {
+      parent.on('grab', () => {
         x0 = cluster[0].position().x;
         y0 = cluster[0].position().y;
       }).on('drag', (e) => {
@@ -849,16 +849,15 @@ export class NetworkEditorController {
 
       parent.scratch(Scratch.AUTOMOVE_RULE, automoveRule);
 
-      cluster.on('grab', (evt) => {
-        const ele = evt.target;
+      cluster.on('grab', () => {
         const collapsed = parent.data('collapsed');
 
         if (collapsed) {
           parent.addClass('grabbing-collapsed-child');
         }
-      }).on('free', (evt) => {
+      }).on('free', () => {
         parent.removeClass('grabbing-collapsed-child');
-      }).on('tap', (evt) => {
+      }).on('tap', () => {
         parent.removeClass('grabbing-collapsed-child');
       });
     });

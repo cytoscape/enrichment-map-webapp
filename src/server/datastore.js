@@ -342,7 +342,7 @@ class Datastore {
 
     // Create an initialize the documents in the GENE_RANKS_COLLECTION, used for quick lookups.
     await this.createGeneRanksDocuments(networkID, demo);
-    await this.mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID, demo);
+    await this.mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID);
 
     return geneListID.string;
   }
@@ -377,7 +377,7 @@ class Datastore {
   /**
    * Update the documents in the geneRanks collection to add the 'pathways' field.
    */
-  async mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID, demo) {
+  async mergePathwayNamesIntoGeneRanks(geneSetCollection, networkID) {
     await this.db
       .collection(NETWORKS_COLLECTION)
       .aggregate([

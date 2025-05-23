@@ -181,7 +181,7 @@ Header.propTypes = {
 
 //==[ ToolbarButton ]=================================================================================================
 
-const useToolbarButtonStyles = makeStyles((theme) => ({
+const useToolbarButtonStyles = makeStyles((theme) => ({ // eslint-disable-line
   toggle: {
     border: 'none',
     color: 'inherit',
