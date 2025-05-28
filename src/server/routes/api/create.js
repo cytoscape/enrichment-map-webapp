@@ -5,6 +5,7 @@ import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
 import Datastore, { GMT_2 } from '../../datastore.js';
 import { rankedGeneListToDocument, fgseaServiceGeneRanksToDocument } from '../../datastore.js';
+import { parseBridgeDBXrefsList } from '../../util.js';
 import { performance } from 'perf_hooks';
 import { saveUserUploadFileToS3 } from './s3.js';
 import { 
@@ -360,7 +361,7 @@ function isEnsembl(body) {
 
 /**
  * Sends a POST request to the BridgeDB xrefsBatch endpoint.
- * https://www.bridgedb.org/swagger/
+ * https://www.bridgedb.org/swagger/#/mappings/post__organism__xrefsBatch__systemCode_
  */
 async function runBridgeDB(ensemblIDs, species='Human', sourceType='En') {
   // Note the 'dataSource' query parameter seems to have no effect.
@@ -384,16 +385,9 @@ async function runBridgeDB(ensemblIDs, species='Human', sourceType='En') {
   }
 
   const responseBody = await response.text();
-
-  // Parse response to get symbol names
-  const hgncIDs = responseBody
-    .split('\n')
-    .map(line => {
-      const symbol = line.split(',').filter(m => m.startsWith('H:'))[0];
-      return symbol && symbol.slice(2); // remove 'H:'
-    });
+  const symbols = parseBridgeDBXrefsList(responseBody);
   
-  return hgncIDs;
+  return symbols;
 }
 
 
@@ -418,15 +412,15 @@ async function runEnsemblToHGNCMapping(body, contentType) {
 
   // Call BridgeDB
   const ensemblIDs = content.map(row => row[0]).map(removeVersionCode);
-  const hgncIDs = await runBridgeDB(ensemblIDs);
+  const symbols = await runBridgeDB(ensemblIDs);
 
   // Replace old IDs with the new ones
   const map = new Map();
   const newContent = [];
   const invalidIDs = [];
-  for(var i = 0; i < content.length; i++) {
+  for(let i = 0; i < content.length; i++) {
     const row = content[i];
-    const newID = hgncIDs[i];
+    const newID = symbols[i];
     if(newID) {
       map.set(row[0], newID);
       newContent.push([newID, ...row.slice(1)]);

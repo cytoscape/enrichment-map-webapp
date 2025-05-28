@@ -12,3 +12,23 @@ export async function fileForEachLine(filePath, lineCallback) {
     lineCallback(line);
   }
 }
+
+export function parseBridgeDBXrefsList(txt) {
+  if (!txt || typeof txt !== 'string' || txt.trim() === '') {
+    return [];
+  }
+  const symbols = txt
+    .split('\n')
+    .filter(line => line.trim()) // Remove blank or whitespace-only lines
+    .map(line => {
+      // e.g., `ENSG00000000971\tEnsembl\tH:CFH,Uc:uc001gtj.5,T:GO: 0030449,S:P08603,Q:NM_000186`
+      const parts = line.split('\t');
+      if (parts.length >= 3) {
+        const idsPart = parts[2];
+        const symbol = idsPart.split(',').filter(m => m.trim().startsWith('H:'))[0];
+        return symbol ? symbol.trim().slice(2) : null; // remove 'H:'
+      }
+      return null; // Return null if the line is not valid
+    });
+  return symbols;
+}
