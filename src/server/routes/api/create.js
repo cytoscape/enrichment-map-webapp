@@ -418,7 +418,7 @@ async function runEnsemblToHGNCMapping(body, contentType) {
   const map = new Map();
   const newContent = [];
   const invalidIDs = [];
-  for(var i = 0; i < content.length; i++) {
+  for(let i = 0; i < content.length; i++) {
     const row = content[i];
     const newID = symbols[i];
     if(newID) {
