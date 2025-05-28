@@ -30,6 +30,5 @@ export function parseBridgeDBXrefsList(txt) {
       }
       return null; // Return null if the line is not valid
     });
-
-    return symbols;
+  return symbols;
 }
