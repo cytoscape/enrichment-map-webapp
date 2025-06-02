@@ -13,6 +13,7 @@ import {
   FGSEA_PRERANKED_SERVICE_URL, 
   FGSEA_RNASEQ_SERVICE_URL,
   BRIDGEDB_URL,
+  GPROFILER_SERVICE_URL,
   MONGO_URL,
 } from '../../env.js';
 
@@ -358,6 +359,62 @@ function isEnsembl(body) {
   return secondLine && secondLine.startsWith('ENS');
 }
 
+/**
+ * Converts Ensembl IDs to HGNC symbols using the g:Convert API.
+ * https://biit.cs.ut.ee/gprofiler/page/apis
+ */
+async function runGProfiler(ensemblIds, organism='hsapiens') {
+  const url = `${GPROFILER_SERVICE_URL}/convert/convert/`;
+
+  const requestBody = {
+    organism,
+    query: ensemblIds,
+    target: 'ENSG'
+  };
+
+  try {
+    const start = performance.now();
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'EnrichmentMap:RNA-Seq'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    const duration = performance.now() - start;
+    console.log(`--> g:Convert fetch took ${duration.toFixed(2)} ms`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const results = await response.json();
+
+    // Build a mapping from input ID to symbol
+    const idToSymbolMap = {};
+    results.result.forEach(entry => {
+      // console.log(`--> ${entry.incoming} -> ${entry.name} (${entry.converted})`);
+      idToSymbolMap[entry.incoming] = entry.name === 'None' ? null : entry.name;
+    });
+
+    // // Map back to original order
+    // const symbols = ensemblIds.map(id => idToSymbolMap[id] || null);
+    // console.log('>>> Ensembl to Symbol Mapping:', symbols);
+    // // log the number of nulls
+    // const nullCount = symbols.filter(symbol => symbol === null).length;
+    // console.log(`>>> Number of null symbols: ${nullCount}`);
+
+    return idToSymbolMap;
+  } catch (error) {
+    console.error('Error converting Ensembl IDs:', error.message);
+    return ensemblIds.map(() => null); // Return nulls on failure
+  }
+}
+
 
 /**
  * Sends a POST request to the BridgeDB xrefsBatch endpoint.
@@ -370,11 +427,16 @@ async function runBridgeDB(ensemblIDs, species='Human', sourceType='En') {
 
   let response;
   try {
+    const start = performance.now();
+
     response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/html' }, // thats what it wants
       body
     });
+
+    const duration = performance.now() - start;
+    console.log(`--> BridgeDB fetch took ${duration.toFixed(2)} ms`);
   } catch(e) {
     throw new CreateError({ step: 'bridgedb', cause: e });
   }
@@ -412,7 +474,8 @@ async function runEnsemblToHGNCMapping(body, contentType) {
 
   // Call BridgeDB
   const ensemblIDs = content.map(row => row[0]).map(removeVersionCode);
-  const symbols = await runBridgeDB(ensemblIDs);
+  // const symbols = await runBridgeDB(ensemblIDs);
+  const idToSymbolMap = await runGProfiler(ensemblIDs);
 
   // Replace old IDs with the new ones
   const map = new Map();
@@ -420,7 +483,9 @@ async function runEnsemblToHGNCMapping(body, contentType) {
   const invalidIDs = [];
   for(let i = 0; i < content.length; i++) {
     const row = content[i];
-    const newID = symbols[i];
+    const ensemblID = ensemblIDs[i];
+    const newID = idToSymbolMap[ensemblID];
+    // const newID = symbols[i];
     if(newID) {
       map.set(row[0], newID);
       newContent.push([newID, ...row.slice(1)]);

@@ -21,6 +21,7 @@ export const FGSEA_PRERANKED_SERVICE_URL = process.env.FGSEA_PRERANKED_SERVICE_U
 export const FGSEA_RNASEQ_SERVICE_URL =  process.env.FGSEA_RNASEQ_SERVICE_URL;
 export const EM_SERVICE_URL = process.env.EM_SERVICE_URL;
 export const BRIDGEDB_URL = process.env.BRIDGEDB_URL;
+export const GPROFILER_SERVICE_URL = process.env.GPROFILER_SERVICE_URL;
 
 // Mongo config
 export const MONGO_URL = process.env.MONGO_URL;
