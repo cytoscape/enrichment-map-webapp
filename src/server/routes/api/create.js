@@ -5,14 +5,12 @@ import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
 import Datastore, { GMT_2 } from '../../datastore.js';
 import { rankedGeneListToDocument, fgseaServiceGeneRanksToDocument } from '../../datastore.js';
-import { parseBridgeDBXrefsList } from '../../util.js';
 import { performance } from 'perf_hooks';
 import { saveUserUploadFileToS3 } from './s3.js';
 import { 
   EM_SERVICE_URL, 
   FGSEA_PRERANKED_SERVICE_URL, 
   FGSEA_RNASEQ_SERVICE_URL,
-  BRIDGEDB_URL,
   GPROFILER_SERVICE_URL,
   MONGO_URL,
 } from '../../env.js';
@@ -125,8 +123,8 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
   const preranked = type === 'preranked';
 
   // First we need to check if the IDs are ensembl IDs.
-  // If they are, we need to convert them to HGNC IDs using the BridgeDB service.
-  perf.mark('bridgedb');
+  // If they are, we need to convert them to HGNC IDs using the g:Profiler service.
+  perf.mark('gprofiler');
   const needIdMapping = isEnsembl(body);
   const validation = await validateGenes(body, contentType, needIdMapping);
   body = validation.body;
@@ -182,10 +180,10 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
     emptyNetwork: typeof networkID === 'undefined',
     geneCount: rankedGeneList?.genes?.length,
     steps: [ {
-      step: 'bridgedb',
+      step: 'gprofiler',
       needIdMapping,
-      url: BRIDGEDB_URL,
-      timeTaken: perf.measure({ from:'bridgedb', to:'fgsea' }),
+      url: GPROFILER_SERVICE_URL,
+      timeTaken: perf.measure({ from:'gprofiler', to:'fgsea' }),
     }, {
       step: 'fgsea',
       type,
@@ -207,7 +205,7 @@ async function runDataPipeline({ networkName, contentType, type, classes, body, 
 
 
 async function validateGenes(body, contentType, needIdMapping) {
-  // If the IDs are Ensembl IDs, we need to convert them to HGNC IDs using the BridgeDB service.
+  // If the IDs are Ensembl IDs, we need to convert them to HGNC IDs using the g:Profiler service.
   let invalidEnsemblIDs;
   let ensemblToSymbolMap;
   let symbolToEnsemblMap;
@@ -247,7 +245,7 @@ async function validateGenes(body, contentType, needIdMapping) {
 
   // Create a list with objects containing the HGNC ID and the Ensembl ID for all invalid/unrecognized genes
   const unknownGenes = [];
-  // Genes that were not mapped to HGNC IDs (the ensembl IDs were not recognized by BridgeDB)
+  // Genes that were not mapped to HGNC IDs (the ensembl IDs were not recognized by g:Profiler)
   if (invalidEnsemblIDs) {
     for (const ensemblID of invalidEnsemblIDs) {
       unknownGenes.push({ ensemblID });
@@ -420,37 +418,37 @@ async function runGProfiler(ensemblIds, organism='hsapiens') {
  * Sends a POST request to the BridgeDB xrefsBatch endpoint.
  * https://www.bridgedb.org/swagger/#/mappings/post__organism__xrefsBatch__systemCode_
  */
-async function runBridgeDB(ensemblIDs, species='Human', sourceType='En') {
-  // Note the 'dataSource' query parameter seems to have no effect.
-  const url = `${BRIDGEDB_URL}/${species}/xrefsBatch/${sourceType}`;
-  const body = ensemblIDs.join('\n');
+// async function runBridgeDB(ensemblIDs, species='Human', sourceType='En') {
+//   // Note the 'dataSource' query parameter seems to have no effect.
+//   const url = `${BRIDGEDB_URL}/${species}/xrefsBatch/${sourceType}`;
+//   const body = ensemblIDs.join('\n');
 
-  let response;
-  try {
-    const start = performance.now();
+//   let response;
+//   try {
+//     const start = performance.now();
 
-    response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/html' }, // thats what it wants
-      body
-    });
+//     response = await fetch(url, {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'text/html' }, // thats what it wants
+//       body
+//     });
 
-    const duration = performance.now() - start;
-    console.log(`--> BridgeDB fetch took ${duration.toFixed(2)} ms`);
-  } catch(e) {
-    throw new CreateError({ step: 'bridgedb', cause: e });
-  }
-  if(!response.ok) {
-    const body = await response.text();
-    const status = response.status;
-    throw new CreateError({ step: 'bridgedb', body, status });
-  }
+//     const duration = performance.now() - start;
+//     console.log(`--> BridgeDB fetch took ${duration.toFixed(2)} ms`);
+//   } catch(e) {
+//     throw new CreateError({ step: 'bridgedb', cause: e });
+//   }
+//   if(!response.ok) {
+//     const body = await response.text();
+//     const status = response.status;
+//     throw new CreateError({ step: 'bridgedb', body, status });
+//   }
 
-  const responseBody = await response.text();
-  const symbols = parseBridgeDBXrefsList(responseBody);
+//   const responseBody = await response.text();
+//   const symbols = parseBridgeDBXrefsList(responseBody);
   
-  return symbols;
-}
+//   return symbols;
+// }
 
 
 async function runEnsemblToHGNCMapping(body, contentType) {
@@ -472,7 +470,7 @@ async function runEnsemblToHGNCMapping(body, contentType) {
     return ensID;
   };
 
-  // Call BridgeDB
+  // Call BridgeDB or g:Profiler to convert Ensembl IDs to HGNC symbols
   const ensemblIDs = content.map(row => row[0]).map(removeVersionCode);
   // const symbols = await runBridgeDB(ensemblIDs);
   const idToSymbolMap = await runGProfiler(ensemblIDs);
@@ -496,7 +494,8 @@ async function runEnsemblToHGNCMapping(body, contentType) {
 
   if(invalidIDs.length > 0) {
     console.log("Sending id-mapping warning to Sentry. Number of invalid IDs: " + invalidIDs.length);
-    sendMessagesToSentry('bridgedb', [{
+    console.log('Invalid IDs (First 100):', invalidIDs.slice(0, 100));
+    sendMessagesToSentry('gprofiler', [{
       level: 'warning',
       type: 'ids_not_mapped',
       text: 'IDs not mapped',

@@ -296,7 +296,7 @@ export const UnrecognizedGenesDialog = ({ open, genes, title, isMobile, onClose 
           `Symbols not Found`,
           // If there are any ensemblIDs in the list, show a different message,
           // because this just means that these symbols are not in our database (GMT file),
-          // since they have been input as EnsemblIDs and then validated when BridgeDB translated them to symbols.
+          // since they have been input as EnsemblIDs and then validated when g:Profiler (or BridgeDB) translated them to symbols.
           unrecognizedGenes[0].ensemblID ?
             <>
               These gene symbols were translated from your Ensembl IDs, but are not

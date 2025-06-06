@@ -198,8 +198,8 @@ export class UploadController {
       } else {
         errors.push('Error running EnrichmentMap service.', 'Please verify that your input file is formatted correctly and contains valid gene symbols/identifiers.');
       }
-    } else if(step == 'bridgedb') {
-      errors.push('Error running BridgeDB service.', 'Could not map Ensembl gene IDs to HGNC.', 'Please verify that your input file is formatted correctly and contains valid Ensembl gene IDs.');
+    } else if(step == 'gprofiler') {
+      errors.push('Error running g:Profiler service.', 'Could not map Ensembl gene IDs to HGNC.', 'Please verify that your input file is formatted correctly and contains valid Ensembl gene IDs.');
     }
 
     return errors;
