@@ -50,7 +50,7 @@ const isMobileWidth = (theme) => window.innerWidth <= theme.breakpoints.values.s
 const isTabletWidth = (theme) => !isMobileWidth(theme) && window.innerWidth <= theme.breakpoints.values.md;
 
 let requestID = null;
-let cancelledRequests = [];
+const cancelledRequests = [];
 
 function showNetwork(id) {
   location.href = `/document/${id}`;
@@ -67,7 +67,7 @@ async function loadSampleFiles() {
 }
 
 async function showFileDialog() {
-  var input = document.createElement('input');
+  const input = document.createElement('input');
   input.type = 'file';
 
   return await new Promise(resolve => {

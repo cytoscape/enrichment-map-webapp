@@ -145,8 +145,8 @@ export function ClassSelector({ columns, isMobile, rnaseqClasses, onClassesChang
   const classes = useStyles();
 
   const handleChange = (i, newGroup) => {
-    if(newGroup) {
-      var newGroups = rnaseqClasses.map((c, i2) => i == i2 ? newGroup : c);
+    if (newGroup) {
+      const newGroups = rnaseqClasses.map((c, i2) => i == i2 ? newGroup : c);
       onClassesChanged(newGroups);
     }
   };

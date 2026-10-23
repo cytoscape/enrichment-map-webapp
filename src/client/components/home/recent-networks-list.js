@@ -404,7 +404,7 @@ export class RecentNetworksList extends Component {
     };
     const lastOpenedText = () => {
       const date = new Date(obj.opened);
-      let today = new Date();
+      const today = new Date();
       if (new Date(date).setHours(0,0,0,0) == today.setHours(0,0,0,0)) { // call setHours to take the time out of the comparison
           return date.toLocaleTimeString('en-US', { hour: "2-digit", minute: "2-digit" }); // Date equals today's date, so display only the time
       }

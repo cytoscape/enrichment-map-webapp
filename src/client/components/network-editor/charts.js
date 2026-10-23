@@ -45,13 +45,13 @@ export const UpDownHBar = ({ value, minValue, maxValue, color, bgColor, height, 
     } else if (minValue < 0 && maxValue < 0) { // all negative => bars start at right and go left
       textStyle =  { left: 0 };
     } else if (value < 0) { // neg. value should be shifted right by the size of the pos. max. bar size
-      let offset = Math.abs(minValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
+      const offset = Math.abs(minValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
       textStyle =  { left: `${offset + 2}%` };
     } else if (value > 0) { // pos. value should be shifted left by the size of the neg. max. bar size
-      let offset = Math.abs(maxValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
+      const offset = Math.abs(maxValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
       textStyle = { right: `${offset + 2}%` };
     } else { // ZERO value should be centered
-      let offset = Math.abs(minValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
+      const offset = Math.abs(minValue) / (Math.abs(minValue) + Math.abs(maxValue)) * 100;
       textStyle = { left: `${offset}%`, transform: 'translateX(-50%)' };
     }
   }

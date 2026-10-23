@@ -59,7 +59,7 @@ export class EventEmitterProxy {
    */
   removeAllListeners(){
     for( let i = this.listeners.length - 1; i >= 0; i-- ){
-      let { event, handler } = this.listeners[i];
+      const { event, handler } = this.listeners[i];
 
       this.target.removeListener(event, handler);
       this.listeners.splice(i, 1); // remove ith

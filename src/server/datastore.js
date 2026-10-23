@@ -41,7 +41,7 @@ function makeID(strOrObj) {
  */
 export function rankedGeneListToDocument(rankedGeneList, delimiter = '\t') {
   const genes = [];
-  var [min, max] = [Infinity, -Infinity];
+  let [min, max] = [Infinity, -Infinity];
 
   rankedGeneList.split("\n").slice(1).forEach(line => {
     const [gene, rankStr] = line.split(delimiter);
@@ -69,7 +69,7 @@ export function rankedGeneListToDocument(rankedGeneList, delimiter = '\t') {
  */
 export function fgseaServiceGeneRanksToDocument(rankedGeneListObject) {
   const genes = [];
-  var [min, max] = [Infinity, -Infinity];
+  let [min, max] = [Infinity, -Infinity];
 
   for(const [gene, rank] of Object.entries(rankedGeneListObject)) {
     min = Math.min(min, rank);

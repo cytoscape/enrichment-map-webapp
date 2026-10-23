@@ -469,7 +469,7 @@ const PathwayTable = (
   const allSelected = totalSelectedRows > 0 && totalSelectedRows === totalRows;
 
   // Find the "current" id
-  let currentId = currentRow ? currentRow.id : null;
+  const currentId = currentRow ? currentRow.id : null;
   // Find the "initial" index, which is where the table must auto-scroll to
   let initialIndex = 0;
   let initialId = scrollToId || currentId;

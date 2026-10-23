@@ -296,7 +296,7 @@ export function BottomDrawer({ controller, open, leftDrawerOpen, isMobile, isTab
     cyEmitter.on('tap', evt => {
       if (openRef.current) {
         // When the table is opened, scroll to the clicked pathway
-        var ele = evt.target;
+        const ele = evt.target;
         if (ele.group && ele.group() === 'nodes') { // Ignore clicks on edges and on the background!
           setScrollToId(ele.data('id'));
         }
@@ -350,7 +350,7 @@ export function BottomDrawer({ controller, open, leftDrawerOpen, isMobile, isTab
         }
       }
       if (idx >= 0) {
-        var newCurrentRow = rows[idx];
+        const newCurrentRow = rows[idx];
         setGotoCurrentNode(true);
         setCurrentRow(newCurrentRow);
         setScrollToId(newCurrentRow.id);

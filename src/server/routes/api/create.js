@@ -59,7 +59,7 @@ http.post('/demo', async function(req, res, next) {
   const perf = createPeformanceHook();
   try {
     const rankFile = './public/geneset-db/brca_hd_tep_ranks.rnk';
-    let data = await fs.readFile(rankFile, 'utf8');
+    const data = await fs.readFile(rankFile, 'utf8');
     
     const networkID = await runDataPipeline({
       demo: true,
@@ -104,7 +104,7 @@ function createPeformanceHook() {
 async function runDataPipelineHttp(req, res, type) {
   const { networkName } = req.query;
   const contentType = req.get('Content-Type'); // use same content type with FGSEA service
-  let body = req.body;
+  const body = req.body;
   const { classes } = req.query;
 
   const perf = createPeformanceHook();

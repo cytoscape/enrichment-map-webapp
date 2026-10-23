@@ -154,7 +154,7 @@ function onError(error) {
     throw error;
   }
 
-  let bind = typeof PORT === 'string'
+  const bind = typeof PORT === 'string'
     ? 'Pipe ' + PORT
     : 'Port ' + PORT;
 
@@ -174,8 +174,8 @@ function onError(error) {
 }
 
 function onListening() {
-  let addr = server.address();
-  let bind = typeof addr === 'string'
+  const addr = server.address();
+  const bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debugLog('Listening on ' + bind);

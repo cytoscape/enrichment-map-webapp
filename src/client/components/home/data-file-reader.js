@@ -203,7 +203,7 @@ function quickParseForFileInfo(text) {
     }
     const values = line.split(delimiter).map(t => t.trim());
 
-    for(let [col, val] of _.zip(columns, values)) {
+    for(const [col, val] of _.zip(columns, values)) {
       if(col !== undefined) {
         columnTypes.setType(col, getValueType(val));
       }
@@ -282,7 +282,7 @@ function getColumnIndicies(fileInfo, fileFormat, geneCol, rankCol, rnaseqClasses
   } else {
     // rnaseqClasses looks like [X,A,A,A,B,B,B] where X=ignored and A,B=two experiments
     headerNames.push(geneCol);
-    for(let [colName, klass] of _.zip(fileInfo.numericCols, rnaseqClasses)) {
+    for(const [colName, klass] of _.zip(fileInfo.numericCols, rnaseqClasses)) {
       if(colName !== undefined && (klass === 'A' || klass === 'B')) {
         const index = columns.indexOf(colName);
         numericIndicies.push(index);
@@ -314,9 +314,9 @@ export function validateText(fileInfo, fileFormat, geneCol, rankCol, rnaseqClass
   const errorMap = createErrorMap();
   const processedLines = [ headerNames.join(delimiter) ];
 
-  for(var i = startLine + 1; i < lines.length; i++) { // skip header
+  for (let i = startLine + 1; i < lines.length; i++) { // skip header
     const line = lines[i];
-    if(line === undefined) {
+    if (line === undefined) {
       continue;
     }
     
@@ -342,7 +342,7 @@ export function validateText(fileInfo, fileFormat, geneCol, rankCol, rnaseqClass
     newTokens.push(gene);
 
     // Detect bad or missing numeric values
-    for(let ni of numericIndicies) {
+    for(const ni of numericIndicies) {
       const numStr = tokens[ni];
       if(!isNumeric(numStr)) {
         errorMap.add(Error.NUMERIC_VAL_BAD, lineNum);

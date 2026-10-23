@@ -131,7 +131,7 @@ export class ExportController {
   
     // compute the transform to be applied to the bubbleSet svg layer
     // this code was adapted from the code in renderer.bufferCanvasImage()
-    var bb = cy.elements().boundingBox();
+    const bb = cy.elements().boundingBox();
     const pxRatio = renderer.getPixelRatio();
     const scale = imageSize.scale * pxRatio;
     const dx = -bb.x1 * scale;
